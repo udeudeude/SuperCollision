@@ -7,7 +7,7 @@
 <main><div class="panel"><strong>Audio hardware test</strong><p class="muted">Tests browser audio on this device. This is NOT yet a SuperCollider interpreter. The editor below saves code locally but does not execute it.</p><div class="actions"><button id="play">Play test tone</button><button id="stop" class="secondary">Stop</button></div></div>
 <div class="panel"><label for="code">SuperCollider scratchpad</label><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">(
 { SinOsc.ar(440, 0, 0.1) ! 2 }.play;
-)</textarea><div class="actions"><button id="copy" class="secondary">Copy code</button><button id="clear" class="secondary">Reset example</button></div><p class="muted">Automatically saved on this device. Execution engine integration is next.</p></div>
+)</textarea><div class="actions"><button id="import-file" class="secondary">Import .scd</button><button id="export-file" class="secondary">Export .scd</button><button id="copy" class="secondary">Copy code</button><button id="clear" class="secondary">Reset example</button></div><input id="file-input" type="file" accept=".scd,.sc,.txt,text/plain" hidden><p class="muted">Automatically saved on this device. Execution engine integration is next.</p></div>
 <div class="panel"><strong>SuperCollider engine</strong><p class="muted">Checks for the real WebAssembly sclang/scsynth runtime. The engine must be installed in <code>runtime/</code> before code execution is enabled.</p><div class="actions"><button id="engine">Check / boot engine</button><button id="evaluate" disabled>Evaluate code</button><button id="panic" class="secondary" disabled>Stop SuperCollider</button></div><p id="engine-status" role="status">Engine not checked.</p><pre id="console" style="white-space:pre-wrap;max-height:180px;overflow:auto;font-size:12px"></pre></div><div class="panel"><strong>Diagnostics</strong><p id="status" role="status">Ready. Tap Play test tone to unlock audio.</p><small id="info"></small></div></main>
 <script>
 const example='(\n{ SinOsc.ar(440, 0, 0.1) ! 2 }.play;\n)';
@@ -20,6 +20,9 @@ async function stop(){if(osc){try{osc.stop()}catch{}osc.disconnect();osc=null}if
 document.querySelector('#play').onclick=async()=>{try{if(osc)await stop();const C=window.AudioContext||window.webkitAudioContext;if(!C)throw Error('Web Audio unavailable');ctx=ctx||new C();await ctx.resume();osc=ctx.createOscillator();gain=ctx.createGain();osc.type='sine';osc.frequency.value=440;gain.gain.value=.08;osc.connect(gain);gain.connect(ctx.destination);osc.start();report('Playing 440 Hz test tone via Web Audio.\nSample rate: '+ctx.sampleRate+' Hz\nAudio state: '+ctx.state)}catch(e){report('Audio test failed: '+e.message)}};
 document.querySelector('#stop').onclick=stop;
 document.querySelector('#copy').onclick=async()=>{try{await navigator.clipboard.writeText(code.value);report('Code copied.')}catch(e){report('Copy unavailable: '+e.message)}};
+document.querySelector('#import-file').onclick=()=>document.querySelector('#file-input').click();
+document.querySelector('#file-input').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>2000000)throw Error('File exceeds 2 MB');code.value=await file.text();code.dispatchEvent(new Event('input'));report('Imported '+file.name)}catch(err){report('Import failed: '+err.message)}e.target.value=''};
+document.querySelector('#export-file').onclick=()=>{const blob=new Blob([code.value],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='SuperCollision.scd';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000)};
 document.querySelector('#clear').onclick=()=>{code.value=example;code.dispatchEvent(new Event('input'));report('Example restored.')};
 document.querySelector('#info').textContent='Platform: '+navigator.platform+' | Secure context: '+window.isSecureContext;
 </script><script type="module">
@@ -30,11 +33,12 @@ function print(t){log.textContent+=(String(t)+'\n');log.scrollTop=log.scrollHeig
 document.querySelector('#engine').onclick=async()=>{
  message('Checking runtime assets...');
  try{
-  const base=new URL('./runtime/',import.meta.url);
+  const base=new URL('./runtime/',location.href);
   for(const name of ['sclang.js','scsynth.js']){
    const res=await fetch(new URL(name,base),{method:'HEAD',cache:'no-store'});
    if(!res.ok)throw Error(name+' missing (HTTP '+res.status+')');
   }
+  if(!crossOriginIsolated)throw Error('Cross-origin isolation is unavailable. SuperCollider WebAssembly threading requires COOP/COEP headers; ordinary GitHub Pages does not supply them.');
   message('Loading real SuperCollider modules...');
   const [{default:ScLang},{default:ScSynth}]=await Promise.all([import('./runtime/sclang.js'),import('./runtime/scsynth.js')]);
   const locateFile=p=>new URL(p,base).href;
