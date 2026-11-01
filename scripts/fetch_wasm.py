@@ -12,7 +12,7 @@ def get(url):
     req=urllib.request.Request(url,headers={"Authorization":"Bearer "+token,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"SuperCollision-CI"})
     with urllib.request.urlopen(req,timeout=90) as res:return res.read()
 def jsonget(url):return json.loads(get(url))
-runs=jsonget(API+"/actions/workflows/build_wasm.yml/runs?status=success&per_page=30").get("workflow_runs",[])
+try:\n    runs=jsonget(API+"/actions/workflows/build_wasm.yml/runs?status=success&per_page=30").get("workflow_runs",[])\nexcept Exception:\n    runs=[]
 # Reusable workflows may not expose standalone runs: search repository-wide successful runs.
 if not runs:
     runs=jsonget(API+"/actions/runs?status=success&per_page=60").get("workflow_runs",[])
@@ -38,3 +38,14 @@ for nested in list(root.rglob("wasm-dist.zip")):
     nested.unlink()
 # Normalize typical upstream structure: wasm-dist/{sclang,scsynth}
 print("Downloaded files:",sum(1 for _ in root.rglob("*")))
+
+# Flatten generated runtime assets into the directory expected by the frontend.
+for name in ("sclang.js","scsynth.js"):
+    matches=list(root.rglob(name))
+    if not matches:sys.exit("Upstream artifact lacks "+name)
+    src=matches[0]
+    for sibling in src.parent.iterdir():
+        if sibling.is_file() and sibling.parent!=root:
+            target=root/sibling.name
+            if not target.exists():shutil.copy2(sibling,target)
+print("Runtime JS loaders:",[(root/n).exists() for n in ("sclang.js","scsynth.js")])
