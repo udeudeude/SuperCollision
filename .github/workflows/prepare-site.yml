@@ -9,7 +9,7 @@ on:
       - 'scripts/verify_runtime.py'
       - '_headers'
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -60,3 +60,12 @@ jobs:
           name: supercollision-static-site
           path: dist/
           retention-days: 14
+      - name: Publish compiled site to pages-build branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: pages-build
+          publish_dir: ./dist
+          force_orphan: true
+          enable_jekyll: false
+          commit_message: "Publish compiled SuperCollider WASM site"
