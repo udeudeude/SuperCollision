@@ -8,7 +8,7 @@
 <div class="panel"><label for="code">SuperCollider scratchpad</label><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">(
 { SinOsc.ar(440, 0, 0.1) ! 2 }.play;
 )</textarea><div class="actions"><button id="copy" class="secondary">Copy code</button><button id="clear" class="secondary">Reset example</button></div><p class="muted">Automatically saved on this device. Execution engine integration is next.</p></div>
-<div class="panel"><strong>Diagnostics</strong><p id="status" role="status">Ready. Tap Play test tone to unlock audio.</p><small id="info"></small></div></main>
+<div class="panel"><strong>SuperCollider engine</strong><p class="muted">Checks for the real WebAssembly sclang/scsynth runtime. The engine must be installed in <code>runtime/</code> before code execution is enabled.</p><div class="actions"><button id="engine">Check / boot engine</button><button id="evaluate" disabled>Evaluate code</button><button id="panic" class="secondary" disabled>Stop SuperCollider</button></div><p id="engine-status" role="status">Engine not checked.</p><pre id="console" style="white-space:pre-wrap;max-height:180px;overflow:auto;font-size:12px"></pre></div><div class="panel"><strong>Diagnostics</strong><p id="status" role="status">Ready. Tap Play test tone to unlock audio.</p><small id="info"></small></div></main>
 <script>
 const example='(\n{ SinOsc.ar(440, 0, 0.1) ! 2 }.play;\n)';
 const code=document.querySelector('#code'),status=document.querySelector('#status');
@@ -22,4 +22,32 @@ document.querySelector('#stop').onclick=stop;
 document.querySelector('#copy').onclick=async()=>{try{await navigator.clipboard.writeText(code.value);report('Code copied.')}catch(e){report('Copy unavailable: '+e.message)}};
 document.querySelector('#clear').onclick=()=>{code.value=example;code.dispatchEvent(new Event('input'));report('Example restored.')};
 document.querySelector('#info').textContent='Platform: '+navigator.platform+' | Secure context: '+window.isSecureContext;
+</script><script type="module">
+let lang,synth;
+const state=document.querySelector('#engine-status'),log=document.querySelector('#console'),run=document.querySelector('#evaluate'),panic=document.querySelector('#panic');
+function message(t){state.textContent=t}
+function print(t){log.textContent+=(String(t)+'\n');log.scrollTop=log.scrollHeight}
+document.querySelector('#engine').onclick=async()=>{
+ message('Checking runtime assets...');
+ try{
+  const base=new URL('./runtime/',import.meta.url);
+  for(const name of ['sclang.js','scsynth.js']){
+   const res=await fetch(new URL(name,base),{method:'HEAD',cache:'no-store'});
+   if(!res.ok)throw Error(name+' missing (HTTP '+res.status+')');
+  }
+  message('Loading real SuperCollider modules...');
+  const [{default:ScLang},{default:ScSynth}]=await Promise.all([import('./runtime/sclang.js'),import('./runtime/scsynth.js')]);
+  const locateFile=p=>new URL(p,base).href;
+  lang=await ScLang({locateFile});synth=await ScSynth({locateFile});
+  lang.printCallback=print;synth.onStdout=print;
+  lang.onOsc=osc=>synth.sendOsc(new Uint8Array(osc));
+  synth.onOscReply=osc=>lang.sendOsc(osc);
+  lang.bootInterpreter();
+  window.bootServer=options=>{if(options.numOutputBusChannels)setTimeout(async()=>{try{await synth.boot(options)}catch(e){print('Server boot: '+e.message)}},100)};
+  run.disabled=false;panic.disabled=false;
+  message('SuperCollider interpreter loaded. Evaluate code to test.');
+ }catch(e){message('Runtime unavailable: '+e.message+'. The audio diagnostic still works.');print(e.stack||e.message)}
+};
+run.onclick=()=>{if(!lang)return;try{lang.runCode(document.querySelector('#code').value);message('Code sent to SuperCollider interpreter.')}catch(e){message('Evaluation failed: '+e.message)}};
+panic.onclick=()=>{if(lang)lang.runCode('CmdPeriod.run;')};
 </script></html>
