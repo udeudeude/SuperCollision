@@ -1,34 +1,62 @@
-name: Prepare SuperCollision WebAssembly site
+name: Build SuperCollision WebAssembly site
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
       - 'index.html'
-      - 'scripts/**'
       - '.github/workflows/prepare-site.yml'
+      - 'scripts/verify_runtime.py'
       - '_headers'
 permissions:
   contents: read
-  actions: read
 jobs:
-  package:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
-      - name: Download most recent successful upstream SuperCollider WASM artifact
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Checkout SuperCollision
+        uses: actions/checkout@v4
+        with:
+          path: app
+      - name: Checkout official SuperCollider source
+        uses: actions/checkout@v4
+        with:
+          repository: supercollider/supercollider
+          ref: develop
+          submodules: recursive
+          path: upstream
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v16
+        with:
+          version: 4.0.18
+          actions-cache-folder: emsdk-cache
+      - name: Install build dependencies
         run: |
-          set -euo pipefail
-          python3 scripts/fetch_wasm.py
-      - name: Package static site
+          sudo apt-get update
+          sudo apt-get install --yes build-essential cmake pkg-config libjack-jackd2-dev libsndfile1-dev libasound2-dev libavahi-client-dev libreadline6-dev libfftw3-dev libicu-dev libxt-dev libudev-dev ccache clang-14 libc++-14-dev libc++abi-14-dev
+      - name: Configure official WebAssembly target
         run: |
-          mkdir -p dist
-          cp index.html _headers dist/
-          cp -R runtime dist/
-          python3 scripts/verify_runtime.py dist/runtime
-      - uses: actions/upload-artifact@v4
+          emcmake cmake -S upstream -B build \
+            -DSC_EL=no -DSUPERNOVA=no -DSC_HIDAPI=no \
+            -DNO_LIBSNDFILE=yes -DSTATIC_PLUGINS=yes \
+            -DSC_QT=no -DNO_AVAHI=yes -DSC_ABLETON_LINK=no \
+            -DCMAKE_BUILD_TYPE=Release -DNO_X11=yes
+      - name: Compile sclang and scsynth
+        run: emmake cmake --build build --target webeditor --parallel 2
+      - name: Test official interpreter
+        run: |
+          cd build/wasm-dist/sclang
+          timeout 1m node sclang-tests.mjs
+      - name: Assemble deployable site
+        run: |
+          mkdir -p dist/runtime
+          cp app/index.html app/_headers dist/
+          cp -a build/wasm-dist/sclang build/wasm-dist/scsynth dist/runtime/
+          python3 app/scripts/verify_runtime.py dist/runtime
+      - name: Upload compiled site
+        uses: actions/upload-artifact@v4
         with:
           name: supercollision-static-site
           path: dist/
+          retention-days: 14
