@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#10151d">
+<title>SuperCollision | Audio test</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#10151d;color:#e8edf5}*{box-sizing:border-box}body{margin:0;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom);max-width:900px;margin:auto}header{display:flex;align-items:baseline;justify-content:space-between;padding:20px 0 12px}h1{font-size:1.5rem;margin:0}small,.muted{color:#9caabc}main{display:grid;gap:14px}.panel{background:#1a2330;border:1px solid #334053;border-radius:14px;padding:15px}textarea{display:block;width:100%;min-height:220px;background:#0d131c;color:#dceafa;border:1px solid #45566b;border-radius:9px;padding:14px;font:15px/1.6 ui-monospace,monospace;resize:vertical}button{border:0;border-radius:10px;background:#7bb4ef;color:#07111b;font-size:1rem;font-weight:650;padding:13px 18px;min-height:48px}button.secondary{background:#35455b;color:#e8edf5}button:disabled{opacity:.4}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}#status{white-space:pre-wrap;line-height:1.5}code{color:#a6cffa}label{display:block;margin-bottom:9px;font-weight:600}</style>
+<header><h1>SuperCollision</h1><small>Prototype 0.1</small></header>
+<main><div class="panel"><strong>Audio hardware test</strong><p class="muted">Tests browser audio on this device. This is NOT yet a SuperCollider interpreter. The editor below saves code locally but does not execute it.</p><div class="actions"><button id="play">Play test tone</button><button id="stop" class="secondary">Stop</button></div></div>
+<div class="panel"><label for="code">SuperCollider scratchpad</label><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off">(
+{ SinOsc.ar(440, 0, 0.1) ! 2 }.play;
+)</textarea><div class="actions"><button id="copy" class="secondary">Copy code</button><button id="clear" class="secondary">Reset example</button></div><p class="muted">Automatically saved on this device. Execution engine integration is next.</p></div>
+<div class="panel"><strong>Diagnostics</strong><p id="status" role="status">Ready. Tap Play test tone to unlock audio.</p><small id="info"></small></div></main>
+<script>
+const example='(\n{ SinOsc.ar(440, 0, 0.1) ! 2 }.play;\n)';
+const code=document.querySelector('#code'),status=document.querySelector('#status');
+try{code.value=localStorage.getItem('supercollision-code')||example}catch{}
+code.addEventListener('input',()=>{try{localStorage.setItem('supercollision-code',code.value)}catch{}});
+let ctx,osc,gain;
+function report(s){status.textContent=s}
+async function stop(){if(osc){try{osc.stop()}catch{}osc.disconnect();osc=null}if(gain){gain.disconnect();gain=null}report('Audio stopped.')}
+document.querySelector('#play').onclick=async()=>{try{if(osc)await stop();const C=window.AudioContext||window.webkitAudioContext;if(!C)throw Error('Web Audio unavailable');ctx=ctx||new C();await ctx.resume();osc=ctx.createOscillator();gain=ctx.createGain();osc.type='sine';osc.frequency.value=440;gain.gain.value=.08;osc.connect(gain);gain.connect(ctx.destination);osc.start();report('Playing 440 Hz test tone via Web Audio.\nSample rate: '+ctx.sampleRate+' Hz\nAudio state: '+ctx.state)}catch(e){report('Audio test failed: '+e.message)}};
+document.querySelector('#stop').onclick=stop;
+document.querySelector('#copy').onclick=async()=>{try{await navigator.clipboard.writeText(code.value);report('Code copied.')}catch(e){report('Copy unavailable: '+e.message)}};
+document.querySelector('#clear').onclick=()=>{code.value=example;code.dispatchEvent(new Event('input'));report('Example restored.')};
+document.querySelector('#info').textContent='Platform: '+navigator.platform+' | Secure context: '+window.isSecureContext;
+</script></html>
