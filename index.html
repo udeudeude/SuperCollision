@@ -34,15 +34,15 @@ document.querySelector('#engine').onclick=async()=>{
  message('Checking runtime assets...');
  try{
   const base=new URL('./runtime/',location.href);
-  for(const name of ['sclang.js','scsynth.js']){
+  for(const name of ['sclang/sclang.js','scsynth/scsynth.js']){
    const res=await fetch(new URL(name,base),{method:'HEAD',cache:'no-store'});
    if(!res.ok)throw Error(name+' missing (HTTP '+res.status+')');
   }
   if(!crossOriginIsolated)throw Error('Cross-origin isolation is unavailable. SuperCollider WebAssembly threading requires COOP/COEP headers; ordinary GitHub Pages does not supply them.');
   message('Loading real SuperCollider modules...');
-  const [{default:ScLang},{default:ScSynth}]=await Promise.all([import('./runtime/sclang.js'),import('./runtime/scsynth.js')]);
-  const locateFile=p=>new URL(p,base).href;
-  lang=await ScLang({locateFile});synth=await ScSynth({locateFile});
+  const [{default:ScLang},{default:ScSynth}]=await Promise.all([import('./runtime/sclang/sclang.js'),import('./runtime/scsynth/scsynth.js')]);
+  lang=await ScLang({locateFile:p=>new URL(p,new URL('sclang/',base)).href});
+  synth=await ScSynth({locateFile:p=>new URL(p,new URL('scsynth/',base)).href});
   lang.printCallback=print;synth.onStdout=print;
   lang.onOsc=osc=>synth.sendOsc(new Uint8Array(osc));
   synth.onOscReply=osc=>lang.sendOsc(osc);
