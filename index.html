@@ -1,22 +1,59 @@
 <!doctype html>
-<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#10151d">
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#161817">
 <title>SuperCollision | Mobile SuperCollider IDE</title>
 <style>
-:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#10151d;color:#e8edf5}*{box-sizing:border-box}body{margin:0;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom);max-width:900px;margin:auto}header{display:flex;align-items:baseline;justify-content:space-between;padding:20px 0 12px}h1{font-size:1.5rem;margin:0}small,.muted{color:#9caabc}main{display:grid;gap:14px}.panel{background:#1a2330;border:1px solid #334053;border-radius:14px;padding:15px}textarea{display:block;width:100%;min-height:220px;background:#0d131c;color:#dceafa;border:1px solid #45566b;border-radius:9px;padding:14px;font:15px/1.6 ui-monospace,monospace;resize:vertical}button{border:0;border-radius:10px;background:#7bb4ef;color:#07111b;font-size:1rem;font-weight:650;padding:13px 18px;min-height:48px}button.secondary{background:#35455b;color:#e8edf5}button:disabled{opacity:.4}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}#status{white-space:pre-wrap;line-height:1.5}code{color:#a6cffa}label{display:block;margin-bottom:9px;font-weight:600}button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #9cc9ff;outline-offset:2px}header{position:sticky;top:0;background:#10151df5;z-index:3}#code{min-height:42vh;tab-size:2}#console{font-family:ui-monospace,monospace;white-space:pre-wrap;overflow:auto;max-height:40vh;font-size:12px;background:#0d131c;padding:10px;border-radius:9px}#console-panel summary{cursor:pointer;font-weight:600}#console-panel[open] summary{margin-bottom:10px}.toolbar{position:sticky;top:65px;z-index:2;background:#1a2330;padding:10px 0;display:flex;gap:8px;flex-wrap:wrap}.toolbar button{flex:1}input,select{background:#10151d;color:#e8edf5;border:1px solid #45566b;border-radius:8px;padding:12px;max-width:100%;font-size:16px}.projectbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.projectbar select{flex:1;min-width:140px}.muted{font-size:.9rem}#engine-status{font-size:.9rem}#syntax-preview{max-height:180px;overflow:auto;background:#0d131c;border:1px solid #45566b;border-radius:9px;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.5 ui-monospace,monospace}#syntax-preview .str{color:#e6c98a}#syntax-preview .comment{color:#7fb396}#syntax-preview .class{color:#9cc5ff}#syntax-preview .num{color:#d8b2f4}@media(min-width:700px){#code{min-height:48vh}} </style>
-<header><h1>SuperCollision</h1><small>Mobile IDE · 0.3</small></header>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#10151d;color:#e8edf5}*{box-sizing:border-box}body{margin:0;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom);max-width:900px;margin:auto}header{display:flex;align-items:baseline;justify-content:space-between;padding:20px 0 12px}h1{font-size:1.5rem;margin:0}small,.muted{color:#9caabc}main{display:grid;gap:14px}.panel{background:#1a2330;border:1px solid #334053;border-radius:14px;padding:15px}textarea{display:block;width:100%;min-height:220px;background:#0d131c;color:#dceafa;border:1px solid #45566b;border-radius:9px;padding:14px;font:15px/1.6 ui-monospace,monospace;resize:vertical}button{border:0;border-radius:10px;background:#7bb4ef;color:#07111b;font-size:1rem;font-weight:650;padding:13px 18px;min-height:48px}button.secondary{background:#35455b;color:#e8edf5}button:disabled{opacity:.4}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}#status{white-space:pre-wrap;line-height:1.5}code{color:#a6cffa}label{display:block;margin-bottom:9px;font-weight:600}button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #9cc9ff;outline-offset:2px}header{position:sticky;top:0;background:#10151df5;z-index:3}#code{min-height:42vh;tab-size:2}#console{font-family:ui-monospace,monospace;white-space:pre-wrap;overflow:auto;max-height:40vh;font-size:12px;background:#0d131c;padding:10px;border-radius:9px}#console-panel summary{cursor:pointer;font-weight:600}#console-panel[open] summary{margin-bottom:10px}.toolbar{position:sticky;top:65px;z-index:2;background:#1a2330;padding:10px 0;display:flex;gap:8px;flex-wrap:wrap}.toolbar button{flex:1}input,select{background:#10151d;color:#e8edf5;border:1px solid #45566b;border-radius:8px;padding:12px;max-width:100%;font-size:16px}.projectbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.projectbar select{flex:1;min-width:140px}.muted{font-size:.9rem}#engine-status{font-size:.9rem}#syntax-preview{max-height:180px;overflow:auto;background:#0d131c;border:1px solid #45566b;border-radius:9px;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.5 ui-monospace,monospace}#syntax-preview .str{color:#e6c98a}#syntax-preview .comment{color:#7fb396}#syntax-preview .class{color:#9cc5ff}#syntax-preview .num{color:#d8b2f4}@media(min-width:700px){#code{min-height:48vh}} /* SuperCollision 0.4: instrument-panel visual system */
+:root{color-scheme:dark;background:#161817;color:#e6e4db;font-family:Arial,Helvetica,sans-serif}
+body{padding:env(safe-area-inset-top) 10px env(safe-area-inset-bottom);max-width:1100px}
+header{position:static;min-height:38px;padding:7px 2px 9px;background:#161817;border-bottom:1px solid #77796f;align-items:center}
+h1{font-size:1.03rem;font-weight:800;letter-spacing:.025em;text-transform:uppercase}
+header small{font:10px/1.3 ui-monospace,monospace;letter-spacing:.1em;color:#a4a59c}
+main{display:block}
+.panel{background:transparent;border:0;border-radius:0;padding:0}
+.projectbar{display:flex;flex-wrap:nowrap;gap:5px;align-items:stretch;margin:7px 0}
+.projectbar select{min-width:0;flex:1;width:0;font-weight:650}
+select,input{background:#242725;border:1px solid #55594f;border-radius:2px;color:#e6e4db;padding:7px 9px;font-size:14px;min-height:39px}
+button{min-height:40px;padding:8px 12px;border-radius:2px;font-size:12px;font-weight:800;letter-spacing:.045em;background:#d8ae5b;color:#191b19}
+button.secondary{background:#333733;color:#e7e7de;border:1px solid #565b54}
+button:disabled{opacity:.45}
+button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #e4bd69;outline-offset:1px}
+.toolbar{position:sticky;top:0;z-index:4;background:#161817;padding:5px 0 7px;display:flex;gap:5px;align-items:center;flex-wrap:nowrap;border-bottom:1px solid #5b5f55}
+.toolbar button{flex:0 0 auto;min-width:69px}
+#evaluate{background:#d7b46b}
+#panic{border-color:#b7725d;color:#f1c1b2}
+#engine{margin-left:auto}
+#save-status{font:10px/1.1 ui-monospace,monospace;max-width:65px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#969b91}
+#code{display:block;min-height:calc(100dvh - 220px);height:calc(100dvh - 220px);width:100%;resize:vertical;border:0;border-radius:0;background:#1b1e1c;color:#e3e4d9;padding:12px 9px;font:14px/1.52 ui-monospace,SFMono-Regular,Menlo,monospace;tab-size:2;caret-color:#e3b85f}
+.menu{position:relative;flex:0 0 auto}
+.menu>summary{display:flex;align-items:center;height:100%;min-height:39px;padding:0 12px;border:1px solid #55594f;background:#292c29;cursor:pointer;font:700 11px ui-monospace,monospace;list-style:none}
+.menu>summary::-webkit-details-marker{display:none}
+.menu-items{position:absolute;right:0;top:calc(100% + 4px);z-index:8;width:180px;padding:5px;background:#282b28;border:1px solid #77796f;box-shadow:0 8px 20px #0008;display:grid;gap:3px}
+.menu-items button{text-align:left;min-height:38px}
+.console-shell{border-top:1px solid #66695f;padding:7px 1px}
+#engine-status{margin:0 0 6px;font:11px/1.4 ui-monospace,monospace;color:#b9b9ac}
+#console-panel summary,.utility summary{font:700 11px/1.5 ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;color:#bdbeb3}
+#console{background:#1b1e1c;color:#e3e4d9;border-radius:0;margin:7px 0;padding:9px;max-height:32vh}
+.utility{margin-top:9px;border-top:1px solid #454a42;padding-top:7px}
+.utility p{font-size:12px}
+.actions{gap:5px;margin-top:6px}
+#syntax-preview{border-radius:0;background:#1b1e1c}
+@media(max-width:390px){.toolbar button{min-width:57px;padding:8px 7px}#save-status{max-width:45px}h1{font-size:.96rem}}
+@media(min-width:700px){#code{min-height:65vh;height:65vh}}
+</style>
+<header><h1>SuperCollision</h1><small>INSTRUMENT / 0.4</small></header>
 <main>
 <div class="panel">
-<div class="projectbar"><label for="projects">Composition</label><select id="projects" aria-label="Saved compositions"></select><button id="new-project" class="secondary">New</button><button id="rename-project" class="secondary">Rename</button><button id="delete-project" class="secondary">Delete</button></div>
-<p id="save-status" class="muted" role="status">Saved locally</p>
-<div class="toolbar"><button id="evaluate" disabled>▶ Run</button><button id="panic" class="secondary" disabled>■ Stop</button><button id="engine" class="secondary">Start engine</button></div>
-<label for="code">SuperCollider code</label><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="SuperCollider code editor"></textarea>
-<div class="actions"><button id="import-file" class="secondary">Import .scd</button><button id="export-file" class="secondary">Export .scd</button><button id="copy" class="secondary">Copy</button><button id="clear" class="secondary">Example</button></div>
+<div class="projectbar"><select id="projects" aria-label="Saved compositions"></select><details class="menu"><summary aria-label="Composition actions">FILE ▾</summary><div class="menu-items"><button id="new-project" class="secondary">New</button><button id="rename-project" class="secondary">Rename</button><button id="delete-project" class="secondary">Delete</button><button id="import-file" class="secondary">Import .scd</button><button id="export-file" class="secondary">Export .scd</button><button id="copy" class="secondary">Copy code</button><button id="clear" class="secondary">Load example</button></div></details></div>
+
+<div class="toolbar"><button id="evaluate" disabled>▶ RUN</button><button id="panic" class="secondary" disabled>■ STOP</button><button id="engine" class="secondary">POWER</button><span id="save-status" class="muted" role="status">Saved</span></div>
+<textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="SuperCollider code editor"></textarea>
+
 <input id="file-input" type="file" hidden>
-<details><summary>Syntax-highlighted reading view</summary><pre id="syntax-preview" aria-label="Syntax-highlighted code preview"></pre><p class="muted">Read-only preview. Edit in the code area above.</p></details>
+<details class="utility"><summary>Syntax view</summary><pre id="syntax-preview" aria-label="Syntax-highlighted code preview"></pre><p class="muted">Read-only preview. Edit in the code area above.</p></details>
 </div>
-<div class="panel"><p id="engine-status" role="status">Engine not started. Tap Start engine, then Run.</p>
+<div class="panel console-shell"><p id="engine-status" role="status">Engine off · Press POWER</p>
 <details id="console-panel"><summary>SuperCollider console</summary><div class="actions"><button id="clear-console" class="secondary">Clear console</button></div><pre id="console" aria-live="off"></pre></details></div>
-<details class="panel"><summary>Audio hardware diagnostic</summary><p class="muted">Independent Web Audio test, not SuperCollider.</p><div class="actions"><button id="play" class="secondary">Test tone</button><button id="stop" class="secondary">Stop test tone</button></div><p id="status" role="status">Ready.</p><small id="info"></small></details>
+<details class="panel utility"><summary>Audio diagnostic</summary><p class="muted">Independent Web Audio test, not SuperCollider.</p><div class="actions"><button id="play" class="secondary">Test tone</button><button id="stop" class="secondary">Stop test tone</button></div><p id="status" role="status">Ready.</p><small id="info"></small></details>
 </main>
 <script>
 const example='(\n{ SinOsc.ar(440, 0, 0.15) ! 2 }.play;\n)';
@@ -27,10 +64,10 @@ try{projects=JSON.parse(localStorage.getItem(KEY)||'{}');if(!projects||typeof pr
 if(!Object.keys(projects).length){let old;try{old=localStorage.getItem('supercollision-code')}catch{}projects.Default=old||example}
 try{active=localStorage.getItem(ACTIVE)||'Default'}catch{}
 if(!Object.hasOwn(projects,active))active=Object.keys(projects)[0];
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(projects));localStorage.setItem(ACTIVE,active);saveStatus.textContent='Saved locally · '+active}catch(e){saveStatus.textContent='Storage unavailable: '+e.message}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(projects));localStorage.setItem(ACTIVE,active);saveStatus.textContent='SAVED'}catch(e){saveStatus.textContent='SAVE ERROR'}}
 function renderProjects(){projectsEl.replaceChildren();for(const name of Object.keys(projects)){const option=document.createElement('option');option.value=name;option.textContent=name;projectsEl.append(option)}projectsEl.value=active;code.value=projects[active]||'';updatePreview();persist()}
 function commit(){projects[active]=code.value;persist()}
-code.addEventListener('input',()=>{saveStatus.textContent='Saving…';updatePreview();clearTimeout(saveTimer);saveTimer=setTimeout(commit,200)});
+code.addEventListener('input',()=>{saveStatus.textContent='SAVING';updatePreview();clearTimeout(saveTimer);saveTimer=setTimeout(commit,200)});
 function flush(){clearTimeout(saveTimer);commit()}
 projectsEl.onchange=()=>{const next=projectsEl.value;flush();active=next;renderProjects()};
 function uniqueName(name){let n=name,i=2;while(Object.hasOwn(projects,n))n=name+' '+i++;return n}
@@ -81,10 +118,10 @@ document.querySelector('#engine').onclick=async()=>{
   lang.bootInterpreter();
   window.bootServer=options=>{if(options.numOutputBusChannels)setTimeout(async()=>{try{await synth.boot(options)}catch(e){print('Server boot: '+e.message)}},100)};
   run.disabled=false;panic.disabled=false;
-  message('SuperCollider interpreter loaded. Evaluate code to test.');
+  message('ENGINE READY · RUN to evaluate');
  }catch(e){message('Runtime unavailable: '+e.message);print(e.stack||e.message)}finally{booting=false;document.querySelector('#engine').disabled=false}
 };
 run.onclick=()=>{if(!lang)return;try{const source=document.querySelector('#code').value;flush();lang.runCode(source);message('Code sent to SuperCollider interpreter. Check console for results.')}catch(e){message('Evaluation failed: '+e.message)}};
-panic.onclick=()=>{if(!lang)return;try{lang.runCode('CmdPeriod.run;');message('Stop command sent. Server remains booted; re-evaluate to create new synths.')}catch(e){message('Stop failed: '+e.message)}};
+panic.onclick=()=>{if(!lang)return;try{lang.runCode('CmdPeriod.run;');message('STOP SENT · ENGINE READY')}catch(e){message('Stop failed: '+e.message)}};
 
 </script></html>
