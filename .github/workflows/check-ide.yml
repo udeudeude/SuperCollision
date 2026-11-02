@@ -2,34 +2,59 @@ name: Check SuperCollision IDE
 on:
   push:
     branches: [main]
-    paths: ['index.html', '.github/workflows/check-ide.yml']
+    paths: ['index.html', 'instrument-layout.css', 'instrument-layout.js', '.github/workflows/check-ide.yml']
   pull_request:
-    paths: ['index.html', '.github/workflows/check-ide.yml']
+    paths: ['index.html', 'instrument-layout.css', 'instrument-layout.js', '.github/workflows/check-ide.yml']
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate inline JavaScript syntax and essential controls
+      - name: Validate scripts, editor structure and design variants
         run: |
           python3 - <<'PY'
           from html.parser import HTMLParser
           from pathlib import Path
           class Scripts(HTMLParser):
-              def __init__(self): super().__init__(); self.scripts=[]; self.capture=False; self.current=''
-              def handle_starttag(self,tag,attrs):
-                  if tag=='script': self.capture=True; self.current=''
-              def handle_data(self,data):
-                  if self.capture:self.current+=data
-              def handle_endtag(self,tag):
-                  if tag=='script' and self.capture:self.scripts.append(self.current);self.capture=False
+              def __init__(self):
+                  super().__init__()
+                  self.scripts=[]
+                  self.capture=False
+                  self.current=''
+              def handle_starttag(self, tag, attrs):
+                  if tag=='script':
+                      self.capture=not dict(attrs).get('src')
+                      self.current=''
+              def handle_data(self, data):
+                  if self.capture:
+                      self.current+=data
+              def handle_endtag(self, tag):
+                  if tag=='script' and self.capture:
+                      self.scripts.append(self.current)
+                      self.capture=False
           html=Path('index.html').read_text()
-          p=Scripts();p.feed(html)
-          assert len(p.scripts)==2
+          css=Path('instrument-layout.css').read_text()
+          js=Path('instrument-layout.js').read_text()
+          p=Scripts()
+          p.feed(html)
+          assert len(p.scripts)==3, f"Found {len(p.scripts)} inline scripts"
           for i,script in enumerate(p.scripts):
-              Path(f'/tmp/supercollision-{i}.mjs').write_text(script)
-          for key in ('id="evaluate"','id="panic"','id="projects"','id="console"','id="engine"'):
-              assert key in html,key
+              Path(f'/tmp/supercollision-{i}.js').write_text(script)
+          expected=['<header>', 'class="projectbar"', 'class="editor-frame"', 'class="toolbar"', 'class="panel console-shell"']
+          indices=[html.index(item) for item in expected]
+          assert indices==sorted(indices), indices
+          assert 'wrap="off"' in html
+          assert 'id="line-inner"' in html
+          assert 'id="inspect-toggle"' in html
+          assert 'instrument-layout.css' in html and 'instrument-layout.js' in html
+          assert "window.renderLineGutter" in html and "window.renderLineGutter" in js
+          assert "translate3d" in js
+          assert 'grid-template-columns:repeat(6,minmax(0,1fr))' in css
+          for theme in ['bauhaus','blackmountain','moog','makenoise','score','scope','patch','terminal']:
+              assert 'data-theme='+theme in css,theme
+              assert 'art-'+theme in html,theme
           PY
-          node --check /tmp/supercollision-0.mjs
-          node --check /tmp/supercollision-1.mjs
+          node --check /tmp/supercollision-0.js
+          node --check /tmp/supercollision-1.js
+          node --check /tmp/supercollision-2.js
+          node --check instrument-layout.js
