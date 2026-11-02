@@ -86,7 +86,7 @@ document.querySelector('#delete-project').onclick=()=>deleteComposition(active);
 document.querySelector('#go-line').onclick=()=>{const n=Number(prompt('Go to line (1–'+code.value.split('\n').length+')'));if(!Number.isInteger(n)||n<1)return;const lines=code.value.split('\n');const pos=lines.slice(0,n-1).reduce((a,v)=>a+v.length+1,0);code.focus();code.setSelectionRange(Math.min(pos,code.value.length),Math.min(pos,code.value.length));const lineHeight=parseFloat(getComputedStyle(code).lineHeight)||21.28;code.scrollTop=Math.max(0,(n-3)*lineHeight)};
 const gutter=document.querySelector('#line-gutter');const preview=document.querySelector('#syntax-preview');
 function updatePreview(){updateLines();const text=code.value;preview.replaceChildren();const re=/(\/\/[^\n]*|"(?:\\.|[^"\\])*"|\b[A-Z][A-Za-z0-9_]*\b|\b\d+(?:\.\d+)?\b)/g;let last=0,m;while((m=re.exec(text))){preview.append(document.createTextNode(text.slice(last,m.index)));const span=document.createElement('span');span.className=m[0].startsWith('//')?'comment':m[0].startsWith('"')?'str':/^\d/.test(m[0])?'num':'class';span.textContent=m[0];preview.append(span);last=re.lastIndex}preview.append(document.createTextNode(text.slice(last)))}
-function updateLines(){const n=code.value.split('\n').length;gutter.textContent=Array.from({length:n},(_,i)=>i+1).join('\n');gutter.scrollTop=code.scrollTop}code.addEventListener('scroll',()=>{gutter.scrollTop=code.scrollTop});
+let activeRegion=null;function updateLines(){const n=code.value.split('\n').length;gutter.replaceChildren();const frag=document.createDocumentFragment();for(let i=1;i<=n;i++){const line=document.createElement('span');line.className='line'+(activeRegion&&i>=activeRegion.start&&i<=activeRegion.end?' active':'');line.textContent=i;frag.append(line)}gutter.append(frag);gutter.scrollTop=code.scrollTop}code.addEventListener('scroll',()=>{gutter.scrollTop=code.scrollTop});
 document.querySelector('#storage-info').onclick=()=>{flush();const bytes=new Blob([JSON.stringify(projects)]).size;const count=Object.keys(projects).length;if(prompt(count+' compositions, '+(bytes/1024).toFixed(1)+' KiB. Type DELETE ALL to erase (backup first).')!=='DELETE ALL')return;if(!confirm('Delete all compositions permanently?'))return;projects={Default:example};active='Default';renderProjects()};
 function downloadText(name,body,type){const url=URL.createObjectURL(new Blob([body],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000)}
 document.querySelector('#backup-projects').onclick=()=>{flush();downloadText('SuperCollision-backup.json',JSON.stringify({format:'supercollision-projects-v1',projects},null,2),'application/json')};
@@ -109,7 +109,7 @@ renderProjects();document.addEventListener('visibilitychange',()=>{if(document.v
 let lang,synth;
 const state=document.querySelector('#engine-status'),log=document.querySelector('#console'),run=document.querySelector('#evaluate'),panic=document.querySelector('#panic');
 function message(t){state.textContent=t}
-function print(t){log.textContent+=(String(t)+'\n');if(log.textContent.length>120000)log.textContent=log.textContent.slice(-80000);log.scrollTop=log.scrollHeight}
+function print(t){if(/ERROR:|FAILURE|WARNING: Server/.test(String(t))){document.querySelector('#console-panel').open=true;state.classList.add('error')}log.textContent+=(String(t)+'\n');if(log.textContent.length>120000)log.textContent=log.textContent.slice(-80000);log.scrollTop=log.scrollHeight}
 document.querySelector('#clear-console').onclick=()=>{log.textContent=''};
 let booting=false;
 document.querySelector('#engine').onclick=async()=>{
@@ -134,12 +134,14 @@ document.querySelector('#engine').onclick=async()=>{
   synth.onOscReply=osc=>lang.sendOsc(osc);
   lang.bootInterpreter();
   window.bootServer=options=>{if(options.numOutputBusChannels)setTimeout(async()=>{try{await synth.boot(options)}catch(e){print('Server boot: '+e.message)}},100)};
-  run.disabled=false;panic.disabled=false;document.querySelector('#record').disabled=false;
+  run.disabled=false;panic.disabled=false;document.querySelector('#run-region').disabled=false;document.querySelector('#record').disabled=false;
   message('Initializing language; audio server will boot after startup');
  }catch(e){message('Runtime unavailable: '+e.message);print(e.stack||e.message)}finally{booting=false;document.querySelector('#engine').disabled=false}
 };
-run.onclick=()=>{if(!lang)return;try{const source=document.querySelector('#code').value;flush();lang.runCode(source);message('Code sent · check console for server status.')}catch(e){message('Evaluation failed: '+e.message)}};
-panic.onclick=()=>{if(!lang)return;try{lang.runCode('CmdPeriod.run;');message('STOP SENT · ENGINE READY')}catch(e){message('Stop failed: '+e.message)}};
+function submitCode(source,start,end){if(!lang)return;try{flush();activeRegion={start,end};updateLines();state.classList.remove('error');lang.runCode(source);message('EVALUATED L'+start+'–'+end+' · source indication, not live audio tracing')}catch(e){message('Evaluation failed: '+e.message)}}
+run.onclick=()=>submitCode(code.value,1,code.value.split('\n').length);
+document.querySelector('#run-region').onclick=()=>{const a=code.selectionStart,b=code.selectionEnd,text=code.value;let from=a,to=b;if(a===b){from=text.lastIndexOf('\n',Math.max(0,a-1))+1;to=text.indexOf('\n',a);if(to<0)to=text.length}const source=text.slice(from,to);if(!source.trim())return;const start=text.slice(0,from).split('\n').length,end=start+source.split('\n').length-1;submitCode(source,start,end)};
+panic.onclick=()=>{if(!lang)return;try{lang.runCode('CmdPeriod.run;');activeRegion=null;updateLines();message('STOP SENT · ENGINE READY')}catch(e){message('Stop failed: '+e.message)}};
 
 
 let capture=null;
