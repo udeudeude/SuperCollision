@@ -321,7 +321,17 @@ panic.onclick=()=>{if(!lang)return;try{lang.runCode('CmdPeriod.run;');window.scP
 
 
 
-const themeChoice=document.querySelector('#theme-choice');try{themeChoice.value=localStorage.getItem('supercollision-theme')||'moog'}catch{themeChoice.value='moog'}document.body.dataset.theme=themeChoice.value;themeChoice.onchange=()=>{document.body.dataset.theme=themeChoice.value;try{localStorage.setItem('supercollision-theme',themeChoice.value)}catch{}};
+const themeChoice=document.querySelector('#theme-choice');
+const requestedDesign=new URLSearchParams(location.search).get('design');
+try{themeChoice.value=requestedDesign&&[...themeChoice.options].some(x=>x.value===requestedDesign)?requestedDesign:(localStorage.getItem('supercollision-theme')||'moog')}catch{themeChoice.value='moog'}
+if(!themeChoice.value||themeChoice.selectedIndex<0)themeChoice.value='moog';
+document.body.dataset.theme=themeChoice.value;
+themeChoice.onchange=()=>{
+ document.body.dataset.theme=themeChoice.value;
+ try{localStorage.setItem('supercollision-theme',themeChoice.value)}catch{}
+ const url=new URL(location.href);url.searchParams.set('design',themeChoice.value);
+ history.replaceState(null,'',url.pathname+url.search+url.hash);
+};
 let wakeLock=null,wakeEnabled=true;const wakeButton=document.querySelector('#wake-toggle');async function requestWake(){if(!wakeEnabled||document.visibilityState!=='visible'||!navigator.wakeLock||wakeLock)return;try{wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>{wakeLock=null},{once:true})}catch(e){console.warn('Wake lock unavailable',e)}}async function releaseWake(){const held=wakeLock;wakeLock=null;if(held)try{await held.release()}catch{}}
 wakeButton.onclick=()=>{wakeEnabled=!wakeEnabled;wakeButton.textContent='Screen awake: '+(wakeEnabled?'on':'off');if(!wakeEnabled)releaseWake()};document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&wakeEnabled&&window.scPlaybackRequested)requestWake()});
 let capture=null;
