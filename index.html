@@ -131,10 +131,11 @@ document.querySelector('#engine').onclick=async()=>{
   lang.bootInterpreter();
   window.bootServer=options=>{if(options.numOutputBusChannels)setTimeout(async()=>{try{await synth.boot(options)}catch(e){print('Server boot: '+e.message)}},100)};
   run.disabled=false;panic.disabled=false;document.querySelector('#record').disabled=false;
-  message('ENGINE READY · RUN to evaluate');
+  message('LANGUAGE READY · Booting audio server');
+  lang.runCode('s.boot;');
  }catch(e){message('Runtime unavailable: '+e.message);print(e.stack||e.message)}finally{booting=false;document.querySelector('#engine').disabled=false}
 };
-run.onclick=()=>{if(!lang)return;try{const source=document.querySelector('#code').value;flush();lang.runCode('s.waitForBoot { '+source+' }; s.boot;');message('Run submitted · booting server if needed. Check console for results.')}catch(e){message('Evaluation failed: '+e.message)}};
+run.onclick=()=>{if(!lang)return;try{const source=document.querySelector('#code').value;flush();lang.runCode(source);message('Code sent · check console for server status.')}catch(e){message('Evaluation failed: '+e.message)}};
 panic.onclick=()=>{if(!lang)return;try{lang.runCode('CmdPeriod.run;');message('STOP SENT · ENGINE READY')}catch(e){message('Stop failed: '+e.message)}};
 
 
