@@ -47,8 +47,79 @@ body[data-theme=bauhaus]{background:#f0ead9;color:#222623}body[data-theme=bauhau
 body[data-theme=blackmountain]{background:#e7e1ce;color:#302f2b;font-family:Georgia,serif}body[data-theme=blackmountain] header,body[data-theme=blackmountain] .toolbar{background:#e7e1ce}body[data-theme=blackmountain] h1{font-family:Georgia,serif;font-weight:400;letter-spacing:.05em}body[data-theme=blackmountain] .projectbar button,body[data-theme=blackmountain] .projectbar select,body[data-theme=blackmountain] .menu>summary{background:#ded5bd;color:#302f2b;border-color:#92866e}body[data-theme=blackmountain] #evaluate{background:#9e6547;color:white}body[data-theme=blackmountain] .editor-frame{border-top:1px solid #9e6547}
 body[data-theme=moog]{background:#211e1a;color:#e9d9bc}body[data-theme=moog] header,body[data-theme=moog] .toolbar{background:#211e1a}body[data-theme=moog] h1{font-weight:800;letter-spacing:.11em}body[data-theme=moog] .projectbar button,body[data-theme=moog] .projectbar select,body[data-theme=moog] .menu>summary{background:#37312a;color:#e9d9bc;border-color:#8b7658}body[data-theme=moog] #evaluate{background:#df8e3f;color:#231e18}body[data-theme=moog] .editor-frame{border-top:3px double #b18a5c}
 body[data-theme=makenoise]{background:#0b0b0b;color:#f2f1e9}body[data-theme=makenoise] header,body[data-theme=makenoise] .toolbar{background:#0b0b0b}body[data-theme=makenoise] h1{font-weight:900;letter-spacing:-.07em;text-decoration:underline;text-decoration-style:wavy;text-decoration-thickness:1px}body[data-theme=makenoise] .projectbar button,body[data-theme=makenoise] .projectbar select,body[data-theme=makenoise] .menu>summary{background:#141414;color:#f2f1e9;border:1px solid #deded6}body[data-theme=makenoise] #evaluate{background:#eee;color:#080808}body[data-theme=makenoise] #panic{border:2px solid #eee;color:#eee}body[data-theme=makenoise] .editor-frame{border-top:3px dashed #eee}
+
+/* v1.0: four structural studies, not interchangeable color skins */
+main>.panel:first-child{min-width:0}
+main>.panel:first-child>.theme-strip{grid-area:theme}
+main>.panel:first-child>.projectbar{grid-area:files}
+main>.panel:first-child>.toolbar{grid-area:transport}
+main>.panel:first-child>.editor-frame{grid-area:editor;min-width:0}
+main>.panel:first-child>#file-input,main>.panel:first-child>#backup-input,main>.panel:first-child>#syntax-preview{display:none}
+body[data-theme] .toolbar{position:static}
+body[data-theme] .code-stack{height:calc(100dvh - 260px)}
+body[data-theme] .editor-frame{min-width:0}
+body[data-theme] .toolbar button{min-height:42px}
+body[data-theme] .theme-strip{margin:0}
+body[data-theme] header{position:relative}
+
+/* Bauhaus: poster composition; asymmetrical vertical band, block geometry */
+body[data-theme=bauhaus] main>.panel:first-child{display:grid;grid-template-columns:60px minmax(0,1fr);grid-template-areas:"theme files" "transport transport" "editor editor";gap:0}
+body[data-theme=bauhaus] .theme-strip{writing-mode:vertical-rl;transform:none;align-items:center;justify-content:center;background:#1f4d80;color:#fff;border:0;padding:8px 0}
+body[data-theme=bauhaus] .theme-strip select{writing-mode:vertical-rl;color:#fff;text-align:center;max-height:130px}
+body[data-theme=bauhaus] .projectbar{margin:0;padding:8px;background:#f0ead9}
+body[data-theme=bauhaus] .toolbar{border-top:5px solid #c83f2c;border-bottom:5px solid #1f4d80;justify-content:flex-start;gap:0;padding:0}
+body[data-theme=bauhaus] .toolbar button{border:0;border-radius:0;flex:1;min-width:0;padding:12px 3px}
+body[data-theme=bauhaus] #evaluate{flex:2;font-size:16px}
+body[data-theme=bauhaus] #save-status{display:none}
+body[data-theme=bauhaus] .editor-frame{border:0}
+body[data-theme=bauhaus] header:before{content:"●";color:#c83f2c;font-size:29px;line-height:1}
+body[data-theme=bauhaus] header{display:flex;gap:9px}
+body[data-theme=bauhaus] h1{flex:1}
+
+/* Black Mountain: editorial folio; generous margins, rulework and restrained controls */
+body[data-theme=blackmountain]{max-width:1000px}
+body[data-theme=blackmountain] main>.panel:first-child{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"theme" "files" "editor" "transport";gap:9px}
+body[data-theme=blackmountain] header{padding:24px 4px 17px;border-bottom:1px solid #82745c}
+body[data-theme=blackmountain] h1{font-size:clamp(23px,6vw,38px);font-weight:400;text-transform:none;letter-spacing:-.04em}
+body[data-theme=blackmountain] .theme-strip{border:0;justify-content:flex-end}
+body[data-theme=blackmountain] .projectbar{margin:0 0 8px}
+body[data-theme=blackmountain] .toolbar{border-top:1px solid #82745c;border-bottom:0;justify-content:flex-end;background:transparent;padding:9px 0}
+body[data-theme=blackmountain] .toolbar button{flex:0 1 auto;border-radius:0;background:transparent;color:#463b31;border:1px solid #82745c;font:12px Georgia,serif;letter-spacing:0}
+body[data-theme=blackmountain] .toolbar #evaluate{background:#9e6547;color:white}
+body[data-theme=blackmountain] .editor-frame{border:1px solid #aa9d85;box-shadow:8px 8px 0 #c8bca4}
+body[data-theme=blackmountain] .code-stack{height:calc(100dvh - 350px)}
+body[data-theme=blackmountain] .console-shell{margin-top:20px}
+
+/* Moog: stacked rack modules; bolted fascia, dedicated transport strip */
+body[data-theme=moog] main>.panel:first-child{display:grid;grid-template-areas:"files" "transport" "theme" "editor";gap:6px}
+body[data-theme=moog] header{background:#32281f;border:2px solid #9a815f;padding:12px 18px;margin-top:5px}
+body[data-theme=moog] header:before,body[data-theme=moog] header:after{content:"●";font-size:9px;color:#a99b80}
+body[data-theme=moog] h1{flex:1;text-align:center}
+body[data-theme=moog] .projectbar{margin:0;padding:9px;background:#302820;border:2px solid #6c5942}
+body[data-theme=moog] .toolbar{padding:14px 8px;background:#322a23;border:2px solid #9a815f;gap:8px;justify-content:space-between}
+body[data-theme=moog] .toolbar button{border-radius:3px;min-height:49px;box-shadow:inset 0 2px 0 #ffffff22,0 3px 0 #0e0b09}
+body[data-theme=moog] .toolbar #engine{border:2px solid #c19d68}
+body[data-theme=moog] .theme-strip{background:#2d251e;padding:5px 9px;border:0}
+body[data-theme=moog] .editor-frame{border:3px solid #8a755b}
+body[data-theme=moog] .console-shell{border:2px solid #75634d;padding:9px;margin-top:7px}
+
+/* Make Noise: stark asymmetric patchbay, vertical transport rail */
+body[data-theme=makenoise] main>.panel:first-child{display:grid;grid-template-columns:minmax(0,1fr) 76px;grid-template-areas:"files theme" "editor transport";gap:5px}
+body[data-theme=makenoise] header{border-bottom:4px solid #eee;transform:skewX(-3deg);padding:12px 2px}
+body[data-theme=makenoise] .theme-strip{display:flex;flex-direction:column;align-items:stretch;justify-content:center;padding:4px;background:#eee;color:#090909;border:0}
+body[data-theme=makenoise] .theme-strip select{writing-mode:vertical-rl;color:#090909;font-weight:800;min-height:95px}
+body[data-theme=makenoise] .projectbar{margin:0;padding:3px;border:2px solid #eee}
+body[data-theme=makenoise] .toolbar{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:3px;border:2px solid #eee;background:#090909;padding:4px}
+body[data-theme=makenoise] .toolbar button{width:100%;min-width:0;min-height:55px;padding:3px 0;flex:0 0 auto;white-space:normal;overflow-wrap:anywhere;border:1px solid #eee;border-radius:0;font-size:10px}
+body[data-theme=makenoise] .toolbar #evaluate{min-height:84px;font-size:13px}
+body[data-theme=makenoise] #save-status{writing-mode:vertical-rl;align-self:center;max-width:none}
+body[data-theme=makenoise] .editor-frame{border:2px solid #eee}
+body[data-theme=makenoise] .code-stack{height:calc(100dvh - 220px)}
+body[data-theme=makenoise] .console-shell{border-top:4px double #eee;margin-top:9px}
+
+@media(max-width:400px){body[data-theme=makenoise] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 63px}body[data-theme=makenoise] .toolbar button{font-size:9px}body[data-theme=bauhaus] main>.panel:first-child{grid-template-columns:45px minmax(0,1fr)}}
 </style>
-<header><h1>SuperCollision</h1><small>INSTRUMENT / 0.9</small></header>
+<header><h1>SuperCollision</h1><small>INSTRUMENT / 1.0</small></header>
 <main>
 <div class="panel">
 <div class="theme-strip"><label for="theme-choice">DESIGN</label><select id="theme-choice" aria-label="Visual design"><option value="bauhaus">Bauhaus</option><option value="blackmountain">Black Mountain</option><option value="moog">Moog</option><option value="makenoise">Make Noise</option></select></div><div class="projectbar"><div class="composition-picker"><button id="project-toggle" type="button" class="secondary" aria-expanded="false" aria-controls="project-list">Composition ▾</button><div id="project-list" class="project-list" hidden role="listbox" aria-label="Saved compositions"></div></div><select id="projects" aria-label="Saved compositions" hidden></select><details class="menu"><summary aria-label="Composition actions">FILE ▾</summary><div class="menu-items"><button id="new-project" class="secondary">New</button><button id="rename-project" class="secondary">Rename</button><button id="delete-project" class="secondary">Delete</button><button id="import-file" class="secondary">Import .scd</button><button id="export-file" class="secondary">Export .scd</button><button id="copy" class="secondary">Copy code</button><button id="clear" class="secondary">Load example</button><button id="backup-projects" class="secondary">Backup all</button><button id="restore-projects" class="secondary">Restore backup</button><button id="storage-info" class="secondary">Storage / cleanup</button><button id="go-line" class="secondary">Go to line</button><button id="wake-toggle" class="secondary">Screen awake: on</button><button id="undo-delete" class="secondary" disabled>Undo delete</button></div></details></div>
