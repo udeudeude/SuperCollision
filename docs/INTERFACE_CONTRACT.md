@@ -61,3 +61,13 @@ Test on iPhone Safari (normal and standalone if installed) and one desktop brows
 - The existing source-highlighting overlay is not a full IDE parser.
 - Source-to-active-synth visualization requires server-node and routine-level instrumentation; the misleading full-document activity indication was removed.
 - Layout was committed to source and deployment branch. Physical-device QA is still required before declaring visual acceptance.
+
+## Editor-only pinch zoom (1.4)
+
+- A two-finger pinch **within the code editor** reduces or enlarges text continuously, without resizing the surrounding application or changing the system zoom.
+- Normal source text (14 CSS pixels, 100%) is the **maximum**, not the minimum. Zooming out reaches 6 CSS pixels (approximately 43% of normal).
+- The input text, highlighted overlay, caret positioning, line height, line-number font and scroll synchronization use the same scale variables. The editor scroll offset follows the gesture midpoint as closely as practical.
+- One-finger vertical/horizontal editor scrolling and code selection remain usable.
+- An unobtrusive CODE percentage indicator appears during a pinch, and the selection persists in localStorage under `supercollision-editor-font-px-v1` (never in the composition code or browser cache).
+- FILE contains Code text smaller, Code text larger and Reset code text size. With the editor focused, Cmd/Ctrl+Minus, Plus, and 0 provide equivalents.
+- Verify on iPhone Safari with a long composition: pinch both directions repeatedly, confirm normal size cannot be exceeded, then verify line-number alignment while scrolling, syntax-overlay alignment, and size persistence after reload. Check the browser does not zoom the entire page.
