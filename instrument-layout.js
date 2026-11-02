@@ -1,4 +1,4 @@
-/* SuperCollision 1.3: unified viewport and editor gutter, no audio-engine modifications. */
+/* SuperCollision 1.4: mobile workbench and editor-only pinch-to-shrink. */
 (() => {
   'use strict';
   const editor = document.getElementById('code');
@@ -41,12 +41,143 @@
         overflow.textContent = '…';
         inner.appendChild(overflow);
       }
-      gutter.style.flexBasis = Math.min(56, Math.max(28, String(count).length * 8 + 14)) + 'px';
+      updateGutterWidth(count);
     }
     followEditor();
   }
   window.renderLineGutter = renderGutter;
   window.syncEditorScroll = followEditor;
+
+  // Normal code size is the upper bound. Zoom changes only the editor,
+  // highlighted text and line-number gutter, never the application chrome.
+  const MAX_FONT = 14;
+  const MIN_FONT = 6;
+  const DEFAULT_FONT = MAX_FONT;
+  const ZOOM_KEY = 'supercollision-editor-font-px-v1';
+  const frame = document.querySelector('.editor-frame');
+  const zoomIndicator = document.getElementById('code-zoom-indicator');
+  const padX = 8;
+  const padY = 12;
+  const clamp = x => Math.max(MIN_FONT, Math.min(MAX_FONT, x));
+  let fontPx = DEFAULT_FONT;
+  let pinch = null;
+
+  function updateGutterWidth(count = previousLineCount) {
+    const digits = String(Math.max(count, 1)).length;
+    const labelPx = Math.max(6, Math.min(10, fontPx * 10 / MAX_FONT));
+    const width = Math.max(20, Math.min(56, Math.ceil(digits * labelPx * .66 + 13)));
+    gutter.style.flexBasis = width + 'px';
+  }
+  function saveFont() {
+    try { localStorage.setItem(ZOOM_KEY, String(fontPx)); } catch {}
+  }
+  function applyFont(nextPx, focus = null) {
+    const old = fontPx;
+    const next = Math.round(clamp(nextPx) * 10) / 10;
+    if (!Number.isFinite(next)) return;
+    const box = editor.getBoundingClientRect();
+    const pointX = focus ? focus.startX - box.left : box.width / 2;
+    const pointY = focus ? focus.startY - box.top : box.height / 2;
+    const oldScrollX = focus ? focus.scrollLeft : editor.scrollLeft;
+    const oldScrollY = focus ? focus.scrollTop : editor.scrollTop;
+    const currentX = focus ? focus.currentX - box.left : pointX;
+    const currentY = focus ? focus.currentY - box.top : pointY;
+    const ratio = next / (focus ? focus.startFont : old);
+    fontPx = next;
+    document.documentElement.style.setProperty('--editor-font-size', next + 'px');
+    document.documentElement.style.setProperty('--line-height', (next * 1.5) + 'px');
+    document.documentElement.style.setProperty('--gutter-font-size', Math.max(6, Math.min(10, next * 10 / MAX_FONT)) + 'px');
+    updateGutterWidth();
+    // Retain the source position under the pinch centre as type shrinks.
+    editor.scrollTop = Math.max(0, padY + (oldScrollY + pointY - padY) * ratio - currentY);
+    editor.scrollLeft = Math.max(0, padX + (oldScrollX + pointX - padX) * ratio - currentX);
+    followEditor();
+    zoomIndicator.textContent = 'CODE ' + Math.round(next / MAX_FONT * 100) + '%';
+  }
+  function distance(a, b) {
+    return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  }
+  function midpoint(a, b) {
+    return {x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2};
+  }
+  function beginPinch(a, b) {
+    const center = midpoint(a, b);
+    pinch = {kind:'touch', startFont:fontPx, dist:Math.max(1,distance(a,b)),
+      startX:center.x,startY:center.y,scrollTop:editor.scrollTop,scrollLeft:editor.scrollLeft};
+    zoomIndicator.hidden = false;
+  }
+  function finishPinch() {
+    if (!pinch) return;
+    pinch = null;
+    zoomIndicator.hidden = true;
+    saveFont();
+  }
+  frame.addEventListener('touchstart', e => {
+    if (e.touches.length === 2 && !pinch) beginPinch(e.touches[0], e.touches[1]);
+  }, {passive:true});
+  frame.addEventListener('touchmove', e => {
+    if (e.touches.length !== 2) return;
+    if (!pinch) beginPinch(e.touches[0],e.touches[1]);
+    if (pinch.kind !== 'touch') return;
+    e.preventDefault();
+    const mid = midpoint(e.touches[0],e.touches[1]);
+    applyFont(pinch.startFont * distance(e.touches[0],e.touches[1]) / pinch.dist,
+      {...pinch,currentX:mid.x,currentY:mid.y});
+  }, {passive:false});
+  frame.addEventListener('touchend', e => {
+    if (pinch && e.touches.length < 2) finishPinch();
+  }, {passive:true});
+  frame.addEventListener('touchcancel', finishPinch, {passive:true});
+
+  // WebKit emits gesture events on some iOS versions instead of touchmove.
+  frame.addEventListener('gesturestart', e => {
+    e.preventDefault();
+    if (!pinch) {
+      pinch = {kind:'gesture',startFont:fontPx,startX:e.clientX,startY:e.clientY,
+        scrollTop:editor.scrollTop,scrollLeft:editor.scrollLeft};
+      zoomIndicator.hidden = false;
+    }
+  }, {passive:false});
+  frame.addEventListener('gesturechange', e => {
+    e.preventDefault();
+    if (!pinch || pinch.kind !== 'gesture') return;
+    applyFont(pinch.startFont * e.scale,
+      {...pinch,currentX:e.clientX,currentY:e.clientY});
+  }, {passive:false});
+  frame.addEventListener('gestureend', e => {
+    e.preventDefault();
+    if (pinch && pinch.kind === 'gesture') finishPinch();
+  }, {passive:false});
+
+  // Non-touch alternatives live in the existing FILE menu.
+  document.getElementById('code-size-smaller').addEventListener('click', () => {
+    applyFont(fontPx - 1); saveFont();
+  });
+  document.getElementById('code-size-larger').addEventListener('click', () => {
+    applyFont(fontPx + 1); saveFont();
+  });
+  document.getElementById('code-size-reset').addEventListener('click', () => {
+    applyFont(DEFAULT_FONT); saveFont();
+  });
+  editor.addEventListener('keydown', e => {
+    if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+    if (e.key === '-' || e.key === '_') {
+      e.preventDefault(); applyFont(fontPx - 1); saveFont();
+    } else if (e.key === '+' || e.key === '=') {
+      e.preventDefault(); applyFont(fontPx + 1); saveFont();
+    } else if (e.key === '0') {
+      e.preventDefault(); applyFont(DEFAULT_FONT); saveFont();
+    }
+  });
+  try {
+    const saved = Number(localStorage.getItem(ZOOM_KEY));
+    if (Number.isFinite(saved) && saved >= MIN_FONT && saved <= MAX_FONT) fontPx = saved;
+  } catch {}
+  const restoredFont = fontPx;
+  fontPx = DEFAULT_FONT;
+  applyFont(restoredFont);
+  window.getSuperCollisionCodeFontSize = () => fontPx;
+
 
   function compactChrome() {
     body.classList.toggle('compact', editor.scrollTop > 20 || mode > 0);
