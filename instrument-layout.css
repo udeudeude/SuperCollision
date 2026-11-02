@@ -1,0 +1,180 @@
+/* SuperCollision 1.3 / shared functional geometry
+   Every study shares the same nine-level composition:
+   identity -> composition/file -> editor -> transport -> console -> diagnostics. */
+:root{--chrome:48px;--files:43px;--console:40px;--line-height:21px}
+html{height:100%;overflow:hidden}
+body,body[data-theme]{height:100dvh;min-height:0;overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box;width:100%;max-width:1100px;margin:0 auto;padding:max(env(safe-area-inset-top),3px) 8px max(env(safe-area-inset-bottom),3px);font-family:system-ui,Arial,sans-serif}
+body>header,body[data-theme] header{position:relative;z-index:9;display:flex;flex:none;align-items:center;gap:8px;height:var(--chrome);min-height:0;margin:0;padding:3px 4px;box-sizing:border-box;transform:none;overflow:visible;border-radius:0}
+body>header:before,body>header:after{content:none!important}
+body header h1,body[data-theme] header h1{flex:1;min-width:0;margin:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(14px,4.1vw,20px);line-height:1.12;text-transform:uppercase}
+body>header small{flex:none;white-space:nowrap;letter-spacing:.04em;font-size:9px}
+body>header .identity-art{width:35px;height:35px;flex:none;display:block}
+.identity-art .art{display:none}
+body[data-theme=bauhaus] .art-bauhaus,body[data-theme=blackmountain] .art-blackmountain,body[data-theme=moog] .art-moog,body[data-theme=makenoise] .art-makenoise,body[data-theme=score] .art-score,body[data-theme=scope] .art-scope,body[data-theme=patch] .art-patch,body[data-theme=terminal] .art-terminal{display:block}
+body>header .theme-strip,body[data-theme] .theme-strip{display:flex;flex:none;align-items:center;gap:3px;writing-mode:horizontal-tb;transform:none;padding:0;margin:0;border:0;background:none;justify-content:flex-end;width:auto;max-width:31vw}
+header .theme-strip label{display:none}
+header .theme-strip select,body[data-theme] header .theme-strip select{display:block;writing-mode:horizontal-tb;min-width:0;min-height:31px;max-height:none;height:31px;width:100%;max-width:31vw;padding:3px 2px;border:0;border-radius:0;background:transparent;color:inherit;text-align:right;font:600 10px/1.15 ui-monospace,monospace;text-overflow:ellipsis}
+body>main,body[data-theme] main{display:flex;flex:1;min-height:0;height:auto;gap:0;flex-direction:column;overflow:hidden}
+body main>.panel:first-child,body[data-theme] main>.panel:first-child{display:grid!important;flex:1 1 0;min-height:105px;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:var(--files) minmax(0,1fr) 45px!important;grid-template-areas:"files" "editor" "transport"!important;gap:0!important;padding:0!important;margin:0!important;background:transparent;border:0;box-sizing:border-box}
+body main .projectbar,body[data-theme] main .projectbar{grid-area:files!important;display:flex;flex-direction:row;align-items:center;gap:4px;min-height:0;height:var(--files);margin:0!important;padding:3px 0!important;background:transparent;box-sizing:border-box;writing-mode:horizontal-tb}
+body .projectbar .composition-picker{flex:1;min-width:0;width:0;height:100%}
+body .projectbar .composition-picker>button,body[data-theme] .composition-picker>button{height:100%;min-height:0;width:100%;text-align:left;font-size:13px;letter-spacing:0;padding:5px 9px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+body .projectbar .menu{height:100%;flex:0 0 auto}
+body .projectbar .menu>summary,body[data-theme] .menu>summary{height:100%;min-height:0;padding:0 8px;display:flex;align-items:center;font-size:11px;writing-mode:horizontal-tb}
+body .menu-items{right:0;z-index:30;max-height:70dvh;overflow:auto}
+body .project-list{z-index:29}
+body main .editor-frame,body[data-theme] main .editor-frame{grid-area:editor!important;display:flex;min-height:0;height:100%!important;min-width:0;overflow:hidden;margin:0!important;position:relative;box-sizing:border-box;border-radius:0}
+body main .code-stack,body[data-theme] main .code-stack{position:relative;display:block;flex:1;min-width:0;min-height:0!important;height:100%!important;overflow:hidden;box-sizing:border-box}
+body .code-stack #code,body .code-stack #highlight-layer{position:absolute;inset:0;display:block;width:100%;height:100%;min-height:0;box-sizing:border-box;padding:12px 8px;margin:0;line-height:var(--line-height)!important;letter-spacing:0!important;font:14px/var(--line-height) ui-monospace,SFMono-Regular,Menlo,monospace!important;white-space:pre!important;overflow-wrap:normal!important;tab-size:2!important;border:0;outline-offset:-2px}
+body .code-stack #code{z-index:2;overflow:auto;resize:none;color:transparent!important;-webkit-text-fill-color:transparent!important;caret-color:var(--cursor,#ebcc88);background:transparent!important}
+body .code-stack #highlight-layer{z-index:1;overflow:hidden;pointer-events:none;background:transparent!important}
+body #line-gutter,body[data-theme] #line-gutter{position:relative;display:block;flex:0 0 33px;min-width:0;width:33px;height:100%;box-sizing:border-box;overflow:hidden!important;padding:0!important;white-space:pre;line-height:var(--line-height)!important;font:10px/var(--line-height) ui-monospace,monospace!important}
+body #line-inner{position:absolute;top:0;left:0;right:0;padding-top:12px;box-sizing:border-box;transform:translate3d(0,0,0);pointer-events:none}
+body #line-inner .line{display:block;box-sizing:border-box;height:var(--line-height)!important;line-height:var(--line-height)!important;text-align:right;padding-right:5px;white-space:pre}
+body .toolbar,body[data-theme] .toolbar{grid-area:transport!important;display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;grid-template-rows:1fr!important;align-items:stretch;justify-content:stretch;flex-direction:row!important;flex-wrap:nowrap!important;min-width:0;min-height:0;height:45px!important;gap:3px!important;padding:4px 0!important;margin:0!important;border-radius:0;box-sizing:border-box;position:static!important}
+body .toolbar button,body[data-theme] .toolbar button{display:block;min-width:0!important;min-height:0!important;width:100%!important;height:100%!important;max-height:38px;flex:none!important;margin:0!important;box-sizing:border-box;padding:1px 0!important;overflow:hidden;white-space:nowrap!important;overflow-wrap:normal!important;border-radius:2px;font:800 clamp(8px,2.45vw,11px)/1 Arial,sans-serif!important;letter-spacing:0!important;box-shadow:none!important}
+body .toolbar #engine{font-size:0!important}
+body .toolbar #engine:after{content:"PWR";font:800 clamp(8px,2.45vw,11px)/1 Arial,sans-serif}
+body .toolbar #save-status{display:none!important}
+body main .console-shell,body[data-theme] .console-shell{display:flex;flex-direction:column;flex:0 0 var(--console);min-height:0;max-height:none;overflow:hidden;padding:0!important;margin:0!important;box-sizing:border-box;visibility:visible;border-radius:0}
+body .console-bar{display:flex;flex:none;align-items:center;gap:7px;min-height:var(--console);height:var(--console);box-sizing:border-box}
+body .console-bar button{height:31px;min-height:0;flex:0 0 auto;border-radius:0;padding:3px 8px;font:800 11px/1 ui-monospace,monospace;letter-spacing:.06em}
+body .console-bar #engine-status{flex:1;min-width:0;margin:0!important;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:10px/1.1 ui-monospace,monospace}
+body #console-panel{display:none;flex:1;min-height:0;overflow:auto}
+body #console-panel[open]{display:block}
+body #console-panel>summary{display:none}
+body #console-panel .actions{margin:3px 0}
+body #console{max-height:none;height:auto;min-height:100px;margin:0 0 7px;overflow:auto;white-space:pre-wrap;font:11px/1.42 ui-monospace,monospace}
+body main>.utility,body[data-theme] main>.utility{display:block;flex:0 0 0;min-height:0;overflow:hidden;visibility:hidden;margin:0;padding:0!important;box-sizing:border-box}
+body.inspect-1 main .console-shell{flex:0 0 38%;overflow:hidden}
+body.inspect-1 main>.utility{flex:0 0 31px;visibility:visible;overflow:hidden}
+body.inspect-2 main .console-shell{flex:0 0 32%}
+body.inspect-2 main>.utility{flex:0 0 23%;visibility:visible;overflow:auto}
+body.inspect-1 main .code-stack,body.inspect-2 main .code-stack{height:100%!important}
+body.inspect-1 #console-panel,body.inspect-2 #console-panel{display:block}
+body.compact{--chrome:32px;--files:35px}
+body.compact>header .identity-art{width:23px;height:23px}
+body.compact>header h1{font-size:13px}
+body.compact>header small{font-size:8px}
+body.compact .projectbar .composition-picker>button{font-size:11px}
+body.compact .theme-strip select{height:25px;min-height:25px;font-size:9px}
+body .workspace-grip{display:block;font-size:10px;opacity:.65}
+body .vector-rule{flex:none;height:2px;width:100%;background:currentColor;opacity:.3}
+body button:focus-visible,body select:focus-visible{outline:2px solid var(--focus,#ffbc6e);outline-offset:-2px}
+
+/* Eight hardware-inspired graphic systems: shared ergonomics, distinct apparatus. */
+body[data-theme=bauhaus]{--chrome-bg:#eee7d6;--cursor:#c54137;background:#eee7d6;color:#222a2b}
+body[data-theme=bauhaus]>header{background:#eee7d6!important;border-bottom:3px solid #214e82}
+body[data-theme=bauhaus] .editor-frame{border:2px solid #214e82;background:#f3efe3}
+body[data-theme=bauhaus] .code-stack,body[data-theme=bauhaus] #line-gutter{background:#f3efe3}
+body[data-theme=bauhaus] #line-gutter{border-right:3px solid #c54137;color:#546d7d}
+body[data-theme=bauhaus] .code-stack #highlight-layer{color:#1a2b30}
+body[data-theme=bauhaus] .code-stack .class{color:#184e88}
+body[data-theme=bauhaus] .code-stack .comment{color:#73736c}
+body[data-theme=bauhaus] .toolbar{background:#eee7d6;border:0}
+body[data-theme=bauhaus] .toolbar button{border:1px solid #1d272e;background:#e2d8c1;color:#1d272e}
+body[data-theme=bauhaus] .toolbar #evaluate{background:#c54137;color:white}
+body[data-theme=bauhaus] .toolbar #panic{background:#234b78;color:white}
+body[data-theme=bauhaus] .console-shell{border-top:4px solid #c54137}
+body[data-theme=bauhaus] .console-bar button{background:#e8d9ba;color:#1b2327;border:1px solid #1b2327}
+
+/* Woven score and negative space inspired by Black Mountain College */
+body[data-theme=blackmountain]{--cursor:#b15b42;background:#e9e1cf;color:#3b3730}
+body[data-theme=blackmountain]>header{background:#e9e1cf!important;border-bottom:1px solid #847960}
+body[data-theme=blackmountain] header h1{font:400 17px Georgia,serif!important;text-transform:none}
+body[data-theme=blackmountain] .editor-frame{border:1px solid #968d79;box-shadow:inset 4px 0 0 #c5a078}
+body[data-theme=blackmountain] #line-gutter{background:#eee8d9;color:#8c806a;border-right:1px solid #b1aa98}
+body[data-theme=blackmountain] .code-stack{background:#f6f1e4}
+body[data-theme=blackmountain] .code-stack #highlight-layer{color:#32312c}
+body[data-theme=blackmountain] .code-stack .class{color:#a85b43}
+body[data-theme=blackmountain] .code-stack .comment{color:#7c806e}
+body[data-theme=blackmountain] .toolbar{background:#e9e1cf;border-top:1px solid #958978}
+body[data-theme=blackmountain] .toolbar button{font-family:Georgia,serif!important;background:transparent;color:#443e33;border:1px solid #8a816f}
+body[data-theme=blackmountain] .toolbar #evaluate{background:#aa654d;color:#fff}
+body[data-theme=blackmountain] .console-shell{border-top:1px solid #8c7b61}
+body[data-theme=blackmountain] .console-bar button{background:transparent;border:0;color:#3e362d}
+
+/* Moog: warm-black fascia, machined scale, knobs and rack screws */
+body[data-theme=moog]{--cursor:#dfa352;background:#201c18;color:#e8d9b9}
+body[data-theme=moog]>header{background:#2a241f!important;border:2px solid #8e7654}
+body[data-theme=moog] .projectbar{background:#29241f!important;border-left:2px solid #98795a;border-right:2px solid #98795a}
+body[data-theme=moog] .editor-frame{border:2px solid #9c835f}
+body[data-theme=moog] .code-stack{background:#191d1a}
+body[data-theme=moog] #line-gutter{background:#2c2c28;color:#a39478;border-right:1px solid #887154}
+body[data-theme=moog] .toolbar{background:#302820;border:2px solid #9a815f!important}
+body[data-theme=moog] .toolbar button{background:#353530;color:#efdfbf;border:1px solid #776e5d;box-shadow:inset 0 2px 0 #ffffff18!important}
+body[data-theme=moog] .toolbar #evaluate{background:#cd8847;color:#15110d}
+body[data-theme=moog] .console-shell{border:2px solid #8f7959}
+body[data-theme=moog] .console-bar button{background:#302a23;border:1px solid #8e795a;color:#eddab7}
+
+/* Make Noise: black field, notched panel and cable glyphs */
+body[data-theme=makenoise]{--cursor:#fff;background:#080808;color:#f5f4ec}
+body[data-theme=makenoise]>header{background:#080808!important;border-bottom:3px dashed #eee}
+body[data-theme=makenoise] header h1{letter-spacing:-.055em;text-decoration:none}
+body[data-theme=makenoise] .editor-frame{border:2px solid white}
+body[data-theme=makenoise] #line-gutter{background:#141414;color:#bbb;border-right:2px dashed #eee}
+body[data-theme=makenoise] .toolbar{background:#0b0b0b;border:1px solid #fff}
+body[data-theme=makenoise] .toolbar button{background:#111;color:white;border:1px solid #eee;border-radius:0}
+body[data-theme=makenoise] .toolbar #evaluate{background:white;color:black}
+body[data-theme=makenoise] .console-shell{border-top:4px double white}
+body[data-theme=makenoise] .console-bar button{background:#090909;color:white;border:1px solid white}
+
+/* Living score: notation stave engraved into the page */
+body[data-theme=score]{--cursor:#a8392b;background:#f6f0e0;color:#383b31}
+body[data-theme=score]>header{background:#f6f0e0!important;border-bottom:1px solid #787366}
+body[data-theme=score] header h1{font:italic 400 19px Georgia,serif!important;text-transform:none}
+body[data-theme=score] .editor-frame{border:0;border-left:3px solid #a8392b}
+body[data-theme=score] .code-stack{background:repeating-linear-gradient(to bottom,#f5f0e5 0,#f5f0e5 20px,#d4cabb 21px)}
+body[data-theme=score] #line-gutter{background:#f5f0e5;color:#8a8176;border-right:1px solid #bcafa0}
+body[data-theme=score] .code-stack #highlight-layer{color:#35372f}
+body[data-theme=score] .code-stack .class{color:#a8392b}
+body[data-theme=score] .toolbar{background:#f6f0e0;border-top:1px solid #8e887a}
+body[data-theme=score] .toolbar button{background:#eee7d8;color:#48453d;border:1px solid #b5ab98}
+body[data-theme=score] .toolbar #evaluate{background:#9e3d32;color:white}
+body[data-theme=score] .console-shell{border-top:1px solid #8f8474}
+body[data-theme=score] .console-bar button{background:transparent;color:#8d362d;border:0}
+
+/* Oscilloscope: graticule, readouts and phosphor */
+body[data-theme=scope]{--cursor:#caff9e;background:#06150e;color:#a7f7c0}
+body[data-theme=scope]>header{background:#061b10!important;border:1px solid #368456}
+body[data-theme=scope] .editor-frame{border:2px solid #448b5a;border-radius:8px;background:#09190e}
+body[data-theme=scope] .code-stack{background:repeating-linear-gradient(0deg,#07180d 0,#07180d 20px,#1b422c 21px),repeating-linear-gradient(90deg,transparent 0,transparent 20px,#1a3b29 21px)}
+body[data-theme=scope] #line-gutter{background:#09170d;color:#579b6c;border-right:1px solid #3f855a}
+body[data-theme=scope] .code-stack #highlight-layer{color:#b6ffcb;text-shadow:0 0 2px #59f69577}
+body[data-theme=scope] .code-stack .class{color:#72ff9e}
+body[data-theme=scope] .code-stack .num{color:#edff89}
+body[data-theme=scope] .toolbar{background:#092417;border:1px solid #3f8a5b}
+body[data-theme=scope] .toolbar button{background:#113d25;color:#c1f9d1;border:1px solid #469366}
+body[data-theme=scope] .toolbar #evaluate{background:#8debaf;color:#071810}
+body[data-theme=scope] .console-shell{border-top:2px solid #448b5a}
+body[data-theme=scope] .console-bar button{background:#0b2517;color:#b5f1c9;border:1px solid #4a9064}
+
+/* Patch Diagram: diagram topology and node identity */
+body[data-theme=patch]{--cursor:#d55e36;background:#e3ddc9;color:#28251e}
+body[data-theme=patch]>header{background:#e3ddc9!important;border-bottom:3px double #393129}
+body[data-theme=patch] .editor-frame{border:2px solid #302a23;box-shadow:inset 5px 0 0 #dfa04c}
+body[data-theme=patch] #line-gutter{background:#e8e0cb;color:#7e6b53;border-right:2px solid #c98f45}
+body[data-theme=patch] .code-stack{background:#292a29}
+body[data-theme=patch] .toolbar{background:#dcd3bb;border:2px solid #302a23}
+body[data-theme=patch] .toolbar button{border:2px solid #302a23;border-radius:999px;background:#f4e7cf;color:#302a23}
+body[data-theme=patch] .toolbar #evaluate{background:#d55e36;color:white}
+body[data-theme=patch] .toolbar #panic{background:#465462;color:white}
+body[data-theme=patch] .console-shell{border-top:3px solid #302a23}
+body[data-theme=patch] .console-bar button{border-radius:50px;background:#e7bd75;color:#28241b;border:1px solid #302a23}
+
+/* Brutalist terminal: editorial black bar and zero decoration */
+body[data-theme=terminal]{--cursor:#111;background:#f3f3ef;color:#151515}
+body[data-theme=terminal]>header{background:#f3f3ef!important;border-bottom:5px solid #111}
+body[data-theme=terminal] header h1{font:900 16px ui-monospace,monospace!important}
+body[data-theme=terminal] .editor-frame{border-top:1px solid #111;border-bottom:4px solid #111}
+body[data-theme=terminal] #line-gutter{background:#dcdcd4;color:#595959;border-right:1px solid #111}
+body[data-theme=terminal] .code-stack{background:#f3f3ef}
+body[data-theme=terminal] .code-stack #highlight-layer{color:#171717}
+body[data-theme=terminal] .code-stack .comment{color:#777}
+body[data-theme=terminal] .code-stack .class{color:#16519c}
+body[data-theme=terminal] .toolbar{background:#111;border:0;gap:0!important}
+body[data-theme=terminal] .toolbar button{background:#111;color:white;border:0;border-right:1px solid #aaa;border-radius:0}
+body[data-theme=terminal] .toolbar #evaluate{background:white;color:black}
+body[data-theme=terminal] .console-shell{border-top:2px solid #111}
+body[data-theme=terminal] .console-bar button{background:#111;color:white;border:0}
+@media(max-width:390px){body{padding-left:5px;padding-right:5px}body header .theme-strip select{max-width:84px}body>header small{display:none}body .toolbar button{font-size:9px!important}}
