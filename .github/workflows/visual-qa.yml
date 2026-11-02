@@ -1,0 +1,35 @@
+name: Visual Layout QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'instrument-layout.css'
+      - 'instrument-layout.js'
+      - 'qa/**'
+      - '.github/workflows/visual-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  responsive-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium testing runtime
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Test eight visual designs at three phone sizes
+        run: node qa/layout-check.mjs
+      - name: Upload comparison screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supercollision-visual-studies
+          path: qa/screenshots/
+          if-no-files-found: ignore
