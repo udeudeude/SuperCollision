@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'instrument-layout.css'
+      - 'instrument-layout.js'
       - '_headers'
       - '.github/workflows/publish-ui.yml'
   workflow_dispatch:
@@ -33,11 +35,13 @@ jobs:
           test -f site/runtime/sclang/sclang.js
           test -f site/runtime/scsynth/scsynth.js
           cp source/index.html site/index.html
+          cp source/instrument-layout.css site/instrument-layout.css
+          cp source/instrument-layout.js site/instrument-layout.js
           cp source/_headers site/_headers
           cd site
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html _headers
+          git add index.html _headers instrument-layout.css instrument-layout.js
           if git diff --cached --quiet; then
             echo "Already current"
           else
