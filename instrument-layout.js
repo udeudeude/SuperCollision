@@ -93,6 +93,7 @@
     }, {passive:true});
   }
   installSwipe(shell.querySelector('.console-bar'), false);
+  installSwipe(document.querySelector('.toolbar'), false);
   installSwipe(gutter, false);
   installSwipe(editor, true);
   shell.querySelector('.console-bar').addEventListener('wheel', (e) => {
