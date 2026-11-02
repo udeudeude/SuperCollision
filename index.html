@@ -130,4 +130,38 @@ document.querySelector('#engine').onclick=async()=>{
 run.onclick=()=>{if(!lang)return;try{const source=document.querySelector('#code').value;flush();lang.runCode(source);message('Code sent to SuperCollider interpreter. Check console for results.')}catch(e){message('Evaluation failed: '+e.message)}};
 panic.onclick=()=>{if(!lang)return;try{lang.runCode('CmdPeriod.run;');message('STOP SENT · ENGINE READY')}catch(e){message('Stop failed: '+e.message)}};
 
+
+let capture=null;
+const recButton=document.querySelector('#record'),saveButton=document.querySelector('#record-stop');
+function wavBlob(channels,sampleRate){const n=channels[0].length,c=channels.length,bytes=44+n*c*2,b=new ArrayBuffer(bytes),v=new DataView(b);let p=0;const str=t=>{for(const ch of t)v.setUint8(p++,ch.charCodeAt(0))};const u16=x=>{v.setUint16(p,x,true);p+=2},u32=x=>{v.setUint32(p,x,true);p+=4};str('RIFF');u32(bytes-8);str('WAVEfmt ');u32(16);u16(1);u16(c);u32(sampleRate);u32(sampleRate*c*2);u16(c*2);u16(16);str('data');u32(n*c*2);for(let i=0;i<n;i++)for(let k=0;k<c;k++){const x=Math.max(-1,Math.min(1,channels[k][i]));v.setInt16(p,x<0?x*32768:x*32767,true);p+=2}return new Blob([b],{type:'audio/wav'})}
+recButton.onclick=async()=>{
+ if(!synth||capture)return;
+ try{
+  const ac=synth.getAudioContext(),worklet=synth.getWorkletNode();
+  if(!ac||!worklet)throw Error('Start SuperCollider audio before recording');
+  await ac.resume();
+  const dest=ac.createMediaStreamDestination();worklet.connect(dest);
+  const input=ac.createMediaStreamSource(dest.stream),processor=ac.createScriptProcessor(2048,2,2),mute=ac.createGain();mute.gain.value=0;
+  input.connect(processor);processor.connect(mute);mute.connect(ac.destination);
+  const chunks=[[],[]],start=Date.now();let frames=0;
+  processor.onaudioprocess=e=>{
+   const length=e.inputBuffer.length;
+   if(frames+length>ac.sampleRate*300){saveButton.click();return}
+   for(let ch=0;ch<2;ch++){const data=e.inputBuffer.getChannelData(Math.min(ch,e.inputBuffer.numberOfChannels-1));chunks[ch].push(new Float32Array(data))}
+   frames+=length;
+  };
+  capture={ac,worklet,dest,input,processor,mute,chunks,start,get frames(){return frames}};
+  recButton.disabled=true;saveButton.disabled=false;message('RECORDING · WAV / 16-bit · 5 min maximum');
+ }catch(e){message('Recording failed: '+e.message)}
+};
+saveButton.onclick=()=>{
+ if(!capture)return;
+ const r=capture;capture=null;r.processor.onaudioprocess=null;
+ try{r.worklet.disconnect(r.dest);r.input.disconnect();r.processor.disconnect();r.mute.disconnect()}catch{}
+ recButton.disabled=false;saveButton.disabled=true;
+ if(!r.frames){message('No audio captured');return}
+ const channels=r.chunks.map(list=>{const out=new Float32Array(r.frames);let offset=0;for(const chunk of list){out.set(chunk,offset);offset+=chunk.length}return out});
+ const url=URL.createObjectURL(wavBlob(channels,r.ac.sampleRate)),a=document.createElement('a');a.href=url;a.download='SuperCollision-'+Date.now()+'.wav';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
+ message('WAV exported · '+Math.round(r.frames/r.ac.sampleRate)+' seconds');
+};
 </script></html>
