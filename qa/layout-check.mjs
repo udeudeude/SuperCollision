@@ -72,6 +72,73 @@ try {
         assert(scroll.codeLineHeight===scroll.gutterLineHeight,'gutter line height differs from editor');
         assert(scroll.compact,'header did not compact when code scrolled');
         assert(scroll.wrap==='off','code wraps and loses line number alignment');
+
+        // Synthetic two-touch gestures exercise the same editor listeners as a mobile pinch.
+        const zoomAfterPinch = await page.evaluate(() => {
+          const el=document.getElementById('code');
+          const b=el.getBoundingClientRect(),cx=b.left+b.width/2,cy=b.top+b.height/2;
+          const touch=(id,x,y)=>new Touch({identifier:id,target:el,clientX:x,clientY:y,
+            screenX:x,screenY:y,pageX:x,pageY:y});
+          function emit(type,spread){
+            const pts=[touch(1,cx-spread,cy),touch(2,cx+spread,cy)];
+            const touches=type==='touchend'?[]:pts;
+            el.dispatchEvent(new TouchEvent(type,{bubbles:true,cancelable:true,
+              touches,targetTouches:touches,changedTouches:pts}));
+          }
+          emit('touchstart',90);
+          emit('touchmove',55);
+          emit('touchend',55);
+          const l=document.querySelector('#line-inner .line');
+          return {font:parseFloat(getComputedStyle(el).fontSize),
+            codeLine:getComputedStyle(el).lineHeight,
+            gutterLine:getComputedStyle(l).lineHeight,
+            highlightFont:getComputedStyle(document.getElementById('highlight-layer')).fontSize,
+            codeFont:getComputedStyle(el).fontSize,
+            indicatorHidden:document.getElementById('code-zoom-indicator').hidden,
+            count:document.querySelectorAll('#line-inner .line').length,
+            saved:localStorage.getItem('supercollision-editor-font-px-v1')};
+        });
+        assert(zoomAfterPinch.font>=8&&zoomAfterPinch.font<=10,
+          'Pinch did not reduce font: '+zoomAfterPinch.font);
+        assert(zoomAfterPinch.codeLine===zoomAfterPinch.gutterLine,
+          'Zoom broke line number alignment');
+        assert(zoomAfterPinch.codeFont===zoomAfterPinch.highlightFont,
+          'Syntax overlay font differs from editable text');
+        assert(zoomAfterPinch.indicatorHidden,'Zoom indicator stuck visible');
+        assert(zoomAfterPinch.count===200,'Zoom broke line number count');
+        assert(Number(zoomAfterPinch.saved)===zoomAfterPinch.font,
+          'Zoom was not saved to localStorage');
+        await page.reload();
+        const persisted=await page.evaluate(()=>parseFloat(getComputedStyle(document.getElementById('code')).fontSize));
+        assert(Math.abs(persisted-zoomAfterPinch.font)<.01,'Zoom not restored on reload');
+        const fontBounds=await page.evaluate(()=>{
+          const el=document.getElementById('code');
+          const b=el.getBoundingClientRect(),cx=b.left+b.width/2,cy=b.top+b.height/2;
+          const touch=(id,x,y)=>new Touch({identifier:id,target:el,clientX:x,clientY:y,
+            screenX:x,screenY:y,pageX:x,pageY:y});
+          const gesture=(a,b)=>{
+            function emit(type,spread){
+              const points=[touch(1,cx-spread,cy),touch(2,cx+spread,cy)];
+              el.dispatchEvent(new TouchEvent(type,{bubbles:true,cancelable:true,
+                touches:type==='touchend'?[]:points,targetTouches:type==='touchend'?[]:points,changedTouches:points}));
+            }
+            emit('touchstart',a);emit('touchmove',b);emit('touchend',b);
+          };
+          gesture(30,150);
+          const upper=parseFloat(getComputedStyle(el).fontSize);
+          gesture(145,8);
+          const lower=parseFloat(getComputedStyle(el).fontSize);
+          return {upper,lower};
+        });
+        assert(fontBounds.upper===14,'Pinch exceeded normal maximum text size: '+fontBounds.upper);
+        assert(fontBounds.lower===6,'Pinch failed to reach minimum text size: '+fontBounds.lower);
+        await page.screenshot({path:path.join(root,'qa','screenshots','moog-pinch-small.png')});
+        await page.locator('.menu>summary').click();
+        await page.locator('#code-size-reset').click();
+        const resetFont=await page.evaluate(()=>parseFloat(getComputedStyle(document.getElementById('code')).fontSize));
+        assert(resetFont===14,'FILE menu reset did not restore 100% text size');
+        await page.locator('.menu>summary').click();
+
         await page.locator('#inspect-toggle').click();
         await page.waitForTimeout(100);
         const shrink=await page.evaluate(()=>({height:document.querySelector('.editor-frame').getBoundingClientRect().height,open:document.getElementById('console-panel').open}));
@@ -89,4 +156,4 @@ try {
   await new Promise(resolve=>server.close(resolve));
 }
 if(failures)process.exitCode=1;
-else console.log('Passed: 8 themes x 3 phone widths, line-number sync and console expansion.');
+else console.log('Passed: 8 themes x 3 phone widths, line-number sync, pinch-zoom bounds, persistence, reset and console expansion.');
