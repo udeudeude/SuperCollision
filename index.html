@@ -11,7 +11,7 @@
 <div class="toolbar"><button id="evaluate" disabled>▶ Run</button><button id="panic" class="secondary" disabled>■ Stop</button><button id="engine" class="secondary">Start engine</button></div>
 <label for="code">SuperCollider code</label><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="SuperCollider code editor"></textarea>
 <div class="actions"><button id="import-file" class="secondary">Import .scd</button><button id="export-file" class="secondary">Export .scd</button><button id="copy" class="secondary">Copy</button><button id="clear" class="secondary">Example</button></div>
-<input id="file-input" type="file" accept=".scd,.sc,.txt,text/plain" hidden>
+<input id="file-input" type="file" hidden>
 <details><summary>Syntax-highlighted reading view</summary><pre id="syntax-preview" aria-label="Syntax-highlighted code preview"></pre><p class="muted">Read-only preview. Edit in the code area above.</p></details>
 </div>
 <div class="panel"><p id="engine-status" role="status">Engine not started. Tap Start engine, then Run.</p>
@@ -32,7 +32,7 @@ function renderProjects(){projectsEl.replaceChildren();for(const name of Object.
 function commit(){projects[active]=code.value;persist()}
 code.addEventListener('input',()=>{saveStatus.textContent='Saving…';updatePreview();clearTimeout(saveTimer);saveTimer=setTimeout(commit,200)});
 function flush(){clearTimeout(saveTimer);commit()}
-projectsEl.onchange=()=>{flush();active=projectsEl.value;renderProjects()};
+projectsEl.onchange=()=>{const next=projectsEl.value;flush();active=next;renderProjects()};
 function uniqueName(name){let n=name,i=2;while(Object.hasOwn(projects,n))n=name+' '+i++;return n}
 document.querySelector('#new-project').onclick=()=>{flush();const name=prompt('New composition name','Untitled');if(!name?.trim())return;active=uniqueName(name.trim().slice(0,80));projects[active]='';renderProjects()};
 document.querySelector('#rename-project').onclick=()=>{flush();const name=prompt('Rename composition',active)?.trim().slice(0,80);if(!name||name===active)return;if(Object.hasOwn(projects,name)){alert('That name is already in use.');return}projects[name]=projects[active];delete projects[active];active=name;renderProjects()};
@@ -46,7 +46,7 @@ document.querySelector('#play').onclick=async()=>{try{if(osc)await stop();const 
 document.querySelector('#stop').onclick=stop;
 document.querySelector('#copy').onclick=async()=>{try{await navigator.clipboard.writeText(code.value);report('Code copied.')}catch(e){report('Copy unavailable: '+e.message)}};
 document.querySelector('#import-file').onclick=()=>document.querySelector('#file-input').click();
-document.querySelector('#file-input').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>2000000)throw Error('File exceeds 2 MB');flush();active=uniqueName(file.name.replace(/\.(scd|sc|txt)$/i,'').slice(0,80)||'Imported');projects[active]=await file.text();renderProjects();report('Imported '+file.name)}catch(err){report('Import failed: '+err.message)}e.target.value=''};
+document.querySelector('#file-input').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>2000000)throw Error('File exceeds 2 MB');if(!/\.(scd|sc|txt)$/i.test(file.name))throw Error('Choose a .scd, .sc, or .txt file');flush();active=uniqueName(file.name.replace(/\.(scd|sc|txt)$/i,'').slice(0,80)||'Imported');projects[active]=await file.text();renderProjects();report('Imported '+file.name)}catch(err){report('Import failed: '+err.message)}e.target.value=''};
 document.querySelector('#export-file').onclick=()=>{flush();const blob=new Blob([code.value],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=active.replace(/[^a-z0-9_-]/gi,'_')+'.scd';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000)};
 document.querySelector('#clear').onclick=()=>{if(code.value&&!confirm('Replace current composition with the example?'))return;code.value=example;code.dispatchEvent(new Event('input'))};
 document.querySelector('#info').textContent='Platform: '+navigator.platform+' | Secure context: '+window.isSecureContext;
