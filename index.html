@@ -39,16 +39,16 @@ button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px sol
 #syntax-preview{border-radius:0;background:#1b1e1c}
 @media(max-width:390px){.toolbar button{min-width:57px;padding:8px 7px}#save-status{max-width:45px}h1{font-size:.96rem}}
 @media(min-width:700px){#code{min-height:65vh;height:65vh}}
-</style>
-<header><h1>SuperCollision</h1><small>INSTRUMENT / 0.4</small></header>
+.editor-frame{display:flex;min-width:0;background:#1b1e1c}#line-gutter{flex:0 0 32px;overflow:hidden;white-space:pre;text-align:right;padding:12px 5px 12px 0;color:#858b7f;background:#252825;border-right:1px solid #444;font:10px/21.28px ui-monospace,monospace;user-select:none}#code{flex:1;min-width:0;line-height:21.28px;white-space:pre;overflow-wrap:normal;overflow-x:auto}.toolbar{flex-wrap:wrap}#record{color:#edb2a5;border-color:#ad7062}@media(max-width:390px){#line-gutter{flex-basis:27px}.toolbar button{min-width:51px}}</style>
+<header><h1>SuperCollision</h1><small>INSTRUMENT / 0.5</small></header>
 <main>
 <div class="panel">
-<div class="projectbar"><select id="projects" aria-label="Saved compositions"></select><details class="menu"><summary aria-label="Composition actions">FILE ▾</summary><div class="menu-items"><button id="new-project" class="secondary">New</button><button id="rename-project" class="secondary">Rename</button><button id="delete-project" class="secondary">Delete</button><button id="import-file" class="secondary">Import .scd</button><button id="export-file" class="secondary">Export .scd</button><button id="copy" class="secondary">Copy code</button><button id="clear" class="secondary">Load example</button></div></details></div>
+<div class="projectbar"><select id="projects" aria-label="Saved compositions"></select><details class="menu"><summary aria-label="Composition actions">FILE ▾</summary><div class="menu-items"><button id="new-project" class="secondary">New</button><button id="rename-project" class="secondary">Rename</button><button id="delete-project" class="secondary">Delete</button><button id="import-file" class="secondary">Import .scd</button><button id="export-file" class="secondary">Export .scd</button><button id="copy" class="secondary">Copy code</button><button id="clear" class="secondary">Load example</button><button id="backup-projects" class="secondary">Backup all</button><button id="restore-projects" class="secondary">Restore backup</button><button id="storage-info" class="secondary">Storage / cleanup</button></div></details></div>
 
-<div class="toolbar"><button id="evaluate" disabled>▶ RUN</button><button id="panic" class="secondary" disabled>■ STOP</button><button id="engine" class="secondary">POWER</button><span id="save-status" class="muted" role="status">Saved</span></div>
-<textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="SuperCollider code editor"></textarea>
+<div class="toolbar"><button id="evaluate" disabled>▶ RUN</button><button id="panic" class="secondary" disabled>■ STOP</button><button id="engine" class="secondary">POWER</button><button id="record" class="secondary" disabled>● REC</button><button id="record-stop" class="secondary" disabled>■ SAVE</button><span id="save-status" class="muted" role="status">Saved</span></div>
+<div class="editor-frame"><div id="line-gutter" aria-hidden="true">1</div><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="SuperCollider code editor"></textarea></div>
 
-<input id="file-input" type="file" hidden>
+<input id="file-input" type="file" hidden><input id="backup-input" type="file" hidden>
 <details class="utility"><summary>Syntax view</summary><pre id="syntax-preview" aria-label="Syntax-highlighted code preview"></pre><p class="muted">Read-only preview. Edit in the code area above.</p></details>
 </div>
 <div class="panel console-shell"><p id="engine-status" role="status">Engine off · Press POWER</p>
@@ -75,7 +75,13 @@ document.querySelector('#new-project').onclick=()=>{flush();const name=prompt('N
 document.querySelector('#rename-project').onclick=()=>{flush();const name=prompt('Rename composition',active)?.trim().slice(0,80);if(!name||name===active)return;if(Object.hasOwn(projects,name)){alert('That name is already in use.');return}projects[name]=projects[active];delete projects[active];active=name;renderProjects()};
 document.querySelector('#delete-project').onclick=()=>{if(!confirm('Delete composition "'+active+'"? This cannot be undone.'))return;delete projects[active];if(!Object.keys(projects).length)projects.Default=example;active=Object.keys(projects)[0];renderProjects()};
 const preview=document.querySelector('#syntax-preview');
-function updatePreview(){const text=code.value;preview.replaceChildren();const re=/(\/\/[^\n]*|"(?:\\.|[^"\\])*"|\b[A-Z][A-Za-z0-9_]*\b|\b\d+(?:\.\d+)?\b)/g;let last=0,m;while((m=re.exec(text))){preview.append(document.createTextNode(text.slice(last,m.index)));const span=document.createElement('span');span.className=m[0].startsWith('//')?'comment':m[0].startsWith('"')?'str':/^\d/.test(m[0])?'num':'class';span.textContent=m[0];preview.append(span);last=re.lastIndex}preview.append(document.createTextNode(text.slice(last)))}
+function updatePreview(){updateLines();const text=code.value;preview.replaceChildren();const re=/(\/\/[^\n]*|"(?:\\.|[^"\\])*"|\b[A-Z][A-Za-z0-9_]*\b|\b\d+(?:\.\d+)?\b)/g;let last=0,m;while((m=re.exec(text))){preview.append(document.createTextNode(text.slice(last,m.index)));const span=document.createElement('span');span.className=m[0].startsWith('//')?'comment':m[0].startsWith('"')?'str':/^\d/.test(m[0])?'num':'class';span.textContent=m[0];preview.append(span);last=re.lastIndex}preview.append(document.createTextNode(text.slice(last)))}
+const gutter=document.querySelector('#line-gutter');function updateLines(){const n=code.value.split('\n').length;gutter.textContent=Array.from({length:n},(_,i)=>i+1).join('\n');gutter.scrollTop=code.scrollTop}code.addEventListener('scroll',()=>{gutter.scrollTop=code.scrollTop});
+document.querySelector('#storage-info').onclick=()=>{flush();const bytes=new Blob([JSON.stringify(projects)]).size;const count=Object.keys(projects).length;if(prompt(count+' compositions, '+(bytes/1024).toFixed(1)+' KiB. Type DELETE ALL to erase (backup first).')!=='DELETE ALL')return;if(!confirm('Delete all compositions permanently?'))return;projects={Default:example};active='Default';renderProjects()};
+function downloadText(name,body,type){const url=URL.createObjectURL(new Blob([body],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000)}
+document.querySelector('#backup-projects').onclick=()=>{flush();downloadText('SuperCollision-backup.json',JSON.stringify({format:'supercollision-projects-v1',projects},null,2),'application/json')};
+document.querySelector('#restore-projects').onclick=()=>document.querySelector('#backup-input').click();
+document.querySelector('#backup-input').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>4000000)throw Error('Backup too large');const obj=JSON.parse(await file.text());if(obj.format!=='supercollision-projects-v1'||!obj.projects||Array.isArray(obj.projects)||typeof obj.projects!=='object')throw Error('Invalid backup');const entries=Object.entries(obj.projects);if(entries.length>1000||entries.some(([k,v])=>typeof k!=='string'||k.length>80||typeof v!=='string'))throw Error('Invalid composition data');flush();for(const [name,text] of entries)projects[uniqueName(name)]=text;renderProjects();report('Restored '+entries.length+' compositions')}catch(err){report('Restore failed: '+err.message)}e.target.value=''};
 let ctx,osc,gain;
 function report(t){status.textContent=t}
 async function stop(){if(osc){try{osc.stop()}catch{}osc.disconnect();osc=null}if(gain){gain.disconnect();gain=null}report('Audio test stopped.')}
@@ -117,7 +123,7 @@ document.querySelector('#engine').onclick=async()=>{
   synth.onOscReply=osc=>lang.sendOsc(osc);
   lang.bootInterpreter();
   window.bootServer=options=>{if(options.numOutputBusChannels)setTimeout(async()=>{try{await synth.boot(options)}catch(e){print('Server boot: '+e.message)}},100)};
-  run.disabled=false;panic.disabled=false;
+  run.disabled=false;panic.disabled=false;document.querySelector('#record').disabled=false;
   message('ENGINE READY · RUN to evaluate');
  }catch(e){message('Runtime unavailable: '+e.message);print(e.stack||e.message)}finally{booting=false;document.querySelector('#engine').disabled=false}
 };
