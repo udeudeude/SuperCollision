@@ -4,12 +4,10 @@ on:
   push:
     branches: [main]
     paths:
-      - 'index.html'
       - '.github/workflows/prepare-site.yml'
       - 'scripts/verify_runtime.py'
-      - '_headers'
 permissions:
-  contents: write
+  contents: read
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -51,7 +49,7 @@ jobs:
       - name: Assemble deployable site
         run: |
           mkdir -p dist/runtime
-          cp app/index.html app/_headers dist/
+          cp app/index.html app/_headers app/instrument-layout.css app/instrument-layout.js dist/
           cp -a build/wasm-dist/sclang build/wasm-dist/scsynth dist/runtime/
           python3 app/scripts/verify_runtime.py dist/runtime
       - name: Upload compiled site
@@ -60,12 +58,3 @@ jobs:
           name: supercollision-static-site
           path: dist/
           retention-days: 14
-      - name: Publish compiled site to pages-build branch
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: pages-build
-          publish_dir: ./dist
-          force_orphan: true
-          enable_jekyll: false
-          commit_message: "Publish compiled SuperCollider WASM site"
