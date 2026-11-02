@@ -131,13 +131,13 @@ document.querySelector('#engine').onclick=async()=>{
   lang=await ScLang({locateFile:p=>new URL(p,new URL('sclang/',base)).href});
   synth=await ScSynth({locateFile:p=>new URL(p,new URL('scsynth/',base)).href});
   let serverBootRequested=false;
-  lang.printCallback=t=>{print(t);if(!serverBootRequested&&String(t).includes('Welcome to SuperCollider')){serverBootRequested=true;message('LANGUAGE READY · Requesting audio server');lang.runCode('s.boot;')}};synth.onStdout=print;
+  lang.printCallback=t=>{print(t);if(!serverBootRequested&&String(t).includes('Welcome to SuperCollider')){serverBootRequested=true;run.disabled=false;document.querySelector('#run-region').disabled=false;document.querySelector('#record').disabled=false;message('LANGUAGE READY · POWER ON · Run code to boot server if needed')}};synth.onStdout=print;
   lang.onOsc=osc=>synth.sendOsc(new Uint8Array(osc));
   synth.onOscReply=osc=>lang.sendOsc(osc);
   lang.bootInterpreter();
   window.bootServer=options=>{if(options.numOutputBusChannels)setTimeout(async()=>{try{await synth.boot(options)}catch(e){print('Server boot: '+e.message)}},100)};
-  run.disabled=false;panic.disabled=false;document.querySelector('#run-region').disabled=false;document.querySelector('#record').disabled=false;
-  message('Initializing language; audio server will boot after startup');
+  panic.disabled=false;
+  message('Initializing language. RUN unlocks when ready.');
  }catch(e){message('Runtime unavailable: '+e.message);print(e.stack||e.message)}finally{booting=false;document.querySelector('#engine').disabled=false}
 };
 function submitCode(source,start,end){if(!lang)return;try{flush();activeRegion={start,end};updateLines();state.classList.remove('error');lang.runCode(source);message('EVALUATED L'+start+'–'+end+' · source indication, not live audio tracing')}catch(e){message('Evaluation failed: '+e.message)}}
