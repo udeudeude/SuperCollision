@@ -52,6 +52,7 @@ document.querySelector('#engine').onclick=async()=>{
   message('SuperCollider interpreter loaded. Evaluate code to test.');
  }catch(e){message('Runtime unavailable: '+e.message+'. The audio diagnostic still works.');print(e.stack||e.message)}
 };
-run.onclick=()=>{if(!lang)return;try{lang.runCode(document.querySelector('#code').value);message('Code sent to SuperCollider interpreter.')}catch(e){message('Evaluation failed: '+e.message)}};
-panic.onclick=()=>{if(lang)lang.runCode('CmdPeriod.run;')};
+run.onclick=()=>{if(!lang)return;try{const source=document.querySelector('#code').value;lang.runCode(source);message('Code sent to SuperCollider interpreter. Check console for results.')}catch(e){message('Evaluation failed: '+e.message)}};
+panic.onclick=()=>{if(!lang)return;try{lang.runCode('CmdPeriod.run;');message('Stop command sent. Server remains booted; re-evaluate to create new synths.')}catch(e){message('Stop failed: '+e.message)}};
+
 </script></html>
