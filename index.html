@@ -118,11 +118,94 @@ body[data-theme=makenoise] .code-stack{height:calc(100dvh - 220px)}
 body[data-theme=makenoise] .console-shell{border-top:4px double #eee;margin-top:9px}
 
 @media(max-width:400px){body[data-theme=makenoise] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 63px}body[data-theme=makenoise] .toolbar button{font-size:9px}body[data-theme=bauhaus] main>.panel:first-child{grid-template-columns:45px minmax(0,1fr)}}
+
+/* EXPERIMENTAL INTERFACES: four alternative interaction architectures */
+body[data-theme=score]{background:#f6f0e0;color:#2c3029;max-width:1100px}
+body[data-theme=score] header{background:#f6f0e0;display:grid;grid-template-columns:1fr auto;border:0;padding:18px 4px 8px}
+body[data-theme=score] h1{font:italic 400 30px/1.1 Georgia,serif;letter-spacing:-.07em;text-transform:none}
+body[data-theme=score] header small{font:10px Georgia,serif}
+body[data-theme=score] main>.panel:first-child{display:grid;grid-template-columns:minmax(0,1fr) 76px;grid-template-areas:"theme theme" "files files" "editor transport";gap:0}
+body[data-theme=score] .theme-strip{border-top:1px solid #46483f;border-bottom:1px solid #46483f;padding:5px}
+body[data-theme=score] .projectbar{margin:10px 0 8px}
+body[data-theme=score] .projectbar button,body[data-theme=score] .menu>summary{background:transparent;color:#2c3029;border:0;border-bottom:1px solid #777}
+body[data-theme=score] .toolbar{position:static;display:flex;flex-direction:column;gap:0;padding:0 0 0 8px;border:0;background:#f6f0e0}
+body[data-theme=score] .toolbar button{border:0;border-bottom:1px solid #b9b1a1;background:transparent;color:#302d27;width:100%;height:64px;min-width:0;padding:3px;letter-spacing:0;font:700 10px Georgia,serif;flex:none}
+body[data-theme=score] .toolbar #evaluate{background:#b3392f;color:white;height:95px}
+body[data-theme=score] #save-status{writing-mode:vertical-rl;margin:auto;color:#5a594c}
+body[data-theme=score] .editor-frame{border:0;border-left:3px solid #a53a32;background:repeating-linear-gradient(to bottom,#faf5e7 0,#faf5e7 20px,#c9c3b2 21px,#faf5e7 22px)}
+body[data-theme=score] .code-stack,body[data-theme=score] #line-gutter{background:transparent}
+body[data-theme=score] .code-stack{height:calc(100dvh - 240px)}
+body[data-theme=score] .code-stack #highlight-layer{color:#343a32}
+body[data-theme=score] .code-stack .class{color:#9d3d31}
+body[data-theme=score] .code-stack .num{color:#2e6463}
+body[data-theme=score] .code-stack .comment{color:#77796a}
+body[data-theme=score] .console-shell{border-top:1px solid #777;padding-top:15px}
+
+/* OSCILLOSCOPE: code as phosphor trace, transport as laboratory readout */
+body[data-theme=scope]{background:#060f0c;color:#a4f2c1}
+body[data-theme=scope] header{background:#06150f;border:1px solid #39875e;padding:8px 12px;margin:7px 0 4px}
+body[data-theme=scope] h1{font:700 15px ui-monospace,monospace;letter-spacing:.17em}
+body[data-theme=scope] main>.panel:first-child{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"transport" "editor" "files" "theme";gap:4px}
+body[data-theme=scope] .toolbar{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px;background:#0b2318;border:1px solid #39875e;padding:4px}
+body[data-theme=scope] .toolbar button{min-width:0;padding:6px 2px;min-height:46px;font:700 10px ui-monospace,monospace;background:#123523;color:#b8f9cc;border:1px solid #3b9565}
+body[data-theme=scope] .toolbar #evaluate{background:#9af4bc;color:#071b11}
+body[data-theme=scope] #save-status{grid-column:1/-1;text-align:right;max-width:none;color:#83a894}
+body[data-theme=scope] .editor-frame{border:2px solid #3c9d6b;border-radius:45px / 20px;overflow:hidden;box-shadow:inset 0 0 35px #1da36d33,0 0 12px #1da36d22}
+body[data-theme=scope] .code-stack{height:calc(100dvh - 270px);background:repeating-linear-gradient(0deg,#06110c 0px,#06110c 3px,#0b2318 4px)}
+body[data-theme=scope] #line-gutter{background:#07160f;color:#3e8f64}
+body[data-theme=scope] .code-stack #highlight-layer{color:#b0f4c7;text-shadow:0 0 3px #3be68c55}
+body[data-theme=scope] .code-stack .class{color:#6bffac}
+body[data-theme=scope] .code-stack .num{color:#d2ff7d}
+body[data-theme=scope] .code-stack .comment{color:#548d6c}
+body[data-theme=scope] .projectbar{margin:0;border:1px solid #39875e;padding:4px}
+body[data-theme=scope] .projectbar button,body[data-theme=scope] .menu>summary{background:#0c281a;color:#a4f2c1;border:1px solid #39875e}
+body[data-theme=scope] .theme-strip{border:0;justify-content:flex-end}
+
+/* PATCH DIAGRAM: composition is the center module, controls are distinct satellites */
+body[data-theme=patch]{background:#d9d3c2;color:#28241f}
+body[data-theme=patch] header{background:#d9d3c2;border-bottom:4px double #27221d;padding:14px 2px}
+body[data-theme=patch] h1{font:900 24px/1 Arial,sans-serif;letter-spacing:-.06em}
+body[data-theme=patch] main>.panel:first-child{display:grid;grid-template-columns:minmax(0,1fr) 98px;grid-template-areas:"files theme" "editor transport";gap:8px}
+body[data-theme=patch] .projectbar{margin:0;background:#e9e2d1;border:2px solid #302820;padding:4px}
+body[data-theme=patch] .projectbar button,body[data-theme=patch] .menu>summary{background:#e9e2d1;color:#28241f;border:1px solid #302820}
+body[data-theme=patch] .theme-strip{display:flex;flex-direction:column;justify-content:center;align-items:stretch;background:#e2a341;color:#27221c;border:2px solid #302820;padding:4px}
+body[data-theme=patch] .theme-strip select{writing-mode:vertical-rl;min-height:110px;color:#27221c}
+body[data-theme=patch] .toolbar{display:flex;flex-direction:column;gap:9px;border:2px solid #302820;background:#e8e0cc;padding:7px}
+body[data-theme=patch] .toolbar button{flex:none;min-width:0;width:100%;height:61px;border-radius:50%;border:3px solid #302820;background:#f2e8d4;color:#302820;padding:3px;font-size:10px;letter-spacing:0;box-shadow:3px 3px 0 #302820}
+body[data-theme=patch] .toolbar #evaluate{background:#d45332;color:white;height:80px}
+body[data-theme=patch] .toolbar #panic{background:#3e4b57;color:white}
+body[data-theme=patch] #save-status{writing-mode:vertical-rl;margin:auto;color:#4c4335}
+body[data-theme=patch] .editor-frame{border:3px solid #302820;box-shadow:5px 5px 0 #302820}
+body[data-theme=patch] .code-stack{height:calc(100dvh - 230px)}
+body[data-theme=patch] .console-shell{border:2px solid #302820;padding:7px;margin-top:12px}
+
+/* BRUTALIST TERMINAL: almost no chrome; text commands dominate */
+body[data-theme=terminal]{background:#f4f4f1;color:#101010;font-family:ui-monospace,monospace}
+body[data-theme=terminal] header{background:#f4f4f1;border-bottom:7px solid #101010;padding:6px 0}
+body[data-theme=terminal] h1{font:900 24px ui-monospace,monospace;letter-spacing:-.09em}
+body[data-theme=terminal] main>.panel:first-child{display:grid;grid-template-areas:"theme" "editor" "transport" "files";gap:0}
+body[data-theme=terminal] .theme-strip{border:0;padding:4px 0;font:10px ui-monospace,monospace}
+body[data-theme=terminal] .editor-frame{border:0;border-top:1px solid #111;border-bottom:7px solid #111}
+body[data-theme=terminal] .code-stack{height:calc(100dvh - 280px);background:#f4f4f1}
+body[data-theme=terminal] #line-gutter{background:#e0e0da;color:#666;border:0}
+body[data-theme=terminal] .code-stack #highlight-layer{color:#111}
+body[data-theme=terminal] .code-stack .class{color:#154c9d}
+body[data-theme=terminal] .code-stack .str{color:#8e321a}
+body[data-theme=terminal] .code-stack .num{color:#773c8c}
+body[data-theme=terminal] .code-stack .comment{color:#777}
+body[data-theme=terminal] .toolbar{display:flex;gap:0;border:0;padding:0;background:#111}
+body[data-theme=terminal] .toolbar button{border:0;border-right:1px solid #888;background:#111;color:#fff;border-radius:0;flex:1;min-width:0;padding:7px 2px;font:700 11px ui-monospace,monospace}
+body[data-theme=terminal] .toolbar #evaluate{background:#fff;color:#000}
+body[data-theme=terminal] #save-status{color:#ccc;margin:0 6px}
+body[data-theme=terminal] .projectbar{margin:0;padding:4px 0;border-bottom:1px solid #111}
+body[data-theme=terminal] .projectbar button,body[data-theme=terminal] .menu>summary{background:#f4f4f1;color:#111;border:1px solid #111}
+body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
+@media(max-width:390px){body[data-theme=patch] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 78px}body[data-theme=scope] .toolbar button{font-size:9px}body[data-theme=score] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 65px}}
 </style>
-<header><h1>SuperCollision</h1><small>INSTRUMENT / 1.0</small></header>
+<header><h1>SuperCollision</h1><small>INSTRUMENT / 1.2</small></header>
 <main>
 <div class="panel">
-<div class="theme-strip"><label for="theme-choice">DESIGN</label><select id="theme-choice" aria-label="Visual design"><option value="bauhaus">Bauhaus</option><option value="blackmountain">Black Mountain</option><option value="moog">Moog</option><option value="makenoise">Make Noise</option></select></div><div class="projectbar"><div class="composition-picker"><button id="project-toggle" type="button" class="secondary" aria-expanded="false" aria-controls="project-list">Composition ▾</button><div id="project-list" class="project-list" hidden role="listbox" aria-label="Saved compositions"></div></div><select id="projects" aria-label="Saved compositions" hidden></select><details class="menu"><summary aria-label="Composition actions">FILE ▾</summary><div class="menu-items"><button id="new-project" class="secondary">New</button><button id="rename-project" class="secondary">Rename</button><button id="delete-project" class="secondary">Delete</button><button id="import-file" class="secondary">Import .scd</button><button id="export-file" class="secondary">Export .scd</button><button id="copy" class="secondary">Copy code</button><button id="clear" class="secondary">Load example</button><button id="backup-projects" class="secondary">Backup all</button><button id="restore-projects" class="secondary">Restore backup</button><button id="storage-info" class="secondary">Storage / cleanup</button><button id="go-line" class="secondary">Go to line</button><button id="wake-toggle" class="secondary">Screen awake: on</button><button id="undo-delete" class="secondary" disabled>Undo delete</button></div></details></div>
+<div class="theme-strip"><label for="theme-choice">DESIGN</label><select id="theme-choice" aria-label="Visual design"><option value="bauhaus">Bauhaus</option><option value="blackmountain">Black Mountain</option><option value="moog">Moog</option><option value="makenoise">Make Noise</option><option value="score">01 / Living Score</option><option value="scope">02 / Oscilloscope</option><option value="patch">03 / Patch Diagram</option><option value="terminal">04 / Brutalist Terminal</option></select></div><div class="projectbar"><div class="composition-picker"><button id="project-toggle" type="button" class="secondary" aria-expanded="false" aria-controls="project-list">Composition ▾</button><div id="project-list" class="project-list" hidden role="listbox" aria-label="Saved compositions"></div></div><select id="projects" aria-label="Saved compositions" hidden></select><details class="menu"><summary aria-label="Composition actions">FILE ▾</summary><div class="menu-items"><button id="new-project" class="secondary">New</button><button id="rename-project" class="secondary">Rename</button><button id="delete-project" class="secondary">Delete</button><button id="import-file" class="secondary">Import .scd</button><button id="export-file" class="secondary">Export .scd</button><button id="copy" class="secondary">Copy code</button><button id="clear" class="secondary">Load example</button><button id="backup-projects" class="secondary">Backup all</button><button id="restore-projects" class="secondary">Restore backup</button><button id="storage-info" class="secondary">Storage / cleanup</button><button id="go-line" class="secondary">Go to line</button><button id="wake-toggle" class="secondary">Screen awake: on</button><button id="undo-delete" class="secondary" disabled>Undo delete</button></div></details></div>
 
 <div class="toolbar"><button id="evaluate" disabled>▶ RUN</button><button id="run-region" class="secondary" disabled>PART</button><button id="panic" class="secondary" disabled>■ STOP</button><button id="engine" class="secondary">POWER</button><button id="record" class="secondary" disabled>● REC</button><button id="record-stop" class="secondary" disabled>■ SAVE</button><span id="save-status" class="muted" role="status">Saved</span></div>
 <div class="editor-frame"><div id="line-gutter" aria-hidden="true">1</div><div class="code-stack"><pre id="highlight-layer" aria-hidden="true"></pre><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="SuperCollider code editor"></textarea></div></div>
