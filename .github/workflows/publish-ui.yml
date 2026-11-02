@@ -1,0 +1,46 @@
+name: Publish UI to Cloudflare Pages branch
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - '_headers'
+      - '.github/workflows/publish-ui.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: supercollision-pages-publish
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout production branch with compiled WASM runtime
+        uses: actions/checkout@v4
+        with:
+          ref: pages-build
+          path: site
+          persist-credentials: true
+      - name: Checkout application source
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: source
+      - name: Update frontend without rebuilding or deleting WASM
+        run: |
+          set -euo pipefail
+          test -f site/runtime/sclang/sclang.js
+          test -f site/runtime/scsynth/scsynth.js
+          cp source/index.html site/index.html
+          cp source/_headers site/_headers
+          cd site
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html _headers
+          if git diff --cached --quiet; then
+            echo "Already current"
+          else
+            git commit -m "Publish latest SuperCollision frontend"
+            git push origin HEAD:pages-build
+          fi
