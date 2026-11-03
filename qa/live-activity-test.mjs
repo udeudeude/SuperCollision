@@ -144,7 +144,7 @@ const plan=prepareRoutineTrace(sourceRoutine,1,'uQa123');
 assert.equal(sourceRoutine,originalCopy,'Preparation must not mutate user composition');
 assert.equal(plan.instrumented,true,'Routine was not instrumented');
 assert.equal(plan.routines.length,1,'One Routine definition detected');
-assert.equal(plan.checkpoints.length,2,'Expected Synth and wait checkpoints, never var declarations');
+assert.equal(plan.checkpoints.length,3,'Expected loop, Synth and wait checkpoints, never var declarations');
 assert.ok(plan.checkpoints.some(p=>p.line===5&&p.kind==='step'));
 assert.ok(plan.checkpoints.some(p=>p.line===6&&p.kind==='wait'&&p.wait==='0.2'));
 assert.ok(plan.code.includes('counter = counter + 1;'));
