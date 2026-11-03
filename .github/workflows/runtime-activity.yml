@@ -1,0 +1,39 @@
+name: Actual Audio Activity QA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'live-activity.mjs'
+      - 'qa/runtime-activity.mjs'
+      - '.github/workflows/runtime-activity.yml'
+permissions:
+  contents: read
+jobs:
+  real-supercollider:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout already compiled production site
+        uses: actions/checkout@v4
+        with:
+          ref: pages-build
+          path: site
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install headless Chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Run actual WebAssembly synthesis and OSC activity test
+        run: node qa/runtime-activity.mjs
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-audio-activity-qa
+          path: qa/screenshots
+          if-no-files-found: ignore
