@@ -19,6 +19,10 @@ function pack(address,types,args){
   }
   return Uint8Array.from(parts.flatMap(b=>[...b]));
 }
+function numericCommand(id,types,args){
+ const data=pack('/s_new',types,args),addressLength=oscString('/s_new').length;
+ return Uint8Array.from([...beInt(id),...data.slice(addressLength)]);
+}
 function bundle(messages){
   const parts=[oscString('#bundle'),Uint8Array.from([0,0,0,0,0,0,0,1])];
   for(const m of messages){parts.push(beInt(m.length),m)}
@@ -45,6 +49,12 @@ const go=pack('/n_go','iiiii',[1001,1,-1,-1,0]);
 const end=pack('/n_end','iiiii',[1001,1,-1,-1,0]);
 assert.deepEqual(readOscPacket(pulse)[0],{address:'/s_new',args:['bell',1001,0,1]});
 assert.equal(readOscPacket(bundle([pulse,go])).length,2);
+const number9=numericCommand(9,'siii',['bell',1007,0,1]);
+const number59=numericCommand(59,'siii',['bell',1008,0,1]);
+assert.deepEqual(readOscPacket(number9)[0],{address:'/s_new',args:['bell',1007,0,1]});
+assert.deepEqual(readOscPacket(number59)[0],{address:'/s_new',args:['bell',1008,0,1]});
+assert.equal(readOscPacket(bundle([number9,go])).length,2,'Recognize numeric start inside OSC bundle');
+
 const embedded=pack('/d_recv','bb',[Uint8Array.from([83,67,103,102]),pulse]);
 assert.deepEqual(readOscPacket(embedded).map(x=>x.address),['/d_recv','/s_new'],
   'The /d_recv completion message can create a synth without a separate top-level /s_new');
@@ -76,6 +86,9 @@ assert.equal(activity.visible().confirmed,0);
 assert.equal(activity.visible().active.length,0,'A completed note must release amber highlight');
 assert.ok(notifications>0);
 
+activity.outgoing(number9);
+assert.equal(activity.visible().requested,1,'Numeric command creates a pending sound node');
+activity.stopRequested();
 activity.outgoing(pulse);activity.incoming(go);
 activity.setDocument('Another Song','SynthDef(\\bell, { }).add;');
 assert.equal(activity.visible().linked,0,'Do not highlight lines in another composition');
