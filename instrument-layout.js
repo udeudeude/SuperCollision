@@ -10,10 +10,11 @@
   const viewButtons = {
     code: document.getElementById('inspector-code'),
     console: document.getElementById('inspector-console'),
-    audio: document.getElementById('inspector-audio')
+    audio: document.getElementById('inspector-audio'),
+    perform: document.getElementById('inspector-perform')
   };
   const body = document.body;
-  const views = ['code', 'console', 'audio'];
+  const views = ['code', 'console', 'audio', 'perform'];
   let mode = 'code';
   let previousLineCount = -1;
   let inner = gutter.querySelector('#line-inner');
@@ -192,6 +193,7 @@
     mode = next;
     body.classList.toggle('view-console', next === 'console');
     body.classList.toggle('view-audio', next === 'audio');
+    body.classList.toggle('view-perform', next === 'perform');
     consolePanel.open = next === 'console';
     diagnostics.setAttribute('aria-hidden', String(next !== 'audio'));
     diagnostics.inert = next !== 'audio';
@@ -199,6 +201,7 @@
       button.setAttribute('aria-pressed', String(view === next));
     }
     compactChrome();
+    if(next==='perform')window.SCTimeline?.show();
     requestAnimationFrame(followEditor);
   }
   for (const [view, button] of Object.entries(viewButtons)) {

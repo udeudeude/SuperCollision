@@ -377,7 +377,7 @@ export class SoundActivityTracker{
       linked:active.length,notifications:this.notifications};
   }
 }
-export function createLiveActivityUI({editor,gutter,overlay,status,code,composition,panel,instrumentsEl,routinesEl,panelToggle}){
+export function createLiveActivityUI({editor,gutter,overlay,status,code,composition,panel,instrumentsEl,routinesEl,panelToggle,onEnabledChange=()=>{}}){
   let enabled=true,queued=false,refreshTimer=null;
   const track=new SoundActivityTracker(()=>schedule(),()=>performance.now());
   const scrollToLine=(line)=>{
@@ -538,6 +538,7 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
   };
   function setEnabled(next){
     enabled=Boolean(next);
+    onEnabledChange(enabled);
     panel.classList.toggle('live-collapsed',!enabled);
     panelToggle.setAttribute('aria-expanded',String(enabled));
     panelToggle.setAttribute('aria-label',enabled?
