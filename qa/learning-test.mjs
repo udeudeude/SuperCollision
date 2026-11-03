@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {explainSelection,errorLesson} from '../learning.mjs';
+const source='SynthDef(\\tone, { |freq=440| SinOsc.ar(freq, 0, 0.1) }).add;';
+const start=source.indexOf('SinOsc');
+const lesson=explainSelection(source,start,start+6);
+assert.equal(lesson.token,'SinOsc');
+assert.match(lesson.explanation,/frequency/i);
+assert.match(explainSelection(source,source.indexOf('.ar')+1,source.indexOf('.ar')+3).explanation,/audio-rate/i);
+assert.match(explainSelection(source,source.indexOf('|'),source.indexOf('|')).explanation,/argument/i);
+assert.equal(errorLesson('normal server message'),null);
+assert.match(errorLesson('ERROR: syntax error, unexpected NAME')[0],/Syntax error/);
+assert.match(errorLesson('ERROR: Message xyz not understood')[0],/Message not understood/);
+console.log('Learning: syntax lookup, selection, and optional debugging hints passed.');
