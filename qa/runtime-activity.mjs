@@ -136,6 +136,42 @@ try{
   console.log('RAW OSC DIAGNOSTIC:',diagnostic);
   await page.screenshot({path:'qa/screenshots/runtime-live-activity-failed.png'});
  throw Error('No confirmed live highlight after real SuperCollider playback. See runtime console snapshots.');}
+
+ const routinePiece=[
+   '(',
+   '~qaLivingRoutine = Routine({',
+   '    3.do {',
+   '        Synth(\\qaDrone);',
+   '        0.7.wait;',
+   '    };',
+   '}).play(SystemClock);',
+   ')'
+ ].join('\n');
+ await page.locator('#code').fill(routinePiece);
+ await page.locator('#evaluate').click();
+ let checkpoints=[];
+ try{
+   await page.waitForFunction(()=>window.SCActivity?.tracker?.visible()?.routines?.some(x=>x.steps>=2),{timeout:15000});
+   checkpoints=await page.evaluate(()=>window.SCActivity.tracker.visible().routines);
+   console.log('REAL ROUTINE CHECKPOINTS:',JSON.stringify(checkpoints));
+   const ui=await page.evaluate(()=>({
+     panel:document.getElementById('live-panel').getBoundingClientRect().toJSON(),
+     rows:document.querySelector('#live-routines').textContent,
+     counter:document.querySelector('#activity-status').textContent,
+     console:document.querySelector('#console').textContent.slice(-1000)
+   }));
+   console.log('LIVE INSET:',JSON.stringify(ui));
+   if(!ui.rows.includes('R')||!ui.panel.width)throw Error('Routine indicator missing from editor inset');
+   await page.screenshot({path:'qa/screenshots/runtime-routine-progress.png'});
+ }catch(e){
+   console.log('ROUTINE TRACE FAILURE:',JSON.stringify(await page.evaluate(()=>({
+     visible:window.SCActivity.tracker.visible(),
+     program:document.querySelector('#code').value,
+     diagnostic:window.SCActivity.diagnostics(),
+     console:document.getElementById('console').textContent.slice(-2300)
+   }))));
+   throw e;
+ }
  }catch(e){error=e;console.error('FAIL:',e.stack||e)}
  finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
 if(error)process.exitCode=1;
