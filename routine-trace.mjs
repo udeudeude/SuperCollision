@@ -48,7 +48,7 @@ function matchingBrace(src,open){
   }
   return -1;
 }
-const checkpoint=/^(\s*)(?:((?:~\w+|\w+)\s*=\s*)?Synth\s*\(|((?:\d+(?:\.\d+)?|[A-Za-z_]\w*)\s*)\.wait\s*;|(?:while|loop|[0-9]+\.do)\b)/;
+const checkpoint=/^(\s*)(?:((?:~\w+|\w+)\s*=\s*)?Synth\s*\(|((?:\d+(?:\.\d+)?|~?[A-Za-z_]\w*)\s*)\.wait\s*;|(?:while|loop|[0-9]+\.do)\b)/;
 export function prepareRoutineTrace(source,startLine=1,runToken=null){
   const masked=mask(source);
   const run=(runToken||('r'+Date.now().toString(36)+(++serial).toString(36))).replace(/[^A-Za-z0-9]/g,'');
@@ -81,7 +81,17 @@ export function prepareRoutineTrace(source,startLine=1,runToken=null){
           // Preserve original line count and keep the evaluated source
           // structurally the same apart from the small post statement.
           const marker=TRACE_HEAD+run+':'+rId+':'+line+':'+kind+':'+wait+'__';
-          insertions.push({at:lineStart+prefix.length,code:'("'+marker+'").postln; ',routine:rId,line,kind,wait,marker,original:rawOriginal});
+          let probe='("'+marker+'").postln; ';
+          if(kind==='wait'&&/^(?:\\d+(?:\\.\\d+)?|~?[A-Za-z_]\\w*)$/.test(hit[3].trim())){
+            // Capture the wait value and the actual running clock's tempo at execution.
+            // TempoClock measures beats, SystemClock/AppClock measure seconds.
+            // We only read literals or side-effect-free variable names; the wait
+            // expression itself is never replaced or evaluated extra times.
+            const value=hit[3].trim();
+            const tempo='(thisThread.clock.isKindOf(TempoClock).if({thisThread.clock.tempo},{1}))';
+            probe='("'+TRACE_HEAD+run+':'+rId+':'+line+':wait:" ++ ('+value+').asString ++ ":" ++ '+tempo+'.asString ++ "__").postln; ';
+          }
+          insertions.push({at:lineStart+prefix.length,code:probe,routine:rId,line,kind,wait,marker,original:rawOriginal});
           routine.checkpointCount++;
         }
       }
@@ -95,4 +105,4 @@ export function prepareRoutineTrace(source,startLine=1,runToken=null){
   for(const p of insertions.sort((a,b)=>b.at-a.at))code=code.slice(0,p.at)+p.code+code.slice(p.at);
   return {code,run,routines,checkpoints:insertions.map(({routine,line,kind,wait,marker})=>({routine,line,kind,wait,marker})),instrumented:true};
 }
-export const routineTracePattern=/__SCLIVE__([A-Za-z0-9]+):(\d+):(\d+):(step|wait):(\d+(?:\.\d+)?|x)__/g;
+export const routineTracePattern=/__SCLIVE__([A-Za-z0-9]+):(\d+):(\d+):(step|wait):(\d+(?:\.\d+)?|x)(?::(\d+(?:\.\d+)?|x))?__/g;
