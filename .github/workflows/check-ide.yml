@@ -2,7 +2,7 @@ name: Check SuperCollision IDE
 on:
   push:
     branches: [main]
-    paths: ['index.html', 'instrument-layout.css', 'instrument-layout.js', 'live-activity.mjs', 'routine-trace.mjs', 'qa/live-activity-test.mjs', '.github/workflows/check-ide.yml']
+    paths: ['index.html', 'instrument-layout.css', 'instrument-layout.js', 'live-activity.mjs', 'routine-trace.mjs', 'performance-engine.mjs', 'performance-ui.mjs', 'performance.css', 'qa/performance-test.mjs', 'qa/live-activity-test.mjs', '.github/workflows/check-ide.yml']
   pull_request:
     paths: ['index.html', 'instrument-layout.css', 'instrument-layout.js', '.github/workflows/check-ide.yml']
 jobs:
@@ -45,7 +45,7 @@ jobs:
           assert indices==sorted(indices), indices
           assert 'wrap="off"' in html
           assert 'id="line-inner"' in html
-          assert all('id="inspector-'+v+'"' in html for v in ('code','console','audio'))
+          assert all('id="inspector-'+v+'"' in html for v in ('code','console','audio','perform'))
           assert 'id="audio-panel"' in html
           assert 'id="inspect-toggle"' not in html
           assert 'instrument-layout.css' in html and 'instrument-layout.js' in html
@@ -62,4 +62,7 @@ jobs:
           node --check instrument-layout.js
           node --check live-activity.mjs
           node --check routine-trace.mjs
+          node --check performance-engine.mjs
+          node --check performance-ui.mjs
+          node qa/performance-test.mjs
           node qa/live-activity-test.mjs
