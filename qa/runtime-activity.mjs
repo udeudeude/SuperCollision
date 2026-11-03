@@ -43,12 +43,16 @@ try{
  console.log('LANGUAGE READY');
  await page.evaluate(()=>{
    const mon=window.SCActivity,prev=mon.outgoing;
+   window.__qaUnknown=[];
    mon.outgoing=raw=>{
      const data=raw instanceof Uint8Array?raw:new Uint8Array(raw);
+     const priorUnknown=mon.tracker.unknownPacketTypes;
      if(data.length>7&&data.length<200000&&String.fromCharCode(...data.slice(0,Math.min(64,data.length))).includes('/d_recv')){
        window.__qaLastDRecv=new Uint8Array(data);
      }
-     return prev(raw);
+     const result=prev(raw);
+     if(mon.tracker.unknownPacketTypes>priorUnknown)window.__qaUnknown.push({length:data.length,head:Array.from(data.slice(0,120))});
+     return result;
    };
  });
  await page.locator('#code').fill('s.boot;');
@@ -103,6 +107,7 @@ try{
     gutter:document.querySelectorAll('#line-inner .live-active').length,
     display:document.querySelectorAll('#activity-overlay .live-source-active').length,
     diagnostic:window.SCActivity.diagnostics(),
+    unknownPackets:window.__qaUnknown,
     console:document.getElementById('console').textContent.slice(-1200)
   }));
   console.log('REAL NAMED SYNTH:',JSON.stringify(linked));
