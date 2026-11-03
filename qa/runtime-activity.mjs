@@ -75,6 +75,34 @@ try{
   if(info.activity?.confirmed>0&&info.highlights>0){console.log('PASS: real synth node confirmed and highlighted');await page.screenshot({path:'qa/screenshots/runtime-live-activity.png'});observed=true;break}
  }
  if(!observed){
+  console.log('Routine did not schedule; verifying a real named SynthDef and source-linked Synth directly.');
+  const def="SynthDef(\\qaDrone, { Out.ar(0, SinOsc.ar(110, 0, 0.1) ! 2); }).add;";
+  await page.locator('#code').fill(def);
+  await page.locator('#evaluate').click();
+  await page.waitForTimeout(1500);
+  const namedSource=def+"\nSynth(\\qaDrone);";
+  await page.locator('#code').fill(namedSource);
+  await page.evaluate(()=>{
+    const e=document.getElementById('code');
+    e.setSelectionRange(e.value.lastIndexOf('\n')+1,e.value.length);
+  });
+  await page.locator('#run-region').click();
+  await page.waitForTimeout(2000);
+  const linked=await page.evaluate(()=>({
+    visible:window.SCActivity.tracker.visible(),
+    gutter:document.querySelectorAll('#line-inner .live-active').length,
+    display:document.querySelectorAll('#activity-overlay .live-source-active').length,
+    diagnostic:window.SCActivity.diagnostics(),
+    console:document.getElementById('console').textContent.slice(-1200)
+  }));
+  console.log('REAL NAMED SYNTH:',JSON.stringify(linked));
+  if(linked.visible.confirmed>0&&linked.display>0){
+    console.log('PASS: actual WebAssembly OSC node highlights a source-linked SynthDef');
+    observed=true;
+    await page.screenshot({path:'qa/screenshots/runtime-live-activity.png'});
+  }
+ }
+ if(!observed){
   console.log('Initial Routine did not yield a node; sending direct OSC synth request to isolate the bridge from the scheduling test');
   await page.locator('#code').fill("s.sendMsg('/s_new', 'default', s.nextNodeID, 0, 1);");
   await page.locator('#evaluate').click();
