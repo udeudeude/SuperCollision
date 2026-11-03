@@ -41,6 +41,16 @@ try{
  await page.waitForFunction(()=>!document.querySelector('#evaluate').disabled,{timeout:115000});
  }catch(e){console.log('POWER LOG:',await page.locator('#console').innerText());throw e}
  console.log('LANGUAGE READY');
+ await page.evaluate(()=>{
+   const mon=window.SCActivity,prev=mon.outgoing;
+   mon.outgoing=raw=>{
+     const data=raw instanceof Uint8Array?raw:new Uint8Array(raw);
+     if(data.length>7&&data[0]===47&&String.fromCharCode(...data.slice(0,7))==='/d_recv'){
+       window.__qaLastDRecv=new Uint8Array(data);
+     }
+     return prev(raw);
+   };
+ });
  await page.locator('#code').fill('s.boot;');
  await page.locator('#evaluate').click();
  await page.waitForTimeout(3500);
@@ -96,6 +106,16 @@ try{
     console:document.getElementById('console').textContent.slice(-1200)
   }));
   console.log('REAL NAMED SYNTH:',JSON.stringify(linked));
+  const recvInspect=await page.evaluate(()=>{
+    const b=window.__qaLastDRecv;
+    if(!b)return {missing:true};
+    const as=(str)=>[...new TextEncoder().encode(str)];
+    const hits=(value)=>{const seq=as(value),out=[];for(let i=0;i+seq.length<=b.length;i++){if(seq.every((v,j)=>b[i+j]===v))out.push(i)}return out};
+    const pointers=hits('/s_new');
+    const four=Array.from(b.slice(0,80));
+    return {total:b.length,sNewAt:pointers,headBytes:four,sNewContexts:pointers.map(i=>Array.from(b.slice(Math.max(0,i-16),i+80)))};
+  });
+  console.log('D_RECV COMPLETION BYTE DIAGNOSTIC:',JSON.stringify(recvInspect));
   if(linked.visible.confirmed>0&&linked.display>0){
     console.log('PASS: actual WebAssembly OSC node highlights a source-linked SynthDef');
     observed=true;
