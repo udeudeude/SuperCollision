@@ -45,7 +45,7 @@ try{
    const mon=window.SCActivity,prev=mon.outgoing;
    mon.outgoing=raw=>{
      const data=raw instanceof Uint8Array?raw:new Uint8Array(raw);
-     if(data.length>7&&data[0]===47&&String.fromCharCode(...data.slice(0,7))==='/d_recv'){
+     if(data.length>7&&data.length<200000&&String.fromCharCode(...data.slice(0,Math.min(64,data.length))).includes('/d_recv')){
        window.__qaLastDRecv=new Uint8Array(data);
      }
      return prev(raw);
