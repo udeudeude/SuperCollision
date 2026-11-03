@@ -6,10 +6,15 @@
   const layer = document.getElementById('highlight-layer');
   const shell = document.querySelector('.console-shell');
   const consolePanel = document.getElementById('console-panel');
-  const diagnostics = document.querySelector('main > details.utility');
-  const consoleButton = document.getElementById('inspect-toggle');
+  const diagnostics = document.getElementById('audio-panel');
+  const viewButtons = {
+    code: document.getElementById('inspector-code'),
+    console: document.getElementById('inspector-console'),
+    audio: document.getElementById('inspector-audio')
+  };
   const body = document.body;
-  let mode = 0;
+  const views = ['code', 'console', 'audio'];
+  let mode = 'code';
   let previousLineCount = -1;
   let inner = gutter.querySelector('#line-inner');
   if (!inner) {
@@ -180,23 +185,25 @@
 
 
   function compactChrome() {
-    body.classList.toggle('compact', editor.scrollTop > 20 || mode > 0);
+    body.classList.toggle('compact', editor.scrollTop > 20 || mode !== 'code');
   }
   function setMode(next) {
-    mode = Math.max(0, Math.min(2, next));
-    body.classList.toggle('inspect-1', mode === 1);
-    body.classList.toggle('inspect-2', mode === 2);
-    consolePanel.open = mode > 0;
-    if (mode === 2 && diagnostics) diagnostics.open = true;
-    consoleButton.textContent = mode === 0 ? '▴ CONSOLE' : mode === 1 ? '▴ MORE' : '▾ EDITOR';
-    consoleButton.setAttribute('aria-expanded', String(mode > 0));
-    consoleButton.setAttribute('aria-label', mode === 0 ?
-      'Expand console and shrink editor' : mode === 1 ?
-      'Reveal diagnostics and shrink editor' : 'Restore editor height');
+    if (!views.includes(next)) return;
+    mode = next;
+    body.classList.toggle('view-console', next === 'console');
+    body.classList.toggle('view-audio', next === 'audio');
+    consolePanel.open = next === 'console';
+    diagnostics.setAttribute('aria-hidden', String(next !== 'audio'));
+    diagnostics.inert = next !== 'audio';
+    for (const [view, button] of Object.entries(viewButtons)) {
+      button.setAttribute('aria-pressed', String(view === next));
+    }
     compactChrome();
     requestAnimationFrame(followEditor);
   }
-  consoleButton.addEventListener('click', () => setMode(mode === 2 ? 0 : mode + 1));
+  for (const [view, button] of Object.entries(viewButtons)) {
+    button.addEventListener('click', () => setMode(view));
+  }
   editor.addEventListener('scroll', compactChrome, {passive:true});
   editor.addEventListener('scroll', followEditor, {passive:true});
   let tracking = null;
@@ -216,25 +223,27 @@
         // Preserve ordinary editor scrolling. Overscroll at the end opens the lower panels.
         const atBottom = editor.scrollTop + editor.clientHeight >= editor.scrollHeight - 5;
         const atTop = editor.scrollTop <= 5;
-        if (dy < 0 && atBottom && info.scroll >= editor.scrollHeight - editor.clientHeight - 12) setMode(Math.min(2, mode + 1));
-        else if (dy > 0 && atTop && mode > 0) setMode(Math.max(0, mode - 1));
+        if (dy < -70 && atBottom && info.scroll >= editor.scrollHeight - editor.clientHeight - 12) {
+          setMode(views[Math.min(2, views.indexOf(mode) + 1)]);
+        } else if (dy > 70 && atTop && mode !== 'code') {
+          setMode(views[Math.max(0, views.indexOf(mode) - 1)]);
+        }
       } else {
-        setMode(mode + (dy < 0 ? 1 : -1));
+        setMode(views[Math.max(0, Math.min(2, views.indexOf(mode) + (dy < 0 ? 1 : -1)))]);
       }
     }, {passive:true});
   }
   installSwipe(shell.querySelector('.console-bar'), false);
-  installSwipe(document.querySelector('.toolbar'), false);
-  installSwipe(gutter, false);
+  // Transport and gutter are not gesture targets: their use must not change the panel accidentally.
   installSwipe(editor, true);
   shell.querySelector('.console-bar').addEventListener('wheel', (e) => {
-    if (Math.abs(e.deltaY) > 18) setMode(mode + (e.deltaY > 0 ? 1 : -1));
+    if (Math.abs(e.deltaY) > 18) setMode(views[Math.max(0, Math.min(2, views.indexOf(mode) + (e.deltaY > 0 ? 1 : -1)))]);
   }, {passive:true});
   // Errors already open details in the interpreter bridge. Ensure the output is actually visible.
   new MutationObserver(() => {
-    if (consolePanel.open && mode === 0) setMode(1);
+    if (consolePanel.open && mode !== 'console') setMode('console');
   }).observe(consolePanel, {attributes:true, attributeFilter:['open']});
   window.addEventListener('resize', () => requestAnimationFrame(followEditor), {passive:true});
   renderGutter();
-  compactChrome();
+  setMode('code');
 })();
