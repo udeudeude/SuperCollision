@@ -214,7 +214,7 @@ export class SoundActivityTracker{
     if(this.routines.size>90)this.routines.delete(this.routines.keys().next().value);
     this.notify();
   }
-  consumeLanguagePrint(t){
+  consumeLanguagePrint(t,observe=true){
     const src=String(t);
     let saw=false;
     const stripped=src.replace(routineTracePattern,(full,run,routine,line,kind,wait,tempo)=>{
@@ -223,7 +223,7 @@ export class SoundActivityTracker{
       if(!allowed)return full;
       saw=true;
       const target=this.routines.get(run+':'+routine);
-      if(target){
+      if(target&&observe){
         target.lastLine=Number(line);target.lastKind=kind;
         target.lastAt=this.now();target.steps++;
         target.wait=kind==='wait'&&wait!=='x'?Number(wait):null;
@@ -327,7 +327,7 @@ export class SoundActivityTracker{
     ].join('\n');
   }
   stopRequested(){
-    this.nodes.clear();this.pulses=[];this.routines.clear();this.traceSessions.clear();this.notify();
+    this.nodes.clear();this.pulses=[];this.routines.clear();this.notify();
   }
   visible(now=this.now()){
     const doc=this.document,active=[],pulses=[],activeVoices=[];
@@ -376,7 +376,7 @@ export class SoundActivityTracker{
       linked:active.length,notifications:this.notifications};
   }
 }
-export function createLiveActivityUI({editor,gutter,overlay,status,code,composition,toggle,panel,instrumentsEl,routinesEl,panelToggle}){
+export function createLiveActivityUI({editor,gutter,overlay,status,code,composition,panel,instrumentsEl,routinesEl,panelToggle}){
   let enabled=true,queued=false,refreshTimer=null;
   const track=new SoundActivityTracker(()=>schedule(),()=>performance.now());
   const scrollToLine=(line)=>{
@@ -528,26 +528,31 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
       track.registerRoutinePlan(plan,compositionName,whole);
       return plan.code;
     },
-    consumePrint:t=>enabled?track.consumeLanguagePrint(t):String(t),
+    consumePrint:t=>track.consumeLanguagePrint(t,enabled),
     stop:()=>track.stopRequested(),
     document:(name,text)=>{track.setDocument(name,text)},
     refresh:schedule,
     get enabled(){return enabled},
     diagnostics:()=>track.diagnosticReport()
   };
-  let collapsed=false;
-  panelToggle.addEventListener('click',()=>{
-    collapsed=!collapsed;
-    panel.classList.toggle('live-collapsed',collapsed);
-    panelToggle.setAttribute('aria-expanded',String(!collapsed));
-  });
-  toggle.addEventListener('click',()=>{
-    enabled=!enabled;
-    toggle.textContent=enabled?'Live code tracking: on':'Live code tracking: off';
-    if(!enabled)track.stopRequested();
-    else track.setDocument(composition(),code.value);
+  function setEnabled(next){
+    enabled=Boolean(next);
+    panel.classList.toggle('live-collapsed',!enabled);
+    panelToggle.setAttribute('aria-expanded',String(enabled));
+    panelToggle.setAttribute('aria-label',enabled?
+      'Collapse Live Code and switch tracking off':
+      'Expand Live Code and switch tracking on');
+    // No observed synths or routines remain falsely active while tracking
+    // is off. Older checkpoint messages are still hidden from the console.
+    if(!enabled){
+      track.stopRequested();
+      track.instrumentStats.clear();
+    }else{
+      track.setDocument(composition(),code.value);
+    }
     schedule();
-  });
+  }
+  panelToggle.addEventListener('click',()=>setEnabled(!enabled));
   editor.addEventListener('scroll',schedule,{passive:true});
   editor.addEventListener('input',()=>track.setDocument(composition(),code.value));
   window.addEventListener('resize',schedule,{passive:true});
