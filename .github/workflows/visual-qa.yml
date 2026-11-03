@@ -6,6 +6,7 @@ on:
       - 'index.html'
       - 'instrument-layout.css'
       - 'instrument-layout.js'
+      - 'live-activity.mjs'
       - 'qa/**'
       - '.github/workflows/visual-qa.yml'
   workflow_dispatch:
