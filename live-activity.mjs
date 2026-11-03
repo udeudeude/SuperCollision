@@ -349,24 +349,70 @@ export class SoundActivityTracker{
       linked:active.length,notifications:this.notifications};
   }
 }
-export function createLiveActivityUI({editor,gutter,overlay,status,code,composition,toggle}){
-  let enabled=true,queued=false,clearPulse=null;
+export function createLiveActivityUI({editor,gutter,overlay,status,code,composition,toggle,panel,instrumentsEl,routinesEl,panelToggle}){
+  let enabled=true,queued=false,refreshTimer=null;
   const track=new SoundActivityTracker(()=>schedule());
+  const scrollToLine=(line)=>{
+    if(!Number.isInteger(line))return;
+    const h=parseFloat(getComputedStyle(editor).lineHeight)||21;
+    editor.scrollTop=Math.max(0,(line-1)*h-editor.clientHeight*0.33);
+    editor.dispatchEvent(new Event('scroll'));
+  };
+  function renderInstrumentRows(rows){
+    instrumentsEl.replaceChildren();
+    for(const item of rows.slice(0,5)){
+      const row=document.createElement('button');
+      row.type='button';row.className='live-instrument-row';
+      row.title=item.name+': '+item.active+' running; '+item.total+' started since engine initialization';
+      const name=document.createElement('span');name.className='live-instrument-name';name.textContent=item.name;
+      const count=document.createElement('span');count.className='live-instrument-count';
+      count.textContent='●'+item.active;
+      count.dataset.active=String(item.active>0);
+      const runs=document.createElement('span');runs.className='live-instrument-total';
+      runs.textContent='/'+item.total;
+      row.append(name,count,runs);
+      if(item.def)row.addEventListener('click',()=>scrollToLine(item.def.start));
+      instrumentsEl.append(row);
+    }
+    if(!rows.length){
+      const noInstruments=document.createElement('div');noInstruments.className='live-idle';
+      noInstruments.textContent='NO ACTIVE INSTRUMENTS';instrumentsEl.append(noInstruments);
+    }
+    if(rows.length>5){
+      const extra=document.createElement('small');extra.textContent='+'+(rows.length-5);
+      instrumentsEl.append(extra);
+    }
+  }
+  function renderRoutineRows(rows){
+    routinesEl.replaceChildren();
+    for(const r of rows.slice(0,2)){
+      const row=document.createElement('button');row.type='button';
+      row.className='live-routine-row';row.title='Routine at last confirmed checkpoint on line '+r.line;
+      if(r.stale)row.classList.add('live-routine-stale');
+      const name=document.createElement('span');name.textContent='R'+r.id+' · L'+r.line;
+      const state=document.createElement('span');state.className='live-routine-state';
+      state.textContent=r.stale?'LAST':r.kind==='wait'?'WAIT'+(r.wait!==null?' '+r.wait:''):'STEP';
+      row.append(name,state);
+      row.addEventListener('click',()=>scrollToLine(r.line));
+      routinesEl.append(row);
+    }
+  }
   const render=()=>{
-    queued=false;const v=track.visible();
-    const activeLines=new Set(),pulseLines=new Set();
+    queued=false;
+    const v=track.visible(),activeLines=new Set(),pulseLines=new Set(),routineLines=new Set();
     for(const range of v.active){
-      // Highlight the sound-producing definition, but limit large blocks to the visible lines.
       const lines=range.text.split('\n');
       for(let j=0;j<lines.length&&j<1000;j++){
         const line=lines[j].trim();
-        // Highlight the definition and its actual signal-generator/control-rate
-        // expressions, not comments or every line in the enclosing Routine.
-        if(j===0||(!line.startsWith('//')&&/\.(?:ar|kr|ir|dr)\s*\(|\b(?:Out|OffsetOut|ReplaceOut)\s*\.\s*ar\b/.test(line)))activeLines.add(range.start+j);
+        if(j===0||(!line.startsWith('//')&&/\.(?:ar|kr|ir|dr)\s*\(|\b(?:Out|OffsetOut|ReplaceOut)\s*\.\s*ar\b/.test(line)))
+          activeLines.add(range.start+j);
       }
     }
     for(const range of v.pulses)pulseLines.add(range.start);
-    for(const el of gutter.querySelectorAll('.line.live-active,.line.live-trigger'))el.classList.remove('live-active','live-trigger');
+    for(const r of v.routines)if(!r.stale)routineLines.add(r.line);
+    for(const el of gutter.querySelectorAll('.line.live-active,.line.live-trigger,.line.live-routine')){
+      el.classList.remove('live-active','live-trigger','live-routine');
+    }
     overlay.replaceChildren();
     const lineHeight=parseFloat(getComputedStyle(editor).lineHeight)||21;
     const topPadding=parseFloat(getComputedStyle(editor).paddingTop)||12;
@@ -375,22 +421,26 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
     const lineNodes=gutter.querySelector('#line-inner')?.children||[];
     if(enabled){
       for(let line=first;line<=last;line++){
-        const isPulse=pulseLines.has(line),isActive=activeLines.has(line);
-        if(!isPulse&&!isActive)continue;
+        const pulse=pulseLines.has(line),active=activeLines.has(line),routine=routineLines.has(line);
+        if(!pulse&&!active&&!routine)continue;
         const row=document.createElement('div');
-        row.className='live-source-line '+(isPulse?'live-source-trigger':'live-source-active');
+        row.className='live-source-line '+(pulse?'live-source-trigger':routine?'live-source-routine':'live-source-active');
         row.style.top=(topPadding+(line-1)*lineHeight-editor.scrollTop)+'px';
         row.style.height=lineHeight+'px';
         overlay.append(row);
         const label=lineNodes[line-1];
-        if(label)label.classList.add(isPulse?'live-trigger':'live-active');
+        if(label)label.classList.add(pulse?'live-trigger':routine?'live-routine':'live-active');
       }
     }
-    status.textContent=enabled?'● '+v.confirmed+'  ✦ '+track.pulses.length:'ACTIVITY OFF';
-    status.title=enabled?(v.confirmed+' server-confirmed synths; '+v.requested+
-      ' unconfirmed starts. Amber = live SynthDef; blue = recent /s_new request. Not an audio meter.'):'Live code tracking disabled';
-    clearTimeout(clearPulse);
-    if(track.pulses.length)clearPulse=setTimeout(schedule,810);
+    status.textContent=enabled?'●'+v.confirmed+'  ✦'+track.pulses.length:'OFF';
+    panel.classList.toggle('live-disabled',!enabled);
+    renderInstrumentRows(enabled?v.instruments:[]);
+    renderRoutineRows(enabled?v.routines:[]);
+    routinesEl.hidden=!enabled||!v.routines.length;
+    clearTimeout(refreshTimer);
+    if(enabled&&(track.pulses.length||v.routines.length||v.confirmed>0)){
+      refreshTimer=setTimeout(schedule,900);
+    }
   };
   function schedule(){
     if(queued)return;
@@ -401,13 +451,26 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
     tracker:track,
     outgoing:raw=>{if(enabled)track.outgoing(raw)},
     incoming:raw=>{if(enabled)track.incoming(raw)},
-    evaluation:(...args)=>{if(enabled)track.evaluation(...args)},
+    evaluation:(compositionName,whole,submitted,startLine=1)=>{
+      if(!enabled)return submitted;
+      track.evaluation(compositionName,whole,submitted,startLine);
+      const plan=prepareRoutineTrace(submitted,startLine);
+      track.registerRoutinePlan(plan,compositionName,whole);
+      return plan.code;
+    },
+    consumePrint:t=>enabled?track.consumeLanguagePrint(t):String(t),
     stop:()=>track.stopRequested(),
     document:(name,text)=>{track.setDocument(name,text)},
     refresh:schedule,
     get enabled(){return enabled},
     diagnostics:()=>track.diagnosticReport()
   };
+  let collapsed=false;
+  panelToggle.addEventListener('click',()=>{
+    collapsed=!collapsed;
+    panel.classList.toggle('live-collapsed',collapsed);
+    panelToggle.setAttribute('aria-expanded',String(!collapsed));
+  });
   toggle.addEventListener('click',()=>{
     enabled=!enabled;
     toggle.textContent=enabled?'Live code tracking: on':'Live code tracking: off';
