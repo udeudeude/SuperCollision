@@ -1,0 +1,90 @@
+/* Performance view: unaltered SuperCollider source, optional external OSC controls. */
+body main>.performance-panel,body[data-theme] main>.performance-panel{display:none;min-height:0;overflow:hidden;visibility:hidden}
+body.view-perform main>.performance-panel,body[data-theme].view-perform main>.performance-panel{
+  display:flex;flex:0 0 52%;min-height:0;flex-direction:column;
+  overflow:hidden;visibility:visible;margin:0!important;padding:0!important;
+  background:var(--perform-bg,#1b201b);color:var(--perform-fg,#e8dfcb);
+  border:1px solid var(--perform-border,#806e51);box-sizing:border-box;
+}
+body{--perform-bg:#191c1a;--perform-fg:#e8dfce;--perform-border:#806f55;--perform-grid:#82857535;--perform-left:160px}
+body[data-theme=moog]{--perform-bg:#211e19;--perform-fg:#e9dac0;--perform-border:#917758}
+body[data-theme=scope]{--perform-bg:#07150d;--perform-fg:#baf6ca;--perform-border:#368052;--perform-grid:#4b946b35}
+body[data-theme=makenoise]{--perform-bg:#090909;--perform-fg:#f4f3eb;--perform-border:#eae8e0}
+body[data-theme=bauhaus],body[data-theme=blackmountain],body[data-theme=score],body[data-theme=patch],body[data-theme=terminal]{
+  --perform-bg:#eee8da;--perform-fg:#292d29;--perform-border:#7c766b;--perform-grid:#514f4830
+}
+body .perform-header{
+  display:flex;align-items:center;gap:6px;flex:0 0 34px;padding:3px 6px;
+  border-bottom:1px solid var(--perform-border);
+  box-sizing:border-box;font:700 10px/1 ui-monospace,monospace;
+}
+body .perform-header strong{font-size:10px;letter-spacing:.08em;white-space:nowrap}
+body #perform-summary{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9px;font-weight:400;opacity:.82}
+body .perform-header button{flex:0 0 auto;min-height:26px;height:26px;padding:3px 5px;border-radius:1px;
+  border:1px solid var(--perform-border);background:transparent;color:var(--perform-fg);
+  font:700 9px/1 ui-monospace,monospace;white-space:nowrap;box-shadow:none}
+body .perform-header #perform-follow[aria-pressed=true]{background:var(--perform-border);color:var(--perform-bg)}
+body .perform-scroller{flex:1;min-height:0;max-height:100%;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;position:relative;}
+body .perform-axis{display:flex;align-items:stretch;position:relative;width:max-content;min-height:23px;
+  border-bottom:1px solid var(--perform-border);background:var(--perform-bg);z-index:2}
+body .perform-axis-label{width:var(--perform-left);flex:0 0 var(--perform-left);box-sizing:border-box;position:sticky;left:0;z-index:3;
+  display:flex;align-items:center;padding:0 6px;background:var(--perform-bg);border-right:1px solid var(--perform-border);
+  font:700 9px/1 ui-monospace,monospace}
+body .perform-axis-ticks{position:relative;flex:0 0 auto;height:23px;
+  background:repeating-linear-gradient(to right,transparent 0 159px,var(--perform-grid) 159px 160px)}
+body .perform-axis-tick{position:absolute;top:4px;transform:translateX(2px);font:8px/1 ui-monospace,monospace;opacity:.65}
+body .perform-rows{display:flex;flex-direction:column;gap:0;min-width:max-content}
+body .perform-lane{display:flex;position:relative;min-height:72px;align-items:stretch;width:max-content;border-bottom:1px solid var(--perform-border);box-sizing:border-box}
+body .perform-controls{display:flex;flex:0 0 var(--perform-left);width:var(--perform-left);min-width:0;flex-direction:column;
+  box-sizing:border-box;gap:2px;padding:3px 5px;background:var(--perform-bg);
+  border-right:2px solid var(--voice-color);position:sticky;left:0;z-index:2}
+body .perform-name{display:block;min-width:0;max-width:100%;height:16px;min-height:0;
+  padding:0;background:none;border:0;border-radius:0;box-shadow:none;
+  color:var(--voice-color);font:800 10px/1.2 ui-monospace,monospace;text-align:left;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+body .perform-voices{font:9px/1.1 ui-monospace,monospace;opacity:.7;white-space:nowrap}
+body .perform-actions{display:flex;align-items:center;gap:3px;min-width:0;height:23px}
+body .perform-actions button{flex:0 0 22px;min-height:20px;height:20px;
+  padding:0;border:1px solid var(--perform-border);border-radius:1px;
+  background:transparent;color:var(--perform-fg);box-shadow:none;
+  font:800 10px/1 ui-monospace,monospace}
+body .perform-actions button.selected{background:var(--voice-color);color:var(--perform-bg);border-color:var(--voice-color)}
+body .perform-actions button:disabled{opacity:.25}
+body .perform-actions input[type=range]{min-width:28px;flex:1;max-width:100%;height:17px;accent-color:var(--voice-color);margin:0}
+body .perform-track{width:var(--track-width,500px);height:auto;flex:0 0 var(--track-width,500px);position:relative;
+  min-height:72px;background:repeating-linear-gradient(to right,transparent 0 159px,var(--perform-grid) 159px 160px)}
+body .perform-event{display:block;position:absolute;top:16px;height:24px;min-width:3px;
+  box-sizing:border-box;border:1px solid var(--voice-color);border-radius:2px;
+  background:color-mix(in srgb,var(--voice-color) 68%,transparent);
+  box-shadow:inset 0 0 0 1px #0004;cursor:pointer;padding:0;}
+body .perform-event.perform-running{border-bottom:3px solid var(--voice-color);
+  background:color-mix(in srgb,var(--voice-color) 85%,transparent);}
+body .perform-event:hover,body .perform-event:focus-visible{outline:2px solid var(--perform-fg);outline-offset:1px}
+body .perform-params{font:8px/1.2 ui-monospace,monospace;color:var(--perform-fg)}
+body .perform-params >summary{display:block;min-height:15px;padding:1px 0;cursor:pointer;list-style:none;opacity:.8}
+body .perform-params >summary::-webkit-details-marker{display:none}
+body .perform-params >summary:before{content:'▸ ';font-size:9px}
+body .perform-params[open]>summary:before{content:'▾ '}
+body .perform-param-fields{display:flex;gap:3px;align-items:center}
+body .perform-param-fields select{width:55px;min-width:0;max-width:55px;font:9px ui-monospace,monospace;
+  background:var(--perform-bg);color:var(--perform-fg);border:1px solid var(--perform-border);}
+body .perform-param-fields input{flex:1;min-width:10px;accent-color:var(--voice-color)}
+body .perform-param-value{width:30px;flex:none;font:9px ui-monospace,monospace;text-align:right}
+body .perform-empty{padding:20px 8px;font:11px ui-monospace,monospace;opacity:.7}
+body .console-bar .inspector-modes button{letter-spacing:0}
+@media(max-width:420px){
+  body{--perform-left:130px}
+  body.view-perform main>.performance-panel{flex-basis:53%}
+  body .perform-header strong{font-size:9px}
+  body .perform-header #perform-summary{font-size:8px}
+  body .perform-header button{font-size:8px;padding-left:3px;padding-right:3px}
+  body .perform-controls{padding:3px}
+  body .perform-name{font-size:9px}
+  body .perform-voices{font-size:8px}
+  body .perform-actions{gap:2px}
+  body .perform-actions button{flex-basis:18px}
+}
+@media(max-width:355px){
+  body .console-bar .inspector-modes button,body[data-theme] .console-bar .inspector-modes button{font-size:7px;padding-left:2px;padding-right:2px}
+  body .perform-header strong{display:none}
+}
