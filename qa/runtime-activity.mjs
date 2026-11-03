@@ -70,7 +70,14 @@ try{
   console.log('T+'+(i+1),JSON.stringify(info).slice(0,4200));
   if(info.activity?.confirmed>0&&info.highlights>0){console.log('PASS: real synth node confirmed and highlighted');await page.screenshot({path:'qa/screenshots/runtime-live-activity.png'});observed=true;break}
  }
- if(!observed){await page.screenshot({path:'qa/screenshots/runtime-live-activity-failed.png'});
+ if(!observed){
+  console.log('Initial Routine did not yield a node; sending direct OSC synth request to isolate the bridge from the scheduling test');
+  await page.locator('#code').fill("s.sendMsg('/s_new', 'default', s.nextNodeID, 0, 1);");
+  await page.locator('#evaluate').click();
+  await page.waitForTimeout(1500);
+  const diagnostic=await page.evaluate(()=>window.SCActivity?.diagnostics());
+  console.log('RAW OSC DIAGNOSTIC:',diagnostic);
+  await page.screenshot({path:'qa/screenshots/runtime-live-activity-failed.png'});
  throw Error('No confirmed live highlight after real SuperCollider playback. See runtime console snapshots.');}
  }catch(e){error=e;console.error('FAIL:',e.stack||e)}
  finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
