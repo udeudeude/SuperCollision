@@ -11,6 +11,8 @@ on:
       - 'performance-engine.mjs'
       - 'performance-ui.mjs'
       - 'performance.css'
+      - 'learning.mjs'
+      - 'learning.css'
       - 'qa/**'
       - '.github/workflows/visual-qa.yml'
   workflow_dispatch:

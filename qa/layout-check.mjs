@@ -319,9 +319,21 @@ try {
           'PERFORM inspector must expose separate timeline and mixer: '+JSON.stringify(performance));
         await page.locator('#inspector-code').click();
 
-        // FILE: common commands + five exclusive touch-friendly sections.
+        // Learning is guided by default but can be disabled completely.
+        assert(await page.locator('#learning-mode').inputValue()==='guided','Learning should default to guided');
+        await page.locator('#learning-mode').selectOption('off');
+        assert(await page.locator('#learning-launch').isHidden(),'OFF must hide learning controls');
+        await page.locator('#learning-mode').selectOption('reference');
+        await page.locator('#code').fill('SinOsc.ar(440, 0, 0.1)');
+        await page.locator('#code').evaluate(el=>el.setSelectionRange(0,6));
+        await page.locator('#learning-open').evaluate(el=>el.click());
+        assert((await page.locator('.learning-panel').innerText()).includes('Sine oscillator'),
+          'REFERENCE must explain selected SuperCollider syntax');
+        await page.locator('#learning-mode').selectOption('guided');
+        assert(await page.locator('#learning-launch').isVisible(),'GUIDED must show learning affordance');
+        // FILE: common commands + six exclusive touch-friendly sections.
         const menus=await page.locator('#file-menu .file-submenu > summary').allTextContents();
-        assert(menus.map(x=>x.trim()).join('|')==='IMPORT / EXPORT|EXAMPLES|EDITOR|STORAGE|TOOLS',
+        assert(menus.map(x=>x.trim()).join('|')==='IMPORT / EXPORT|EXAMPLES|EDITOR|STORAGE|LEARNING|TOOLS',
           'FILE submenus unexpected: '+menus.join('|'));
         assert(await page.locator('#file-menu .menu-items > button').count()===4,
           'New, Rename, Delete and Undo should remain direct FILE actions');

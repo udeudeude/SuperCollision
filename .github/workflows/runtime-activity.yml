@@ -10,6 +10,8 @@ on:
       - 'performance-engine.mjs'
       - 'performance-ui.mjs'
       - 'performance.css'
+      - 'learning.mjs'
+      - 'learning.css'
       - 'qa/runtime-activity.mjs'
       - '.github/workflows/runtime-activity.yml'
 permissions:
@@ -27,7 +29,7 @@ jobs:
           path: site
       - name: Overlay current frontend onto compiled production runtime
         run: |
-          cp index.html instrument-layout.css instrument-layout.js live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs performance.css site/
+          cp index.html instrument-layout.css instrument-layout.js live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs performance.css learning.mjs learning.css site/
           test -s site/runtime/sclang/sclang.js
           test -s site/runtime/scsynth/scsynth.js
       - uses: actions/setup-node@v4
