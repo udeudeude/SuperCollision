@@ -183,3 +183,19 @@ body[data-theme=terminal] .console-bar button{background:#111;color:white;border
 body main .editor-frame, body main .editor-frame #code {touch-action:pan-x pan-y;overscroll-behavior:contain}
 body main .editor-frame .code-zoom-indicator {position:absolute;right:8px;top:8px;z-index:5;pointer-events:none;padding:4px 7px;border:1px solid currentColor;background:#151915;color:#f3d6a1;font:700 10px/1.1 ui-monospace,monospace;letter-spacing:.03em;box-shadow:0 1px 4px #0006}
 body main .editor-frame .code-zoom-indicator[hidden]{display:none}
+
+/* SuperCollision 1.5: source cues tied to server node lifecycle */
+:root{--live-amber:#dca953;--live-cyan:#79c9d8}
+body .code-stack #activity-overlay{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+body .code-stack #activity-overlay .live-source-line{position:absolute;left:0;right:0;box-sizing:border-box;min-height:1px;will-change:transform}
+body .code-stack #activity-overlay .live-source-active{background:color-mix(in srgb,var(--live-amber) 14%,transparent);border-left:2px solid var(--live-amber)}
+body .code-stack #activity-overlay .live-source-trigger{background:color-mix(in srgb,var(--live-cyan) 24%,transparent);border-left:3px solid var(--live-cyan)}
+body #line-inner .line.live-active{background:color-mix(in srgb,var(--live-amber) 35%,transparent);color:var(--live-amber);font-weight:800}
+body #line-inner .line.live-trigger{background:color-mix(in srgb,var(--live-cyan) 38%,transparent);color:var(--live-cyan);font-weight:800}
+body .console-bar #activity-status{flex:0 0 auto;font:700 10px/1 ui-monospace,monospace;white-space:nowrap;letter-spacing:0;max-width:84px;overflow:hidden;text-overflow:ellipsis;color:var(--live-amber);min-width:52px;text-align:center}
+body .activity-legend{font:11px/1.5 ui-monospace,monospace;opacity:.86;margin:8px 0 12px}
+body .activity-legend strong:first-child{color:var(--live-amber)}
+body .activity-legend strong:nth-child(2){color:var(--live-cyan)}
+body[data-theme=bauhaus],body[data-theme=blackmountain],body[data-theme=score],body[data-theme=patch],body[data-theme=terminal]{--live-amber:#a57527;--live-cyan:#18758c}
+body[data-theme=scope]{--live-amber:#e4ce67;--live-cyan:#79eafa}
+body[data-theme=makenoise]{--live-amber:#f3c56c;--live-cyan:#85bfea}
