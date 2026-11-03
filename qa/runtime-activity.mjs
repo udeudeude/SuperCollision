@@ -44,11 +44,13 @@ try{
  const example=[
  '(',
  's.waitForBoot {',
- '    SynthDef(\\qaDrone, {|freq=110|',
- '        Out.ar(0, SinOsc.ar(freq, 0, 0.1) ! 2);',
- '    }).add;',
- '    s.sync;',
- '    ~qadrone=Synth(\\qaDrone);',
+ '    Routine({',
+ '        SynthDef(\\qaDrone, {|freq=110|',
+ '            Out.ar(0, SinOsc.ar(freq, 0, 0.1) ! 2);',
+ '        }).add;',
+ '        s.sync;',
+ '        ~qadrone=Synth(\\qaDrone);',
+ '    }).play(SystemClock);',
  '};',
  ')'
  ].join('\n');
