@@ -202,7 +202,7 @@ body[data-theme=terminal] .projectbar button,body[data-theme=terminal] .menu>sum
 body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 @media(max-width:390px){body[data-theme=patch] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 78px}body[data-theme=scope] .toolbar button{font-size:9px}body[data-theme=score] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 65px}}
 </style>
-<link rel="stylesheet" href="./instrument-layout.css?v=19">
+<link rel="stylesheet" href="./instrument-layout.css?v=19.3">
 <header><svg class="identity-art" viewBox="0 0 48 40" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
 <g class="art art-bauhaus"><rect x="1" y="3" width="18" height="18" fill="#1f4b8f"/><circle cx="30" cy="13" r="11" fill="#bf4337"/><path d="M3 37L21 23L39 37Z" fill="#e8ae40"/></g>
 <g class="art art-blackmountain" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 4V36M14 4V36M24 4V36M34 4V36M44 4V36"/><path d="M2 11H46M2 21H46M2 31H46" stroke="#b7774f" stroke-width="4"/><path d="M4 11H14M24 21H34M14 31H24" stroke="#e9e1cf" stroke-width="5"/></g>
@@ -292,7 +292,7 @@ document.querySelector('#info').textContent='Platform: '+navigator.platform+' | 
 renderProjects();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flush()});
 </script>
 <script type="module">
-import {createLiveActivityUI} from "./live-activity.mjs?v=19";
+import {createLiveActivityUI} from "./live-activity.mjs?v=19.3";
 let lang,synth;
 const state=document.querySelector('#engine-status'),log=document.querySelector('#console'),run=document.querySelector('#evaluate'),panic=document.querySelector('#panic');
 const liveCode=createLiveActivityUI({editor:code,gutter,overlay:document.querySelector("#activity-overlay"),status:document.querySelector("#activity-status"),code,composition:()=>active,toggle:document.querySelector("#live-code-toggle"),panel:document.querySelector("#live-panel"),instrumentsEl:document.querySelector("#live-instruments"),routinesEl:document.querySelector("#live-routines"),panelToggle:document.querySelector("#live-panel-toggle")});
