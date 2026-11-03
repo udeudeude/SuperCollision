@@ -382,6 +382,7 @@ renderProjects();document.addEventListener('visibilitychange',()=>{if(document.v
 <script type="module">
 import {createLiveActivityUI} from "./live-activity.mjs?v=22";
 import {createPerformanceUI} from "./performance-ui.mjs?v=22";
+import {encodeOsc} from "./performance-engine.mjs?v=22";
 let lang,synth;
 const state=document.querySelector('#engine-status'),log=document.querySelector('#console'),run=document.querySelector('#evaluate'),panic=document.querySelector('#panic');
 const performanceUI=createPerformanceUI({panel:document.querySelector('#perform-panel'),editor:code,
@@ -433,7 +434,12 @@ document.querySelector('#engine').onclick=async()=>{
 function submitCode(source,start,end){if(!lang)return;try{flush();activeRegion=null;updateLines();state.classList.remove('error');liveCode.evaluation(active,code.value,source,start);performanceUI.evaluation(active,code.value,source,start);lang.runCode(source);window.scPlaybackRequested=true;requestWake();message('EVALUATED L'+start+'–'+end+' · execution submitted')}catch(e){message('Evaluation failed: '+e.message)}}
 run.onclick=()=>submitCode(code.value,1,code.value.split('\n').length);
 document.querySelector('#run-region').onclick=()=>{const a=code.selectionStart,b=code.selectionEnd,text=code.value;let from=a,to=b;if(a===b){from=text.lastIndexOf('\n',Math.max(0,a-1))+1;to=text.indexOf('\n',a);if(to<0)to=text.length}const source=text.slice(from,to);if(!source.trim())return;const start=text.slice(0,from).split('\n').length,end=start+source.split('\n').length-1;submitCode(source,start,end)};
-panic.onclick=()=>{if(!lang)return;try{lang.runCode('CmdPeriod.run;');liveCode.stop();performanceUI.stop();window.scPlaybackRequested=false;releaseWake();activeRegion=null;updateLines();message('STOP SENT · ENGINE READY')}catch(e){message('Stop failed: '+e.message)}};
+panic.onclick=()=>{if(!lang)return;try{
+  lang.runCode('CmdPeriod.run;');
+  // Also silence the actual server and discard already scheduled OSC bundles.
+  if(synth){synth.sendOsc(encodeOsc('/clearSched'));synth.sendOsc(encodeOsc('/g_freeAll',[0]));}
+  liveCode.stop();performanceUI.stop();window.scPlaybackRequested=false;releaseWake();activeRegion=null;updateLines();message('STOP SENT · ENGINE READY')
+}catch(e){message('Stop failed: '+e.message)}};
 
 
 

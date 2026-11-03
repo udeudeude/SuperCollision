@@ -171,6 +171,15 @@ try{
  if(perform.visible==='none'||perform.rows<1||perform.notes<1)
    throw Error('The timeline failed to display a real OSC note event');
  await page.screenshot({path:'qa/screenshots/runtime-performance-timeline.png'});
+ await page.locator('#panic').click();
+ await page.waitForTimeout(400);
+ const stopped=await page.evaluate(()=>({
+   status:document.querySelector('#engine-status').textContent,
+   live:window.SCActivity.tracker.visible().confirmed,
+   timeline:window.SCTimeline.journal.active().length
+ }));
+ if(!stopped.status.includes('STOP SENT')||stopped.live!==0||stopped.timeline!==0)
+   throw Error('STOP did not reset activity: '+JSON.stringify(stopped));
  }catch(e){error=e;console.error('FAIL:',e.stack||e)}
  finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
 if(error)process.exitCode=1;
