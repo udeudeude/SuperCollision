@@ -139,6 +139,59 @@ try {
         assert(resetFont===14,'FILE menu reset did not restore 100% text size');
         await page.locator('.menu>summary').click();
 
+        // Browser integration: visible highlights must be driven by actual OSC events,
+        // never merely by pressing RUN or by static editor text.
+        const activitySource=[
+          'SynthDef(\\bell, { |freq=440|',
+          '    Out.ar(0, SinOsc.ar(freq) * 0.1);',
+          '}).add;',
+          'Synth(\\bell);'
+        ].join('\n');
+        await page.locator('#code').fill(activitySource);
+        const observerReady=await page.evaluate(()=>!!window.SCActivity);
+        assert(observerReady,'OSC live-activity module did not initialize in browser');
+        const beforeActivity=await page.evaluate((text)=>{
+          const mon=window.SCActivity,editor=document.getElementById('code');
+          editor.scrollTop=0;editor.dispatchEvent(new Event('scroll'));
+          mon.evaluation('Default',text,text,1);
+          const enc=new TextEncoder();
+          const str=x=>{const a=[...enc.encode(x),0];while(a.length%4)a.push(0);return a};
+          const i32=x=>{const b=new ArrayBuffer(4);new DataView(b).setInt32(0,x,false);return [...new Uint8Array(b)]};
+          const osc=(path,types,args)=>{
+            const out=[...str(path),...str(','+types)];
+            for(let i=0;i<types.length;i++)out.push(...(types[i]==='s'?str(args[i]):i32(args[i])));
+            return Uint8Array.from(out);
+          };
+          window.__oscQA=osc;
+          return mon.tracker.visible().confirmed;
+        },activitySource);
+        assert(beforeActivity===0,'Activity should start inactive before audio server notifications');
+        await page.evaluate(()=>window.SCActivity.outgoing(window.__oscQA('/s_new','siii',['bell',1001,0,1])));
+        await page.waitForTimeout(65);
+        const requested=await page.evaluate(()=>({
+          blue:document.querySelectorAll('#activity-overlay .live-source-trigger').length,
+          amber:document.querySelectorAll('#activity-overlay .live-source-active').length,
+          status:document.getElementById('activity-status').textContent
+        }));
+        assert(requested.blue>0&&requested.amber===0,'Synth request should flash blue but not amber before confirmation: '+JSON.stringify(requested));
+        await page.evaluate(()=>window.SCActivity.incoming(window.__oscQA('/n_go','iiiii',[1001,1,-1,-1,0])));
+        await page.waitForTimeout(65);
+        const confirmed=await page.evaluate(()=>({
+          amber:document.querySelectorAll('#activity-overlay .live-source-active').length,
+          gutter:document.querySelectorAll('#line-inner .live-active').length,
+          count:window.SCActivity.tracker.visible().confirmed
+        }));
+        assert(confirmed.amber>=2&&confirmed.gutter>=2&&confirmed.count===1,
+          'Server /n_go must illuminate UGen lines and gutter: '+JSON.stringify(confirmed));
+        await page.screenshot({path:path.join(root,'qa','screenshots','live-sound-activity.png')});
+        await page.evaluate(()=>window.SCActivity.incoming(window.__oscQA('/n_end','iiiii',[1001,1,-1,-1,0])));
+        await page.waitForTimeout(70);
+        const ended=await page.evaluate(()=>({
+          amber:document.querySelectorAll('#activity-overlay .live-source-active').length,
+          count:window.SCActivity.tracker.visible().confirmed
+        }));
+        assert(ended.amber===0&&ended.count===0,'Server /n_end must clear active sound highlight');
+
         await page.locator('#inspect-toggle').click();
         await page.waitForTimeout(100);
         const shrink=await page.evaluate(()=>({height:document.querySelector('.editor-frame').getBoundingClientRect().height,open:document.getElementById('console-panel').open}));
