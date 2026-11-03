@@ -205,8 +205,11 @@ export class PerformanceJournal{
     this.changed();return true;
   }
   reset(){
+    // Restore only notes whose gain was actually changed by a user mix control.
+    // In the neutral state, RESET MIX and collapsing LIVE must be pure observers:
+    // an unsolicited /n_set could overwrite legitimate server-side modulation.
     for(const n of this.active()){
-      if(this.compatible(n.name)&&finite(n.originalAmp))
+      if(this.compatible(n.name)&&finite(n.originalAmp)&&this.effectiveGain(n.name)!==1)
         this.send(encodeOsc('/n_set',[n.id,'amp',n.originalAmp]));
     }
     for(const st of this.states.values()){st.gain=1;st.muted=false;st.solo=false;st.controls={}}
