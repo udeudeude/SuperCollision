@@ -2,7 +2,7 @@ name: Check SuperCollision IDE
 on:
   push:
     branches: [main]
-    paths: ['index.html', 'instrument-layout.css', 'instrument-layout.js', '.github/workflows/check-ide.yml']
+    paths: ['index.html', 'instrument-layout.css', 'instrument-layout.js', 'live-activity.mjs', 'qa/live-activity-test.mjs', '.github/workflows/check-ide.yml']
   pull_request:
     paths: ['index.html', 'instrument-layout.css', 'instrument-layout.js', '.github/workflows/check-ide.yml']
 jobs:
@@ -58,3 +58,5 @@ jobs:
           node --check /tmp/supercollision-1.js
           node --check /tmp/supercollision-2.js
           node --check instrument-layout.js
+          node --check live-activity.mjs
+          node qa/live-activity-test.mjs
