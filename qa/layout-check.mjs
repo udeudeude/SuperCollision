@@ -150,11 +150,12 @@ try {
         assert(fontBounds.upper===14,'Pinch exceeded normal maximum text size: '+fontBounds.upper);
         assert(fontBounds.lower===6,'Pinch failed to reach minimum text size: '+fontBounds.lower);
         await page.screenshot({path:path.join(root,'qa','screenshots','moog-pinch-small.png')});
-        await page.locator('.menu>summary').click();
+        await page.locator('#file-menu > summary').click();
+        await page.locator('#file-menu .file-submenu > summary').filter({hasText:'EDITOR'}).click();
         await page.locator('#code-size-reset').click();
         const resetFont=await page.evaluate(()=>parseFloat(getComputedStyle(document.getElementById('code')).fontSize));
         assert(resetFont===14,'FILE menu reset did not restore 100% text size');
-        await page.locator('.menu>summary').click();
+        assert(!(await page.locator('#file-menu').evaluate(el=>el.open)),'FILE menu should close after reset command');
 
         // Browser integration: visible highlights must be driven by actual OSC events,
         // never merely by pressing RUN or by static editor text.
@@ -245,7 +246,10 @@ try {
           const instrumented=window.SCActivity.evaluation('Default',piece,piece,1);
           const markers=instrumented.match(/__SCLIVE__[A-Za-z0-9]+:\d+:\d+:(?:step|wait):(?:\d+(?:\.\d+)?|x)__/g)||[];
           const wait=instrumented.match(/__SCLIVE__([A-Za-z0-9]+):(\d+):(\d+):wait:/);
-          if(wait)window.SCActivity.consumePrint('__SCLIVE__'+wait[1]+':'+wait[2]+':'+wait[3]+':wait:0.5:1__\n');
+          if(wait){
+            window.__traceMarkerQA='__SCLIVE__'+wait[1]+':'+wait[2]+':'+wait[3]+':wait:0.5:1__';
+            window.SCActivity.consumePrint(window.__traceMarkerQA+'\n');
+          }
           return {markers:markers.length+(wait?1:0),sourcePreserved:ed.value===piece};
         });
         await page.waitForTimeout(100);
@@ -309,6 +313,70 @@ try {
         }));
         assert(restored.height>=initialHeight-35&&restored.audio==='none'&&!restored.console,
           'CODE view should restore editor and hide lower panels');
+
+        // Open inset = tracking on; collapsed inset = tracking off.
+        assert(await page.locator('#live-code-toggle').count()===0,'Obsolete duplicate FILE tracking switch remains');
+        await page.locator('#live-panel-toggle').click();
+        await page.waitForTimeout(90);
+        const off=await page.evaluate(()=>{
+          const mon=window.SCActivity;
+          const exact='Routine({\n  1.wait;\n}).play(SystemClock);';
+          const submitted=mon.evaluation('Default',exact,exact,1);
+          return {
+            enabled:mon.enabled,
+            collapsed:document.getElementById('live-panel').classList.contains('live-collapsed'),
+            expanded:document.getElementById('live-panel-toggle').getAttribute('aria-expanded'),
+            marks:document.querySelectorAll('#activity-overlay .live-source-line').length,
+            uninstrumented:submitted===exact,
+            internalPrint:mon.consumePrint((window.__traceMarkerQA||'')+'\n'),
+            status:document.getElementById('activity-status').textContent
+          };
+        });
+        assert(!off.enabled&&off.collapsed&&off.expanded==='false'&&
+          off.marks===0&&off.uninstrumented&&off.internalPrint===''&&off.status==='OFF',
+          'Collapsing LIVE must genuinely turn off tracking and keep trace noise out of console: '+JSON.stringify(off));
+        await page.evaluate(()=>{
+          window.SCActivity.outgoing(window.__oscQA('/s_new','siii',['bell',2001,0,1]));
+          window.SCActivity.incoming(window.__oscQA('/n_go','iiiii',[2001,1,-1,-1,0]));
+        });
+        assert((await page.evaluate(()=>window.SCActivity.tracker.visible().confirmed))===0,
+          'Disabled LIVE must not process synth creation messages');
+        await page.locator('#live-panel-toggle').click();
+        await page.waitForTimeout(75);
+        const on=await page.evaluate(()=>{
+          const mon=window.SCActivity;
+          const source='Routine({\n  1.wait;\n}).play(SystemClock);';
+          return {enabled:mon.enabled,expanded:document.getElementById('live-panel-toggle').getAttribute('aria-expanded'),
+            instrumented:mon.evaluation('Default',source,source,1)!==source};
+        });
+        assert(on.enabled&&on.expanded==='true'&&on.instrumented,
+          'Expanding LIVE must re-enable tracking and source checkpoints');
+
+        // FILE: common commands + five exclusive touch-friendly sections.
+        const menus=await page.locator('#file-menu .file-submenu > summary').allTextContents();
+        assert(menus.map(x=>x.trim()).join('|')==='IMPORT / EXPORT|EXAMPLES|EDITOR|STORAGE|TOOLS',
+          'FILE submenus unexpected: '+menus.join('|'));
+        assert(await page.locator('#file-menu .menu-items > button').count()===4,
+          'New, Rename, Delete and Undo should remain direct FILE actions');
+        await page.locator('#file-menu > summary').click();
+        await page.locator('#file-menu .file-submenu > summary').filter({hasText:'IMPORT / EXPORT'}).click();
+        const openBefore=await page.evaluate(()=>[...document.querySelectorAll('#file-menu .file-submenu')].filter(el=>el.open).length);
+        assert(openBefore===1,'FILE must open just one submenu');
+        await page.locator('#file-menu .file-submenu > summary').filter({hasText:'STORAGE'}).click();
+        const nested=await page.evaluate(()=>{
+          const groups=[...document.querySelectorAll('#file-menu .file-submenu')];
+          const file=document.querySelector('#file-menu').getBoundingClientRect();
+          const popup=document.querySelector('#file-menu-items').getBoundingClientRect();
+          return {open:groups.filter(el=>el.open).map(el=>el.querySelector('summary').textContent.trim()),
+            popupWidth:popup.width,popupRight:popup.right,visible:popup.height>0,
+            fileOpen:document.querySelector('#file-menu').open};
+        });
+        assert(nested.fileOpen&&nested.visible&&nested.open.join('')==='STORAGE'&&
+          nested.popupWidth<=width+2&&nested.popupRight<=width+2,
+          'FILE submenu overflow or accordion failure: '+JSON.stringify(nested));
+        await page.locator('#file-menu > summary').click();
+        assert(!(await page.locator('#file-menu').evaluate(el=>el.open)),'FILE summary must dismiss drawer');
+
       }
     }
     await context.close();
@@ -318,4 +386,4 @@ try {
   await new Promise(resolve=>server.close(resolve));
 }
 if(failures)process.exitCode=1;
-else console.log('Passed: 8 themes x 3 phone widths, fixed inspector tabs, vector transport icons, pinch zoom, OSC highlighting and responsive panels.');
+else console.log('Passed: 8 themes x 3 phone widths, FILE accordion, LIVE collapse/on-off, unclipped menus, zoom, OSC tracing, and responsive panels.');
