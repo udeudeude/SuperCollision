@@ -11,6 +11,10 @@ function pack(address,types,args){
   for(let i=0;i<types.length;i++){
     if(types[i]==='s')parts.push(oscString(String(args[i])));
     else if(types[i]==='i')parts.push(beInt(args[i]));
+    else if(types[i]==='b'){
+      const bytes=Uint8Array.from(args[i]),padded=Uint8Array.from([...bytes,...new Array((4-bytes.length%4)%4).fill(0)]);
+      parts.push(beInt(bytes.length),padded);
+    }
     else throw Error('Test encoder unsupported type '+types[i]);
   }
   return Uint8Array.from(parts.flatMap(b=>[...b]));
@@ -41,6 +45,9 @@ const go=pack('/n_go','iiiii',[1001,1,-1,-1,0]);
 const end=pack('/n_end','iiiii',[1001,1,-1,-1,0]);
 assert.deepEqual(readOscPacket(pulse)[0],{address:'/s_new',args:['bell',1001,0,1]});
 assert.equal(readOscPacket(bundle([pulse,go])).length,2);
+const embedded=pack('/d_recv','bb',[Uint8Array.from([83,67,103,102]),pulse]);
+assert.deepEqual(readOscPacket(embedded).map(x=>x.address),['/d_recv','/s_new'],
+  'The /d_recv completion message can create a synth without a separate top-level /s_new');
 assert.equal(readOscPacket(new Uint8Array([7,8,9])).length,0);
 assert.equal(readOscPacket(new Uint8Array(2000000)).length,0);
 
@@ -78,6 +85,12 @@ activity.setDocument('Song A','// moved\n'+source);
 assert.equal(activity.visible().linked,0,'Edited source offsets must never map to incorrect lines');
 activity.stopRequested();
 assert.equal(activity.visible().confirmed,0);
+activity.evaluation('Song A',source,source,1);
+activity.outgoing(embedded);
+assert.equal(activity.visible().requested,1,'Track /s_new inside SynthDef completion blob');
+activity.incoming(go);
+assert.equal(activity.visible().confirmed,1);
+activity.stopRequested();
 
 const one='{ SinOsc.ar(330) ! 2 }.play;';
 const anonymous=indexSource(one);assert.equal(anonymous.anonymous.length,1);
