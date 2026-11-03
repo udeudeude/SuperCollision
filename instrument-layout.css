@@ -188,8 +188,8 @@ body main .editor-frame .code-zoom-indicator[hidden]{display:none}
 :root{--live-amber:#dca953;--live-cyan:#79c9d8}
 body .code-stack #activity-overlay{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 body .code-stack #activity-overlay .live-source-line{position:absolute;left:0;right:0;box-sizing:border-box;min-height:1px;will-change:transform}
-body .code-stack #activity-overlay .live-source-active{background:color-mix(in srgb,var(--live-amber) 14%,transparent);border-left:2px solid var(--live-amber)}
-body .code-stack #activity-overlay .live-source-trigger{background:color-mix(in srgb,var(--live-cyan) 24%,transparent);border-left:3px solid var(--live-cyan)}
+body .code-stack #activity-overlay .live-source-active{background:color-mix(in srgb,var(--live-amber) 28%,transparent);border-left:4px solid var(--live-amber)}
+body .code-stack #activity-overlay .live-source-trigger{background:color-mix(in srgb,var(--live-cyan) 42%,transparent);border-left:4px solid var(--live-cyan)}
 body #line-inner .line.live-active{background:color-mix(in srgb,var(--live-amber) 35%,transparent);color:var(--live-amber);font-weight:800}
 body #line-inner .line.live-trigger{background:color-mix(in srgb,var(--live-cyan) 38%,transparent);color:var(--live-cyan);font-weight:800}
 body .console-bar #activity-status{flex:0 0 auto;font:700 10px/1 ui-monospace,monospace;white-space:nowrap;letter-spacing:0;max-width:84px;overflow:hidden;text-overflow:ellipsis;color:var(--live-amber);min-width:52px;text-align:center}
