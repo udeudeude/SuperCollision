@@ -338,9 +338,16 @@ document.querySelector('#clear').onclick=()=>{if(code.value&&!confirm('Replace c
 const fileMenu=document.querySelector('#file-menu');
 const fileItems=document.querySelector('#file-menu-items');
 const fileGroups=[...fileItems.querySelectorAll('.file-submenu')];
-fileGroups.forEach(group=>group.addEventListener('toggle',()=>{
-  if(group.open)for(const other of fileGroups)if(other!==group)other.open=false;
-}));
+fileGroups.forEach(group=>{
+  // Close siblings before the browser toggles this summary, so two sections
+  // cannot briefly remain open during a quick sequence of taps on iOS.
+  group.querySelector('summary').addEventListener('click',()=>{
+    for(const other of fileGroups)if(other!==group)other.open=false;
+  });
+  group.addEventListener('toggle',()=>{
+    if(group.open)for(const other of fileGroups)if(other!==group)other.open=false;
+  });
+});
 fileMenu.addEventListener('toggle',()=>{
   if(!fileMenu.open)fileGroups.forEach(group=>group.open=false);
 });
