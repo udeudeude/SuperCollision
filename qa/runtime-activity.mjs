@@ -154,6 +154,10 @@ try{
    await page.waitForFunction(()=>window.SCActivity?.tracker?.visible()?.routines?.some(x=>x.steps>=2),{timeout:15000});
    checkpoints=await page.evaluate(()=>window.SCActivity.tracker.visible().routines);
    console.log('REAL ROUTINE CHECKPOINTS:',JSON.stringify(checkpoints));
+   const observedWait=checkpoints.find(x=>x.kind==='wait');
+   if(!observedWait||Math.abs(observedWait.waitSeconds-0.7)>0.06||observedWait.tempo!==1){
+     throw new Error('Actual SystemClock wait did not capture its duration and clock rate: '+JSON.stringify(checkpoints));
+   }
    await page.waitForFunction(()=>document.querySelector('#live-routines')?.textContent.includes('R2'),{timeout:3000});
    const ui=await page.evaluate(()=>({
      panel:document.getElementById('live-panel').getBoundingClientRect().toJSON(),
@@ -163,6 +167,7 @@ try{
    }));
    console.log('LIVE INSET:',JSON.stringify(ui));
    if(!ui.rows.includes('R')||!ui.panel.width)throw Error('Routine indicator missing from editor inset');
+   if(!/WAIT|DUE/.test(ui.rows))throw Error('Clock-aware WAIT countdown missing from the live editor: '+ui.rows);
    await page.screenshot({path:'qa/screenshots/runtime-routine-progress.png'});
  }catch(e){
    console.log('ROUTINE TRACE FAILURE:',JSON.stringify(await page.evaluate(()=>({
