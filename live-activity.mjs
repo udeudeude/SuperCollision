@@ -180,7 +180,7 @@ export function indexSource(source){
 }
 export class SoundActivityTracker{
   constructor(onChange=()=>{},now=()=>Date.now()){
-    this.onChange=onChange;this.now=now;this.nodes=new Map();this.defs=new Map();this.calls=new Map();this.instrumentStats=new Map();this.routines=new Map();this.traceSessions=new Map();
+    this.onChange=onChange;this.now=now;this.nodes=new Map();this.defs=new Map();this.calls=new Map();this.instrumentStats=new Map();this.routines=new Map();this.traceSessions=new Map();this.colorSlots=new Map();this.nextColorSlot=0;
     this.anonymous=null;this.document=null;this.pulses=[];this.requestCount=0;this.confirmedCount=0;
     this.lastServerMessage=0;this.notifications=false;this.sentPackets=0;this.receivedPackets=0;this.recentSent=[];this.recentReceived=[];this.unknownPacketTypes=0;
   }
@@ -208,7 +208,7 @@ export class SoundActivityTracker{
     for(const r of plan.routines){
       this.routines.set(plan.run+':'+r.id,{
         ...r,composition,snapshot:whole,lastLine:null,lastKind:null,
-        lastAt:0,steps:0,wait:null
+        lastAt:0,steps:0,wait:null,tempo:null,waitSeconds:null,waitUntil:null
       });
     }
     if(this.routines.size>90)this.routines.delete(this.routines.keys().next().value);
@@ -217,7 +217,7 @@ export class SoundActivityTracker{
   consumeLanguagePrint(t){
     const src=String(t);
     let saw=false;
-    const stripped=src.replace(routineTracePattern,(full,run,routine,line,kind,wait)=>{
+    const stripped=src.replace(routineTracePattern,(full,run,routine,line,kind,wait,tempo)=>{
       const session=this.traceSessions.get(run);
       const allowed=session?.allowed.has(routine+':'+line+':'+kind);
       if(!allowed)return full;
@@ -227,6 +227,12 @@ export class SoundActivityTracker{
         target.lastLine=Number(line);target.lastKind=kind;
         target.lastAt=this.now();target.steps++;
         target.wait=kind==='wait'&&wait!=='x'?Number(wait):null;
+        const rate=Number(tempo);
+        target.tempo=kind==='wait'&&Number.isFinite(rate)&&rate>0?rate:null;
+        target.waitSeconds=target.wait!==null&&target.tempo!==null?
+          Math.max(0,target.wait/target.tempo):null;
+        target.waitUntil=target.waitSeconds!==null&&Number.isFinite(target.waitSeconds)?
+          target.lastAt+target.waitSeconds*1000:null;
         this.notify();
       }
       return '';
@@ -234,11 +240,18 @@ export class SoundActivityTracker{
     if(!saw)return src;
     return stripped.split(/\r?\n/).filter(x=>x.trim()).join('\n');
   }
+  colorSlot(name){
+    if(!this.colorSlots.has(name)){
+      this.colorSlots.set(name,this.nextColorSlot%10);
+      this.nextColorSlot++;
+    }
+    return this.colorSlots.get(name);
+  }
   statistics(name,composition='unmapped'){
     const key=composition+'|'+name;
     let row=this.instrumentStats.get(key);
     if(!row){
-      row={name,composition,total:0,ended:0,lastDuration:null,totalDuration:0,lastAt:0};
+      row={name,composition,total:0,ended:0,lastDuration:null,totalDuration:0,lastAt:0,slot:this.colorSlot(name)};
       this.instrumentStats.set(key,row);
     }
     return row;
@@ -260,9 +273,9 @@ export class SoundActivityTracker{
         const t=this.now();
         // Audio is only confirmed active by the server's /n_go.
         const owner=definition?.composition||call?.composition||this.document?.composition||'unmapped';
-        this.nodes.set(id,{id,name,definition,call,composition:owner,confirmed:false,running:true,time:t,startedAt:null});
+        this.nodes.set(id,{id,name,definition,call,composition:owner,confirmed:false,running:true,time:t,startedAt:null,slot:this.colorSlot(name),voiceSlot:(this.requestCount%10)});
         this.statistics(name,owner).lastAt=t;
-        this.pulses.push({name,site:call||definition,at:t});
+        this.pulses.push({name,site:call||definition,at:t,slot:this.colorSlot(name),voiceSlot:this.requestCount%10});
         this.requestCount++;
         if(this.nodes.size>5000){
           const oldest=this.nodes.keys().next().value;
@@ -317,40 +330,47 @@ export class SoundActivityTracker{
     this.nodes.clear();this.pulses=[];this.routines.clear();this.traceSessions.clear();this.notify();
   }
   visible(now=this.now()){
-    const doc=this.document,active=[],pulses=[];
+    const doc=this.document,active=[],pulses=[],activeVoices=[];
     const matches=site=>!!doc&&!!site&&site.composition===doc.composition&&
       doc.text.slice(site.startOffset,site.endOffset+1)===site.text;
     const instruments=new Map();
     for(const stats of this.instrumentStats.values()){
       const name=stats.name,connected=this.defs.get(name);
       if(!doc||stats.composition!==doc.composition||!(connected&&matches(connected)))continue;
-      const row={...stats,active:0,pending:0,def:connected,latestAge:Math.max(0,now-stats.lastAt)};
+      const row={...stats,active:0,pending:0,voices:[],paused:0,def:connected,latestAge:Math.max(0,now-stats.lastAt)};
       instruments.set(name,row);
     }
     for(const node of this.nodes.values()){
       const row=instruments.get(node.name);
       if(node.confirmed&&node.running&&matches(node.definition)){
         active.push(node.definition);
+        activeVoices.push({site:node.definition,slot:node.slot,voiceSlot:node.voiceSlot,id:node.id,name:node.name});
         if(row){
           row.active++;
+          row.voices.push({id:node.id,slot:node.voiceSlot,startedAt:node.startedAt||node.time});
           row.oldestStartAt=row.oldestStartAt===undefined?(node.startedAt||node.time):Math.min(row.oldestStartAt,node.startedAt||node.time);
         }
       }else if(!node.confirmed&&row)row.pending++;
+      else if(node.confirmed&&!node.running&&row)row.paused++;
     }
     this.pulses=this.pulses.filter(p=>now-p.at<800);
-    for(const p of this.pulses)if(matches(p.site))pulses.push(p.site);
+    for(const p of this.pulses)if(matches(p.site))pulses.push({site:p.site,slot:p.slot,voiceSlot:p.voiceSlot,name:p.name});
     const recent=Array.from(instruments.values()).filter(x=>x.active>0||x.latestAge<15000);
     recent.sort((a,b)=>b.active-a.active||b.lastAt-a.lastAt);
     const progress=[];
     for(const r of this.routines.values()){
       if(!doc||r.composition!==doc.composition||r.snapshot!==doc.text||!r.lastAt)continue;
       const elapsed=now-r.lastAt;
-      if(elapsed>45000)continue; // A trace position is not proof the Routine still runs.
+      if(elapsed>Math.max(45000,(r.waitSeconds||0)*1000+15000))continue; // A trace position is not proof the Routine still runs.
+      const waiting=r.lastKind==='wait'&&r.waitUntil!==null;
+      const remaining=waiting?Math.max(0,(r.waitUntil-now)/1000):null;
+      const stale=elapsed>Math.max(15000,(r.waitSeconds||0)*1000+1500);
       progress.push({id:r.id,line:r.lastLine,kind:r.lastKind,at:r.lastAt,
-        ago:elapsed,steps:r.steps,wait:r.wait,stale:elapsed>15000});
+        ago:elapsed,steps:r.steps,wait:r.wait,tempo:r.tempo,waitSeconds:r.waitSeconds,
+        remaining,waiting,stale});
     }
     progress.sort((a,b)=>b.at-a.at);
-    return {active,pulses,instruments:recent.slice(0,8),routines:progress.slice(0,3),
+    return {active,activeVoices,pulses,instruments:recent.slice(0,8),routines:progress.slice(0,3),
       confirmed:[...this.nodes.values()].filter(n=>n.confirmed&&n.running).length,
       requested:[...this.nodes.values()].filter(n=>!n.confirmed).length,events:this.requestCount,
       linked:active.length,notifications:this.notifications};
