@@ -367,3 +367,7 @@ body .console-bar #activity-status{display:none!important}
   body .live-panel #live-panel-toggle{height:28px;min-height:28px;padding:2px 4px}
   body .live-instrument-row{font-size:9px}
 }
+
+body .live-instrument-duration{flex:none;color:var(--live-panel-fg,#eee);opacity:.77;min-width:26px;text-align:right;font:600 9px/1 ui-monospace,monospace}
+body .live-panel .live-instrument-row{gap:3px}
+@media(max-width:370px){body .live-instrument-duration{font-size:8px;min-width:23px}}
