@@ -8,6 +8,9 @@ on:
       - 'instrument-layout.js'
       - 'live-activity.mjs'
       - 'routine-trace.mjs'
+      - 'performance-engine.mjs'
+      - 'performance-ui.mjs'
+      - 'performance.css'
       - '_headers'
       - '.github/workflows/publish-ui.yml'
   workflow_dispatch:
@@ -41,11 +44,14 @@ jobs:
           cp source/instrument-layout.js site/instrument-layout.js
           cp source/live-activity.mjs site/live-activity.mjs
           cp source/routine-trace.mjs site/routine-trace.mjs
+          cp source/performance-engine.mjs site/performance-engine.mjs
+          cp source/performance-ui.mjs site/performance-ui.mjs
+          cp source/performance.css site/performance.css
           cp source/_headers site/_headers
           cd site
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html _headers instrument-layout.css instrument-layout.js live-activity.mjs routine-trace.mjs
+          git add index.html _headers instrument-layout.css instrument-layout.js live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs performance.css
           if git diff --cached --quiet; then
             echo "Already current"
           else
