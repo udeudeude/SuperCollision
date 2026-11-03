@@ -137,68 +137,40 @@ try{
   await page.screenshot({path:'qa/screenshots/runtime-live-activity-failed.png'});
  throw Error('No confirmed live highlight after real SuperCollider playback. See runtime console snapshots.');}
 
- const routinePiece=[
-   '(',
-   '~qaLivingRoutine = Routine({',
-   '    3.do {',
-   '        Synth(\\qaDrone);',
-   '        0.7.wait;',
-   '    };',
-   '}).play(SystemClock);',
-   ')'
- ].join('\n');
- await page.locator('#code').fill(routinePiece);
+ // Confirm normal, unmodified code starts new notes and their server lifetimes
+ // appear in the independent timeline (no source injection).
+ await page.locator('#code').fill("s.sendMsg('/s_new', 'qaDrone', s.nextNodeID, 0, 1);");
+ const before=await page.evaluate(()=>window.SCTimeline.journal.events.length);
  await page.locator('#evaluate').click();
- let checkpoints=[];
- try{
-   await page.waitForFunction(()=>window.SCActivity?.tracker?.visible()?.routines?.some(x=>x.steps>=2),{timeout:15000});
-   checkpoints=await page.evaluate(()=>window.SCActivity.tracker.visible().routines);
-   console.log('REAL ROUTINE CHECKPOINTS:',JSON.stringify(checkpoints));
-   const observedWait=checkpoints.find(x=>x.kind==='wait');
-   if(!observedWait||Math.abs(observedWait.waitSeconds-0.7)>0.06||observedWait.tempo!==1){
-     throw new Error('Actual SystemClock wait did not capture its duration and clock rate: '+JSON.stringify(checkpoints));
-   }
-   await page.waitForFunction(()=>document.querySelector('#live-routines')?.textContent.includes('R2'),{timeout:3000});
-   const ui=await page.evaluate(()=>({
-     panel:document.getElementById('live-panel').getBoundingClientRect().toJSON(),
-     rows:document.querySelector('#live-routines').textContent,
-     counter:document.querySelector('#activity-status').textContent,
-     console:document.querySelector('#console').textContent.slice(-1000)
-   }));
-   console.log('LIVE INSET:',JSON.stringify(ui));
-   if(!ui.rows.includes('R')||!ui.panel.width)throw Error('Routine indicator missing from editor inset');
-   if(!/WAIT|DUE/.test(ui.rows))throw Error('Clock-aware WAIT countdown missing from the live editor: '+ui.rows);
-   await page.screenshot({path:'qa/screenshots/runtime-routine-progress.png'});
-   const tempoRoutine=[
-     '(',
-     '~qaTempoClock = TempoClock.new(2);',
-     '~qaTempoRoutine = Routine({',
-     '    2.do {',
-     '        1.wait;',
-     '    };',
-     '}).play(~qaTempoClock);',
-     ')'
-   ].join('\n');
-   await page.locator('#code').fill(tempoRoutine);
-   await page.locator('#evaluate').click();
-   await page.waitForFunction(()=>{
-     const rows=window.SCActivity?.tracker?.visible()?.routines||[];
-     return rows.some(r=>r.kind==='wait'&&r.tempo===2&&Math.abs(r.waitSeconds-0.5)<0.05);
-   },{timeout:10000});
-   const tempoObserved=await page.evaluate(()=>window.SCActivity.tracker.visible().routines);
-   console.log('REAL TEMPOCLOCK WAIT:',JSON.stringify(tempoObserved));
-   if(!tempoObserved.some(r=>r.tempo===2&&Math.abs(r.waitSeconds-0.5)<0.05))
-     throw Error('TempoClock wait must count beat duration using 2 beats per second');
-
- }catch(e){
-   console.log('ROUTINE TRACE FAILURE:',JSON.stringify(await page.evaluate(()=>({
-     visible:window.SCActivity.tracker.visible(),
-     program:document.querySelector('#code').value,
-     diagnostic:window.SCActivity.diagnostics(),
-     console:document.getElementById('console').textContent.slice(-2300)
-   }))));
-   throw e;
- }
+ await page.waitForFunction(count=>{
+   const j=window.SCTimeline?.journal;
+   return !!j&&j.events.length>count&&j.events.some(e=>e.name==='qaDrone'&&e.start!==null);
+ },before,{timeout:13000});
+ const journal=await page.evaluate(()=>({
+   events:window.SCTimeline.journal.events.slice(-5),
+   instrument:window.SCTimeline.journal.getInstrumentRows().find(r=>r.name==='qaDrone'),
+   live:window.SCActivity.enabled,
+   code:document.querySelector('#code').value,
+   panel:!!document.querySelector('#perform-panel')
+ }));
+ console.log('REAL UNMODIFIED TIMELINE:',JSON.stringify(journal));
+ if(!journal.panel||!journal.instrument||journal.instrument.active<1)
+   throw Error('Timeline did not observe actual audio-engine synth lifecycle');
+ if(journal.code!=="s.sendMsg('/s_new', 'qaDrone', s.nextNodeID, 0, 1);")
+   throw Error('Editor source modified during performance observation');
+ await page.locator('#inspector-perform').click();
+ await page.waitForFunction(()=>document.querySelectorAll('.perform-event').length>0,{timeout:4500});
+ const perform=await page.evaluate(()=>({
+   visible:getComputedStyle(document.querySelector('#perform-panel')).display,
+   rows:document.querySelectorAll('.perform-lane').length,
+   notes:document.querySelectorAll('.perform-event').length,
+   title:document.querySelector('#perform-summary').textContent,
+   untouched:document.querySelector('#code').value
+ }));
+ console.log('PERFORM VIEW:',JSON.stringify(perform));
+ if(perform.visible==='none'||perform.rows<1||perform.notes<1)
+   throw Error('The timeline failed to display a real OSC note event');
+ await page.screenshot({path:'qa/screenshots/runtime-performance-timeline.png'});
  }catch(e){error=e;console.error('FAIL:',e.stack||e)}
  finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
 if(error)process.exitCode=1;
