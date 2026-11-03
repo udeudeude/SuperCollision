@@ -227,55 +227,23 @@ try {
         }));
         assert(ended.amber===0&&ended.count===0,'Server /n_end must clear active sound highlight');
 
-        // Mimic the language post channel without fabricating an OSC start:
-        // the module must produce actual executable Routine checkpoints.
-        const tracePlan=await page.evaluate(()=>{
-          const piece=[
-            '(',
-            '~routine=Routine({',
-            '  var x=1;',
-            '  2.do {',
-            '    Synth(\\bell);',
-            '    0.5.wait;',
-            '  };',
-            '}).play(SystemClock);',
-            ')'
-          ].join('\n');
-          const ed=document.getElementById('code');
-          ed.value=piece;ed.dispatchEvent(new Event('input',{bubbles:true}));
-          const instrumented=window.SCActivity.evaluation('Default',piece,piece,1);
-          const markers=instrumented.match(/__SCLIVE__[A-Za-z0-9]+:\d+:\d+:(?:step|wait):(?:\d+(?:\.\d+)?|x)__/g)||[];
-          const wait=instrumented.match(/__SCLIVE__([A-Za-z0-9]+):(\d+):(\d+):wait:/);
-          if(wait){
-            window.__traceMarkerQA='__SCLIVE__'+wait[1]+':'+wait[2]+':'+wait[3]+':wait:0.5:1__';
-            window.SCActivity.consumePrint(window.__traceMarkerQA+'\n');
-          }
-          return {markers:markers.length+(wait?1:0),sourcePreserved:ed.value===piece};
+        // Strict compatibility: even a Routine must be submitted verbatim.
+        const exactRoutine=await page.evaluate(()=>{
+          const piece='Routine({\\n  1.wait;\\n}).play(SystemClock);';
+          return {returned:window.SCActivity.evaluation('Default',piece,piece,1),
+            original:piece,routines:window.SCActivity.tracker.visible().routines.length};
         });
-        await page.waitForTimeout(100);
-        const routineUi=await page.evaluate(()=>({
-          text:document.getElementById('live-routines').textContent,
-          lines:document.querySelectorAll('#activity-overlay .live-source-wait').length,
-          state:document.querySelector('.live-routine-state')?.textContent||'',
-          progress:document.querySelector('.live-routine-row')?.style.getPropertyValue('--wait-progress')||''
-        }));
-        assert(tracePlan.markers>=2&&tracePlan.sourcePreserved,'Routine trace instrumentation changed visible code');
-        assert(routineUi.text.includes('WAIT')&&routineUi.lines>0&&routineUi.progress.endsWith('%'),
-          'Routine countdown checkpoint not visible within editor: '+JSON.stringify(routineUi));
-        const initialSeconds=parseFloat(routineUi.state.replace('WAIT',''));
-        await page.waitForTimeout(240);
-        const later=await page.evaluate(()=>document.querySelector('.live-routine-state')?.textContent||'');
-        const laterSeconds=parseFloat(later.replace('WAIT',''));
-        assert(Number.isFinite(initialSeconds)&&Number.isFinite(laterSeconds)&&laterSeconds<initialSeconds,
-          'WAIT countdown did not decrease: '+routineUi.state+' to '+later);
-
+        assert(exactRoutine.returned===exactRoutine.original,
+          'Living Code must not insert execution instructions');
+        assert(exactRoutine.routines===0,
+          'Do not invent exact Routine location without an independent execution trace');
 
         assert((await page.locator('#run-region').innerText()).trim()==='SELECTED','Selected transport button label incorrect');
         assert(await page.locator('#evaluate svg.transport-icon').count()===1,'RUN does not use a vector icon');
         assert(await page.locator('#record-stop svg.transport-icon').count()===1,'SAVE does not use a distinct vector icon');
         assert(!(await page.locator('#evaluate').innerText()).includes('▶'),'RUN still contains emoji-prone glyph');
         const names=await page.locator('.inspector-modes button').allTextContents();
-        assert(names.join('|')==='CODE|CONSOLE|AUDIO','Direct inspector tabs absent');
+        assert(names.join('|')==='CODE|CONSOLE|AUDIO|PERFORM','Direct inspector tabs absent');
         const codeBefore=await page.evaluate(()=>({
           audio:getComputedStyle(document.getElementById('audio-panel')).display,
           pressed:document.getElementById('inspector-code').getAttribute('aria-pressed')
@@ -314,43 +282,42 @@ try {
         assert(restored.height>=initialHeight-35&&restored.audio==='none'&&!restored.console,
           'CODE view should restore editor and hide lower panels');
 
-        // Open inset = tracking on; collapsed inset = tracking off.
-        assert(await page.locator('#live-code-toggle').count()===0,'Obsolete duplicate FILE tracking switch remains');
+        // LIVE is an observation switch, never a source transformation.
+        assert(await page.locator('#live-code-toggle').count()===0,'Redundant FILE tracking switch remains');
         await page.locator('#live-panel-toggle').click();
-        await page.waitForTimeout(90);
+        await page.waitForTimeout(85);
         const off=await page.evaluate(()=>{
-          const mon=window.SCActivity;
-          const exact='Routine({\n  1.wait;\n}).play(SystemClock);';
-          const submitted=mon.evaluation('Default',exact,exact,1);
-          return {
-            enabled:mon.enabled,
+          const mon=window.SCActivity,perf=window.SCTimeline;
+          const text='Routine({\\n  1.wait;\\n}).play(SystemClock);';
+          return {enabled:mon.enabled,observing:perf.journal.enabled,
             collapsed:document.getElementById('live-panel').classList.contains('live-collapsed'),
-            expanded:document.getElementById('live-panel-toggle').getAttribute('aria-expanded'),
-            marks:document.querySelectorAll('#activity-overlay .live-source-line').length,
-            uninstrumented:submitted===exact,
-            internalPrint:mon.consumePrint((window.__traceMarkerQA||'')+'\n'),
-            status:document.getElementById('activity-status').textContent
-          };
+            unchanged:mon.evaluation('Default',text,text,1)===text,
+            status:document.querySelector('#activity-status').textContent};
         });
-        assert(!off.enabled&&off.collapsed&&off.expanded==='false'&&
-          off.marks===0&&off.uninstrumented&&off.internalPrint===''&&off.status==='OFF',
-          'Collapsing LIVE must genuinely turn off tracking and keep trace noise out of console: '+JSON.stringify(off));
-        await page.evaluate(()=>{
-          window.SCActivity.outgoing(window.__oscQA('/s_new','siii',['bell',2001,0,1]));
-          window.SCActivity.incoming(window.__oscQA('/n_go','iiiii',[2001,1,-1,-1,0]));
-        });
-        assert((await page.evaluate(()=>window.SCActivity.tracker.visible().confirmed))===0,
-          'Disabled LIVE must not process synth creation messages');
+        assert(!off.enabled&&!off.observing&&off.collapsed&&off.unchanged&&off.status==='OFF',
+          'Collapsed LIVE must stop observation without changing source: '+JSON.stringify(off));
         await page.locator('#live-panel-toggle').click();
         await page.waitForTimeout(75);
         const on=await page.evaluate(()=>{
-          const mon=window.SCActivity;
-          const source='Routine({\n  1.wait;\n}).play(SystemClock);';
-          return {enabled:mon.enabled,expanded:document.getElementById('live-panel-toggle').getAttribute('aria-expanded'),
-            instrumented:mon.evaluation('Default',source,source,1)!==source};
+          const mon=window.SCActivity,perf=window.SCTimeline;
+          const text='Routine({\\n  1.wait;\\n}).play(SystemClock);';
+          return {enabled:mon.enabled,observing:perf.journal.enabled,
+            unchanged:mon.evaluation('Default',text,text,1)===text};
         });
-        assert(on.enabled&&on.expanded==='true'&&on.instrumented,
-          'Expanding LIVE must re-enable tracking and source checkpoints');
+        assert(on.enabled&&on.observing&&on.unchanged,'Expanded LIVE must restore observation but not instrumentation');
+        await page.locator('#inspector-perform').click();
+        await page.waitForTimeout(100);
+        const performance=await page.evaluate(()=>{
+          const p=document.getElementById('perform-panel');
+          return {height:p.getBoundingClientRect().height,
+            visible:getComputedStyle(p).display,
+            tab:document.getElementById('inspector-perform').getAttribute('aria-pressed'),
+            rows:!!document.getElementById('perform-rows'),
+            original:window.SCTimeline.journal.events.length};
+        });
+        assert(performance.height>=120&&performance.visible!=='none'&&performance.tab==='true'&&performance.rows,
+          'PERFORM inspector must expose separate timeline and mixer: '+JSON.stringify(performance));
+        await page.locator('#inspector-code').click();
 
         // FILE: common commands + five exclusive touch-friendly sections.
         const menus=await page.locator('#file-menu .file-submenu > summary').allTextContents();
