@@ -154,6 +154,7 @@ try{
    await page.waitForFunction(()=>window.SCActivity?.tracker?.visible()?.routines?.some(x=>x.steps>=2),{timeout:15000});
    checkpoints=await page.evaluate(()=>window.SCActivity.tracker.visible().routines);
    console.log('REAL ROUTINE CHECKPOINTS:',JSON.stringify(checkpoints));
+   await page.waitForFunction(()=>document.querySelector('#live-routines')?.textContent.includes('R2'),{timeout:3000});
    const ui=await page.evaluate(()=>({
      panel:document.getElementById('live-panel').getBoundingClientRect().toJSON(),
      rows:document.querySelector('#live-routines').textContent,
