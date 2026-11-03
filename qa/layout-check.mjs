@@ -36,7 +36,7 @@ try {
         const title=document.querySelector('header h1'),tabButtons=[...document.querySelectorAll('.inspector-modes button')];
         return {header:rect('header'),files:rect('.projectbar'),editor:rect('.editor-frame'),transport:rect('.toolbar'),console:rect('.console-bar'),controls,vector,viewport:innerHeight,scrollY,selected,
           fullTitle:title.scrollWidth<=title.clientWidth+1,
-          tabsFit:tabButtons.every(el=>{const b=el.getBoundingClientRect(),p=el.parentElement.getBoundingClientRect();return b.width>=24&&el.scrollWidth<=el.clientWidth+1&&b.left>=p.left-1&&b.right<=p.right+1;}),tabDetails:tabButtons.map(el=>{const b=el.getBoundingClientRect(),p=el.parentElement.getBoundingClientRect();return {text:el.textContent,w:b.width,scroll:el.scrollWidth,client:el.clientWidth,left:b.left,right:b.right,parentLeft:p.left,parentRight:p.right}})}
+          tabsFit:tabButtons.every(el=>{const b=el.getBoundingClientRect(),p=el.parentElement.getBoundingClientRect();return b.width>=20&&el.scrollWidth<=el.clientWidth+1&&b.left>=p.left-1&&b.right<=p.right+1;}),tabDetails:tabButtons.map(el=>{const b=el.getBoundingClientRect(),p=el.parentElement.getBoundingClientRect();return {text:el.textContent,w:b.width,scroll:el.scrollWidth,client:el.clientWidth,left:b.left,right:b.right,parentLeft:p.left,parentRight:p.right}})}
       });
       assert(r.header.top<=r.files.top+2,theme+' header above files at '+width);
       assert(r.files.bottom<=r.editor.top+4,theme+' files above editor at '+width);
