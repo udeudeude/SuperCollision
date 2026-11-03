@@ -80,3 +80,13 @@ Test on iPhone Safari (normal and standalone if installed) and one desktop brows
 - AUDIO exposes an independent browser Web Audio test oscillator. It does not inspect or measure individual SuperCollider synth nodes; those are tracked separately by Living Code.
 - The FILE menu no longer contains generic on-screen explanation prose for SELECTED. Controls should make sense directly; extended explanations belong in documentation and conversation.
 - The full SuperCollision masthead remains legible on phone widths, with condensed version metadata. All views preserve one-row transport controls, editor pinch zoom, and live OSC-derived highlighting.
+
+## Version 2.1: Inset-first activity controls and structured FILE drawer
+
+- LIVE expanded is the only enabled state for source-to-sound tracking. Collapsing LIVE disables new OSC observation and Routine trace insertion, clears active source markers and current node counts, and updates the inset status to OFF. Expanding LIVE enables subsequent tracking. Music continues to run independently in SuperCollider.
+- Internal Routine trace messages from earlier evaluations are suppressed even while LIVE is collapsed, avoiding noise in the console.
+- There is no redundant Live code tracking switch in the FILE menu.
+- Common FILE actions are direct: New composition, Rename composition, Delete composition, Undo delete.
+- Touch-accessible FILE groups are IMPORT / EXPORT (import, export, copy), EXAMPLES (starter, Living Code demonstration), EDITOR (go to line, text sizes), STORAGE (backup, restore, cleanup), and TOOLS (screen awake, activity diagnostics).
+- Only one FILE subsection remains expanded at a time. The menu closes on outside tap, Escape, or commands (except for repeatable text-size and screen-awake controls).
+- The editor and the transport must remain unaffected when the menu opens, closes, or changes subsection.
