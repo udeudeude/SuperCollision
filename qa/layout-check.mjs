@@ -209,6 +209,14 @@ try {
         });
         assert(chip.name==='bell'&&chip.count==='●1'&&chip.total==='/1'&&chip.duration.endsWith('s'),
           'Per-instrument live chip missing data: '+JSON.stringify(chip));
+        const color=await page.evaluate(()=>({
+          instrument:document.querySelector('.live-instrument-row')?.style.getPropertyValue('--voice-color'),
+          active:document.querySelector('.live-source-active')?.style.getPropertyValue('--voice-color'),
+          hueCount:[getComputedStyle(document.documentElement).getPropertyValue('--voice-0'),
+            getComputedStyle(document.documentElement).getPropertyValue('--voice-1')].filter(Boolean).length
+        }));
+        assert(color.instrument===color.active&&color.hueCount===2,
+          'Instrument source and inset colors disagree: '+JSON.stringify(color));
         await page.screenshot({path:path.join(root,'qa','screenshots','live-sound-activity.png')});
         await page.evaluate(()=>window.SCActivity.incoming(window.__oscQA('/n_end','iiiii',[1001,1,-1,-1,0])));
         await page.waitForTimeout(70);
@@ -236,17 +244,26 @@ try {
           ed.value=piece;ed.dispatchEvent(new Event('input',{bubbles:true}));
           const instrumented=window.SCActivity.evaluation('Default',piece,piece,1);
           const markers=instrumented.match(/__SCLIVE__[A-Za-z0-9]+:\d+:\d+:(?:step|wait):(?:\d+(?:\.\d+)?|x)__/g)||[];
-          if(markers.length)window.SCActivity.consumePrint(markers[markers.length-1]+'\n');
-          return {markers:markers.length,sourcePreserved:ed.value===piece};
+          const wait=instrumented.match(/__SCLIVE__([A-Za-z0-9]+):(\d+):(\d+):wait:/);
+          if(wait)window.SCActivity.consumePrint('__SCLIVE__'+wait[1]+':'+wait[2]+':'+wait[3]+':wait:0.5:1__\n');
+          return {markers:markers.length+(wait?1:0),sourcePreserved:ed.value===piece};
         });
         await page.waitForTimeout(100);
         const routineUi=await page.evaluate(()=>({
           text:document.getElementById('live-routines').textContent,
-          lines:document.querySelectorAll('#activity-overlay .live-source-routine').length
+          lines:document.querySelectorAll('#activity-overlay .live-source-wait').length,
+          state:document.querySelector('.live-routine-state')?.textContent||'',
+          progress:document.querySelector('.live-routine-row')?.style.getPropertyValue('--wait-progress')||''
         }));
         assert(tracePlan.markers>=2&&tracePlan.sourcePreserved,'Routine trace instrumentation changed visible code');
-        assert(routineUi.text.includes('WAIT')&&routineUi.lines>0,
-          'Routine line checkpoint not visible within editor: '+JSON.stringify(routineUi));
+        assert(routineUi.text.includes('WAIT')&&routineUi.lines>0&&routineUi.progress.endsWith('%'),
+          'Routine countdown checkpoint not visible within editor: '+JSON.stringify(routineUi));
+        const initialSeconds=parseFloat(routineUi.state.replace('WAIT',''));
+        await page.waitForTimeout(240);
+        const later=await page.evaluate(()=>document.querySelector('.live-routine-state')?.textContent||'');
+        const laterSeconds=parseFloat(later.replace('WAIT',''));
+        assert(Number.isFinite(initialSeconds)&&Number.isFinite(laterSeconds)&&laterSeconds<initialSeconds,
+          'WAIT countdown did not decrease: '+routineUi.state+' to '+later);
 
 
         assert((await page.locator('#run-region').innerText()).trim()==='SELECTED','Selected transport button label incorrect');
