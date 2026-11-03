@@ -49,7 +49,7 @@ jobs:
       - name: Assemble deployable site
         run: |
           mkdir -p dist/runtime
-          cp app/index.html app/_headers app/instrument-layout.css app/instrument-layout.js app/live-activity.mjs app/routine-trace.mjs dist/
+          cp app/index.html app/_headers app/instrument-layout.css app/instrument-layout.js app/live-activity.mjs app/routine-trace.mjs app/performance-engine.mjs app/performance-ui.mjs app/performance.css dist/
           cp -a build/wasm-dist/sclang build/wasm-dist/scsynth dist/runtime/
           python3 app/scripts/verify_runtime.py dist/runtime
       - name: Upload compiled site
