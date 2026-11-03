@@ -3,7 +3,7 @@
  * Amber means scsynth has sent /n_go without a corresponding /n_end.
  * Cyan marks a /s_new request. Source mapping is best-effort and confidence-gated.
  */
-import {prepareRoutineTrace,routineTracePattern} from './routine-trace.mjs?v=19.3';
+import {prepareRoutineTrace,routineTracePattern} from './routine-trace.mjs?v=20';
 const MAX_PACKET=1024*1024, MAX_MESSAGES=512;
 function bytesOf(raw){
   if(raw instanceof Uint8Array)return raw;
