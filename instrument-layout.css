@@ -199,3 +199,71 @@ body .activity-legend strong:nth-child(2){color:var(--live-cyan)}
 body[data-theme=bauhaus],body[data-theme=blackmountain],body[data-theme=score],body[data-theme=patch],body[data-theme=terminal]{--live-amber:#a57527;--live-cyan:#18758c}
 body[data-theme=scope]{--live-amber:#e4ce67;--live-cyan:#79eafa}
 body[data-theme=makenoise]{--live-amber:#f3c56c;--live-cyan:#85bfea}
+
+/* v1.8: direct inspector tabs. No nested disclosure controls or cyclic navigation. */
+body .toolbar .transport-icon,body[data-theme] .toolbar .transport-icon{
+  display:inline-block;width:12px;height:12px;vertical-align:-2px;margin-right:3px;
+  overflow:visible;flex:none;pointer-events:none
+}
+body .toolbar #record-stop .transport-icon{width:13px;height:13px}
+body .console-bar .inspector-modes,body[data-theme] .console-bar .inspector-modes{
+  display:flex;align-items:center;flex:0 0 auto;gap:2px;height:100%;min-width:0
+}
+body .console-bar .inspector-modes button,body[data-theme] .console-bar .inspector-modes button{
+  flex:0 0 auto;min-width:0;min-height:0;height:31px;padding:2px 5px;
+  font:800 clamp(8px,2.5vw,10px)/1 ui-monospace,monospace;
+  letter-spacing:0;border:1px solid currentColor;border-radius:0;
+  background:transparent;color:inherit;box-sizing:border-box;box-shadow:none;
+}
+body .console-bar .inspector-modes button[aria-pressed="true"],
+body[data-theme] .console-bar .inspector-modes button[aria-pressed="true"]{
+  background:var(--inspector-active-bg,#d3ac6d);
+  color:var(--inspector-active-fg,#211c16);
+  border-color:var(--inspector-active-bg,#d3ac6d)
+}
+body[data-theme=bauhaus],body[data-theme=blackmountain],
+body[data-theme=score],body[data-theme=patch],body[data-theme=terminal]{
+  --inspector-active-bg:#3b4342;--inspector-active-fg:#fff
+}
+body[data-theme=scope]{--inspector-active-bg:#91edb2;--inspector-active-fg:#082115}
+body main .console-shell,body[data-theme] main .console-shell{flex:0 0 var(--console);min-height:0}
+body.view-console main .console-shell,body[data-theme].view-console main .console-shell{
+  flex:0 0 46%;min-height:0;overflow:hidden
+}
+body main #console-panel,body[data-theme] main #console-panel{display:none}
+body.view-console main #console-panel,body[data-theme].view-console main #console-panel{
+  display:block;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain
+}
+body main>.utility,body[data-theme] main>.utility{
+  display:none;flex:0 0 0;min-height:0;visibility:hidden;overflow:hidden
+}
+body.view-audio main>.utility,body[data-theme].view-audio main>.utility{
+  display:flex;flex:0 0 34%;flex-direction:column;
+  min-height:0;visibility:visible;overflow-y:auto;overscroll-behavior:contain;
+  margin:0;padding:10px 10px 12px!important;gap:6px;
+  border-top:2px solid currentColor
+}
+body.view-audio .audio-panel-title{
+  font:700 12px/1.2 ui-monospace,monospace;letter-spacing:.08em;
+  padding:0;margin:0;color:inherit
+}
+body.view-audio #audio-panel .actions{
+  display:flex;gap:5px;flex-wrap:wrap;margin:2px 0
+}
+body.view-audio #audio-panel .actions button{
+  flex:1;min-width:100px;min-height:36px;height:36px;padding:4px 7px;
+  font:700 11px/1.2 ui-monospace,monospace
+}
+body.view-audio #audio-panel #status{margin:3px 0;font-size:11px;line-height:1.35}
+body.view-audio #audio-panel #info{font-size:10px;line-height:1.35}
+body .console-bar,body[data-theme] .console-bar{gap:5px}
+body .console-bar #activity-status{min-width:48px;max-width:62px;font-size:10px}
+body .console-bar #engine-status{font-size:10px}
+@media(max-width:365px){
+ body .console-bar .inspector-modes button,body[data-theme] .console-bar .inspector-modes button{
+   padding-left:3px;padding-right:3px;font-size:8px
+ }
+ body .console-bar,body[data-theme] .console-bar{gap:3px}
+ body .console-bar #activity-status{min-width:41px;max-width:49px;font-size:9px}
+ body .console-bar #engine-status{font-size:9px}
+}
