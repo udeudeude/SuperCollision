@@ -3,6 +3,7 @@
  * Amber means scsynth has sent /n_go without a corresponding /n_end.
  * Cyan marks a /s_new request. Source mapping is best-effort and confidence-gated.
  */
+import {prepareRoutineTrace,routineTracePattern} from './routine-trace.mjs?v=2';
 const MAX_PACKET=1024*1024, MAX_MESSAGES=512;
 function bytesOf(raw){
   if(raw instanceof Uint8Array)return raw;
@@ -179,7 +180,7 @@ export function indexSource(source){
 }
 export class SoundActivityTracker{
   constructor(onChange=()=>{},now=()=>Date.now()){
-    this.onChange=onChange;this.now=now;this.nodes=new Map();this.defs=new Map();this.calls=new Map();
+    this.onChange=onChange;this.now=now;this.nodes=new Map();this.defs=new Map();this.calls=new Map();this.instrumentStats=new Map();this.routines=new Map();this.traceSessions=new Map();
     this.anonymous=null;this.document=null;this.pulses=[];this.requestCount=0;this.confirmedCount=0;
     this.lastServerMessage=0;this.notifications=false;this.sentPackets=0;this.receivedPackets=0;this.recentSent=[];this.recentReceived=[];this.unknownPacketTypes=0;
   }
@@ -199,6 +200,48 @@ export class SoundActivityTracker{
     this.anonymous=singles.length===1?belongs(singles[0]):null;
     this.setDocument(composition,whole);
   }
+  registerRoutinePlan(plan,composition,whole){
+    if(!plan.instrumented)return;
+    const allowed=new Set(plan.checkpoints.map(p=>p.routine+':'+p.line+':'+p.kind));
+    this.traceSessions.set(plan.run,{composition,whole,allowed});
+    if(this.traceSessions.size>25)this.traceSessions.delete(this.traceSessions.keys().next().value);
+    for(const r of plan.routines){
+      this.routines.set(plan.run+':'+r.id,{
+        ...r,composition,snapshot:whole,lastLine:null,lastKind:null,
+        lastAt:0,steps:0,wait:null
+      });
+    }
+    if(this.routines.size>90)this.routines.delete(this.routines.keys().next().value);
+    this.notify();
+  }
+  consumeLanguagePrint(t){
+    const src=String(t);
+    let saw=false;
+    const stripped=src.replace(routineTracePattern,(full,run,routine,line,kind,wait)=>{
+      const session=this.traceSessions.get(run);
+      const allowed=session?.allowed.has(routine+':'+line+':'+kind);
+      if(!allowed)return full;
+      saw=true;
+      const target=this.routines.get(run+':'+routine);
+      if(target){
+        target.lastLine=Number(line);target.lastKind=kind;
+        target.lastAt=this.now();target.steps++;
+        target.wait=kind==='wait'&&wait!=='x'?Number(wait):null;
+        this.notify();
+      }
+      return '';
+    });
+    if(!saw)return src;
+    return stripped.split(/\r?\n/).filter(x=>x.trim()).join('\n');
+  }
+  statistics(name){
+    let row=this.instrumentStats.get(name);
+    if(!row){
+      row={name,total:0,ended:0,lastDuration:null,totalDuration:0,lastAt:0};
+      this.instrumentStats.set(name,row);
+    }
+    return row;
+  }
   notify(){this.onChange(this)}
   outgoing(raw){
     this.sentPackets++;
@@ -215,7 +258,8 @@ export class SoundActivityTracker{
         const call=this.calls.get(name)||null;
         const t=this.now();
         // Audio is only confirmed active by the server's /n_go.
-        this.nodes.set(id,{id,name,definition,call,confirmed:false,running:true,time:t});
+        this.nodes.set(id,{id,name,definition,call,confirmed:false,running:true,time:t,startedAt:null});
+        this.statistics(name).lastAt=t;
         this.pulses.push({name,site:call||definition,at:t});
         this.requestCount++;
         if(this.nodes.size>5000){
@@ -239,9 +283,9 @@ export class SoundActivityTracker{
       if(this.recentReceived.length>16)this.recentReceived.shift();
       const id=msg.args[0],node=this.nodes.get(id);
       if(msg.address==='/n_go'&&Number.isInteger(id)){
-        if(node){node.confirmed=true;node.running=true;this.confirmedCount++;this.lastServerMessage=this.now();this.notify()}
+        if(node&&!node.confirmed){node.confirmed=true;node.running=true;node.startedAt=this.now();this.statistics(node.name).total++;this.confirmedCount++;this.lastServerMessage=this.now();this.notify()}
       }else if(msg.address==='/n_end'&&Number.isInteger(id)){
-        if(node){this.nodes.delete(id);this.lastServerMessage=this.now();this.notify()}
+        if(node){if(node.confirmed){const stats=this.statistics(node.name);stats.ended++;const elapsed=Math.max(0,this.now()-(node.startedAt||node.time));stats.lastDuration=elapsed;stats.totalDuration+=elapsed}this.nodes.delete(id);this.lastServerMessage=this.now();this.notify()}
       }else if(msg.address==='/n_off'&&node){node.running=false;this.notify()}
       else if(msg.address==='/n_on'&&node){node.running=true;this.notify()}
     }
@@ -266,18 +310,41 @@ export class SoundActivityTracker{
     ].join('\n');
   }
   stopRequested(){
-    this.nodes.clear();this.pulses=[];this.notify();
+    this.nodes.clear();this.pulses=[];this.routines.clear();this.traceSessions.clear();this.notify();
   }
   visible(now=this.now()){
-    const doc=this.document;const active=[],pulses=[];
+    const doc=this.document,active=[],pulses=[];
     const matches=site=>!!doc&&!!site&&site.composition===doc.composition&&
       doc.text.slice(site.startOffset,site.endOffset+1)===site.text;
+    const instruments=new Map();
+    for(const [name,stats] of this.instrumentStats){
+      const connected=this.defs.get(name);
+      if(!doc||!(connected&&matches(connected)))continue;
+      const row={...stats,active:0,pending:0,def:connected,latestAge:Math.max(0,now-stats.lastAt)};
+      instruments.set(name,row);
+    }
     for(const node of this.nodes.values()){
-      if(node.confirmed&&node.running&&matches(node.definition))active.push(node.definition);
+      const row=instruments.get(node.name);
+      if(node.confirmed&&node.running&&matches(node.definition)){
+        active.push(node.definition);
+        if(row)row.active++;
+      }else if(!node.confirmed&&row)row.pending++;
     }
     this.pulses=this.pulses.filter(p=>now-p.at<800);
     for(const p of this.pulses)if(matches(p.site))pulses.push(p.site);
-    return {active,pulses,confirmed:[...this.nodes.values()].filter(n=>n.confirmed&&n.running).length,
+    const recent=Array.from(instruments.values()).filter(x=>x.active>0||x.latestAge<15000);
+    recent.sort((a,b)=>b.active-a.active||b.lastAt-a.lastAt);
+    const progress=[];
+    for(const r of this.routines.values()){
+      if(!doc||r.composition!==doc.composition||r.snapshot!==doc.text||!r.lastAt)continue;
+      const elapsed=now-r.lastAt;
+      if(elapsed>45000)continue; // A trace position is not proof the Routine still runs.
+      progress.push({id:r.id,line:r.lastLine,kind:r.lastKind,at:r.lastAt,
+        ago:elapsed,steps:r.steps,wait:r.wait,stale:elapsed>15000});
+    }
+    progress.sort((a,b)=>b.at-a.at);
+    return {active,pulses,instruments:recent.slice(0,8),routines:progress.slice(0,3),
+      confirmed:[...this.nodes.values()].filter(n=>n.confirmed&&n.running).length,
       requested:[...this.nodes.values()].filter(n=>!n.confirmed).length,events:this.requestCount,
       linked:active.length,notifications:this.notifications};
   }
