@@ -41,6 +41,10 @@ try{
  await page.waitForFunction(()=>!document.querySelector('#evaluate').disabled,{timeout:115000});
  }catch(e){console.log('POWER LOG:',await page.locator('#console').innerText());throw e}
  console.log('LANGUAGE READY');
+ await page.locator('#code').fill('s.boot;');
+ await page.locator('#evaluate').click();
+ await page.waitForTimeout(3500);
+ console.log('BEFORE DEMO:',(await page.locator('#console').innerText()).slice(-1600));
  const example=[
  '(',
  's.waitForBoot({',
