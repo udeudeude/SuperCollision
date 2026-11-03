@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {readOscPacket,indexSource,SoundActivityTracker} from '../live-activity.mjs';
+import {prepareRoutineTrace} from '../routine-trace.mjs';
 const enc=new TextEncoder();
 function oscString(s){
   const b=Array.from(enc.encode(s));b.push(0);while(b.length%4)b.push(0);
@@ -123,4 +124,77 @@ tick=8200;
 assert.equal(activity.visible().pulses.length,0,'Trigger highlight must be momentary');
 activity.incoming(pack('/n_go','iiiii',[3003,1,-1,-1,0]));
 assert.equal(activity.visible().linked,0,'A pattern cannot falsely claim a source definition');
-console.log('Live source activity: OSC packets/bundles, notifications, synth lifecycle, source mapping and safety checks passed.');
+
+
+// Real source instrumentation must preserve the saved source and variable-declaration order.
+const sourceRoutine=[
+  '(',
+  '~player = Routine({',
+  '    var counter = 0;',
+  '    3.do {',
+  '        Synth(\\bell, [\\freq, 440]);',
+  '        0.2.wait;',
+  '        counter = counter + 1;',
+  '    };',
+  '}).play(SystemClock);',
+  ')'
+].join('\n');
+const originalCopy=sourceRoutine;
+const plan=prepareRoutineTrace(sourceRoutine,1,'uQa123');
+assert.equal(sourceRoutine,originalCopy,'Preparation must not mutate user composition');
+assert.equal(plan.instrumented,true,'Routine was not instrumented');
+assert.equal(plan.routines.length,1,'One Routine definition detected');
+assert.equal(plan.checkpoints.length,2,'Expected Synth and wait checkpoints, never var declarations');
+assert.ok(plan.checkpoints.some(p=>p.line===5&&p.kind==='step'));
+assert.ok(plan.checkpoints.some(p=>p.line===6&&p.kind==='wait'&&p.wait==='0.2'));
+assert.ok(plan.code.includes('counter = counter + 1;'));
+assert.ok(plan.code.includes('var counter = 0;'),'Never insert trace statements before SC var declarations');
+assert.equal(plan.code.split('\n').length,sourceRoutine.split('\n').length,'Line numbers must not shift in executed source');
+assert.equal(prepareRoutineTrace('// Routine({ Synth(\\fake) })').instrumented,false,'Comments do not get traced');
+const traceTracker=new SoundActivityTracker(()=>{},()=>tick);
+traceTracker.evaluation('Routine Song',sourceRoutine,sourceRoutine);
+traceTracker.registerRoutinePlan(plan,'Routine Song',sourceRoutine);
+const synthMarker=plan.checkpoints.find(p=>p.kind==='step').marker;
+const waitMarker=plan.checkpoints.find(p=>p.kind==='wait').marker;
+tick=10000;
+assert.equal(traceTracker.consumeLanguagePrint(synthMarker+'\n'),'','Invisible trace markers must not pollute the console');
+let traced=traceTracker.visible();
+assert.equal(traced.routines.length,1);
+assert.equal(traced.routines[0].line,5);
+assert.equal(traced.routines[0].kind,'step');
+tick=12000;
+assert.equal(traceTracker.consumeLanguagePrint(waitMarker+'\n'),'');
+traced=traceTracker.visible();
+assert.equal(traced.routines[0].line,6,'Wait trace must follow execution progression');
+assert.equal(traced.routines[0].kind,'wait');
+assert.equal(traced.routines[0].wait,0.2);
+assert.equal(traceTracker.consumeLanguagePrint('actual composer output\n'),'actual composer output\n');
+traceTracker.setDocument('Another Composition','Synth(\\bell);');
+assert.equal(traceTracker.visible().routines.length,0,'Never attribute a trace to the wrong composition');
+traceTracker.setDocument('Routine Song',sourceRoutine);
+assert.equal(traceTracker.visible().routines.length,1);
+tick=28001;
+assert.equal(traceTracker.visible().routines[0].stale,true,'Last checkpoint must not masquerade as current instruction');
+tick=60000;
+assert.equal(traceTracker.visible().routines.length,0,'Stale Routine pointers eventually disappear');
+traceTracker.stopRequested();
+assert.equal(traceTracker.visible().routines.length,0,'STOP clears routine pointers');
+
+const lifetimeTracker=new SoundActivityTracker(()=>{},()=>tick);
+lifetimeTracker.evaluation('Stats Song',source,source);
+lifetimeTracker.outgoing(pack('/s_new','siii',['bell',6001,0,1]));
+lifetimeTracker.incoming(pack('/n_go','iiiii',[6001,1,-1,-1,0]));
+const initialStats=lifetimeTracker.visible().instruments.find(x=>x.name==='bell');
+assert.equal(initialStats.active,1,'Per-instrument active count must be server confirmed');
+assert.equal(initialStats.total,1,'Count synth starts');
+tick+=2400;
+lifetimeTracker.incoming(pack('/n_end','iiiii',[6001,1,-1,-1,0]));
+const endedStats=lifetimeTracker.visible().instruments.find(x=>x.name==='bell');
+assert.equal(endedStats.active,0,'Freeing synth decrements its own instrument count');
+assert.equal(endedStats.total,1);
+assert.equal(endedStats.lastDuration,2400,'Show confirmed node lifetime');
+lifetimeTracker.outgoing(pack('/s_new','siii',['bell',6002,0,1]));
+lifetimeTracker.incoming(pack('/n_go','iiiii',[6002,1,-1,-1,0]));
+assert.equal(lifetimeTracker.visible().instruments.find(x=>x.name==='bell').total,2,'Total count persists across separate notes');
+
+console.log('Live source activity: OSC, instrument lifetimes, safe Routine checkpoints, source mapping and safety checks passed.');
