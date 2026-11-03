@@ -45,7 +45,9 @@ jobs:
           assert indices==sorted(indices), indices
           assert 'wrap="off"' in html
           assert 'id="line-inner"' in html
-          assert 'id="inspect-toggle"' in html
+          assert all('id="inspector-'+v+'"' in html for v in ('code','console','audio'))
+          assert 'id="audio-panel"' in html
+          assert 'id="inspect-toggle"' not in html
           assert 'instrument-layout.css' in html and 'instrument-layout.js' in html
           assert "window.renderLineGutter" in html and "window.renderLineGutter" in js
           assert "translate3d" in js
