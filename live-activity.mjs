@@ -176,7 +176,7 @@ export class SoundActivityTracker{
   constructor(onChange=()=>{},now=()=>Date.now()){
     this.onChange=onChange;this.now=now;this.nodes=new Map();this.defs=new Map();this.calls=new Map();
     this.anonymous=null;this.document=null;this.pulses=[];this.requestCount=0;this.confirmedCount=0;
-    this.lastServerMessage=0;this.notifications=false;
+    this.lastServerMessage=0;this.notifications=false;this.sentPackets=0;this.receivedPackets=0;this.recentSent=[];this.recentReceived=[];this.unknownPacketTypes=0;
   }
   setDocument(composition,text){this.document={composition,text};this.notify()}
   evaluation(composition,whole,submitted,startLine=1){
@@ -196,7 +196,12 @@ export class SoundActivityTracker{
   }
   notify(){this.onChange(this)}
   outgoing(raw){
-    for(const msg of readOscPacket(raw)){
+    this.sentPackets++;
+    const messages=readOscPacket(raw);
+    if(!messages.length)this.unknownPacketTypes++;
+    for(const msg of messages){
+      this.recentSent.push(msg.address);
+      if(this.recentSent.length>16)this.recentSent.shift();
       if(msg.address==='/s_new'){
         const name=msg.args[0],id=msg.args[1];
         if(typeof name!=='string'||!Number.isInteger(id))continue;
@@ -221,7 +226,12 @@ export class SoundActivityTracker{
     }
   }
   incoming(raw){
-    for(const msg of readOscPacket(raw)){
+    this.receivedPackets++;
+    const messages=readOscPacket(raw);
+    if(!messages.length)this.unknownPacketTypes++;
+    for(const msg of messages){
+      this.recentReceived.push(msg.address);
+      if(this.recentReceived.length>16)this.recentReceived.shift();
       const id=msg.args[0],node=this.nodes.get(id);
       if(msg.address==='/n_go'&&Number.isInteger(id)){
         if(node){node.confirmed=true;node.running=true;this.confirmedCount++;this.lastServerMessage=this.now();this.notify()}
@@ -230,6 +240,25 @@ export class SoundActivityTracker{
       }else if(msg.address==='/n_off'&&node){node.running=false;this.notify()}
       else if(msg.address==='/n_on'&&node){node.running=true;this.notify()}
     }
+  }
+  diagnosticReport(){
+    const v=this.visible();
+    return [
+      'SuperCollision Live Code observer',
+      'OSC packets language→server: '+this.sentPackets,
+      'OSC packets server→language: '+this.receivedPackets,
+      'Packets without recognizable OSC: '+this.unknownPacketTypes,
+      'Server notifications requested: '+this.notifications,
+      'Recognized synth requests: '+this.requestCount,
+      'Recognized node-start confirmations: '+this.confirmedCount,
+      'Currently confirmed running: '+v.confirmed,
+      'Currently awaiting confirmation: '+v.requested,
+      'Mapped active definitions on screen: '+v.linked,
+      'Mapped named SynthDefs: '+this.defs.size,
+      'Mapped named trigger sites: '+this.calls.size,
+      'Recent language→server OSC: '+(this.recentSent.join(' ')||'(none)'),
+      'Recent server→language OSC: '+(this.recentReceived.join(' ')||'(none)')
+    ].join('\\n');
   }
   stopRequested(){
     this.nodes.clear();this.pulses=[];this.notify();
@@ -304,7 +333,8 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
     stop:()=>track.stopRequested(),
     document:(name,text)=>{track.setDocument(name,text)},
     refresh:schedule,
-    get enabled(){return enabled}
+    get enabled(){return enabled},
+    diagnostics:()=>track.diagnosticReport()
   };
   toggle.addEventListener('click',()=>{
     enabled=!enabled;
