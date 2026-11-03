@@ -7,10 +7,10 @@ Version 1.3 replaces the experimental reordering of controls with a strict inter
 1. SuperCollision identity and the compact DESIGN selector.
 2. Composition selector and FILE menu.
 3. Working code editor with correctly aligned line numbers.
-4. Exactly one transport row: RUN / PART / STOP / POWER / REC / SAVE.
-5. Always-visible console access bar and abbreviated engine state.
-6. Expandable console output.
-7. Expandable diagnostics and auxiliary features.
+4. Exactly one transport row: RUN / SELECTED / STOP / POWER / REC / SAVE.
+5. Always-visible CODE / CONSOLE / AUDIO view controls, running-synth counter, and abbreviated engine state.
+6. Console output is visible only in CONSOLE mode; it cannot be independently collapsed.
+7. The separate browser audio test is visible only in AUDIO mode; it has no disclosure arrow.
 
 The experiment may change graphic treatment, layout of elements **within** these sections, icons, geometry, materials, and typography, but must not reorder the sections or reduce editor usability.
 
@@ -19,8 +19,8 @@ The experiment may change graphic treatment, layout of elements **within** these
 - The header and composition/file row remain visible.
 - After the code editor scrolls, header and file row reduce their heights.
 - Editor consumes all remaining viewport space between file row and fixed transport row.
-- The console access bar always stays visible beneath transport.
-- Swipe upward on the transport, line-number gutter, or console access bar to expose console and then diagnostic sections. Swipe down to restore editor height. The console control is also a button for keyboard and accessibility users.
+- The CODE / CONSOLE / AUDIO selector always stays visible beneath transport.
+- Select CODE, CONSOLE or AUDIO directly. Only a deliberate upward swipe on the view bar or an overscroll at the editor bottom advances the view; transport and gutter gestures never change it. Console errors automatically select CONSOLE.
 - Native scrolling *inside* the code editor must remain intact. When the editor has already reached its bottom, a further upward swipe may reveal the console.
 - Scrolling within a long composition must not move line numbers out of alignment or scroll the editor horizontally while the gutter moves.
 - The editor uses non-wrapped lines, a shared font/line-height for textarea and highlight, and pixel-aligned scrolling.
@@ -48,7 +48,7 @@ Test on iPhone Safari (normal and standalone if installed) and one desktop brows
 1. Verify all eight themes use the same vertical section order.
 2. Check all six control buttons remain one row at viewport widths 320px, 375px, 390px, and 430px.
 3. Scroll 200+ lines and compare gutter line numbers against the corresponding code lines before and after horizontal scrolling. Confirm no soft wrapping.
-4. Swipe upward on console bar and on transport: the editor should shrink and console should expand. Repeat for diagnostics, then restore.
+4. Tap CONSOLE: editor shrinks and console appears. Tap AUDIO: console closes and the independent browser audio-test panel appears. Tap CODE: both lower panels close.
 5. Scroll within code itself: code should scroll independently with its gutter. Header compacts on scroll.
 6. Type and edit while the iOS keyboard is open. Controls must remain visible.
 7. Switch project and theme, reload, verify composition and theme persist.
@@ -71,3 +71,12 @@ Test on iPhone Safari (normal and standalone if installed) and one desktop brows
 - An unobtrusive CODE percentage indicator appears during a pinch, and the selection persists in localStorage under `supercollision-editor-font-px-v1` (never in the composition code or browser cache).
 - FILE contains Code text smaller, Code text larger and Reset code text size. With the editor focused, Cmd/Ctrl+Minus, Plus, and 0 provide equivalents.
 - Verify on iPhone Safari with a long composition: pinch both directions repeatedly, confirm normal size cannot be exceeded, then verify line-number alignment while scrolling, syntax-overlay alignment, and size persistence after reload. Check the browser does not zoom the entire page.
+
+## Version 1.8 interface refinements
+
+- RUN uses a drawn monochrome vector triangle rather than an emoji glyph. SAVE recording uses a distinct downward-arrow/tray vector, not the STOP square. STOP and REC retain the existing geometric symbols.
+- The selected-code evaluation button reads SELECTED. With no selected code, it evaluates the current line.
+- The single ambiguous CONSOLE → MORE → EDITOR cycle and independently collapsible Audio diagnostic <details> control are eliminated. CODE, CONSOLE and AUDIO are explicit exclusive lower-panel modes. The console header bar remains visible in all three modes.
+- AUDIO exposes an independent browser Web Audio test oscillator. It does not inspect or measure individual SuperCollider synth nodes; those are tracked separately by Living Code.
+- The FILE menu no longer contains generic on-screen explanation prose for SELECTED. Controls should make sense directly; extended explanations belong in documentation and conversation.
+- The full SuperCollision masthead remains legible on phone widths, with condensed version metadata. All views preserve one-row transport controls, editor pinch zoom, and live OSC-derived highlighting.
