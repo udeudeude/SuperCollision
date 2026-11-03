@@ -234,11 +234,12 @@ export class SoundActivityTracker{
     if(!saw)return src;
     return stripped.split(/\r?\n/).filter(x=>x.trim()).join('\n');
   }
-  statistics(name){
-    let row=this.instrumentStats.get(name);
+  statistics(name,composition='unmapped'){
+    const key=composition+'|'+name;
+    let row=this.instrumentStats.get(key);
     if(!row){
-      row={name,total:0,ended:0,lastDuration:null,totalDuration:0,lastAt:0};
-      this.instrumentStats.set(name,row);
+      row={name,composition,total:0,ended:0,lastDuration:null,totalDuration:0,lastAt:0};
+      this.instrumentStats.set(key,row);
     }
     return row;
   }
@@ -258,8 +259,9 @@ export class SoundActivityTracker{
         const call=this.calls.get(name)||null;
         const t=this.now();
         // Audio is only confirmed active by the server's /n_go.
-        this.nodes.set(id,{id,name,definition,call,confirmed:false,running:true,time:t,startedAt:null});
-        this.statistics(name).lastAt=t;
+        const owner=definition?.composition||call?.composition||this.document?.composition||'unmapped';
+        this.nodes.set(id,{id,name,definition,call,composition:owner,confirmed:false,running:true,time:t,startedAt:null});
+        this.statistics(name,owner).lastAt=t;
         this.pulses.push({name,site:call||definition,at:t});
         this.requestCount++;
         if(this.nodes.size>5000){
@@ -283,9 +285,9 @@ export class SoundActivityTracker{
       if(this.recentReceived.length>16)this.recentReceived.shift();
       const id=msg.args[0],node=this.nodes.get(id);
       if(msg.address==='/n_go'&&Number.isInteger(id)){
-        if(node&&!node.confirmed){node.confirmed=true;node.running=true;node.startedAt=this.now();this.statistics(node.name).total++;this.confirmedCount++;this.lastServerMessage=this.now();this.notify()}
+        if(node&&!node.confirmed){node.confirmed=true;node.running=true;node.startedAt=this.now();this.statistics(node.name,node.composition).total++;this.confirmedCount++;this.lastServerMessage=this.now();this.notify()}
       }else if(msg.address==='/n_end'&&Number.isInteger(id)){
-        if(node){if(node.confirmed){const stats=this.statistics(node.name);stats.ended++;const elapsed=Math.max(0,this.now()-(node.startedAt||node.time));stats.lastDuration=elapsed;stats.totalDuration+=elapsed}this.nodes.delete(id);this.lastServerMessage=this.now();this.notify()}
+        if(node){if(node.confirmed){const stats=this.statistics(node.name,node.composition);stats.ended++;const elapsed=Math.max(0,this.now()-(node.startedAt||node.time));stats.lastDuration=elapsed;stats.totalDuration+=elapsed}this.nodes.delete(id);this.lastServerMessage=this.now();this.notify()}
       }else if(msg.address==='/n_off'&&node){node.running=false;this.notify()}
       else if(msg.address==='/n_on'&&node){node.running=true;this.notify()}
     }
@@ -319,9 +321,9 @@ export class SoundActivityTracker{
     const matches=site=>!!doc&&!!site&&site.composition===doc.composition&&
       doc.text.slice(site.startOffset,site.endOffset+1)===site.text;
     const instruments=new Map();
-    for(const [name,stats] of this.instrumentStats){
-      const connected=this.defs.get(name);
-      if(!doc||!(connected&&matches(connected)))continue;
+    for(const stats of this.instrumentStats.values()){
+      const name=stats.name,connected=this.defs.get(name);
+      if(!doc||stats.composition!==doc.composition||!(connected&&matches(connected)))continue;
       const row={...stats,active:0,pending:0,def:connected,latestAge:Math.max(0,now-stats.lastAt)};
       instruments.set(name,row);
     }
