@@ -82,7 +82,7 @@ export function prepareRoutineTrace(source,startLine=1,runToken=null){
           // structurally the same apart from the small post statement.
           const marker=TRACE_HEAD+run+':'+rId+':'+line+':'+kind+':'+wait+'__';
           let probe='("'+marker+'").postln; ';
-          if(kind==='wait'&&/^(?:\\d+(?:\\.\\d+)?|~?[A-Za-z_]\\w*)$/.test(hit[3].trim())){
+          if(kind==='wait'&&/^(?:\d+(?:\.\d+)?|~?[A-Za-z_]\w*)$/.test(hit[3].trim())){
             // Capture the wait value and the actual running clock's tempo at execution.
             // TempoClock measures beats, SystemClock/AppClock measure seconds.
             // We only read literals or side-effect-free variable names; the wait
