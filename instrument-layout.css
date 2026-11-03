@@ -371,3 +371,102 @@ body .console-bar #activity-status{display:none!important}
 body .live-instrument-duration{flex:none;color:var(--live-panel-fg,#eee);opacity:.77;min-width:26px;text-align:right;font:600 9px/1 ui-monospace,monospace}
 body .live-panel .live-instrument-row{gap:3px}
 @media(max-width:370px){body .live-instrument-duration{font-size:8px;min-width:23px}}
+
+/* 2.0 / Instrument-color identity, separate mark shapes for each musical event. */
+:root{
+  --voice-0:#e8b75e;--voice-1:#60d4cb;--voice-2:#ee8895;--voice-3:#bf9cf2;--voice-4:#72baf2;
+  --voice-5:#c1d976;--voice-6:#ee9d65;--voice-7:#e8a2d1;--voice-8:#76d89d;--voice-9:#9ea9fa;
+  --live-wait:#ddd6ed;--live-step:#c19feb
+}
+body[data-theme=bauhaus],body[data-theme=blackmountain],body[data-theme=score],
+body[data-theme=patch],body[data-theme=terminal]{
+  --voice-0:#9c6412;--voice-1:#087f7b;--voice-2:#b03950;--voice-3:#754cac;--voice-4:#245f9f;
+  --voice-5:#647f24;--voice-6:#ae581b;--voice-7:#a34480;--voice-8:#197954;--voice-9:#4056ab;
+  --live-wait:#6251a2;--live-step:#7455a1
+}
+body[data-theme=scope]{
+  --voice-0:#ffdf80;--voice-1:#87ffc9;--voice-2:#ff9c9e;--voice-3:#c8adff;--voice-4:#9bd5ff;
+  --voice-5:#dbff7e;--voice-6:#ffc38a;--voice-7:#ffb2ec;--voice-8:#72eab0;--voice-9:#afaaff;
+  --live-wait:#d7b0f9;--live-step:#c19ef8
+}
+body .live-instrument-row,body[data-theme] .live-instrument-row{
+  border-left:3px solid var(--voice-color)!important;
+  padding-left:4px!important
+}
+body .live-instrument-row .live-instrument-count{
+  color:var(--voice-color)!important
+}
+body .live-voice-marks{
+  display:flex;flex:0 0 auto;gap:2px;height:11px;align-items:center;max-width:25px;overflow:hidden
+}
+body .live-voice-mark{
+  flex:0 0 3px;width:3px;height:10px;background:var(--voice-color);
+  border-radius:1px;opacity:.95
+}
+body #activity-overlay .live-source-active{
+  background:color-mix(in srgb,var(--voice-color,var(--live-amber)) 13%,transparent);
+  border:0
+}
+body #activity-overlay .live-source-active::before{
+  content:"";position:absolute;top:0;bottom:0;left:0;width:18px;
+  background:var(--voice-stripes,linear-gradient(to right,var(--voice-color) 0 3px,transparent 3px));
+  opacity:.95;pointer-events:none
+}
+body #activity-overlay .live-source-trigger{
+  background:color-mix(in srgb,var(--voice-color,var(--live-cyan)) 22%,transparent);
+  border-left:0;
+  box-shadow:inset 0 -2px 0 var(--voice-color,var(--live-cyan));
+  animation:live-quick-strike .58s ease-out 1
+}
+body #activity-overlay .live-source-trigger::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:var(--voice-color,var(--live-cyan))
+}
+@keyframes live-quick-strike{
+  0%{filter:brightness(1.55)}100%{filter:brightness(1)}
+}
+body #line-inner .line.live-active{
+  color:var(--voice-color)!important;
+  background:color-mix(in srgb,var(--voice-color) 24%,transparent)!important;
+  box-shadow:inset 3px 0 0 var(--voice-color)
+}
+body #line-inner .line.live-trigger{
+  color:var(--voice-color)!important;
+  background:color-mix(in srgb,var(--voice-color) 30%,transparent)!important;
+  text-decoration:underline;text-underline-offset:2px;
+  box-shadow:inset 0 -2px var(--voice-color)
+}
+body #activity-overlay .live-source-routine{
+  background:color-mix(in srgb,var(--live-step) 13%,transparent);
+  border-left:0;
+  outline:1px dashed color-mix(in srgb,var(--live-step) 70%,transparent);
+  outline-offset:-1px
+}
+body #activity-overlay .live-source-wait{
+  background:color-mix(in srgb,var(--live-wait) 10%,transparent);
+  border-left:3px dotted var(--live-wait);
+  border-bottom:1px dashed var(--live-wait)
+}
+body #activity-overlay .live-source-wait::after{
+  content:"";position:absolute;bottom:0;left:0;
+  height:3px;width:var(--wait-progress,0%);
+  background:var(--live-wait);opacity:.92
+}
+body #line-inner .line.live-wait{
+  background:color-mix(in srgb,var(--live-wait) 19%,transparent);
+  color:var(--live-wait);border-right:2px dotted var(--live-wait)
+}
+body .live-routine-row.live-waiting{
+  position:relative;
+  background:linear-gradient(to right,
+    color-mix(in srgb,var(--live-wait) 22%,transparent) 0 var(--wait-progress,0%),
+    transparent var(--wait-progress,0%) 100%);
+  border-bottom:1px dotted color-mix(in srgb,var(--live-wait) 80%,transparent);
+}
+body .live-routine-row.live-waiting .live-routine-state{
+  color:var(--live-wait);font-variant-numeric:tabular-nums;min-width:67px;text-align:right
+}
+body .live-routine-row.live-routine-stale{opacity:.48;filter:saturate(.55)}
+@media(prefers-reduced-motion:reduce){
+  body #activity-overlay .live-source-trigger{animation:none}
+}
