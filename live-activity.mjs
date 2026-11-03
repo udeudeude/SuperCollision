@@ -28,7 +28,12 @@ export function readOscPacket(raw){
   }
   function parse(start,limit,depth){
     if(depth>5||start>=limit||output.length>=MAX_MESSAGES)return;
-    const addr=readString(start,limit);
+    // SuperCollider accepts an integer command ID instead of an OSC path.
+    // Synth creation is cmd_s_new = 9 (or cmd_s_newargs = 59).
+    // These are valid especially inside timestamped bundles.
+    const numeric=start+4<=limit?view.getUint32(start,false):-1;
+    const numbered=(numeric===9||numeric===59);
+    const addr=numbered?{text:'/s_new',next:start+4}:readString(start,limit);
     if(!addr)return;
     if(addr.text==='#bundle'){
       let off=addr.next+8;
