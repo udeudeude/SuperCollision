@@ -329,8 +329,10 @@ export class SoundActivityTracker{
       const row=instruments.get(node.name);
       if(node.confirmed&&node.running&&matches(node.definition)){
         active.push(node.definition);
-        if(row)row.active++;
-        row.oldestStartAt=row.oldestStartAt===undefined?(node.startedAt||node.time):Math.min(row.oldestStartAt,node.startedAt||node.time);
+        if(row){
+          row.active++;
+          row.oldestStartAt=row.oldestStartAt===undefined?(node.startedAt||node.time):Math.min(row.oldestStartAt,node.startedAt||node.time);
+        }
       }else if(!node.confirmed&&row)row.pending++;
     }
     this.pulses=this.pulses.filter(p=>now-p.at<800);
