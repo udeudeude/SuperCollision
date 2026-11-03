@@ -54,6 +54,7 @@ try{
  ].join('\n');
  await page.locator('#code').fill(example);
  await page.locator('#evaluate').click();
+ let observed=false;
  for(let i=0;i<15;i++){
   await page.waitForTimeout(1000);
   const info=await page.evaluate(()=>({
@@ -65,10 +66,10 @@ try{
    console:document.querySelector('#console')?.textContent.slice(-3500)
   }));
   console.log('T+'+(i+1),JSON.stringify(info).slice(0,4200));
-  if(info.activity?.confirmed>0&&info.highlights>0){console.log('PASS: real synth node confirmed and highlighted');await page.screenshot({path:'qa/screenshots/runtime-live-activity.png'});return}
+  if(info.activity?.confirmed>0&&info.highlights>0){console.log('PASS: real synth node confirmed and highlighted');await page.screenshot({path:'qa/screenshots/runtime-live-activity.png'});observed=true;break}
  }
- await page.screenshot({path:'qa/screenshots/runtime-live-activity-failed.png'});
- throw Error('No confirmed live highlight after real SuperCollider playback. See runtime console snapshots.');
+ if(!observed){await page.screenshot({path:'qa/screenshots/runtime-live-activity-failed.png'});
+ throw Error('No confirmed live highlight after real SuperCollider playback. See runtime console snapshots.');}
  }catch(e){error=e;console.error('FAIL:',e.stack||e)}
  finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
 if(error)process.exitCode=1;
