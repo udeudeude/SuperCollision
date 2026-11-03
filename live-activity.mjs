@@ -42,7 +42,7 @@ export function readOscPacket(raw){
     if(!addr.text.startsWith('/'))return;
     const types=readString(addr.next,limit);
     if(!types||!types.text.startsWith(','))return;
-    const args=[];let off=types.next;
+    const args=[],embedded=[];let off=types.next;
     for(const t of types.text.slice(1)){
       if(args.length>96)return;
       if(t==='i'||t==='f'||t==='c'||t==='r'||t==='m'){
@@ -56,6 +56,7 @@ export function readOscPacket(raw){
         if(off+4>limit)return;
         const size=view.getUint32(off,false);off+=4;
         if(size>MAX_PACKET||off+size>limit)return;
+        if(size>0&&(data[off]===47||data[off]===35))embedded.push([off,off+size]);
         off+=((size+3)&~3);
         if(off>limit)return;
         args.push('[blob]');
@@ -72,6 +73,9 @@ export function readOscPacket(raw){
       }
     }
     output.push({address:addr.text,args});
+    // /d_recv and /d_load may carry an OSC /s_new completion message in a blob.
+    // Inspect only a blob beginning with a valid OSC address (never SynthDef binary).
+    for(const [a,b] of embedded)parse(a,b,depth+1);
   }
   try{parse(0,data.byteLength,0)}catch{}
   return output;
@@ -252,7 +256,13 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
     const activeLines=new Set(),pulseLines=new Set();
     for(const range of v.active){
       // Highlight the sound-producing definition, but limit large blocks to the visible lines.
-      for(let i=range.start;i<=range.end&&i<=range.start+1000;i++)activeLines.add(i);
+      const lines=range.text.split('\n');
+      for(let j=0;j<lines.length&&j<1000;j++){
+        const line=lines[j].trim();
+        // Highlight the definition and its actual signal-generator/control-rate
+        // expressions, not comments or every line in the enclosing Routine.
+        if(j===0||(!line.startsWith('//')&&/\.(?:ar|kr|ir|dr)\s*\(|\b(?:Out|OffsetOut|ReplaceOut)\s*\.\s*ar\b/.test(line)))activeLines.add(range.start+j);
+      }
     }
     for(const range of v.pulses)pulseLines.add(range.start);
     for(const el of gutter.querySelectorAll('.line.live-active,.line.live-trigger'))el.classList.remove('live-active','live-trigger');
@@ -275,7 +285,7 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
         if(label)label.classList.add(isPulse?'live-trigger':'live-active');
       }
     }
-    status.textContent=enabled?'● '+v.confirmed+'  ✦ '+(v.pulses.length?v.pulses.length:0):'ACTIVITY OFF';
+    status.textContent=enabled?'● '+v.confirmed+'  ✦ '+track.pulses.length:'ACTIVITY OFF';
     status.title=enabled?(v.confirmed+' server-confirmed synths; '+v.requested+
       ' unconfirmed starts. Amber = live SynthDef; blue = recent /s_new request. Not an audio meter.'):'Live code tracking disabled';
     clearTimeout(clearPulse);
