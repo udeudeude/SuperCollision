@@ -6,6 +6,7 @@ on:
     paths:
       - 'index.html'
       - 'live-activity.mjs'
+      - 'routine-trace.mjs'
       - 'qa/runtime-activity.mjs'
       - '.github/workflows/runtime-activity.yml'
 permissions:
