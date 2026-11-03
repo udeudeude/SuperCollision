@@ -202,7 +202,7 @@ body[data-theme=terminal] .projectbar button,body[data-theme=terminal] .menu>sum
 body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 @media(max-width:390px){body[data-theme=patch] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 78px}body[data-theme=scope] .toolbar button{font-size:9px}body[data-theme=score] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 65px}}
 </style>
-<link rel="stylesheet" href="./instrument-layout.css?v=21">
+<link rel="stylesheet" href="./instrument-layout.css?v=22">
 <header><svg class="identity-art" viewBox="0 0 48 40" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
 <g class="art art-bauhaus"><rect x="1" y="3" width="18" height="18" fill="#1f4b8f"/><circle cx="30" cy="13" r="11" fill="#bf4337"/><path d="M3 37L21 23L39 37Z" fill="#e8ae40"/></g>
 <g class="art art-blackmountain" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 4V36M14 4V36M24 4V36M34 4V36M44 4V36"/><path d="M2 11H46M2 21H46M2 31H46" stroke="#b7774f" stroke-width="4"/><path d="M4 11H14M24 21H34M14 31H24" stroke="#e9e1cf" stroke-width="5"/></g>
@@ -212,7 +212,7 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 <g class="art art-scope" fill="none" stroke="currentColor"><path d="M2 20H46M24 1V39M2 8H46M2 32H46" opacity=".3"/><path d="M2 20H7L12 10L18 31L24 4L30 30L36 13L42 20H46" stroke="#a0ffae" stroke-width="2.5"/></g>
 <g class="art art-patch" fill="none" stroke="#342b20" stroke-width="2"><path d="M8 12Q24 -2 40 12M8 12Q5 34 24 31M24 31Q47 37 40 12" stroke="#d27c3b" stroke-width="3"/><circle cx="8" cy="12" r="6" fill="#eee2c4"/><circle cx="40" cy="12" r="6" fill="#eee2c4"/><circle cx="24" cy="31" r="6" fill="#eee2c4"/></g>
 <g class="art art-terminal" fill="none" stroke="currentColor" stroke-width="3"><path d="M2 6L16 20L2 34M23 34H46"/><rect x="27" y="7" width="10" height="10" stroke="none" fill="currentColor"/></g>
-</svg><h1>SuperCollision</h1><small><span class="version-prefix">INSTRUMENT / </span>2.1</small><div class="theme-strip"><label for="theme-choice">DESIGN</label><select id="theme-choice" aria-label="Visual design"><option value="bauhaus">Bauhaus</option><option value="blackmountain">Black Mountain</option><option value="moog">Moog</option><option value="makenoise">Make Noise</option><option value="score">01 / Living Score</option><option value="scope">02 / Oscilloscope</option><option value="patch">03 / Patch Diagram</option><option value="terminal">04 / Brutalist Terminal</option></select></div></header>
+</svg><h1>SuperCollision</h1><small><span class="version-prefix">INSTRUMENT / </span>2.2</small><div class="theme-strip"><label for="theme-choice">DESIGN</label><select id="theme-choice" aria-label="Visual design"><option value="bauhaus">Bauhaus</option><option value="blackmountain">Black Mountain</option><option value="moog">Moog</option><option value="makenoise">Make Noise</option><option value="score">01 / Living Score</option><option value="scope">02 / Oscilloscope</option><option value="patch">03 / Patch Diagram</option><option value="terminal">04 / Brutalist Terminal</option></select></div></header>
 <main>
 <div class="panel">
 <div class="projectbar"><div class="composition-picker"><button id="project-toggle" type="button" class="secondary" aria-expanded="false" aria-controls="project-list">Composition ▾</button><div id="project-list" class="project-list" hidden role="listbox" aria-label="Saved compositions"></div></div><select id="projects" aria-label="Saved compositions" hidden></select><details class="menu" id="file-menu">
@@ -274,8 +274,20 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 <input id="file-input" type="file" hidden><input id="backup-input" type="file" hidden>
 <pre id="syntax-preview" hidden></pre>
 </div>
-<div class="panel console-shell"><div class="console-bar"><div class="inspector-modes" role="group" aria-label="Lower panel"><button type="button" id="inspector-code" aria-pressed="true">CODE</button><button type="button" id="inspector-console" aria-pressed="false">CONSOLE</button><button type="button" id="inspector-audio" aria-pressed="false">AUDIO</button></div><p id="engine-status" role="status">Engine off · Press POWER</p></div>
+<div class="panel console-shell"><div class="console-bar"><div class="inspector-modes" role="group" aria-label="Lower panel"><button type="button" id="inspector-code" aria-pressed="true">CODE</button><button type="button" id="inspector-console" aria-pressed="false">CONSOLE</button><button type="button" id="inspector-audio" aria-pressed="false">AUDIO</button><button type="button" id="inspector-perform" aria-pressed="false">PERFORM</button></div><p id="engine-status" role="status">Engine off · Press POWER</p></div>
 <details id="console-panel"><summary>SuperCollider console</summary><div class="actions"><button id="clear-console" class="secondary">Clear console</button></div><pre id="console" aria-live="off"></pre></details></div>
+<section class="panel performance-panel" id="perform-panel" aria-label="Live performance controls and musical event timeline">
+  <div class="perform-header">
+    <strong>PERFORMANCE</strong>
+    <span id="perform-summary">0 instruments · 0 events</span>
+    <button id="perform-follow" type="button" aria-pressed="true">FOLLOW ●</button>
+    <button id="perform-reset" type="button">RESET MIX</button>
+  </div>
+  <div class="perform-scroller" id="perform-scroller">
+    <div class="perform-axis"><div class="perform-axis-label">INSTRUMENT / MIX</div><div id="perform-axis-ticks" class="perform-axis-ticks"></div></div>
+    <div class="perform-rows" id="perform-rows"></div>
+  </div>
+</section>
 <section class="panel utility" id="audio-panel" aria-label="Audio test"><h2 class="audio-panel-title">AUDIO TEST</h2><div class="actions"><button id="play" class="secondary">Test tone</button><button id="stop" class="secondary">Stop test tone</button></div><p id="status" role="status">Ready.</p><small id="info"></small></section>
 </main>
 <script>
@@ -293,7 +305,7 @@ const fixedLivingDemo="(\ns.waitForBoot({\n    Routine({\n        SynthDef(\\scD
 for(const name of Object.keys(projects)){if(/^(?:Living Code Demo|Living Code Demonstration)(?: [0-9]+)?$/.test(name)&&(projects[name]===legacyLivingDemo||projects[name]===intermediateLivingDemo))projects[name]=fixedLivingDemo;}
 if(!Object.hasOwn(projects,active))active=Object.keys(projects)[0];
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(projects));localStorage.setItem(ACTIVE,active);saveStatus.textContent='SAVED'}catch(e){saveStatus.textContent='SAVE ERROR'}}
-function renderProjects(){projectsEl.replaceChildren();for(const name of Object.keys(projects)){const option=document.createElement('option');option.value=name;option.textContent=name;projectsEl.append(option)}projectsEl.value=active;code.value=projects[active]||'';code.scrollTop=0;code.scrollLeft=0;updatePreview();persist();renderPicker();window.SCActivity?.document(active,code.value)}
+function renderProjects(){projectsEl.replaceChildren();for(const name of Object.keys(projects)){const option=document.createElement('option');option.value=name;option.textContent=name;projectsEl.append(option)}projectsEl.value=active;code.value=projects[active]||'';code.scrollTop=0;code.scrollLeft=0;updatePreview();persist();renderPicker();window.SCActivity?.document(active,code.value);window.SCTimeline?.document(active,code.value)}
 function commit(){projects[active]=code.value;persist()}
 const toggle=document.querySelector('#project-toggle'),list=document.querySelector('#project-list');
 let recentlyDeleted=null;const undoDelete=document.querySelector('#undo-delete');
@@ -368,10 +380,14 @@ document.querySelector('#info').textContent='Platform: '+navigator.platform+' | 
 renderProjects();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flush()});
 </script>
 <script type="module">
-import {createLiveActivityUI} from "./live-activity.mjs?v=21";
+import {createLiveActivityUI} from "./live-activity.mjs?v=22";
+import {createPerformanceUI} from "./performance-ui.mjs?v=22";
 let lang,synth;
 const state=document.querySelector('#engine-status'),log=document.querySelector('#console'),run=document.querySelector('#evaluate'),panic=document.querySelector('#panic');
-const liveCode=createLiveActivityUI({editor:code,gutter,overlay:document.querySelector("#activity-overlay"),status:document.querySelector("#activity-status"),code,composition:()=>active,panel:document.querySelector("#live-panel"),instrumentsEl:document.querySelector("#live-instruments"),routinesEl:document.querySelector("#live-routines"),panelToggle:document.querySelector("#live-panel-toggle")});
+const performanceUI=createPerformanceUI({panel:document.querySelector('#perform-panel'),editor:code,
+  getComposition:()=>active,sendOsc:packet=>{if(!synth)return false;synth.sendOsc(packet);return true}});
+window.SCTimeline=performanceUI;
+const liveCode=createLiveActivityUI({editor:code,gutter,overlay:document.querySelector("#activity-overlay"),status:document.querySelector("#activity-status"),code,composition:()=>active,panel:document.querySelector("#live-panel"),instrumentsEl:document.querySelector("#live-instruments"),routinesEl:document.querySelector("#live-routines"),panelToggle:document.querySelector("#live-panel-toggle"),onEnabledChange:on=>performanceUI.observe(on)});
 window.SCActivity=liveCode;
 document.querySelector("#live-activity-debug").onclick=()=>{const report=liveCode.diagnostics();alert(report);try{navigator.clipboard.writeText(report)}catch{}};
 function message(t){state.textContent=t}
@@ -396,18 +412,28 @@ document.querySelector('#engine').onclick=async()=>{
   synth=await ScSynth({locateFile:p=>new URL(p,new URL('scsynth/',base)).href});
   let serverBootRequested=false;
   lang.printCallback=t=>{const visibleOutput=liveCode.consumePrint(t);if(visibleOutput)print(visibleOutput);if(!serverBootRequested&&String(t).includes('Welcome to SuperCollider')){serverBootRequested=true;run.disabled=false;document.querySelector('#run-region').disabled=false;document.querySelector('#record').disabled=false;message('LANGUAGE READY · POWER ON · Run code to boot server if needed')}};synth.onStdout=print;
-  lang.onOsc=osc=>{try{liveCode.outgoing(osc)}catch(e){console.warn("Activity observer:",e)}synth.sendOsc(new Uint8Array(osc))};
-  synth.onOscReply=osc=>{try{liveCode.incoming(osc)}catch(e){console.warn("Activity observer:",e)}lang.sendOsc(osc)};
+  lang.onOsc=osc=>{
+    let controlReplies=[];
+    try{liveCode.outgoing(osc);controlReplies=performanceUI.outgoing(osc)||[]}catch(e){console.warn('Activity observer:',e)}
+    synth.sendOsc(new Uint8Array(osc));
+    for(const packet of controlReplies)synth.sendOsc(packet);
+  };
+  synth.onOscReply=osc=>{
+    let controlReplies=[];
+    try{liveCode.incoming(osc);controlReplies=performanceUI.incoming(osc)||[]}catch(e){console.warn('Activity observer:',e)}
+    lang.sendOsc(osc);
+    for(const packet of controlReplies)synth.sendOsc(packet);
+  };
   lang.bootInterpreter();
   window.bootServer=options=>{if(options.numOutputBusChannels)setTimeout(async()=>{try{await synth.boot(options)}catch(e){print('Server boot: '+e.message)}},100)};
   panic.disabled=false;
   message('Initializing language. RUN unlocks when ready.');
  }catch(e){message('Runtime unavailable: '+e.message);print(e.stack||e.message)}finally{booting=false;document.querySelector('#engine').disabled=false}
 };
-function submitCode(source,start,end){if(!lang)return;try{flush();activeRegion=null;updateLines();state.classList.remove('error');const evaluated=liveCode.evaluation(active,code.value,source,start);lang.runCode(evaluated);window.scPlaybackRequested=true;requestWake();message('EVALUATED L'+start+'–'+end+' · execution submitted')}catch(e){message('Evaluation failed: '+e.message)}}
+function submitCode(source,start,end){if(!lang)return;try{flush();activeRegion=null;updateLines();state.classList.remove('error');liveCode.evaluation(active,code.value,source,start);performanceUI.evaluation(active,code.value,source,start);lang.runCode(source);window.scPlaybackRequested=true;requestWake();message('EVALUATED L'+start+'–'+end+' · execution submitted')}catch(e){message('Evaluation failed: '+e.message)}}
 run.onclick=()=>submitCode(code.value,1,code.value.split('\n').length);
 document.querySelector('#run-region').onclick=()=>{const a=code.selectionStart,b=code.selectionEnd,text=code.value;let from=a,to=b;if(a===b){from=text.lastIndexOf('\n',Math.max(0,a-1))+1;to=text.indexOf('\n',a);if(to<0)to=text.length}const source=text.slice(from,to);if(!source.trim())return;const start=text.slice(0,from).split('\n').length,end=start+source.split('\n').length-1;submitCode(source,start,end)};
-panic.onclick=()=>{if(!lang)return;try{lang.runCode('CmdPeriod.run;');liveCode.stop();window.scPlaybackRequested=false;releaseWake();activeRegion=null;updateLines();message('STOP SENT · ENGINE READY')}catch(e){message('Stop failed: '+e.message)}};
+panic.onclick=()=>{if(!lang)return;try{lang.runCode('CmdPeriod.run;');liveCode.stop();performanceUI.stop();window.scPlaybackRequested=false;releaseWake();activeRegion=null;updateLines();message('STOP SENT · ENGINE READY')}catch(e){message('Stop failed: '+e.message)}};
 
 
 
