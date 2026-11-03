@@ -3,7 +3,7 @@
  * Amber means scsynth has sent /n_go without a corresponding /n_end.
  * Cyan marks a /s_new request. Source mapping is best-effort and confidence-gated.
  */
-import {prepareRoutineTrace,routineTracePattern} from './routine-trace.mjs?v=20';
+import {routineTracePattern} from './routine-trace.mjs?v=20';
 const MAX_PACKET=1024*1024, MAX_MESSAGES=512;
 function bytesOf(raw){
   if(raw instanceof Uint8Array)return raw;
@@ -242,8 +242,9 @@ export class SoundActivityTracker{
   }
   colorSlot(name){
     if(!this.colorSlots.has(name)){
-      this.colorSlots.set(name,this.nextColorSlot%10);
-      this.nextColorSlot++;
+      let h=2166136261;
+      for(let i=0;i<name.length;i++){h^=name.charCodeAt(i);h=Math.imul(h,16777619)}
+      this.colorSlots.set(name,(h>>>0)%10);
     }
     return this.colorSlots.get(name);
   }
@@ -524,9 +525,9 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
     evaluation:(compositionName,whole,submitted,startLine=1)=>{
       if(!enabled)return submitted;
       track.evaluation(compositionName,whole,submitted,startLine);
-      const plan=prepareRoutineTrace(submitted,startLine);
-      track.registerRoutinePlan(plan,compositionName,whole);
-      return plan.code;
+      // Compatibility invariant: execution receives the original code verbatim.
+      // No Routine checkpoints or language-side print statements are injected.
+      return submitted;
     },
     consumePrint:t=>track.consumeLanguagePrint(t,enabled),
     stop:()=>track.stopRequested(),
