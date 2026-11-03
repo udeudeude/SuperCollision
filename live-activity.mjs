@@ -305,6 +305,8 @@ export class SoundActivityTracker{
       'Mapped active definitions on screen: '+v.linked,
       'Mapped named SynthDefs: '+this.defs.size,
       'Mapped named trigger sites: '+this.calls.size,
+      'Named instruments: '+v.instruments.map(i=>i.name+'='+i.active+' active / '+i.total+' started').join(', '),
+      'Observed Routines: '+v.routines.map(r=>'L'+r.id+' at L'+r.line+' '+r.kind).join(', '),
       'Recent language→server OSC: '+(this.recentSent.join(' ')||'(none)'),
       'Recent server→language OSC: '+(this.recentReceived.join(' ')||'(none)')
     ].join('\n');
@@ -328,6 +330,7 @@ export class SoundActivityTracker{
       if(node.confirmed&&node.running&&matches(node.definition)){
         active.push(node.definition);
         if(row)row.active++;
+        row.oldestStartAt=row.oldestStartAt===undefined?(node.startedAt||node.time):Math.min(row.oldestStartAt,node.startedAt||node.time);
       }else if(!node.confirmed&&row)row.pending++;
     }
     this.pulses=this.pulses.filter(p=>now-p.at<800);
@@ -363,14 +366,17 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
     for(const item of rows.slice(0,5)){
       const row=document.createElement('button');
       row.type='button';row.className='live-instrument-row';
-      row.title=item.name+': '+item.active+' running; '+item.total+' started since engine initialization';
+      row.title=item.name+': '+item.active+' running; '+item.total+' started; latest lifetime '+(item.lastDuration===null?'not yet completed':(item.lastDuration/1000).toFixed(1)+' seconds');
       const name=document.createElement('span');name.className='live-instrument-name';name.textContent=item.name;
       const count=document.createElement('span');count.className='live-instrument-count';
       count.textContent='●'+item.active;
       count.dataset.active=String(item.active>0);
       const runs=document.createElement('span');runs.className='live-instrument-total';
       runs.textContent='/'+item.total;
-      row.append(name,count,runs);
+      const age=document.createElement('span');age.className='live-instrument-duration';
+      const duration=item.active>0?(track.now()-(item.oldestStartAt||track.now())):item.lastDuration;
+      age.textContent=duration===null?'·':(duration/1000).toFixed(1)+'s';
+      row.append(name,count,runs,age);
       if(item.def)row.addEventListener('click',()=>scrollToLine(item.def.start));
       instrumentsEl.append(row);
     }
