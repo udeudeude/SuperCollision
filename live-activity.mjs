@@ -258,7 +258,7 @@ export class SoundActivityTracker{
       'Mapped named trigger sites: '+this.calls.size,
       'Recent language→server OSC: '+(this.recentSent.join(' ')||'(none)'),
       'Recent server→language OSC: '+(this.recentReceived.join(' ')||'(none)')
-    ].join('\\n');
+    ].join('\n');
   }
   stopRequested(){
     this.nodes.clear();this.pulses=[];this.notify();
