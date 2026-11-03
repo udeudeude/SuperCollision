@@ -43,7 +43,7 @@ try{
  console.log('LANGUAGE READY');
  const example=[
  '(',
- 's.waitForBoot {',
+ 's.waitForBoot({',
  '    Routine({',
  '        SynthDef(\\qaDrone, {|freq=110|',
  '            Out.ar(0, SinOsc.ar(freq, 0, 0.1) ! 2);',
@@ -51,7 +51,7 @@ try{
  '        s.sync;',
  '        ~qadrone=Synth(\\qaDrone);',
  '    }).play(SystemClock);',
- '};',
+ '}, clock: SystemClock);',
  ')'
  ].join('\n');
  await page.locator('#code').fill(example);
