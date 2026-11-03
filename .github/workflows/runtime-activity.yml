@@ -21,6 +21,11 @@ jobs:
         with:
           ref: pages-build
           path: site
+      - name: Overlay current frontend onto compiled production runtime
+        run: |
+          cp index.html instrument-layout.css instrument-layout.js live-activity.mjs site/
+          test -s site/runtime/sclang/sclang.js
+          test -s site/runtime/scsynth/scsynth.js
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
