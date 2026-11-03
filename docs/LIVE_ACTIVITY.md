@@ -1,6 +1,6 @@
 # Live Code: source-to-sound activity
 
-Version 1.5 adds an **observational** bridge between SuperCollider code and the sounds running in `scsynth`. It does not inject instructions into compositions, rewrite SynthDefs, or change the audio engine.
+Version 1.6 adds an **observational** bridge between SuperCollider code and the sounds running in `scsynth`. It does not inject instructions into compositions, rewrite SynthDefs, or change the audio engine.
 
 ## What the cues mean
 
@@ -14,7 +14,7 @@ Version 1.5 adds an **observational** bridge between SuperCollider code and the 
 
 1. Code submitted via RUN or PART is indexed for named `SynthDef`, `Synth`, and `Pbind` references, with limited anonymous `{}.play` support.
 2. The existing SuperCollider WASM bridge is observed without modifying the OSC messages:
-   - Language to server: `/s_new` (including asynchronous completion OSC embedded in `/d_recv` or `/d_load`).
+   - Language to server: `/s_new` **and SuperCollider's compact numeric synth-start command IDs 9 and 59** (including starts inside timed bundles or asynchronous completion OSC embedded in `/d_recv` or `/d_load`).
    - Server to language: `/n_go`, `/n_end`, `/n_off`, and `/n_on`.
 3. An OSC decoder processes single messages, bundles, recognized argument types and guarded completion blobs. The observer does not interfere with forwarding to the audio server.
 4. A source map retains composition identity and a text snapshot. If the user switches to another composition or edits the source so the recorded ranges no longer match, the app suppresses source highlights rather than showing incorrect line numbers.
@@ -46,3 +46,7 @@ Version 1.5 adds an **observational** bridge between SuperCollider code and the 
 5. If sound plays without activity, check whether `/notify` messages are reaching the bridge or whether the sound was started using an instrument name that can't be unambiguously mapped.
 
 Official SuperCollider reference: https://docs.supercollider.online/Reference/Server-Command-Reference.html
+
+## Fixed in 1.6
+
+The first version of this feature missed real synths started using SuperCollider's compact integer-addressed OSC command. Actual WebAssembly engine traces showed byte-prefix `00 00 00 09` (command number 9) followed by synth name, node ID and placement. The server responded with `/n_go`, but the original observer incorrectly treated the outgoing packet as unknown. The decoder now recognizes commands 9 and 59 as `/s_new`, so real instrument instances are eligible for source highlighting. The original Living Code Demonstration also used `s.sync` outside a Routine. This was corrected, and the app upgrades only untouched saved copies of the example, leaving user-modified code intact.
