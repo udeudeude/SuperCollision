@@ -1,6 +1,6 @@
 # Live Code: source-to-sound activity
 
-Version 1.9 combines **observational** synth-lifecycle tracking with conservative execution checkpoints for identifiable `Routine` and `Task` statements. The saved compositions, synth definitions and audio engine remain unchanged. The evaluated language code may contain temporary checkpoint print statements while Live Code is enabled.
+Version 2.0 combines **observational** synth-lifecycle tracking with conservative execution checkpoints for identifiable `Routine` and `Task` statements. The saved compositions, synth definitions and audio engine remain unchanged. The evaluated language code may contain temporary checkpoint print statements while Live Code is enabled.
 
 ## What the cues mean
 
@@ -59,3 +59,24 @@ The first version of this feature missed real synths started using SuperCollider
 - Pure-node regression tests cover the immutable source transform, checkpoint line mapping, `var` protection, routine status progression, stale pointers, per-instrument node counts and measured lifetimes.
 - Chromium checks the floating inset is inside the editor in all eight themes and at 320, 390, and 430 CSS pixels, and that source-highlighting and Routine indicators render in the correct coordinate system.
 - The actual SuperCollider WebAssembly test boots the language and synthesis engine, evaluates a real clock-driven Routine with inserted checkpoints and checks that its observed WAIT line appears in the inset while music plays. The last successful test is associated with the project's GitHub Actions runs.
+
+## Version 2.0: Individual colors, marks, and timed waits
+
+- Each named instrument receives a stable color slot from ten distinct hues. The corresponding editor border, trigger underline, gutter, and inset row all share that hue.
+- Simultaneous instances from a single instrument receive additional narrow colored strokes on its code lines and individual color ticks in its inset row.
+- **Active sound:** translucent color tint, thin vertical colored strokes, and the gutter mark.
+- **New trigger:** brief bright flash with a matching underline.
+- **Routine step:** violet dashed outline.
+- **Routine waiting:** violet dotted border and a progress line that fills as the wait counts down.
+- **Stopped or paused:** no sustained-source tint. Counts and de-emphasized rows communicate status.
+- Color is never the only distinguishing channel. Borders, underlines, dotted frames, progress lines, counts, and labels explain the status visually.
+
+### WAIT precision and limits
+
+For a recognized standalone numeric or simple-variable wait, SuperCollision observes the actual value passed to the wait operation and the current SuperCollider clock tempo at execution. The saved source is unchanged. It projects seconds by dividing beat count by beats per second and uses a monotonic browser clock for the countdown, displaying tenths of a second.
+
+SystemClock and AppClock waits are measured in seconds. TempoClock waits are measured in beats, so a tempo of 2 beats per second means a 7.5-beat wait takes 3.75 seconds. The countdown is a faithful projection when the clock tempo remains unchanged. Trace delivery and browser rendering introduce some latency, and a tempo change during an outstanding wait makes the prior projection inaccurate. A backgrounded iPhone browser can also update intermittently.
+
+For an expression that cannot be observed safely, display WAIT without a numeric countdown rather than invent precision. After zero, display DUE until the Routine actually reaches another checkpoint.
+
+The feature has automated unit, browser layout, and genuine WebAssembly audio-engine coverage.
