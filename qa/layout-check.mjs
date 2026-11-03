@@ -48,6 +48,18 @@ try {
       assert(r.controls.every(x=>Math.abs(x.top-r.controls[0].top)<3&&x.height<=44&&x.width>=20),theme+' transport wrapped or oversized at '+width);
       assert(r.selected===theme&&r.vector!=='none',theme+' artwork not selected');
       assert(r.fullTitle,theme+' SuperCollision heading is truncated at '+width);
+      const inset=await page.evaluate(()=>{
+        const panel=document.querySelector('#live-panel').getBoundingClientRect();
+        const editor=document.querySelector('.editor-frame').getBoundingClientRect();
+        return {panel:panel.toJSON(),editor:editor.toJSON(),
+          outsideConsole:!document.querySelector('.console-bar #activity-status'),
+          status:document.querySelector('#live-panel #activity-status')!==null};
+      });
+      assert(inset.outsideConsole&&inset.status,theme+' live activity is not in editor inset');
+      assert(inset.panel.width>=110&&inset.panel.right<=inset.editor.right+1&&
+        inset.panel.bottom<=inset.editor.bottom+1&&inset.panel.left>=inset.editor.left,
+        theme+' live inset overflows editor at '+width);
+
       assert(r.tabsFit,theme+' inspector tabs clipped at '+width);
       if(width===390)await page.screenshot({path:path.join(root,'qa','screenshots',theme+'.png')});
 
@@ -188,6 +200,15 @@ try {
         }));
         assert(confirmed.amber>=2&&confirmed.gutter>=2&&confirmed.count===1,
           'Server /n_go must illuminate UGen lines and gutter: '+JSON.stringify(confirmed));
+        const chip=await page.evaluate(()=>{
+          const r=document.querySelector('#live-instruments .live-instrument-row');
+          return {name:r?.querySelector('.live-instrument-name')?.textContent,
+            count:r?.querySelector('.live-instrument-count')?.textContent,
+            total:r?.querySelector('.live-instrument-total')?.textContent,
+            duration:r?.querySelector('.live-instrument-duration')?.textContent};
+        });
+        assert(chip.name==='bell'&&chip.count==='●1'&&chip.total==='/1'&&chip.duration.endsWith('s'),
+          'Per-instrument live chip missing data: '+JSON.stringify(chip));
         await page.screenshot({path:path.join(root,'qa','screenshots','live-sound-activity.png')});
         await page.evaluate(()=>window.SCActivity.incoming(window.__oscQA('/n_end','iiiii',[1001,1,-1,-1,0])));
         await page.waitForTimeout(70);
@@ -196,6 +217,37 @@ try {
           count:window.SCActivity.tracker.visible().confirmed
         }));
         assert(ended.amber===0&&ended.count===0,'Server /n_end must clear active sound highlight');
+
+        // Mimic the language post channel without fabricating an OSC start:
+        // the module must produce actual executable Routine checkpoints.
+        const tracePlan=await page.evaluate(()=>{
+          const piece=[
+            '(',
+            '~routine=Routine({',
+            '  var x=1;',
+            '  2.do {',
+            '    Synth(\\bell);',
+            '    0.5.wait;',
+            '  };',
+            '}).play(SystemClock);',
+            ')'
+          ].join('\n');
+          const ed=document.getElementById('code');
+          ed.value=piece;ed.dispatchEvent(new Event('input',{bubbles:true}));
+          const instrumented=window.SCActivity.evaluation('Default',piece,piece,1);
+          const markers=instrumented.match(/__SCLIVE__[A-Za-z0-9]+:\d+:\d+:(?:step|wait):(?:\d+(?:\.\d+)?|x)__/g)||[];
+          if(markers.length)window.SCActivity.consumePrint(markers[markers.length-1]+'\n');
+          return {markers:markers.length,sourcePreserved:ed.value===piece};
+        });
+        await page.waitForTimeout(100);
+        const routineUi=await page.evaluate(()=>({
+          text:document.getElementById('live-routines').textContent,
+          lines:document.querySelectorAll('#activity-overlay .live-source-routine').length
+        }));
+        assert(tracePlan.markers>=2&&tracePlan.sourcePreserved,'Routine trace instrumentation changed visible code');
+        assert(routineUi.text.includes('WAIT')&&routineUi.lines>0,
+          'Routine line checkpoint not visible within editor: '+JSON.stringify(routineUi));
+
 
         assert((await page.locator('#run-region').innerText()).trim()==='SELECTED','Selected transport button label incorrect');
         assert(await page.locator('#evaluate svg.transport-icon').count()===1,'RUN does not use a vector icon');
