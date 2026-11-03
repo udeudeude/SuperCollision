@@ -192,14 +192,49 @@ try {
         }));
         assert(ended.amber===0&&ended.count===0,'Server /n_end must clear active sound highlight');
 
-        await page.locator('#inspect-toggle').click();
+        assert((await page.locator('#run-region').innerText()).trim()==='SELECTED','Selected transport button label incorrect');
+        assert(await page.locator('#evaluate svg.transport-icon').count()===1,'RUN does not use a vector icon');
+        assert(await page.locator('#record-stop svg.transport-icon').count()===1,'SAVE does not use a distinct vector icon');
+        assert(!(await page.locator('#evaluate').innerText()).includes('▶'),'RUN still contains emoji-prone glyph');
+        const names=await page.locator('.inspector-modes button').allTextContents();
+        assert(names.join('|')==='CODE|CONSOLE|AUDIO','Direct inspector tabs absent');
+        const codeBefore=await page.evaluate(()=>({
+          audio:getComputedStyle(document.getElementById('audio-panel')).display,
+          pressed:document.getElementById('inspector-code').getAttribute('aria-pressed')
+        }));
+        assert(codeBefore.audio==='none'&&codeBefore.pressed==='true','CODE view has unexpected diagnostics');
+        await page.locator('#inspector-console').click();
         await page.waitForTimeout(100);
-        const shrink=await page.evaluate(()=>({height:document.querySelector('.editor-frame').getBoundingClientRect().height,open:document.getElementById('console-panel').open}));
-        assert(shrink.open&&shrink.height<initialHeight-60,'console reveal failed to shrink editor');
-        await page.locator('#inspect-toggle').click();
-        const diag=await page.evaluate(()=>({open:document.querySelector('main > details.utility').open,inspect:document.body.classList.contains('inspect-2')}));
-        assert(diag.open&&diag.inspect,'diagnostic reveal failed');
-        await page.locator('#inspect-toggle').click();
+        const shrink=await page.evaluate(()=>({
+          height:document.querySelector('.editor-frame').getBoundingClientRect().height,
+          open:document.getElementById('console-panel').open,
+          audio:getComputedStyle(document.getElementById('audio-panel')).display,
+          pressed:document.getElementById('inspector-console').getAttribute('aria-pressed')
+        }));
+        assert(shrink.open&&shrink.height<initialHeight-60&&shrink.audio==='none'&&shrink.pressed==='true',
+          'CONSOLE view must show console and shrink editor only');
+        await page.locator('#inspector-audio').click();
+        await page.waitForTimeout(90);
+        const audio=await page.evaluate(()=>({
+          editor:document.querySelector('.editor-frame').getBoundingClientRect().height,
+          panel:getComputedStyle(document.getElementById('audio-panel')).display,
+          panelHeight:document.getElementById('audio-panel').getBoundingClientRect().height,
+          console:document.getElementById('console-panel').open,
+          title:document.querySelector('#audio-panel h2').textContent.trim(),
+          pressed:document.getElementById('inspector-audio').getAttribute('aria-pressed')
+        }));
+        assert(audio.editor>=105&&audio.panel!=='none'&&audio.panelHeight>=120&&!audio.console&&
+          audio.title==='AUDIO TEST'&&audio.pressed==='true',
+          'AUDIO view must show only the audio test while maintaining the editor');
+        await page.locator('#inspector-code').click();
+        await page.waitForTimeout(80);
+        const restored=await page.evaluate(()=>({
+          height:document.querySelector('.editor-frame').getBoundingClientRect().height,
+          audio:getComputedStyle(document.getElementById('audio-panel')).display,
+          console:document.getElementById('console-panel').open
+        }));
+        assert(restored.height>=initialHeight-35&&restored.audio==='none'&&!restored.console,
+          'CODE view should restore editor and hide lower panels');
       }
     }
     await context.close();
@@ -209,4 +244,4 @@ try {
   await new Promise(resolve=>server.close(resolve));
 }
 if(failures)process.exitCode=1;
-else console.log('Passed: 8 themes x 3 phone widths, line-number sync, pinch-zoom bounds, persistence, reset and console expansion.');
+else console.log('Passed: 8 themes x 3 phone widths, fixed inspector tabs, vector transport icons, pinch zoom, OSC highlighting and responsive panels.');
