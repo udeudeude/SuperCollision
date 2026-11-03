@@ -334,6 +334,29 @@ document.querySelector('#import-file').onclick=()=>document.querySelector('#file
 document.querySelector('#file-input').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>2000000)throw Error('File exceeds 2 MB');if(!/\.(scd|sc|txt)$/i.test(file.name))throw Error('Choose a .scd, .sc, or .txt file');flush();active=uniqueName(file.name.replace(/\.(scd|sc|txt)$/i,'').slice(0,80)||'Imported');projects[active]=await file.text();renderProjects();report('Imported '+file.name)}catch(err){report('Import failed: '+err.message)}e.target.value=''};
 document.querySelector('#export-file').onclick=()=>{flush();const blob=new Blob([code.value],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=active.replace(/[^a-z0-9_-]/gi,'_')+'.scd';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000)};
 document.querySelector('#clear').onclick=()=>{if(code.value&&!confirm('Replace current composition with the example?'))return;code.value=example;code.dispatchEvent(new Event('input'))};
+// Compact FILE drawer: only one submenu expands at a time.
+const fileMenu=document.querySelector('#file-menu');
+const fileItems=document.querySelector('#file-menu-items');
+const fileGroups=[...fileItems.querySelectorAll('.file-submenu')];
+fileGroups.forEach(group=>group.addEventListener('toggle',()=>{
+  if(group.open)for(const other of fileGroups)if(other!==group)other.open=false;
+}));
+fileMenu.addEventListener('toggle',()=>{
+  if(!fileMenu.open)fileGroups.forEach(group=>group.open=false);
+});
+fileItems.addEventListener('click',event=>{
+  const button=event.target.closest('button');
+  if(!button||button.disabled)return;
+  // Keep the editor size tools and screen-awake control readily repeatable.
+  if(!['code-size-smaller','code-size-larger','wake-toggle'].includes(button.id))
+    fileMenu.open=false;
+});
+document.addEventListener('pointerdown',event=>{
+  if(fileMenu.open&&!fileMenu.contains(event.target))fileMenu.open=false;
+});
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&fileMenu.open){fileMenu.open=false;event.stopPropagation()}
+});
 document.querySelector('#info').textContent='Platform: '+navigator.platform+' | Secure context: '+window.isSecureContext;
 renderProjects();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flush()});
 </script>
