@@ -267,3 +267,18 @@ body .console-bar #engine-status{font-size:10px}
  body .console-bar #activity-status{min-width:41px;max-width:49px;font-size:9px}
  body .console-bar #engine-status{font-size:9px}
 }
+
+/* Small-screen masthead: preserve full project title instead of ellipsizing it. */
+@media(max-width:540px){
+  body>header .version-prefix{display:none}
+  body>header h1,body[data-theme] header h1{
+    font-size:clamp(14px,4vw,17px);
+    letter-spacing:0.01em;
+  }
+  body>header .theme-strip select,body[data-theme] header .theme-strip select{max-width:75px}
+}
+@media(max-width:350px){
+  body>header .identity-art{width:27px;height:27px}
+  body>header .theme-strip select,body[data-theme] header .theme-strip select{max-width:66px}
+  body>header h1,body[data-theme] header h1{font-size:14px;letter-spacing:0}
+}
