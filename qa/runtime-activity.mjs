@@ -169,6 +169,27 @@ try{
    if(!ui.rows.includes('R')||!ui.panel.width)throw Error('Routine indicator missing from editor inset');
    if(!/WAIT|DUE/.test(ui.rows))throw Error('Clock-aware WAIT countdown missing from the live editor: '+ui.rows);
    await page.screenshot({path:'qa/screenshots/runtime-routine-progress.png'});
+   const tempoRoutine=[
+     '(',
+     '~qaTempoClock = TempoClock.new(2);',
+     '~qaTempoRoutine = Routine({',
+     '    2.do {',
+     '        1.wait;',
+     '    };',
+     '}).play(~qaTempoClock);',
+     ')'
+   ].join('\n');
+   await page.locator('#code').fill(tempoRoutine);
+   await page.locator('#evaluate').click();
+   await page.waitForFunction(()=>{
+     const rows=window.SCActivity?.tracker?.visible()?.routines||[];
+     return rows.some(r=>r.kind==='wait'&&r.tempo===2&&Math.abs(r.waitSeconds-0.5)<0.05);
+   },{timeout:10000});
+   const tempoObserved=await page.evaluate(()=>window.SCActivity.tracker.visible().routines);
+   console.log('REAL TEMPOCLOCK WAIT:',JSON.stringify(tempoObserved));
+   if(!tempoObserved.some(r=>r.tempo===2&&Math.abs(r.waitSeconds-0.5)<0.05))
+     throw Error('TempoClock wait must count beat duration using 2 beats per second');
+
  }catch(e){
    console.log('ROUTINE TRACE FAILURE:',JSON.stringify(await page.evaluate(()=>({
      visible:window.SCActivity.tracker.visible(),
