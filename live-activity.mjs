@@ -378,7 +378,7 @@ export class SoundActivityTracker{
 }
 export function createLiveActivityUI({editor,gutter,overlay,status,code,composition,toggle,panel,instrumentsEl,routinesEl,panelToggle}){
   let enabled=true,queued=false,refreshTimer=null;
-  const track=new SoundActivityTracker(()=>schedule());
+  const track=new SoundActivityTracker(()=>schedule(),()=>performance.now());
   const scrollToLine=(line)=>{
     if(!Number.isInteger(line))return;
     const h=parseFloat(getComputedStyle(editor).lineHeight)||21;
@@ -391,6 +391,7 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
       const row=document.createElement('button');
       row.type='button';row.className='live-instrument-row';
       row.title=item.name+': '+item.active+' running; '+item.total+' started; latest lifetime '+(item.lastDuration===null?'not yet completed':(item.lastDuration/1000).toFixed(1)+' seconds');
+      row.style.setProperty('--voice-color','var(--voice-'+item.slot+')');
       const name=document.createElement('span');name.className='live-instrument-name';name.textContent=item.name;
       const count=document.createElement('span');count.className='live-instrument-count';
       count.textContent='●'+item.active;
@@ -400,7 +401,16 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
       const age=document.createElement('span');age.className='live-instrument-duration';
       const duration=item.active>0?(track.now()-(item.oldestStartAt||track.now())):item.lastDuration;
       age.textContent=duration===null?'·':(duration/1000).toFixed(1)+'s';
-      row.append(name,count,runs,age);
+      const voices=document.createElement('span');
+      voices.className='live-voice-marks';voices.setAttribute('aria-hidden','true');
+      for(const v of item.voices.slice(0,4)){
+        const mark=document.createElement('span');
+        mark.className='live-voice-mark';
+        mark.style.setProperty('--voice-color','var(--voice-'+v.slot+')');
+        mark.title='Node '+v.id;
+        voices.append(mark);
+      }
+      row.append(name,voices,count,runs,age);
       if(item.def)row.addEventListener('click',()=>scrollToLine(item.def.start));
       instrumentsEl.append(row);
     }
@@ -418,10 +428,15 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
     for(const r of rows.slice(0,2)){
       const row=document.createElement('button');row.type='button';
       row.className='live-routine-row';row.title='Routine at last confirmed checkpoint on line '+r.line;
+      const progress=r.waiting&&r.waitSeconds>0?Math.max(0,Math.min(100,(1-r.remaining/r.waitSeconds)*100)):0;
+      row.style.setProperty('--wait-progress',progress+'%');
+      if(r.waiting&&!r.stale)row.classList.add('live-waiting');
       if(r.stale)row.classList.add('live-routine-stale');
       const name=document.createElement('span');name.textContent='R'+r.id+' · L'+r.line;
       const state=document.createElement('span');state.className='live-routine-state';
-      state.textContent=r.stale?'LAST':r.kind==='wait'?'WAIT'+(r.wait!==null?' '+r.wait:''):'STEP';
+      state.textContent=r.stale?'LAST':r.waiting&&r.remaining!==null?
+        (r.remaining>0?'WAIT '+r.remaining.toFixed(1)+'s':'DUE'):
+        r.kind==='wait'?'WAIT ·':'STEP';
       row.append(name,state);
       row.addEventListener('click',()=>scrollToLine(r.line));
       routinesEl.append(row);
@@ -429,19 +444,24 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
   }
   const render=()=>{
     queued=false;
-    const v=track.visible(),activeLines=new Set(),pulseLines=new Set(),routineLines=new Set();
-    for(const range of v.active){
+    const v=track.visible(),activeLines=new Map(),pulseLines=new Map(),routineLines=new Map();
+    for(const event of v.activeVoices){
+      const range=event.site;
       const lines=range.text.split('\n');
       for(let j=0;j<lines.length&&j<1000;j++){
-        const line=lines[j].trim();
-        if(j===0||(!line.startsWith('//')&&/\.(?:ar|kr|ir|dr)\s*\(|\b(?:Out|OffsetOut|ReplaceOut)\s*\.\s*ar\b/.test(line)))
-          activeLines.add(range.start+j);
+        const lineText=lines[j].trim();
+        if(j!==0&&(lineText.startsWith('//')||!/\.(?:ar|kr|ir|dr)\s*\(|\b(?:Out|OffsetOut|ReplaceOut)\s*\.\s*ar\b/.test(lineText)))continue;
+        const line=range.start+j;
+        let entry=activeLines.get(line);
+        if(!entry){entry={slot:event.slot,voices:new Set()};activeLines.set(line,entry)}
+        entry.voices.add(event.voiceSlot);
       }
     }
-    for(const range of v.pulses)pulseLines.add(range.start);
-    for(const r of v.routines)if(!r.stale)routineLines.add(r.line);
-    for(const el of gutter.querySelectorAll('.line.live-active,.line.live-trigger,.line.live-routine')){
-      el.classList.remove('live-active','live-trigger','live-routine');
+    for(const event of v.pulses)pulseLines.set(event.site.start,event);
+    for(const r of v.routines)if(!r.stale)routineLines.set(r.line,r);
+    for(const el of gutter.querySelectorAll('.line.live-active,.line.live-trigger,.line.live-routine,.line.live-wait')){
+      el.classList.remove('live-active','live-trigger','live-routine','live-wait');
+      el.style.removeProperty('--voice-color');
     }
     overlay.replaceChildren();
     const lineHeight=parseFloat(getComputedStyle(editor).lineHeight)||21;
@@ -451,15 +471,34 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
     const lineNodes=gutter.querySelector('#line-inner')?.children||[];
     if(enabled){
       for(let line=first;line<=last;line++){
-        const pulse=pulseLines.has(line),active=activeLines.has(line),routine=routineLines.has(line);
+        const pulse=pulseLines.get(line),active=activeLines.get(line),routine=routineLines.get(line);
         if(!pulse&&!active&&!routine)continue;
         const row=document.createElement('div');
-        row.className='live-source-line '+(pulse?'live-source-trigger':routine?'live-source-routine':'live-source-active');
+        const classes=['live-source-line'];
+        if(active)classes.push('live-source-active');
+        if(pulse)classes.push('live-source-trigger');
+        if(routine)classes.push(routine.waiting?'live-source-wait':'live-source-routine');
+        row.className=classes.join(' ');
+        const slot=active?.slot??pulse?.slot;
+        if(slot!==undefined)row.style.setProperty('--voice-color','var(--voice-'+slot+')');
+        if(active?.voices.size){
+          const colors=Array.from(active.voices).slice(0,6);
+          const parts=colors.map((slot,i)=>'var(--voice-'+slot+') '+(i*3)+'px '+((i+1)*3)+'px');
+          row.style.setProperty('--voice-stripes','linear-gradient(to right,'+parts.join(',')+',transparent '+(colors.length*3)+'px)');
+          row.dataset.voices=String(active.voices.size);
+        }
+        if(routine?.waiting&&routine.waitSeconds>0)
+          row.style.setProperty('--wait-progress',(100*Math.max(0,1-routine.remaining/routine.waitSeconds)).toFixed(1)+'%');
         row.style.top=(topPadding+(line-1)*lineHeight-editor.scrollTop)+'px';
         row.style.height=lineHeight+'px';
         overlay.append(row);
         const label=lineNodes[line-1];
-        if(label)label.classList.add(pulse?'live-trigger':routine?'live-routine':'live-active');
+        if(label){
+          if(active)label.classList.add('live-active');
+          if(pulse)label.classList.add('live-trigger');
+          if(routine)label.classList.add(routine.waiting?'live-wait':'live-routine');
+          if(slot!==undefined)label.style.setProperty('--voice-color','var(--voice-'+slot+')');
+        }
       }
     }
     status.textContent=enabled?'●'+v.confirmed+'  ✦'+track.pulses.length:'OFF';
@@ -469,7 +508,8 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
     routinesEl.hidden=!enabled||!v.routines.length;
     clearTimeout(refreshTimer);
     if(enabled&&(track.pulses.length||v.routines.length||v.confirmed>0)){
-      refreshTimer=setTimeout(schedule,900);
+      const counting=v.routines.some(r=>r.waiting&&r.remaining!==null&&r.remaining>0&&!r.stale);
+      refreshTimer=setTimeout(schedule,counting?100:650);
     }
   };
   function schedule(){
