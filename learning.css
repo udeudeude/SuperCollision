@@ -1,0 +1,22 @@
+/* Learning is an optional overlay. It never changes editor geometry or audio. */
+.editor-frame{position:relative}
+.learning-launch{position:absolute;left:8px;bottom:8px;z-index:8;min-height:26px;height:26px;
+  padding:3px 8px;font:700 10px/1 ui-monospace,monospace;letter-spacing:.06em;
+  border:1px solid currentColor;border-radius:2px;background:var(--perform-bg,#222);color:var(--perform-fg,#eee)}
+.learning-launch[hidden],.learning-panel[hidden]{display:none!important}
+.learning-panel{position:absolute;left:4px;right:4px;bottom:40px;z-index:9;
+  max-height:min(48%,340px);overflow:auto;box-sizing:border-box;padding:10px;
+  border:1px solid var(--perform-border,#888);background:var(--perform-bg,#202020);
+  color:var(--perform-fg,#eee);box-shadow:0 3px 20px #0008;
+  font:12px/1.45 system-ui,sans-serif}
+.learning-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.learning-header strong{font:800 11px/1 ui-monospace,monospace;letter-spacing:.1em}
+.learning-header button{padding:0 6px;min-height:24px;height:24px;border:1px solid currentColor;
+  background:transparent;color:inherit;font-size:17px}
+.learning-panel>strong{display:block;font-size:13px;margin-bottom:5px}
+.learning-panel p{margin:4px 0 9px;white-space:pre-wrap}
+.learning-actions{display:flex;flex-wrap:wrap;gap:5px}
+.learning-actions button{padding:5px 8px;min-height:30px;font:600 10px/1.3 system-ui,sans-serif;
+  border:1px solid currentColor;background:transparent;color:inherit;border-radius:2px}
+#learning-mode{min-width:0;width:100%;font-size:14px;padding:6px}
+#learning-open{width:100%}
