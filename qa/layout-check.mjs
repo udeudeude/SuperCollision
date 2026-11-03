@@ -33,7 +33,10 @@ try {
         const controls=[...document.querySelectorAll('.toolbar button')].map(el=>{const b=el.getBoundingClientRect();return {top:b.top,height:b.height,width:b.width}});
         const selected=document.body.dataset.theme;
         const vector=getComputedStyle(document.querySelector('.art-'+selected)).display;
-        return {header:rect('header'),files:rect('.projectbar'),editor:rect('.editor-frame'),transport:rect('.toolbar'),console:rect('.console-bar'),controls,vector,viewport:innerHeight,scrollY,selected}
+        const title=document.querySelector('header h1'),tabButtons=[...document.querySelectorAll('.inspector-modes button')];
+        return {header:rect('header'),files:rect('.projectbar'),editor:rect('.editor-frame'),transport:rect('.toolbar'),console:rect('.console-bar'),controls,vector,viewport:innerHeight,scrollY,selected,
+          fullTitle:title.scrollWidth<=title.clientWidth+1,
+          tabsFit:tabButtons.every(el=>{const b=el.getBoundingClientRect(),p=el.parentElement.getBoundingClientRect();return b.width>31&&b.left>=p.left-1&&b.right<=p.right+1;})}
       });
       assert(r.header.top<=r.files.top+2,theme+' header above files at '+width);
       assert(r.files.bottom<=r.editor.top+4,theme+' files above editor at '+width);
@@ -44,6 +47,8 @@ try {
       assert(r.controls.length===6,theme+' transport lacks six buttons');
       assert(r.controls.every(x=>Math.abs(x.top-r.controls[0].top)<3&&x.height<=44&&x.width>=20),theme+' transport wrapped or oversized at '+width);
       assert(r.selected===theme&&r.vector!=='none',theme+' artwork not selected');
+      assert(r.fullTitle,theme+' SuperCollision heading is truncated at '+width);
+      assert(r.tabsFit,theme+' inspector tabs clipped at '+width);
       if(width===390)await page.screenshot({path:path.join(root,'qa','screenshots',theme+'.png')});
 
       if(theme==='moog' && width===390) {
