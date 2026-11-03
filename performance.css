@@ -88,3 +88,19 @@ body .console-bar .inspector-modes button{letter-spacing:0}
   body .console-bar .inspector-modes button,body[data-theme] .console-bar .inspector-modes button{font-size:7px;padding-left:2px;padding-right:2px}
   body .perform-header strong{display:none}
 }
+
+/* Keep all four inspector selectors readable at 320px and above. */
+body .console-bar .inspector-modes,body[data-theme] .console-bar .inspector-modes{flex:0 0 auto;gap:1px}
+body .console-bar .inspector-modes button,body[data-theme] .console-bar .inspector-modes button{
+  font-size:clamp(7px,2.35vw,9px);padding:2px clamp(2px,0.65vw,5px);
+  min-height:29px;height:29px;min-width:0;max-width:none;
+  letter-spacing:0;font-weight:800;
+}
+body .console-bar #engine-status,body[data-theme] .console-bar #engine-status{
+  min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+@media(max-width:355px){
+  body .console-bar .inspector-modes button,body[data-theme] .console-bar .inspector-modes button{
+    font-size:7px;padding-left:2px;padding-right:2px;
+  }
+}
