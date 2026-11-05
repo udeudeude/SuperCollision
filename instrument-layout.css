@@ -532,3 +532,9 @@ body #file-menu .file-submenu:not([open]) .file-submenu-items{display:none}
 @media(max-width:350px){
   body #file-menu .menu-items{width:min(244px,calc(100vw - 12px))}
 }
+
+/* Preserve the app viewport during taps and keyboard focus on iPhone.
+   The existing two-finger editor-only text-size gesture remains available. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
+body,button,select,input,textarea,summary{touch-action:manipulation}
+body .code-stack #code{touch-action:pan-x pan-y}
