@@ -189,18 +189,21 @@
     body.classList.toggle('compact', editor.scrollTop > 20 || mode !== 'code');
   }
   function setMode(next) {
-    if (!views.includes(next)) return;
+    if (![...views,'learn'].includes(next)) return;
     mode = next;
     body.classList.toggle('view-console', next === 'console');
     body.classList.toggle('view-audio', next === 'audio');
     body.classList.toggle('view-perform', next === 'perform');
+    body.classList.toggle('view-learn', next === 'learn');
     consolePanel.open = next === 'console';
     diagnostics.setAttribute('aria-hidden', String(next !== 'audio'));
     diagnostics.inert = next !== 'audio';
-    for (const [view, button] of Object.entries(viewButtons)) {
+    window.setSuperCollisionView=setMode;
+  for (const [view, button] of Object.entries(viewButtons)) {
       button.setAttribute('aria-pressed', String(view === next));
     }
     compactChrome();
+    if(next!=='learn')window.SCLearning?.hide();
     if(next==='perform')window.SCTimeline?.show();
     requestAnimationFrame(followEditor);
   }

@@ -63,11 +63,32 @@ export function createLearning({editor,host,modeSelect,openButton,onChange=()=>{
   const skip=document.createElement('button');skip.type='button';skip.textContent="I'm not trying to learn right now";
   const experiment=document.createElement('button');experiment.type='button';experiment.textContent='Experiment idea';
   actions.append(hint,experiment,skip);
-  panel.append(header,title,body,extra,actions);host.append(panel);
+  const selected=document.createElement('pre');selected.className='learning-selected';
+  const terms=document.createElement('p');terms.className='learning-terms';
+  const official=document.createElement('a');official.className='learning-official';
+  official.target='_blank';official.rel='noopener noreferrer';official.textContent='Official SuperCollider documentation';
+  panel.append(header,selected,title,terms,body,extra,actions,official);host.append(panel);
+  const docs={SinOsc:'Classes/SinOsc.html',SynthDef:'Classes/SynthDef.html',Synth:'Classes/Synth.html',
+    Routine:'Classes/Routine.html',Pbind:'Classes/Pbind.html',EnvGen:'Classes/EnvGen.html',
+    Out:'Classes/Out.html',play:'Reference/Functions.html',ar:'Guides/UGens-and-Synths.html',
+    kr:'Guides/UGens-and-Synths.html',s:'Classes/Server.html'};
+  const expansions={SinOsc:'Sinusoidal oscillator (sine-wave oscillator)',SynthDef:'Synthesizer definition',
+    EnvGen:'Envelope generator',Pbind:'Pattern binding',Out:'Output',ar:'Audio rate',
+    kr:'Control rate',freq:'Frequency',amp:'Amplitude',mul:'Multiplication factor',
+    add:'Addition offset',hz:'Hertz',dur:'Duration',pan:'Panorama / stereo position',
+    var:'Variable declaration',s:'Default server variable',tilde:'Environment variable (~)',
+    backslash:'Symbol literal (backslash)',braces:'Function body (braces)',
+    brackets:'Array literal (square brackets)',bars:'Function argument delimiters (vertical bars)',
+    semicolon:'Statement separator'};
+  function setPanelOpen(open){panel.hidden=!open;document.body.classList.toggle('view-learn',open);
+    if(open){window.setSuperCollisionView?.('learn');}else if(document.body.classList.contains('view-learn')){
+      document.body.classList.remove('view-learn');window.setSuperCollisionView?.('code');
+    }}
+
   function setMode(next){
     if(!MODES.includes(next))return;
     mode=next;modeSelect.value=mode;openButton.hidden=mode==='off';
-    if(mode==='off')panel.hidden=true;
+    if(mode==='off')setPanelOpen(false);
     try{localStorage.setItem(STORAGE,mode)}catch{}
     onChange(mode);
   }
@@ -75,18 +96,26 @@ export function createLearning({editor,host,modeSelect,openButton,onChange=()=>{
     if(mode==='off')return;
     activeError=kind==='error'?data:null;hintIndex=0;
     heading.textContent=kind==='error'?'DEBUG / LEARN':'LEARN';
-    title.textContent=data.title;body.textContent=kind==='error'?data.explanation:data.explanation;
-    extra.textContent='';hint.hidden=kind!=='error';experiment.hidden=kind==='error';
-    skip.hidden=mode!=='guided';panel.hidden=false;
+    const literal=kind==='error'?String(data.selection||'SuperCollider error'):String(data.selection||data.token||'');
+    selected.textContent=literal?'SELECTED: '+literal:'';
+    title.textContent=data.title;
+    terms.textContent=kind==='error'?'Term: '+data.title:
+      'TERMS: '+(expansions[data.token]||data.title)+(data.token&&expansions[data.token]&&data.title!==expansions[data.token]?' · '+data.title:'');
+    body.textContent=data.explanation;
+    extra.textContent='';hint.hidden=kind!=='error';hint.disabled=false;experiment.hidden=kind==='error';
+    skip.hidden=mode!=='guided';
+    const path=docs[data.token];
+    official.hidden=!path;official.href=path?'https://doc.sccode.org/'+path:'https://doc.sccode.org/';
+    setPanelOpen(true);
   }
-  function explain(){if(mode!=='off')display(explainSelection(editor.value,editor.selectionStart,editor.selectionEnd))}
+  function explain(){if(mode!=='off'){const data=explainSelection(editor.value,editor.selectionStart,editor.selectionEnd);data.selection=editor.value.slice(editor.selectionStart,editor.selectionEnd)||data.token;display(data)}}
   function offerError(output){
     if(mode!=='guided'||dismissed)return;
     const item=errorLesson(output);
     if(!item)return;
     const signature=item[0]+'|'+String(output).slice(0,140);
     if(signature===lastError)return;
-    lastError=signature;activeError={title:item[0],explanation:'An error occurred. Want to investigate it step by step?',steps:[item[1],item[2]]};
+    lastError=signature;activeError={title:item[0],selection:String(output).trim().slice(0,240),explanation:'An error occurred. Want to investigate it step by step?',steps:[item[1],item[2]]};
     // A suggestion, never an unsolicited lesson or interruption.
     openButton.textContent='DEBUG?';openButton.hidden=false;
     openButton.dataset.error='true';
@@ -95,9 +124,9 @@ export function createLearning({editor,host,modeSelect,openButton,onChange=()=>{
     if(openButton.dataset.error==='true'&&activeError){
       delete openButton.dataset.error;openButton.textContent='LEARN';
       display(activeError,'error');
-    }else if(panel.hidden)explain();else panel.hidden=true;
+    }else if(panel.hidden)explain();else setPanelOpen(false);
   });
-  close.addEventListener('click',()=>{panel.hidden=true});
+  close.addEventListener('click',()=>setPanelOpen(false));
   hint.addEventListener('click',()=>{
     if(!activeError?.steps)return;
     extra.textContent=activeError.steps[Math.min(hintIndex++,activeError.steps.length-1)];
@@ -105,11 +134,11 @@ export function createLearning({editor,host,modeSelect,openButton,onChange=()=>{
   });
   experiment.addEventListener('click',()=>{extra.textContent=explainSelection(editor.value,editor.selectionStart,editor.selectionEnd).experiment});
   skip.addEventListener('click',()=>{
-    dismissed=true;panel.hidden=true;openButton.textContent='LEARN';delete openButton.dataset.error;
+    dismissed=true;setPanelOpen(false);openButton.textContent='LEARN';delete openButton.dataset.error;
   });
   editor.addEventListener('selectionchange',()=>{if(mode==='guided'&&!dismissed&&editor.selectionStart!==editor.selectionEnd&&!panel.hidden)explain()});
   editor.addEventListener('select',()=>{if(mode==='guided'&&!dismissed&&editor.selectionStart!==editor.selectionEnd&&panel.hidden){openButton.textContent='LEARN?'}});
   modeSelect.addEventListener('change',()=>{dismissed=false;lastError='';openButton.textContent='LEARN';delete openButton.dataset.error;setMode(modeSelect.value)});
   setMode(mode);
-  return {get mode(){return mode},explain,offerError,setMode,open:()=>display(explainSelection(editor.value,editor.selectionStart,editor.selectionEnd))};
+  return {get mode(){return mode},explain,offerError,setMode,open:explain,hide:()=>setPanelOpen(false)};
 }

@@ -329,6 +329,16 @@ try {
         await page.locator('#learning-open').evaluate(el=>el.click());
         assert((await page.locator('.learning-panel').innerText()).includes('Sine oscillator'),
           'REFERENCE must explain selected SuperCollider syntax');
+        const learnGeometry=await page.evaluate(()=>{
+          const e=document.querySelector('.editor-frame').getBoundingClientRect();
+          const p=document.querySelector('.learning-host').getBoundingClientRect();
+          return {editorBottom:e.bottom,panelTop:p.top,panelHeight:p.height,selected:document.querySelector('.learning-selected').textContent,
+            terms:document.querySelector('.learning-terms').textContent};
+        });
+        assert(learnGeometry.panelTop>=learnGeometry.editorBottom-1&&learnGeometry.panelHeight>100,
+          'Learning must appear below editor without obscuring it: '+JSON.stringify(learnGeometry));
+        assert(learnGeometry.selected.includes('SinOsc')&&learnGeometry.terms.includes('Sinusoidal oscillator'),
+          'Learning must repeat the selected expression and expand terminology');
         await page.locator('#learning-mode').selectOption('guided');
         assert(await page.locator('#learning-launch').isVisible(),'GUIDED must show learning affordance');
         // FILE: common commands + six exclusive touch-friendly sections.
