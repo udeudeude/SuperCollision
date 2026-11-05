@@ -202,7 +202,7 @@ body[data-theme=terminal] .projectbar button,body[data-theme=terminal] .menu>sum
 body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 @media(max-width:390px){body[data-theme=patch] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 78px}body[data-theme=scope] .toolbar button{font-size:9px}body[data-theme=score] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 65px}}
 </style>
-<link rel="stylesheet" href="./instrument-layout.css?v=22"><link rel="stylesheet" href="./performance.css?v=22"><link rel="stylesheet" href="./learning.css?v=1">
+<link rel="stylesheet" href="./instrument-layout.css?v=22"><link rel="stylesheet" href="./performance.css?v=22"><link rel="stylesheet" href="./learning.css?v=2">
 <header><svg class="identity-art" viewBox="0 0 48 40" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
 <g class="art art-bauhaus"><rect x="1" y="3" width="18" height="18" fill="#1f4b8f"/><circle cx="30" cy="13" r="11" fill="#bf4337"/><path d="M3 37L21 23L39 37Z" fill="#e8ae40"/></g>
 <g class="art art-blackmountain" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 4V36M14 4V36M24 4V36M34 4V36M44 4V36"/><path d="M2 11H46M2 21H46M2 31H46" stroke="#b7774f" stroke-width="4"/><path d="M4 11H14M24 21H34M14 31H24" stroke="#e9e1cf" stroke-width="5"/></g>
@@ -285,6 +285,7 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 </div>
 <div class="panel console-shell"><div class="console-bar"><div class="inspector-modes" role="group" aria-label="Lower panel"><button type="button" id="inspector-code" aria-pressed="true">CODE</button><button type="button" id="inspector-console" aria-pressed="false">CONSOLE</button><button type="button" id="inspector-audio" aria-pressed="false">AUDIO</button><button type="button" id="inspector-perform" aria-pressed="false">PERFORM</button></div><p id="engine-status" role="status">Engine off · Press POWER</p></div>
 <details id="console-panel"><summary>SuperCollider console</summary><div class="actions"><button id="clear-console" class="secondary">Clear console</button></div><pre id="console" aria-live="off"></pre></details></div>
+<section class="panel learning-host" id="learning-host" aria-label="SuperCollider learning panel"></section>
 <section class="panel performance-panel" id="perform-panel" aria-label="Live performance controls and musical event timeline">
   <div class="perform-header">
     <strong>PERFORMANCE</strong>
@@ -392,9 +393,9 @@ renderProjects();document.addEventListener('visibilitychange',()=>{if(document.v
 import {createLiveActivityUI} from "./live-activity.mjs?v=22";
 import {createPerformanceUI} from "./performance-ui.mjs?v=22";
 import {encodeOsc} from "./performance-engine.mjs?v=22";
-import {createLearning} from "./learning.mjs?v=1";
+import {createLearning} from "./learning.mjs?v=2";
 let lang,synth;
-const learning=createLearning({editor:code,host:document.querySelector('.editor-frame'),
+const learning=createLearning({editor:code,host:document.querySelector('#learning-host'),
   modeSelect:document.querySelector('#learning-mode'),openButton:document.querySelector('#learning-launch')});
 window.SCLearning=learning;
 document.querySelector('#learning-open').onclick=()=>learning.open();
