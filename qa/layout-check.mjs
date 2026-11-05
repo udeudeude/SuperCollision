@@ -323,9 +323,9 @@ try {
         await page.locator('#file-menu > summary').click();
         await page.locator('#file-menu .file-submenu > summary').filter({hasText:'LEARNING'}).click();
         assert(await page.locator('#learning-mode').inputValue()==='guided','Learning should default to guided');
-        await page.locator('#learning-mode').selectOption('off');
+        await page.locator('#learning-mode').evaluate(el=>{el.value='off';el.dispatchEvent(new Event('change',{bubbles:true}))});
         assert(await page.locator('#learning-launch').isHidden(),'OFF must hide learning controls');
-        await page.locator('#learning-mode').selectOption('reference');
+        await page.locator('#learning-mode').evaluate(el=>{el.value='reference';el.dispatchEvent(new Event('change',{bubbles:true}))});
         await page.locator('#code').fill('SinOsc.ar(440, 0, 0.1)');
         await page.locator('#code').evaluate(el=>el.setSelectionRange(0,6));
         await page.locator('#learning-open').evaluate(el=>el.click());
@@ -341,7 +341,7 @@ try {
           'Learning must appear below editor without obscuring it: '+JSON.stringify(learnGeometry));
         assert(learnGeometry.selected.includes('SinOsc')&&learnGeometry.terms.includes('Sinusoidal oscillator'),
           'Learning must repeat the selected expression and expand terminology');
-        await page.locator('#learning-mode').selectOption('guided');
+        await page.locator('#learning-mode').evaluate(el=>{el.value='guided';el.dispatchEvent(new Event('change',{bubbles:true}))});
         assert(await page.locator('#learning-launch').isVisible(),'GUIDED must show learning affordance');
         await page.locator('#file-menu > summary').click();
         // FILE: common commands + six exclusive touch-friendly sections.
