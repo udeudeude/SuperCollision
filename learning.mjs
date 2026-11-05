@@ -100,7 +100,7 @@ export function createLearning({editor,host,modeSelect,openButton,onChange=()=>{
     selected.textContent=literal?'SELECTED: '+literal:'';
     title.textContent=data.title;
     const relevant=Object.entries(expansions).filter(([term])=>
-      term===data.token||new RegExp('\\\\b'+term+'\\\\b','i').test(data.explanation));
+      term===data.token||new RegExp('\\b'+term+'\\b','i').test(data.explanation));
     terms.textContent=kind==='error'?'Term: '+data.title:
       'TERMS: '+(relevant.length?relevant.map(([term,meaning])=>term+' = '+meaning).join(' · '):data.title);
     body.textContent=data.explanation;
