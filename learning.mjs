@@ -99,8 +99,10 @@ export function createLearning({editor,host,modeSelect,openButton,onChange=()=>{
     const literal=kind==='error'?String(data.selection||'SuperCollider error'):String(data.selection||data.token||'');
     selected.textContent=literal?'SELECTED: '+literal:'';
     title.textContent=data.title;
+    const relevant=Object.entries(expansions).filter(([term])=>
+      term===data.token||new RegExp('\\\\b'+term+'\\\\b','i').test(data.explanation));
     terms.textContent=kind==='error'?'Term: '+data.title:
-      'TERMS: '+(expansions[data.token]||data.title)+(data.token&&expansions[data.token]&&data.title!==expansions[data.token]?' · '+data.title:'');
+      'TERMS: '+(relevant.length?relevant.map(([term,meaning])=>term+' = '+meaning).join(' · '):data.title);
     body.textContent=data.explanation;
     extra.textContent='';hint.hidden=kind!=='error';hint.disabled=false;experiment.hidden=kind==='error';
     skip.hidden=mode!=='guided';
