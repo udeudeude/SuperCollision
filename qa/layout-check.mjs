@@ -343,7 +343,6 @@ try {
           'Learning must repeat the selected expression and expand terminology');
         await page.locator('#learning-mode').evaluate(el=>{el.value='guided';el.dispatchEvent(new Event('change',{bubbles:true}))});
         assert(await page.locator('#learning-launch').isVisible(),'GUIDED must show learning affordance');
-        await page.locator('#file-menu > summary').click();
         // FILE: common commands + six exclusive touch-friendly sections.
         const menus=await page.locator('#file-menu .file-submenu > summary').allTextContents();
         assert(menus.map(x=>x.trim()).join('|')==='IMPORT / EXPORT|EXAMPLES|EDITOR|STORAGE|LEARNING|TOOLS',
