@@ -320,6 +320,8 @@ try {
         await page.locator('#inspector-code').click();
 
         // Learning is guided by default but can be disabled completely.
+        await page.locator('#file-menu > summary').click();
+        await page.locator('#file-menu .file-submenu > summary').filter({hasText:'LEARNING'}).click();
         assert(await page.locator('#learning-mode').inputValue()==='guided','Learning should default to guided');
         await page.locator('#learning-mode').selectOption('off');
         assert(await page.locator('#learning-launch').isHidden(),'OFF must hide learning controls');
@@ -341,6 +343,7 @@ try {
           'Learning must repeat the selected expression and expand terminology');
         await page.locator('#learning-mode').selectOption('guided');
         assert(await page.locator('#learning-launch').isVisible(),'GUIDED must show learning affordance');
+        await page.locator('#file-menu > summary').click();
         // FILE: common commands + six exclusive touch-friendly sections.
         const menus=await page.locator('#file-menu .file-submenu > summary').allTextContents();
         assert(menus.map(x=>x.trim()).join('|')==='IMPORT / EXPORT|EXAMPLES|EDITOR|STORAGE|LEARNING|TOOLS',
