@@ -28,6 +28,15 @@ try {
     for(const theme of studies) {
       await page.goto('http://127.0.0.1:'+port+'/?design='+theme,{waitUntil:'load'});
       await page.waitForTimeout(150);
+      const mobileMeta=await page.evaluate(()=>({
+        viewport:document.querySelector('meta[name="viewport"]')?.content,
+        standalone:document.querySelector('meta[name="apple-mobile-web-app-capable"]')?.content,
+        icon:document.querySelector('link[rel="apple-touch-icon"]')?.getAttribute('href'),
+        manifest:document.querySelector('link[rel="manifest"]')?.getAttribute('href')
+      }));
+      assert(mobileMeta.viewport.includes('maximum-scale=1')&&mobileMeta.standalone==='yes'&&
+        mobileMeta.icon==='/apple-touch-icon.png'&&mobileMeta.manifest==='/manifest.webmanifest',
+        'iPhone standalone and zoom-prevention metadata missing');
       const r=await page.evaluate(()=>{
         const rect=q=>{const e=document.querySelector(q);const b=e.getBoundingClientRect();return {top:b.top,bottom:b.bottom,height:b.height,width:b.width,left:b.left}};
         const controls=[...document.querySelectorAll('.toolbar button')].map(el=>{const b=el.getBoundingClientRect();return {top:b.top,height:b.height,width:b.width}});

@@ -65,6 +65,18 @@ jobs:
           node --check performance-engine.mjs
           node --check performance-ui.mjs
           node --check learning.mjs
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from html.parser import HTMLParser
+          html=Path('index.html').read_text()
+          manifest=json.loads(Path('manifest.webmanifest').read_text())
+          assert 'apple-mobile-web-app-capable' in html
+          assert 'maximum-scale=1' in html
+          assert 'apple-touch-icon.png' in html
+          assert manifest['display']=='standalone'
+          assert Path('app-icon.svg').exists()
+          PY
           node qa/learning-test.mjs
           node qa/performance-test.mjs
           node qa/live-activity-test.mjs

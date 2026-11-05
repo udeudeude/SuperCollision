@@ -13,6 +13,9 @@ on:
       - 'performance.css'
       - 'learning.mjs'
       - 'learning.css'
+      - 'app-icon.svg'
+      - 'manifest.webmanifest'
+      - 'scripts/render_icons.py'
       - '_headers'
       - '.github/workflows/publish-ui.yml'
   workflow_dispatch:
@@ -50,11 +53,15 @@ jobs:
           cp source/performance-ui.mjs site/performance-ui.mjs
           cp source/performance.css site/performance.css
           cp source/learning.mjs source/learning.css site/
+          cp source/app-icon.svg source/manifest.webmanifest site/
+          python3 -m pip install --quiet --break-system-packages cairosvg
+          python3 source/scripts/render_icons.py
+          cp source/apple-touch-icon.png source/app-icon-192.png source/app-icon-512.png site/
           cp source/_headers site/_headers
           cd site
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html _headers instrument-layout.css instrument-layout.js live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs performance.css learning.mjs learning.css
+          git add index.html _headers instrument-layout.css instrument-layout.js live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs performance.css learning.mjs learning.css app-icon.svg manifest.webmanifest apple-touch-icon.png app-icon-192.png app-icon-512.png
           if git diff --cached --quiet; then
             echo "Already current"
           else
