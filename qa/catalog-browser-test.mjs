@@ -13,9 +13,14 @@ const server=createServer(async(req,res)=>{
  const url=new URL(req.url,'http://localhost');
  const target=path.resolve(root,'.'+(url.pathname==='/'?'/index.html':url.pathname));
  if(!target.startsWith(root+path.sep)){res.writeHead(403).end();return}
- try{res.writeHead(200,{'Content-Type':types[path.extname(target)]||'text/plain'});
-     res.end(await readFile(target))}
- catch{res.writeHead(404).end('Not found')}
+ try{
+   const content=await readFile(target);
+   res.writeHead(200,{'Content-Type':types[path.extname(target)]||'text/plain'});
+   res.end(content);
+ }catch{
+   if(!res.headersSent)res.writeHead(404);
+   res.end('Not found');
+ }
 });
 await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
 const browser=await chromium.launch({headless:true});
