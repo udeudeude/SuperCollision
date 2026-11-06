@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {explainSelection,errorLesson} from '../learning.mjs';
+import {explainSelection,errorLesson,visibleCode,findPitchExperiment,contextualSuggestions} from '../learning.mjs';
 const source='SynthDef(\\tone, { |freq=440| SinOsc.ar(freq, 0, 0.1) }).add;';
 const start=source.indexOf('SinOsc');
 const lesson=explainSelection(source,start,start+6);
@@ -10,4 +10,33 @@ assert.match(explainSelection(source,source.indexOf('|'),source.indexOf('|')).ex
 assert.equal(errorLesson('normal server message'),null);
 assert.match(errorLesson('ERROR: syntax error, unexpected NAME')[0],/Syntax error/);
 assert.match(errorLesson('ERROR: Message xyz not understood')[0],/Message not understood/);
-console.log('Learning: syntax lookup, selection, and optional debugging hints passed.');
+
+const playable='(\n{ SinOsc.ar(440, 0, 0.15) ! 2 }.play;\n)';
+const original=playable;
+const hints=contextualSuggestions(playable);
+assert.equal(hints.length,3,'Starter should have sound, method-rate and function concepts');
+assert.equal(hints[0].token,'SinOsc');
+assert.equal(hints[0].category,'SOUND');
+assert.ok(hints.some(item=>item.token==='ar'));
+const pitch=findPitchExperiment(playable);
+assert.equal(pitch.frequency,440);
+assert.equal(pitch.variantFrequency,880);
+assert.equal(pitch.expression,'SinOsc.ar(440, 0, 0.15)');
+assert.equal(pitch.variation,'SinOsc.ar(880, 0, 0.15)');
+assert.equal(pitch.direction,'higher');
+assert.equal(playable,original,'Teaching must not rewrite source');
+const low=findPitchExperiment('SinOsc.ar(2200, 0, 0.1)');
+assert.equal(low.variantFrequency,1100);
+assert.equal(low.direction,'lower');
+assert.equal(findPitchExperiment('SinOsc.ar(freq, 0, 0.1)'),null);
+assert.equal(findPitchExperiment('SinOsc.ar(440, 0.25, 0.1)'),null);
+assert.equal(findPitchExperiment('SinOsc.ar(440, 0, -1)'),null);
+assert.equal(findPitchExperiment('SinOsc.ar(440, 0, 5)'),null);
+const comments='// SinOsc.ar(440, 0, 0.1)\n/* Routine({ 1.wait }) */\n"SinOsc.ar(500, 0, 0.1)"\nSinOsc.ar(660, 0, 0.08)';
+assert.equal(visibleCode(comments).length,comments.length,'Masked code must preserve source offsets');
+assert.equal(contextualSuggestions(comments)[0].token,'SinOsc');
+assert.equal(findPitchExperiment(comments).frequency,660);
+assert.deepEqual(contextualSuggestions('"Routine" // SynthDef(\\bad)\n/* SinOsc.ar(440) */'),[]);
+assert.equal(contextualSuggestions('SynthDef(\\x, { |freq| SinOsc.ar(freq) })')[0].token,'SinOsc');
+console.log('Learning: context-sensitive hints, safe pitch variation, syntax lookup and error hints passed.');
+

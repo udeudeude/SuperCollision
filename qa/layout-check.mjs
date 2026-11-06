@@ -353,6 +353,37 @@ try {
           'Learning must repeat the selected expression and expand terminology');
         await page.locator('#learning-mode').evaluate(el=>{el.value='guided';el.dispatchEvent(new Event('change',{bubbles:true}))});
         assert(await page.locator('#inspector-learn').isVisible(),'GUIDED must show learning tab');
+        await page.locator('#inspector-code').click();
+        const untouched='(\n{ SinOsc.ar(440, 0, 0.15) ! 2 }.play;\n)';
+        await page.locator('#code').fill(untouched);
+        await page.locator('#code').evaluate(el=>el.setSelectionRange(0,0));
+        await page.locator('#inspector-learn').click();
+        assert(await page.locator('.learning-suggestion').count()>=2,
+          'GUIDED should offer nonintrusive lessons based on current code');
+        assert(await page.locator('#inspector-learn').getAttribute('aria-pressed')==='true',
+          'GUIDED suggestions should use the lower LEARN workbench');
+        const suggestionGeometry=await page.evaluate(()=>({
+          editorBottom:document.querySelector('.editor-frame').getBoundingClientRect().bottom,
+          panelTop:document.querySelector('.learning-host').getBoundingClientRect().top
+        }));
+        assert(suggestionGeometry.panelTop>=suggestionGeometry.editorBottom-1,
+          'Contextual suggestions must not obscure source code');
+        await page.locator('.learning-suggestion').first().click();
+        assert((await page.locator('.learning-panel').innerText()).includes('Sinusoidal oscillator'),
+          'Contextual lesson must expand the name and meaning');
+        await page.locator('.learning-actions button').filter({hasText:'PREDICT & LISTEN'}).click();
+        assert(await page.locator('.learning-experiment-code').innerText()!=='',
+          'Experiments should show source and variant expressions');
+        assert((await page.locator('.learning-experiment-code').innerText()).includes('SinOsc.ar(880'),
+          'Experiment should show the specific changed frequency');
+        await page.locator('.learning-predictions button').filter({hasText:'HIGHER'}).click();
+        await page.locator('.learning-comparison button').filter({hasText:'HEAR ORIGINAL'}).click();
+        await page.locator('.learning-comparison button').filter({hasText:'HEAR VARIATION'}).click();
+        await page.waitForFunction(()=>document.querySelector('.learning-prediction-result')?.textContent.includes('one octave'),
+          null,{timeout:2500});
+        assert(await page.locator('#code').inputValue()===untouched,
+          'Guided audition must never mutate the composition');
+        await page.locator('#inspector-code').click();
         // FILE: common commands + six exclusive touch-friendly sections.
         const menus=await page.locator('#file-menu .file-submenu > summary').allTextContents();
         assert(menus.map(x=>x.trim()).join('|')==='IMPORT / EXPORT|EXAMPLES|EDITOR|STORAGE|LEARNING|TOOLS',

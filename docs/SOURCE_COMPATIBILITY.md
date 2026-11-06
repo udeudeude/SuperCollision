@@ -27,3 +27,11 @@ SuperCollision must run the same SuperCollider language code that a user saves o
 - `node qa/performance-test.mjs` verifies exact source, unchanged outgoing OSC, confirmed events, note duration, solo/mute/gain/parameter commands, refusal of incompatible controls, and composition separation.
 - `node qa/layout-check.mjs` verifies the view and navigation on eight designs and three mobile widths.
 - `node qa/runtime-activity.mjs` boots actual WebAssembly SuperCollider, produces a real synth, and requires the timeline to show the resulting server-confirmed note.
+
+## Guided learning and audition
+
+- Guided mode suggests up to three optional lessons based on unquoted, uncommented source. Opening LEARN is always user-directed; nothing interrupts playback.
+- Reference mode explains selected code without proactive suggestions. OFF removes the teaching view and releases its preview audio context.
+- The first predict-and-listen exercise supports only literal, zero-phase `SinOsc.ar` expressions with numeric frequency and amplitude. Nonliteral expressions receive an explanation but no fabricated audio comparison.
+- Experiment audio is a brief, volume-limited, independent Web Audio sine oscillator. It is **not** a rerun or modification of the SuperCollider synthesis graph. No experiment is submitted to the SuperCollider interpreter, and no running synth is stopped or changed.
+- The original and modified expressions are displayed together. The learner predicts pitch direction before auditioning. `RUN`, `SELECTED`, saved compositions, and exported source retain their original semantics.
