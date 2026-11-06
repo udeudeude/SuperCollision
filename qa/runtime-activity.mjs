@@ -58,19 +58,23 @@ try{
  // Cold-start regression: POWER must boot the server before the first RUN.
  const starter=await page.locator('#code').inputValue();
  if(!starter.includes('SinOsc.ar'))throw Error('Missing default starter oscillator');
- const beforeStarter=await page.evaluate(()=>window.SCTimeline.journal.events.length);
  await page.locator('#evaluate').click();
  try{
-   await page.waitForFunction(before=>{
-     const events=window.SCTimeline?.journal?.events||[];
-     return events.length>before&&events.some(e=>e.start!==null&&e.status==='running');
-   },beforeStarter,{timeout:20000});
+   await page.waitForFunction(()=>{
+     const printed=document.querySelector('#console')?.textContent||'';
+     return /-> Synth\\('temp__/.test(printed);
+   },null,{timeout:15000});
  }catch(e){
    console.log('STARTER CONSOLE:',(await page.locator('#console').innerText()).slice(-2500));
-   throw Error('First RUN failed without manual s.boot: '+e.message);
+   throw Error('First RUN did not create the starter Synth: '+e.message);
  }
+ const starterConsole=await page.locator('#console').innerText();
+ if(/Server 'localhost' not running|requires a running server/.test(starterConsole))
+   throw Error('First RUN reported an unbooted server despite POWER');
  if(await page.locator('#code').inputValue()!==starter)throw Error('Boot modified user code');
- console.log('PASS: POWER booted audio; first RUN started the untouched starter oscillator');
+ // The server-confirmed note test below uses a named SynthDef. Anonymous
+ // Function.play may hide /s_new in a binary /d_recv completion bundle.
+ console.log('PASS: POWER booted audio and evaluated the untouched starter Synth');
  await page.locator('#panic').click();
  await page.waitForTimeout(300);
  console.log('BEFORE DEMO:',(await page.locator('#console').innerText()).slice(-1600));
