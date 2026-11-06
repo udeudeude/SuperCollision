@@ -399,6 +399,9 @@ import {createPerformanceUI} from "./performance-ui.mjs?v=22";
 import {encodeOsc} from "./performance-engine.mjs?v=22";
 import {createLearning} from "./learning.mjs?v=3";
 let lang,synth;
+let languageReady=false,serverReady=false,serverBootRequested=false;
+const SERVER_READY_MARKER='__SUPERCOLLISION_AUDIO_READY__';
+const SERVER_FAILED_MARKER='__SUPERCOLLISION_AUDIO_FAILED__';
 const learning=createLearning({editor:code,host:document.querySelector('#learning-host'),
   modeSelect:document.querySelector('#learning-mode'),openButton:document.querySelector('#inspector-learn')});
 window.SCLearning=learning;
@@ -414,8 +417,26 @@ function message(t){state.textContent=t}
 function print(t){learning.offerError(t);if(/ERROR:|FAILURE|WARNING: Server/.test(String(t))){document.querySelector('#console-panel').open=true;state.classList.add('error')}log.textContent+=(String(t)+'\n');if(log.textContent.length>120000)log.textContent=log.textContent.slice(-80000);log.scrollTop=log.scrollHeight}
 document.querySelector('#clear-console').onclick=()=>{log.textContent=''};
 let booting=false;
+function requestServerBoot(){
+ if(!lang||!languageReady||serverReady||serverBootRequested)return;
+ serverBootRequested=true;
+ run.disabled=true;document.querySelector('#run-region').disabled=true;
+ document.querySelector('#record').disabled=true;
+ message('STARTING AUDIO SERVER · RUN unlocks when ready');
+ try{
+  // Application startup only. Never wrap or modify the composition.
+  lang.runCode('s.waitForBoot({ "'+SERVER_READY_MARKER+'".postln; }, onFailure: { "'+SERVER_FAILED_MARKER+'".postln; }, clock: SystemClock);');
+ }catch(e){
+  serverBootRequested=false;
+  message('Audio server start failed · Press POWER to retry');
+  print('Audio server start failed: '+e.message);
+ }
+}
 document.querySelector('#engine').onclick=async()=>{
- if(lang){message('SuperCollider engine already loaded.');return}
+ if(lang){
+   if(!serverReady){requestServerBoot();return}
+   message('Audio server already running · RUN is ready');return
+ }
  if(booting)return;
  booting=true;document.querySelector('#engine').disabled=true;
  message('Checking runtime assets...');
@@ -430,8 +451,25 @@ document.querySelector('#engine').onclick=async()=>{
   const [{default:ScLang},{default:ScSynth}]=await Promise.all([import('./runtime/sclang/sclang.js'),import('./runtime/scsynth/scsynth.js')]);
   lang=await ScLang({locateFile:p=>new URL(p,new URL('sclang/',base)).href});
   synth=await ScSynth({locateFile:p=>new URL(p,new URL('scsynth/',base)).href});
-  let serverBootRequested=false;
-  lang.printCallback=t=>{const visibleOutput=liveCode.consumePrint(t);if(visibleOutput)print(visibleOutput);if(!serverBootRequested&&String(t).includes('Welcome to SuperCollider')){serverBootRequested=true;run.disabled=false;document.querySelector('#run-region').disabled=false;document.querySelector('#record').disabled=false;message('LANGUAGE READY · POWER ON · Run code to boot server if needed')}};synth.onStdout=print;
+  lang.printCallback=t=>{
+    const output=String(t);
+    if(!languageReady&&output.includes('Welcome to SuperCollider')){
+      languageReady=true;requestServerBoot();
+    }
+    if(output.includes(SERVER_READY_MARKER)){
+      serverReady=true;serverBootRequested=false;
+      run.disabled=false;document.querySelector('#run-region').disabled=false;
+      document.querySelector('#record').disabled=false;
+      state.classList.remove('error');message('AUDIO SERVER READY · RUN to play');
+    }
+    if(output.includes(SERVER_FAILED_MARKER)){
+      serverReady=false;serverBootRequested=false;
+      message('Audio server failed · Press POWER to retry');
+      print('SuperCollider audio server failed to boot. Press POWER to retry.');
+    }
+    const visibleOutput=liveCode.consumePrint(output.replaceAll(SERVER_READY_MARKER,'').replaceAll(SERVER_FAILED_MARKER,''));
+    if(visibleOutput.trim())print(visibleOutput);
+  };synth.onStdout=print;
   lang.onOsc=osc=>{
     let controlReplies=[];
     try{liveCode.outgoing(osc);controlReplies=performanceUI.outgoing(osc)||[]}catch(e){console.warn('Activity observer:',e)}
@@ -444,10 +482,11 @@ document.querySelector('#engine').onclick=async()=>{
     lang.sendOsc(osc);
     for(const packet of controlReplies)synth.sendOsc(packet);
   };
+  // The synthesis hook must exist before interpreter boot callbacks can use it.
+  window.bootServer=options=>{if(options.numOutputBusChannels)setTimeout(async()=>{try{await synth.boot(options)}catch(e){serverBootRequested=false;print('Server boot: '+e.message);message('Audio server failed · Press POWER to retry')}},100)};
   lang.bootInterpreter();
-  window.bootServer=options=>{if(options.numOutputBusChannels)setTimeout(async()=>{try{await synth.boot(options)}catch(e){print('Server boot: '+e.message)}},100)};
   panic.disabled=false;
-  message('Initializing language. RUN unlocks when ready.');
+  message('Initializing language and audio server.');
  }catch(e){message('Runtime unavailable: '+e.message);print(e.stack||e.message)}finally{booting=false;document.querySelector('#engine').disabled=false}
 };
 function submitCode(source,start,end){if(!lang)return;try{flush();activeRegion=null;updateLines();state.classList.remove('error');liveCode.evaluation(active,code.value,source,start);performanceUI.evaluation(active,code.value,source,start);lang.runCode(source);window.scPlaybackRequested=true;requestWake();message('EVALUATED L'+start+'–'+end+' · execution submitted')}catch(e){message('Evaluation failed: '+e.message)}}
