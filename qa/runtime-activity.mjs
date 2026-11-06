@@ -38,7 +38,7 @@ try{
  if(!ready.isolated||!ready.module)throw Error('App not cross-origin isolated or missing activity module');
  await page.locator('#engine').click();
  try{
- await page.waitForFunction(()=>!document.querySelector('#evaluate').disabled,{timeout:115000});
+ await page.waitForFunction(()=>!document.querySelector('#evaluate').disabled,null,{timeout:115000});
  }catch(e){console.log('POWER LOG:',await page.locator('#console').innerText());throw e}
  console.log('LANGUAGE READY');
  await page.evaluate(()=>{

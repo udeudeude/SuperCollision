@@ -399,7 +399,7 @@ import {createPerformanceUI} from "./performance-ui.mjs?v=22";
 import {encodeOsc} from "./performance-engine.mjs?v=22";
 import {createLearning} from "./learning.mjs?v=3";
 let lang,synth;
-let languageReady=false,serverReady=false,serverBootRequested=false;
+let languageReady=false,serverReady=false,serverBootRequested=false,bootRetryCount=0;
 const SERVER_READY_MARKER='__SUPERCOLLISION_AUDIO_READY__';
 const SERVER_FAILED_MARKER='__SUPERCOLLISION_AUDIO_FAILED__';
 const learning=createLearning({editor:code,host:document.querySelector('#learning-host'),
@@ -457,13 +457,21 @@ document.querySelector('#engine').onclick=async()=>{
       languageReady=true;
       // Defer until the interpreter's startup print callback has returned;
       // calling runCode reentrantly from inside WebAssembly stdout is unsafe.
-      setTimeout(requestServerBoot,0);
+      setTimeout(requestServerBoot,1000);
     }
     if(output.includes(SERVER_READY_MARKER)){
-      serverReady=true;serverBootRequested=false;
+      serverReady=true;serverBootRequested=false;bootRetryCount=0;
       run.disabled=false;document.querySelector('#run-region').disabled=false;
       document.querySelector('#record').disabled=false;
       state.classList.remove('error');message('AUDIO SERVER READY · RUN to play');
+    }
+    if(output.includes('sclang client not running!')&&!serverReady){
+      serverBootRequested=false;
+      if(bootRetryCount<5){
+        const retryDelay=500*(++bootRetryCount);
+        message('LANGUAGE STARTING · Retrying audio boot');
+        setTimeout(requestServerBoot,retryDelay);
+      }else message('Interpreter not ready · Press POWER to retry');
     }
     if(output.includes(SERVER_FAILED_MARKER)){
       serverReady=false;serverBootRequested=false;
