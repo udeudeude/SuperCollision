@@ -202,11 +202,16 @@ body[data-theme=terminal] .projectbar button,body[data-theme=terminal] .menu>sum
 body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 @media(max-width:390px){body[data-theme=patch] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 78px}body[data-theme=scope] .toolbar button{font-size:9px}body[data-theme=score] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 65px}}
 </style>
-<link rel="stylesheet" href="./instrument-layout.css?v=22"><link rel="stylesheet" href="./performance.css?v=22"><link rel="stylesheet" href="./learning.css?v=2">
+<link rel="stylesheet" href="./instrument-layout.css?v=22"><link rel="stylesheet" href="./performance.css?v=22"><link rel="stylesheet" href="./learning.css?v=3">
 <header><svg class="identity-art" viewBox="0 0 48 40" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
 <g class="art art-bauhaus"><rect x="1" y="3" width="18" height="18" fill="#1f4b8f"/><circle cx="30" cy="13" r="11" fill="#bf4337"/><path d="M3 37L21 23L39 37Z" fill="#e8ae40"/></g>
 <g class="art art-blackmountain" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 4V36M14 4V36M24 4V36M34 4V36M44 4V36"/><path d="M2 11H46M2 21H46M2 31H46" stroke="#b7774f" stroke-width="4"/><path d="M4 11H14M24 21H34M14 31H24" stroke="#e9e1cf" stroke-width="5"/></g>
-<g class="art art-moog" fill="none" stroke="currentColor" stroke-width="2"><circle cx="22" cy="20" r="15"/><circle cx="22" cy="20" r="10" stroke="#b18a5c"/><path d="M22 20L30 9" stroke-width="4" stroke="#d9a054"/><path d="M22 1V4M22 36V39M2 20H5M39 20H42M7 7L10 10M35 31L38 34"/></g>
+<g class="art art-moog" fill="none" stroke="currentColor" stroke-width="2">
+<circle cx="24" cy="20" r="15" stroke-width="2.2"/><circle cx="24" cy="20" r="11" stroke="#b9915b" stroke-width="1.8"/>
+<path d="M23 21L31 9" stroke="#e4a85e" stroke-width="4" stroke-linecap="square"/>
+<circle cx="24" cy="20" r="1.1" fill="#e4a85e" stroke="none"/>
+<path d="M24 1V4M24 36V39M5 20H8M40 20H43M10 6L13 9M35 31L38 34M10 34L13 31M35 9L38 6" stroke-width="1.7"/>
+</g>
 <g class="art art-makenoise" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 32Q10 2 18 18T36 10L46 29" stroke-width="3"/><path d="M4 5L15 7L8 18M32 25L44 19M17 35L29 30"/><circle cx="18" cy="18" r="4" fill="#e8e8e0"/><circle cx="37" cy="10" r="5"/></g>
 <g class="art art-score" fill="none" stroke="#917767" stroke-width="1.4"><path d="M2 7H46M2 13H46M2 19H46M2 25H46M2 31H46"/><path d="M19 24V3M33 19V1" stroke="#a8392b" stroke-width="2"/><ellipse cx="15" cy="25" rx="5" ry="3" transform="rotate(-25 15 25)" fill="#a8392b" stroke="none"/><ellipse cx="29" cy="20" rx="5" ry="3" transform="rotate(-25 29 20)" fill="#a8392b" stroke="none"/></g>
 <g class="art art-scope" fill="none" stroke="currentColor"><path d="M2 20H46M24 1V39M2 8H46M2 32H46" opacity=".3"/><path d="M2 20H7L12 10L18 31L24 4L30 30L36 13L42 20H46" stroke="#a0ffae" stroke-width="2.5"/></g>
@@ -273,7 +278,6 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 
 
 <div class="editor-frame"><div id="line-gutter" aria-hidden="true"><div id="line-inner"></div></div><div class="code-stack"><div id="activity-overlay" aria-hidden="true"></div><pre id="highlight-layer" aria-hidden="true"></pre><textarea id="code" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="SuperCollider code editor"></textarea></div><div id="code-zoom-indicator" class="code-zoom-indicator" hidden aria-live="off">CODE 100%</div>
-<button id="learning-launch" type="button" class="learning-launch" hidden>LEARN</button>
 <aside id="live-panel" class="live-panel" aria-label="Live musical activity">
   <button id="live-panel-toggle" type="button" aria-expanded="true"><span class="live-panel-label">LIVE</span><span id="activity-status" aria-live="off">●0 ✦0</span><svg class="live-panel-icon" viewBox="0 0 14 14" aria-hidden="true"><path d="m3 9 4-4 4 4" stroke="currentColor" fill="none" stroke-width="1.6"/></svg></button>
   <div id="live-panel-content" class="live-panel-content"><div id="live-instruments" class="live-instruments"></div><div id="live-routines" class="live-routines" hidden></div></div>
@@ -283,7 +287,7 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 <input id="file-input" type="file" hidden><input id="backup-input" type="file" hidden>
 <pre id="syntax-preview" hidden></pre>
 </div>
-<div class="panel console-shell"><div class="console-bar"><div class="inspector-modes" role="group" aria-label="Lower panel"><button type="button" id="inspector-code" aria-pressed="true">CODE</button><button type="button" id="inspector-console" aria-pressed="false">CONSOLE</button><button type="button" id="inspector-audio" aria-pressed="false">AUDIO</button><button type="button" id="inspector-perform" aria-pressed="false">PERFORM</button></div><p id="engine-status" role="status">Engine off · Press POWER</p></div>
+<div class="panel console-shell"><div class="console-bar"><div class="inspector-modes" role="group" aria-label="Lower panel"><button type="button" id="inspector-code" aria-pressed="true">CODE</button><button type="button" id="inspector-console" aria-pressed="false">CONSOLE</button><button type="button" id="inspector-audio" aria-pressed="false">AUDIO</button><button type="button" id="inspector-perform" aria-pressed="false">PERFORM</button><button type="button" id="inspector-learn" aria-pressed="false">LEARN</button></div><p id="engine-status" role="status">Engine off · Press POWER</p></div>
 <details id="console-panel"><summary>SuperCollider console</summary><div class="actions"><button id="clear-console" class="secondary">Clear console</button></div><pre id="console" aria-live="off"></pre></details></div>
 <section class="panel learning-host" id="learning-host" aria-label="SuperCollider learning panel"></section>
 <section class="panel performance-panel" id="perform-panel" aria-label="Live performance controls and musical event timeline">
@@ -393,10 +397,10 @@ renderProjects();document.addEventListener('visibilitychange',()=>{if(document.v
 import {createLiveActivityUI} from "./live-activity.mjs?v=22";
 import {createPerformanceUI} from "./performance-ui.mjs?v=22";
 import {encodeOsc} from "./performance-engine.mjs?v=22";
-import {createLearning} from "./learning.mjs?v=2";
+import {createLearning} from "./learning.mjs?v=3";
 let lang,synth;
 const learning=createLearning({editor:code,host:document.querySelector('#learning-host'),
-  modeSelect:document.querySelector('#learning-mode'),openButton:document.querySelector('#learning-launch')});
+  modeSelect:document.querySelector('#learning-mode'),openButton:document.querySelector('#inspector-learn')});
 window.SCLearning=learning;
 document.querySelector('#learning-open').onclick=()=>learning.open();
 const state=document.querySelector('#engine-status'),log=document.querySelector('#console'),run=document.querySelector('#evaluate'),panic=document.querySelector('#panic');

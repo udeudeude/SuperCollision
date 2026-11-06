@@ -4,10 +4,8 @@ body.view-learn main>.learning-host,body[data-theme].view-learn main>.learning-h
  display:flex;flex:0 0 48%;min-height:0;flex-direction:column;overflow:auto;
  margin:0!important;padding:0!important;background:var(--perform-bg,#202020);
  color:var(--perform-fg,#eee);border:1px solid var(--perform-border,#888)}
-.learning-launch{position:absolute;left:8px;bottom:8px;z-index:8;min-height:26px;height:26px;
- padding:3px 8px;font:700 10px/1 ui-monospace,monospace;border:1px solid currentColor;
- border-radius:2px;background:var(--perform-bg,#222);color:var(--perform-fg,#eee)}
-.learning-launch[hidden],.learning-panel[hidden]{display:none!important}
+.learning-panel[hidden]{display:none!important}
+body #inspector-learn[hidden]{display:none!important}
 .learning-panel{display:block;box-sizing:border-box;width:100%;height:100%;min-height:0;overflow:auto;
  padding:12px;color:inherit;background:transparent;font:12px/1.5 system-ui,sans-serif}
 .learning-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
