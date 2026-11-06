@@ -454,7 +454,10 @@ document.querySelector('#engine').onclick=async()=>{
   lang.printCallback=t=>{
     const output=String(t);
     if(!languageReady&&output.includes('Welcome to SuperCollider')){
-      languageReady=true;requestServerBoot();
+      languageReady=true;
+      // Defer until the interpreter's startup print callback has returned;
+      // calling runCode reentrantly from inside WebAssembly stdout is unsafe.
+      setTimeout(requestServerBoot,0);
     }
     if(output.includes(SERVER_READY_MARKER)){
       serverReady=true;serverBootRequested=false;
