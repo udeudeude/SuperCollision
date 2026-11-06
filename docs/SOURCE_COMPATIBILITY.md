@@ -10,7 +10,8 @@ SuperCollision must run the same SuperCollider language code that a user saves o
 4. If the user moves a mixer control, the application may send an independent OSC message to an existing synthesizer node to change only a parameter that the original definition explicitly exposes. This is an intentional user-directed variation, not a silent alteration to code playback. RESET MIX restores default amplitude control state.
 5. Synth lifetimes and event timelines derive from language-to-server creation requests and actual server-to-language lifecycle acknowledgments. A creation request alone is not treated as a confirmed sounding node.
 6. Where source mapping is ambiguous, show the live event without claiming an exact source line. Do not invent a Routine program counter or timing prediction. The old temporary Routine checkpoint injection is retired.
-7. The WebAssembly implementation uses official SuperCollider components. Environmental differences can affect audio hardware, external plugins, disk paths, input/output channels, and timing. The IDE cannot guarantee that third-party plugins absent from the browser will run. For supported ordinary code, playback semantics must remain those of SuperCollider.
+7. POWER starts the default audio server separately from the submitted composition. RUN is enabled only after the server is confirmed ready. No source is injected or wrapped. The starter oscillator should sound on its first RUN without manually evaluating `s.boot`.
+8. The WebAssembly implementation uses official SuperCollider components. Environmental differences can affect audio hardware, external plugins, disk paths, input/output channels, and timing. The IDE cannot guarantee that third-party plugins absent from the browser will run. For supported ordinary code, playback semantics must remain those of SuperCollider.
 
 ## Live performance controls
 

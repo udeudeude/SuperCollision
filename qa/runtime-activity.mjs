@@ -55,9 +55,24 @@ try{
      return result;
    };
  });
- await page.locator('#code').fill('s.boot;');
+ // Cold-start regression: POWER must boot the server before the first RUN.
+ const starter=await page.locator('#code').inputValue();
+ if(!starter.includes('SinOsc.ar'))throw Error('Missing default starter oscillator');
+ const beforeStarter=await page.evaluate(()=>window.SCTimeline.journal.events.length);
  await page.locator('#evaluate').click();
- await page.waitForTimeout(3500);
+ try{
+   await page.waitForFunction(before=>{
+     const events=window.SCTimeline?.journal?.events||[];
+     return events.length>before&&events.some(e=>e.start!==null&&e.status==='running');
+   },beforeStarter,{timeout:20000});
+ }catch(e){
+   console.log('STARTER CONSOLE:',(await page.locator('#console').innerText()).slice(-2500));
+   throw Error('First RUN failed without manual s.boot: '+e.message);
+ }
+ if(await page.locator('#code').inputValue()!==starter)throw Error('Boot modified user code');
+ console.log('PASS: POWER booted audio; first RUN started the untouched starter oscillator');
+ await page.locator('#panic').click();
+ await page.waitForTimeout(300);
  console.log('BEFORE DEMO:',(await page.locator('#console').innerText()).slice(-1600));
  const example=[
  '(',
