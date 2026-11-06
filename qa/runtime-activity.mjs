@@ -62,7 +62,7 @@ try{
  try{
    await page.waitForFunction(()=>{
      const printed=document.querySelector('#console')?.textContent||'';
-     return /-> Synth\\('temp__/.test(printed);
+     return /-> Synth\('temp__/.test(printed);
    },null,{timeout:15000});
  }catch(e){
    console.log('STARTER CONSOLE:',(await page.locator('#console').innerText()).slice(-2500));
