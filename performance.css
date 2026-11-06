@@ -104,3 +104,9 @@ body .console-bar #engine-status,body[data-theme] .console-bar #engine-status{
     font-size:7px;padding-left:2px;padding-right:2px;
   }
 }
+
+/* Five direct lower-workbench tabs, including optional LEARN, at 320px. */
+body .console-bar .inspector-modes,body[data-theme] .console-bar .inspector-modes{min-width:0;max-width:100%;flex:0 1 auto}
+body .console-bar .inspector-modes button,body[data-theme] .console-bar .inspector-modes button{
+  font-size:clamp(6px,1.9vw,9px);padding-left:2px;padding-right:2px;min-width:0;
+}

@@ -252,7 +252,7 @@ try {
         assert(await page.locator('#record-stop svg.transport-icon').count()===1,'SAVE does not use a distinct vector icon');
         assert(!(await page.locator('#evaluate').innerText()).includes('▶'),'RUN still contains emoji-prone glyph');
         const names=await page.locator('.inspector-modes button').allTextContents();
-        assert(names.join('|')==='CODE|CONSOLE|AUDIO|PERFORM','Direct inspector tabs absent');
+        assert(names.join('|')==='CODE|CONSOLE|AUDIO|PERFORM|LEARN','Direct inspector tabs absent');
         const codeBefore=await page.evaluate(()=>({
           audio:getComputedStyle(document.getElementById('audio-panel')).display,
           pressed:document.getElementById('inspector-code').getAttribute('aria-pressed')
@@ -333,7 +333,7 @@ try {
         await page.locator('#file-menu .file-submenu > summary').filter({hasText:'LEARNING'}).click();
         assert(await page.locator('#learning-mode').inputValue()==='guided','Learning should default to guided');
         await page.locator('#learning-mode').evaluate(el=>{el.value='off';el.dispatchEvent(new Event('change',{bubbles:true}))});
-        assert(await page.locator('#learning-launch').isHidden(),'OFF must hide learning controls');
+        assert(await page.locator('#inspector-learn').isHidden(),'OFF must hide learning controls');
         await page.locator('#learning-mode').evaluate(el=>{el.value='reference';el.dispatchEvent(new Event('change',{bubbles:true}))});
         await page.locator('#code').fill('SinOsc.ar(440, 0, 0.1)');
         await page.locator('#code').evaluate(el=>el.setSelectionRange(0,6));
@@ -348,10 +348,11 @@ try {
         });
         assert(learnGeometry.panelTop>=learnGeometry.editorBottom-1&&learnGeometry.panelHeight>100,
           'Learning must appear below editor without obscuring it: '+JSON.stringify(learnGeometry));
+        assert(await page.locator('#inspector-learn').getAttribute('aria-pressed')==='true','LEARN tab should activate');
         assert(learnGeometry.selected.includes('SinOsc')&&learnGeometry.terms.includes('Sinusoidal oscillator'),
           'Learning must repeat the selected expression and expand terminology');
         await page.locator('#learning-mode').evaluate(el=>{el.value='guided';el.dispatchEvent(new Event('change',{bubbles:true}))});
-        assert(await page.locator('#learning-launch').isVisible(),'GUIDED must show learning affordance');
+        assert(await page.locator('#inspector-learn').isVisible(),'GUIDED must show learning tab');
         // FILE: common commands + six exclusive touch-friendly sections.
         const menus=await page.locator('#file-menu .file-submenu > summary').allTextContents();
         assert(menus.map(x=>x.trim()).join('|')==='IMPORT / EXPORT|EXAMPLES|EDITOR|STORAGE|LEARNING|TOOLS',

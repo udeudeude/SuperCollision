@@ -80,10 +80,11 @@ export function createLearning({editor,host,modeSelect,openButton,onChange=()=>{
     backslash:'Symbol literal (backslash)',braces:'Function body (braces)',
     brackets:'Array literal (square brackets)',bars:'Function argument delimiters (vertical bars)',
     semicolon:'Statement separator'};
-  function setPanelOpen(open){panel.hidden=!open;document.body.classList.toggle('view-learn',open);
-    if(open){window.setSuperCollisionView?.('learn');}else if(document.body.classList.contains('view-learn')){
-      document.body.classList.remove('view-learn');window.setSuperCollisionView?.('code');
-    }}
+  function setPanelOpen(open,{switchView=true}={}){
+    panel.hidden=!open;
+    if(switchView)window.setSuperCollisionView?.(open?'learn':'code');
+    else document.body.classList.toggle('view-learn',open);
+  }
 
   function setMode(next){
     if(!MODES.includes(next))return;
@@ -139,8 +140,8 @@ export function createLearning({editor,host,modeSelect,openButton,onChange=()=>{
     dismissed=true;setPanelOpen(false);openButton.textContent='LEARN';delete openButton.dataset.error;
   });
   editor.addEventListener('selectionchange',()=>{if(mode==='guided'&&!dismissed&&editor.selectionStart!==editor.selectionEnd&&!panel.hidden)explain()});
-  editor.addEventListener('select',()=>{if(mode==='guided'&&!dismissed&&editor.selectionStart!==editor.selectionEnd&&panel.hidden){openButton.textContent='LEARN?'}});
+  editor.addEventListener('select',()=>{if(mode==='guided'&&!dismissed&&editor.selectionStart!==editor.selectionEnd&&panel.hidden){openButton.textContent='LEARN'}});
   modeSelect.addEventListener('change',()=>{dismissed=false;lastError='';openButton.textContent='LEARN';delete openButton.dataset.error;setMode(modeSelect.value)});
   setMode(mode);
-  return {get mode(){return mode},explain,offerError,setMode,open:explain,hide:()=>setPanelOpen(false)};
+  return {get mode(){return mode},explain,offerError,setMode,open:explain,hide:options=>setPanelOpen(false,options)};
 }

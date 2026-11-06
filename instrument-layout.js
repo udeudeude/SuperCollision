@@ -11,10 +11,11 @@
     code: document.getElementById('inspector-code'),
     console: document.getElementById('inspector-console'),
     audio: document.getElementById('inspector-audio'),
-    perform: document.getElementById('inspector-perform')
+    perform: document.getElementById('inspector-perform'),
+    learn: document.getElementById('inspector-learn')
   };
   const body = document.body;
-  const views = ['code', 'console', 'audio', 'perform'];
+  const views = ['code', 'console', 'audio', 'perform', 'learn'];
   let mode = 'code';
   let previousLineCount = -1;
   let inner = gutter.querySelector('#line-inner');
@@ -189,7 +190,7 @@
     body.classList.toggle('compact', editor.scrollTop > 20 || mode !== 'code');
   }
   function setMode(next) {
-    if (![...views,'learn'].includes(next)) return;
+    if (!views.includes(next)) return;
     mode = next;
     body.classList.toggle('view-console', next === 'console');
     body.classList.toggle('view-audio', next === 'audio');
@@ -198,17 +199,17 @@
     consolePanel.open = next === 'console';
     diagnostics.setAttribute('aria-hidden', String(next !== 'audio'));
     diagnostics.inert = next !== 'audio';
-    window.setSuperCollisionView=setMode;
-  for (const [view, button] of Object.entries(viewButtons)) {
+    for (const [view, button] of Object.entries(viewButtons)) {
       button.setAttribute('aria-pressed', String(view === next));
     }
     compactChrome();
-    if(next!=='learn')window.SCLearning?.hide();
+    if(next!=='learn')window.SCLearning?.hide({switchView:false});
     if(next==='perform')window.SCTimeline?.show();
     requestAnimationFrame(followEditor);
   }
+  window.setSuperCollisionView=setMode;
   for (const [view, button] of Object.entries(viewButtons)) {
-    button.addEventListener('click', () => setMode(view));
+    if(view!=='learn')button.addEventListener('click', () => setMode(view));
   }
   editor.addEventListener('scroll', compactChrome, {passive:true});
   editor.addEventListener('scroll', followEditor, {passive:true});
