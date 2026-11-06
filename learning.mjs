@@ -147,7 +147,10 @@ export function createLearning({editor,host,modeSelect,openButton,onChange=()=>{
   const header=document.createElement('div');header.className='learning-header';
   const heading=document.createElement('strong');heading.textContent='LEARN';
   const close=document.createElement('button');close.type='button';close.textContent='×';close.setAttribute('aria-label','Close learning panel');
-  header.append(heading,close);
+  const browse=document.createElement('button');browse.className='learning-browse';
+  browse.type='button';browse.textContent='BROWSE';
+  browse.onclick=()=>window.SCLanguageTools?.open();
+  header.append(heading,browse,close);
   const title=document.createElement('strong'),body=document.createElement('p'),extra=document.createElement('p');
   const actions=document.createElement('div');actions.className='learning-actions';
   const hint=document.createElement('button');hint.type='button';hint.textContent='Next hint';
@@ -262,6 +265,7 @@ export function createLearning({editor,host,modeSelect,openButton,onChange=()=>{
     openButton.classList.toggle('learning-has-suggestions',available.length>0);
   }
   function showSuggestions(){
+    window.SCLanguageTools?.hide({switchView:false});
     if(mode!=='guided')return explain();
     stopPreview();panelView='suggestions';currentExperiment=null;activeError=null;
     heading.textContent='GUIDED / YOUR COMPOSITION';
@@ -305,10 +309,12 @@ export function createLearning({editor,host,modeSelect,openButton,onChange=()=>{
     if((mode==='off'||mode==='reference'&&panelView==='suggestions')&&!panel.hidden)setPanelOpen(false);
     if(mode==='off'&&previewContext){previewContext.close().catch(()=>{});previewContext=null;}
     try{localStorage.setItem(STORAGE,mode)}catch{}
+    window.SCLanguageTools?.modeChanged(mode);
     refreshCue();onChange(mode);
   }
   function display(data,kind='reference'){
     if(mode==='off')return;
+    window.SCLanguageTools?.hide({switchView:false});
     activeError=kind==='error'?data:null;hintIndex=0;panelView='lesson';
     suggestionArea.hidden=true;lessonVisibility(true);back.hidden=mode!=='guided';
     experimentArea.hidden=true;currentExperiment=kind==='error'?null:(data.pitchExperiment||findPitchExperiment(editor.value,data.position??editor.selectionStart));
@@ -346,6 +352,8 @@ export function createLearning({editor,host,modeSelect,openButton,onChange=()=>{
       display(activeError,'error');
     }else if(panel.hidden){
       if(mode==='guided'&&editor.selectionStart===editor.selectionEnd)showSuggestions();
+      else if(mode==='reference'&&editor.selectionStart===editor.selectionEnd)
+        window.SCLanguageTools?.open();
       else explain();
     }else setPanelOpen(false);
   });

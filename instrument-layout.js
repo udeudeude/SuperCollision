@@ -203,7 +203,10 @@
       button.setAttribute('aria-pressed', String(view === next));
     }
     compactChrome();
-    if(next!=='learn')window.SCLearning?.hide({switchView:false});
+    if(next!=='learn'){
+      window.SCLearning?.hide({switchView:false});
+      window.SCLanguageTools?.hide({switchView:false});
+    }
     if(next==='perform')window.SCTimeline?.show();
     requestAnimationFrame(followEditor);
   }

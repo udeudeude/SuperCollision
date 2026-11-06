@@ -202,7 +202,7 @@ body[data-theme=terminal] .projectbar button,body[data-theme=terminal] .menu>sum
 body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 @media(max-width:390px){body[data-theme=patch] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 78px}body[data-theme=scope] .toolbar button{font-size:9px}body[data-theme=score] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 65px}}
 </style>
-<link rel="stylesheet" href="./instrument-layout.css?v=22"><link rel="stylesheet" href="./performance.css?v=22"><link rel="stylesheet" href="./learning.css?v=4">
+<link rel="stylesheet" href="./instrument-layout.css?v=22"><link rel="stylesheet" href="./performance.css?v=22"><link rel="stylesheet" href="./learning.css?v=4"><link rel="stylesheet" href="./catalog-assist.css?v=1">
 <header><svg class="identity-art" viewBox="0 0 48 40" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
 <g class="art art-bauhaus"><rect x="1" y="3" width="18" height="18" fill="#1f4b8f"/><circle cx="30" cy="13" r="11" fill="#bf4337"/><path d="M3 37L21 23L39 37Z" fill="#e8ae40"/></g>
 <g class="art art-blackmountain" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 4V36M14 4V36M24 4V36M34 4V36M44 4V36"/><path d="M2 11H46M2 21H46M2 31H46" stroke="#b7774f" stroke-width="4"/><path d="M4 11H14M24 21H34M14 31H24" stroke="#e9e1cf" stroke-width="5"/></g>
@@ -249,6 +249,8 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
       <button id="code-size-smaller" class="secondary">Text smaller</button>
       <button id="code-size-larger" class="secondary">Text larger</button>
       <button id="code-size-reset" class="secondary">Reset text size</button>
+      <button id="catalog-open" class="secondary">Browse language catalog</button>
+      <button id="completion-toggle" class="secondary">Code suggestions: on</button>
     </div>
   </details>
   <details class="file-submenu">
@@ -319,7 +321,7 @@ const fixedLivingDemo="(\ns.waitForBoot({\n    Routine({\n        SynthDef(\\scD
 for(const name of Object.keys(projects)){if(/^(?:Living Code Demo|Living Code Demonstration)(?: [0-9]+)?$/.test(name)&&(projects[name]===legacyLivingDemo||projects[name]===intermediateLivingDemo))projects[name]=fixedLivingDemo;}
 if(!Object.hasOwn(projects,active))active=Object.keys(projects)[0];
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(projects));localStorage.setItem(ACTIVE,active);saveStatus.textContent='SAVED'}catch(e){saveStatus.textContent='SAVE ERROR'}}
-function renderProjects(){projectsEl.replaceChildren();for(const name of Object.keys(projects)){const option=document.createElement('option');option.value=name;option.textContent=name;projectsEl.append(option)}projectsEl.value=active;code.value=projects[active]||'';code.scrollTop=0;code.scrollLeft=0;updatePreview();persist();renderPicker();window.SCActivity?.document(active,code.value);window.SCTimeline?.document(active,code.value)}
+function renderProjects(){projectsEl.replaceChildren();for(const name of Object.keys(projects)){const option=document.createElement('option');option.value=name;option.textContent=name;projectsEl.append(option)}projectsEl.value=active;code.value=projects[active]||'';code.scrollTop=0;code.scrollLeft=0;updatePreview();persist();renderPicker();window.SCActivity?.document(active,code.value);window.SCTimeline?.document(active,code.value);window.SCLanguageTools?.refresh()}
 function commit(){projects[active]=code.value;persist()}
 const toggle=document.querySelector('#project-toggle'),list=document.querySelector('#project-list');
 let recentlyDeleted=null;const undoDelete=document.querySelector('#undo-delete');
@@ -398,6 +400,7 @@ import {createLiveActivityUI} from "./live-activity.mjs?v=22";
 import {createPerformanceUI} from "./performance-ui.mjs?v=22";
 import {encodeOsc} from "./performance-engine.mjs?v=22";
 import {createLearning} from "./learning.mjs?v=4";
+import {createLanguageTools} from "./editor-assist.mjs?v=1";
 let lang,synth;
 let languageReady=false,serverReady=false,serverBootRequested=false,bootRetryCount=0;
 const SERVER_READY_MARKER='__SUPERCOLLISION_AUDIO_READY__';
@@ -406,6 +409,14 @@ const learning=createLearning({editor:code,host:document.querySelector('#learnin
   modeSelect:document.querySelector('#learning-mode'),openButton:document.querySelector('#inspector-learn')});
 window.SCLearning=learning;
 document.querySelector('#learning-open').onclick=()=>learning.open();
+const languageTools=createLanguageTools({editor:code,host:document.querySelector('#learning-host'),
+  getLearningMode:()=>learning.mode});
+window.SCLanguageTools=languageTools;
+document.querySelector('#catalog-open').onclick=()=>languageTools.open();
+const completionToggle=document.querySelector('#completion-toggle');
+function refreshCompletionToggle(){completionToggle.textContent='Code suggestions: '+(languageTools.enabled?'on':'off')}
+completionToggle.onclick=()=>{languageTools.setEnabled(!languageTools.enabled);refreshCompletionToggle()};
+refreshCompletionToggle();
 const state=document.querySelector('#engine-status'),log=document.querySelector('#console'),run=document.querySelector('#evaluate'),panic=document.querySelector('#panic');
 const performanceUI=createPerformanceUI({panel:document.querySelector('#perform-panel'),editor:code,
   getComposition:()=>active,sendOsc:packet=>{if(!synth)return false;synth.sendOsc(packet);return true}});

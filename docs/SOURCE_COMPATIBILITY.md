@@ -35,3 +35,12 @@ SuperCollision must run the same SuperCollider language code that a user saves o
 - The first predict-and-listen exercise supports only literal, zero-phase `SinOsc.ar` expressions with numeric frequency and amplitude. Nonliteral expressions receive an explanation but no fabricated audio comparison.
 - Experiment audio is a brief, volume-limited, independent Web Audio sine oscillator. It is **not** a rerun or modification of the SuperCollider synthesis graph. No experiment is submitted to the SuperCollider interpreter, and no running synth is stopped or changed.
 - The original and modified expressions are displayed together. The learner predicts pitch direction before auditioning. `RUN`, `SELECTED`, saved compositions, and exported source retain their original semantics.
+
+## Language catalog and editor completion
+
+- The published class/method index is generated from the official SuperCollider `HelpSource/Classes/*.schelp` files. Entries link to their official documentation. This describes upstream classes, not a guarantee that every class or plugin is included in the browser synthesis runtime.
+- Class names, summaries, categories, methods, and documented argument names come from those help files. Verified defaults and required flags are maintained separately for known signatures; no default or requirement is inferred from incomplete help prose.
+- BROWSE supports searching by name, method, category and description; sorting by usefulness, alphabet, frequency in the active composition, recency, and category.
+- Completion is a **productivity tool**, independently switchable under FILE > EDITOR even if Guided Learning is OFF. Suggestions appear in a row **below** the editor and never obscure its code. The source changes only when the user explicitly accepts a suggestion, inserts a method, or inserts a named argument.
+- Context-sensitive completion uses known class methods (for example `SinOsc.ar`) and known server instance methods (for example `s.boot`). It does not invent a method receiver for unknown variables, such as `x.play`. Method guides distinguish verified defaults/required arguments from undocumented requirements.
+- The language interpreter still receives the exact editor text chosen by RUN/SELECTED, never an instrumented or auto-completed substitute. Code inserted by the user remains ordinary exportable SuperCollider code.
