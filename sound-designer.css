@@ -65,3 +65,10 @@ body .console-bar .inspector-modes button,body[data-theme] .console-bar .inspect
  .sound-designer{padding:7px}
  .sound-actions button{padding:4px 5px}
 }
+
+.sound-request-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sound-review{display:flex;flex-direction:column;gap:4px;margin:4px 0}
+.sound-review p{font:10px/1.4 system-ui,sans-serif;margin:0;padding:5px 7px;
+ border-left:2px solid currentColor;overflow-wrap:anywhere}
+.sound-review .sound-blocker{font-weight:750;border-width:3px}
+.sound-designer button[disabled]{opacity:.5;cursor:not-allowed}

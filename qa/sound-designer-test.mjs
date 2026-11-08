@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import {
  SOUND_PRESETS,SOUND_SYSTEM_PROMPT,buildSoundMessages,responseText,parseSoundResponse,
- describeProviderFailure,isFreeOpenRouterModel,OPENROUTER_FREE_MODEL
+ describeProviderFailure,isFreeOpenRouterModel,OPENROUTER_FREE_MODEL,
+ inspectSoundCode,formatPuterAllowance
 } from '../sound-designer-core.mjs';
 const FENCE=String.fromCharCode(96).repeat(3);
 assert.equal(SOUND_PRESETS.length,5);
@@ -37,4 +38,20 @@ assert.throws(()=>parseSoundResponse(''),/no text/);
 assert.match(describeProviderFailure({status:429},'OpenRouter'),/rate limit/);
 assert.match(describeProviderFailure({status:402},'Puter'),/quota/);
 assert.match(describeProviderFailure({status:401},'OpenRouter'),/authorization/);
-console.log('Sound Designer prompt, revision, code extraction, free-only routing, and failures passed.');
+
+const valid=inspectSoundCode(code);
+assert.equal(valid.canAudition,true);
+assert.equal(valid.blockers.length,0);
+assert.ok(valid.warnings.some(x=>/self-release/.test(x)));
+assert.equal(inspectSoundCode('(\ns.quit;\n)').canAudition,false);
+assert.equal(inspectSoundCode('File.open("bad", "w");').canAudition,false);
+assert.equal(inspectSoundCode('( { SinOsc.ar(400) }.play;').canAudition,false);
+assert.equal(inspectSoundCode('(\n/* File.open("no") */\n{ SinOsc.ar(440) }.play\n)').canAudition,true);
+assert.equal(inspectSoundCode('(\n"thisProcess and s.quit";\n{ SinOsc.ar(440) }.play\n)').canAudition,true);
+assert.equal(inspectSoundCode('/* block is unfinished').canAudition,false);
+assert.match(formatPuterAllowance({
+ allowanceInfo:{remaining:50000000,monthUsageAllowance:100000000}
+}),/\$0\.50 of \$1\.00.*50\.0%/);
+assert.match(formatPuterAllowance({allowanceInfo:{remaining:12}}),/did not return/);
+console.log('Sound Designer prompt, quota formatting, source inspection, and error handling passed.');
+

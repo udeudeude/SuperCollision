@@ -54,3 +54,11 @@ SuperCollision must run the same SuperCollider language code that a user saves o
 - The generated scratch buffer stays separate from source. COPY, AUDITION, and SAVE AS NEW COMPOSITION are explicit. SAVE creates a unique new composition and flushes the original unchanged. AUDITION runs raw generated language source on the **shared** SuperCollider server; STOP ALL AUDIO is intentionally global. These are trust-boundary user actions and should not be triggered automatically.
 - User-created SuperCollider code is still passed without modification to RUN and SELECTED; no wrappers or instrumentation are injected. Generated one-shot sketches are requested with a 6-12 second self-freeing envelope, but model output cannot be trusted to comply without manual inspection.
 - OpenRouter free limits and Puter personal monthly credits are controlled by each provider; no availability guarantee is implied by the local automated tests. Actual account sign-in and inference must be tested in a real user session.
+
+## Sound Designer preflight and request controls (November 2026 refinement)
+
+- Puter generation explicitly passes `fallback: false` to suppress automatic provider fallback when the first provider fails, in accordance with Puter's documented `ai.chat` options.
+- OpenRouter and Puter generation receive a browser `AbortSignal`, with a user-visible CANCEL button and a 90-second timeout. Aborting a request does **not** guarantee that upstream model usage will be refunded or uncounted.
+- When available, OpenRouter requests include `usage: { include: true }` and display returned token counts. Puter monthly allowances are shown in dollars using its documented microcent conversion (100,000,000 microcents per US dollar), with a note that its account allowance is shared across Puter apps.
+- Responses marked as truncated (`finish_reason: length`) are not offered as complete synthesizers.
+- Generated source is screened locally before audition. Unbalanced delimiters and certain obvious file, process, network, or server-reconfiguration commands disable AUDITION while leaving COPY and SAVE accessible. The screen is only a heuristic: it cannot make arbitrary SuperCollider source safe, confirm its amplitude, or guarantee a clean shutdown. Sound Designer never runs generated code automatically.

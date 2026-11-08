@@ -3,7 +3,8 @@
  */
 import {
  SOUND_PRESETS,buildSoundMessages,responseText,parseSoundResponse,
- describeProviderFailure,OPENROUTER_FREE_MODEL,isFreeOpenRouterModel
+ describeProviderFailure,OPENROUTER_FREE_MODEL,isFreeOpenRouterModel,
+ inspectSoundCode,formatPuterAllowance
 } from './sound-designer-core.mjs';
 
 const AUTH_KEY='supercollision-openrouter-session-key-v1';
@@ -35,24 +36,24 @@ async function makeChallenge(){
     x=>x.toString(16).padStart(2,'0')).join('');
  return {verifier,challenge,state};
 }
-async function providerRequest({provider,messages,key,puter}){
+async function providerRequest({provider,messages,key,puter,signal}){
  if(provider==='openrouter'){
    if(!key)throw Error('Connect your OpenRouter account first.');
    const model=OPENROUTER_FREE_MODEL;
    if(!isFreeOpenRouterModel(model))throw Error('Refusing a nonfree OpenRouter model.');
    const response=await fetch(ENDPOINT+'/chat/completions',{
-     method:'POST',headers:{'Content-Type':'application/json',
+     signal,method:'POST',headers:{'Content-Type':'application/json',
        'Authorization':'Bearer '+key,'HTTP-Referer':location.origin,'X-Title':'SuperCollision Sound Designer'},
-     body:JSON.stringify({model,messages,temperature:0.55,max_tokens:2600})
+     body:JSON.stringify({model,messages,temperature:0.55,max_tokens:3500,
+       usage:{include:true}})
    });
    const data=await response.json().catch(()=>({}));
    if(!response.ok){
      const error=new Error(data?.error?.message||'HTTP '+response.status);
      error.status=response.status;throw error;
    }
-   if(data?.model && !isFreeOpenRouterModel(data.model) && model!==OPENROUTER_FREE_MODEL){
-     throw Error('The provider returned a nonfree model unexpectedly.');
-   }
+   if(data?.choices?.[0]?.finish_reason==='length')
+     throw Error('The model stopped before completing the code. Try a shorter sound description.');
    return {text:responseText(data),model:data?.model||model,usage:data?.usage};
  }
  if(provider==='puter'){
@@ -60,9 +61,11 @@ async function providerRequest({provider,messages,key,puter}){
    const response=await puter.ai.chat(messages,{
      // Explicitly select the inexpensive documented default, rather than
      // an automatically chosen expensive model.
-     model:'gpt-5.4-nano',normalize:true,max_tokens:2600,
-     temperature:0.5,stream:false
+     model:'gpt-5.4-nano',normalize:true,max_tokens:3500,
+     temperature:0.5,stream:false,fallback:false,signal
    });
+   if(response?.finish_reason==='length')
+     throw Error('The model stopped before completing the code. Try a shorter description.');
    return {text:responseText(response),model:response?.model||'gpt-5.4-nano',
      usage:response?.usage||response?.usageDetails};
  }
@@ -121,6 +124,10 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
  const privacy=node('p','sound-fine',
   'Only the description, optional composition context, and previous result when revising are sent to the selected provider. No model request happens until GENERATE or REVISE is pressed.');
  const generate=action('GENERATE INSTRUMENT','sound-generate','sound-primary');
+ const cancel=action('CANCEL REQUEST','sound-cancel','sound-secondary');
+ cancel.hidden=true;
+ const requestActions=node('div','sound-actions sound-request-actions');
+ requestActions.append(generate,cancel);
  const status=node('p','sound-status','Ready. Connect a provider, then describe a sound.');
  status.id='sound-status';status.setAttribute('role','status');
  const scratch=node('section','sound-result');scratch.hidden=true;scratch.id='sound-result';
@@ -129,6 +136,8 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
  const resultModel=node('small');
  resultTop.append(resultTitle,resultModel);
  const code=node('pre','sound-code');code.id='sound-code';
+ const review=node('div','sound-review');review.id='sound-review';
+ review.setAttribute('role','note');
  const explanation=node('p','sound-explanation');explanation.id='sound-explanation';
  const revisionLabel=node('label','','CHANGE THIS SOUND');
  const revision=node('textarea');revision.id='sound-revision';revision.rows=2;
@@ -142,12 +151,12 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
  resultActions.append(revise,copy,save,test,halt);
  const caution=node('p','sound-fine',
   'AUDITION explicitly runs the displayed code on the shared SuperCollider server. It can affect other playing sounds. STOP ALL AUDIO also stops your current composition. Generated code is untrusted until tested.');
- scratch.append(resultTop,code,explanation,revisionLabel,revision,resultActions,caution);
+ scratch.append(resultTop,code,review,explanation,revisionLabel,revision,resultActions,caution);
  const footer=node('p','sound-fine',
   'OpenRouter is restricted to its free-model route. Puter uses your own monthly allowance. No developer key is used, no paid OpenRouter models are requested, and no automatic retry is made.');
- box.append(head,label,provider,authPanel,promptLabel,description,presets,includeWrap,privacy,generate,status,scratch,footer);
+ box.append(head,label,provider,authPanel,promptLabel,description,presets,includeWrap,privacy,requestActions,status,scratch,footer);
  host.append(box);
- let key='';let puterLoaded=false;let loading=false;let pending=false;let latest=null;let generationProvider='openrouter';
+ let key='';let puterLoaded=false;let pending=false;let latest=null;let currentAbort=null;
  try{key=sessionStorage.getItem(AUTH_KEY)||'';}catch{}
  try{
    const draft=sessionStorage.getItem(PROMPT_KEY);
@@ -265,18 +274,37 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
    puterUsage.disabled=true;
    try{
      const data=await window.puter.auth.getMonthlyUsage();
-     const account=data?.allowanceInfo||{};
-     // Show the provider's exact allowance representation, not an invented
-     // dollar estimate. Never expose a token or profile field.
-     allowance.textContent='MONTHLY ALLOWANCE\n'+JSON.stringify(account,null,2).slice(0,3000);
+     // Puter's documented allowance numbers are denominated in microcents.
+     allowance.textContent='MONTHLY ALLOWANCE\n'+formatPuterAllowance(data);
      allowance.hidden=false;setStatus('Monthly allowance information retrieved from Puter.');
    }catch(e){setStatus('Allowance lookup failed: '+e.message,true)}
    finally{puterUsage.disabled=false}
  };
  function busy(flag){
-   pending=flag;generate.disabled=flag;revise.disabled=flag;
+   pending=flag;generate.disabled=flag;revise.disabled=flag;provider.disabled=flag;
+   cancel.hidden=!flag;
    generate.textContent=flag?'GENERATING...':'GENERATE INSTRUMENT';
    revise.textContent=flag?'GENERATING...':'REVISE';
+ }
+ cancel.onclick=()=>{
+   if(!pending||!currentAbort)return;
+   currentAbort.abort();
+   cancel.disabled=true;
+   setStatus('Cancellation requested. A provider may still count an already-started request.');
+ };
+ function renderInspection(inspection){
+   review.replaceChildren();
+   for(const issue of inspection.blockers){
+     const item=node('p','sound-blocker','AUDITION BLOCKED: '+issue);
+     review.append(item);
+   }
+   for(const issue of inspection.warnings){
+     const item=node('p','sound-review-note',issue);
+     review.append(item);
+   }
+   test.disabled=!inspection.canAudition;
+   test.title=inspection.canAudition?'Review the generated code before auditioning':
+     'Audition disabled because the generated source failed local checks.';
  }
  async function generateSound(isRevision=false){
    if(pending)return;
@@ -293,22 +321,39 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
        includeCode:include.checked,currentCode:editor.value
      });
    }catch(e){setStatus(e.message,true);return}
-   // Keep previous working code visible if a provider fails.
+   // Keep the previous result visible if this user-funded request fails.
+   const controller=new AbortController();
+   currentAbort=controller;
+   cancel.disabled=false;
+   const timeout=setTimeout(()=>controller.abort('timeout'),90000);
    busy(true);
    setStatus('Request sent to '+(chosen==='openrouter'?'OpenRouter free models':'Puter')+
      '. This uses one request from your own account.');
    try{
-     const answer=await providerRequest({provider:chosen,messages,key,puter:window.puter});
+     const answer=await providerRequest({
+       provider:chosen,messages,key,puter:window.puter,signal:controller.signal
+     });
+     if(controller.signal.aborted)return;
      const parsed=parseSoundResponse(answer.text);
-     latest={...parsed,description:description.value,model:answer.model,provider:chosen};
-     generationProvider=chosen;scratch.hidden=false;
-     code.textContent=parsed.code;explanation.textContent=parsed.explanation||'Generated SuperCollider code. Examine it before auditioning.';
+     const inspection=inspectSoundCode(parsed.code);
+     latest={...parsed,inspection,description:description.value,model:answer.model,provider:chosen};
+     scratch.hidden=false;
+     code.textContent=parsed.code;explanation.textContent=parsed.explanation||
+       'Generated SuperCollider code. Examine it before auditioning.';
+     renderInspection(inspection);
      resultModel.textContent=chosen.toUpperCase()+' · '+answer.model;
      setStatus((isRevision?'Revised':'Generated')+' instrument received'+prettyUsage(answer.usage)+
        '. Your current composition is unchanged.');
      scratch.scrollIntoView({block:'nearest',behavior:'smooth'});
-   }catch(e){setStatus(describeProviderFailure(e,chosen==='openrouter'?'OpenRouter':'Puter'),true)}
-   finally{busy(false)}
+   }catch(e){
+     if(controller.signal.aborted)
+       setStatus('Request cancelled or timed out. It may still count toward your provider quota.',true);
+     else setStatus(describeProviderFailure(e,chosen==='openrouter'?'OpenRouter':'Puter'),true);
+   }finally{
+     clearTimeout(timeout);
+     if(currentAbort===controller)currentAbort=null;
+     busy(false);
+   }
  }
  generate.onclick=()=>generateSound();
  revise.onclick=()=>generateSound(true);
@@ -328,6 +373,9 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
  };
  test.onclick=()=>{
    if(!latest)return;
+   if(!latest.inspection.canAudition){
+     setStatus('Cannot audition: generated code failed local preflight checks.',true);return;
+   }
    try{
      const result=audition(latest.code);
      if(!result){setStatus('Press POWER and wait for the audio server before auditioning.',true);return}

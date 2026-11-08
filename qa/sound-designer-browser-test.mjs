@@ -38,6 +38,8 @@ try{
    const ctx=await browser.newContext({viewport:{width,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
    await ctx.addInitScript(()=>sessionStorage.setItem('supercollision-openrouter-session-key-v1','sk-or-fake-test-key-not-usable'));
    const page=await ctx.newPage();
+   const startCount=requests.length;
+   let mockMode='normal';
    await page.route('https://openrouter.ai/api/v1/chat/completions',async route=>{
      const req=route.request();
      if(req.method()==='OPTIONS'){
@@ -46,10 +48,14 @@ try{
        }});return;
      }
      const payload=req.postDataJSON();requests.push(payload);
+     if(mockMode==='delayed')await new Promise(ok=>setTimeout(ok,900));
+     const rawCode=mockMode==='unsafe'?
+       '(\nFile.open("scratch", "w");\n{ SinOsc.ar(440) }.play;\n)':
+       (requests.length%2?generated:revised);
      await route.fulfill({status:200,headers:{'access-control-allow-origin':'*'},
        contentType:'application/json',
        body:JSON.stringify({model:'cohere/north-mini-code:free',
-         choices:[{message:{content:FENCE+'supercollider\n'+(requests.length%2?generated:revised)+'\n'+FENCE+'\nSimple test sketch.'}}],
+         choices:[{message:{content:FENCE+'supercollider\n'+rawCode+'\n'+FENCE+'\nSimple test sketch.'}}],
          usage:{prompt_tokens:1120,completion_tokens:500}})});
    });
    await page.goto(base,{waitUntil:'domcontentloaded'});
@@ -71,12 +77,14 @@ try{
    assert.ok(geometry.panelRight<=width+2,'SOUND must fit phone '+JSON.stringify(geometry));
    assert.ok(geometry.tabRight<=geometry.modesRight+2,'SOUND tab must fit '+JSON.stringify(geometry));
    assert.ok((await page.locator('#sound-auth-status').innerText()).includes('connected'));
-   assert.equal(requests.length,(width===320?0:width===390?2:4),'No requests before explicit GENERATE');
+   assert.equal(requests.length,startCount,'No requests before explicit GENERATE');
    await page.locator('#sound-generate').click();
    await page.waitForFunction(()=>document.querySelector('#sound-result')?.hidden===false,{timeout:6000});
    assert.ok((await page.locator('#sound-code').innerText()).includes('SynthDef'));
    assert.equal(await page.locator('#code').inputValue(),previous,'generation must not rewrite composition');
    assert.equal(requests.at(-1).model,'openrouter/free','paid model must not be selected');
+   assert.equal(requests.at(-1).usage.include,true,'Request should report actual token usage');
+   assert.equal(await page.locator('#sound-audition').isDisabled(),false,'Valid sketch should permit audition');
    assert.ok(!requests.at(-1).messages.at(-1).content.includes(previous),
      'Source must not be sent by default');
 
@@ -94,10 +102,32 @@ try{
    assert.ok(Object.values(stored).includes(previous),'original composition must remain saved');
    assert.ok(Object.values(stored).some(x=>x.includes('220')),'new composition should be saved');
 
+   // A model can hallucinate unsafe side effects. Keep code copyable/saveable,
+   // but refuse audition if static preflight detects restricted operations.
    await page.locator('#inspector-design').click();
+   mockMode='unsafe';
+   await page.locator('#sound-generate').click();
+   await page.waitForFunction(()=>document.querySelector('#sound-review')?.textContent?.includes('AUDITION BLOCKED'));
+   assert.equal(await page.locator('#sound-audition').isDisabled(),true);
+   const unsafeResult=await page.locator('#sound-code').innerText();
+   assert.ok(unsafeResult.includes('File.open'));
+   assert.ok((await page.locator('#code').inputValue()).includes('220'));
+
+   // A cancelled request should neither overwrite the last result nor
+   // consume more than the request already sent.
+   mockMode='delayed';
+   await page.locator('#sound-generate').click();
+   await page.locator('#sound-cancel').click();
+   await page.waitForFunction(()=>!window.SCSoundDesigner.pending,{timeout:7000});
+   assert.ok((await page.locator('#sound-code').innerText()).includes('File.open'));
+   assert.match(await page.locator('#sound-status').innerText(),/cancelled or timed out/i);
+   mockMode='normal';
+
+   await page.locator('#inspector-design').click();
+
    await page.locator('#sound-provider').selectOption('puter');
    await page.route('https://js.puter.com/v2/', async route=>{
-     const js="window.__putersigned=false;window.puter={auth:{isSignedIn:()=>window.__putersigned,signIn:()=>{window.__putersigned=true;return Promise.resolve({success:true})},getMonthlyUsage:()=>Promise.resolve({allowanceInfo:{remaining:12}})},ai:{chat:async(messages,options)=>{window.__puterCall={messages,options};return {message:{content:"+JSON.stringify(FENCE+'supercollider\n'+generated+'\n'+FENCE+'\nA sample sound.')+"},model:'gpt-5.4-nano'}}}};";
+     const js="window.__putersigned=false;window.puter={auth:{isSignedIn:()=>window.__putersigned,signIn:()=>{window.__putersigned=true;return Promise.resolve({success:true})},getMonthlyUsage:()=>Promise.resolve({allowanceInfo:{remaining:50000000,monthUsageAllowance:100000000}})},ai:{chat:async(messages,options)=>{window.__puterCall={messages,options};return {message:{content:"+JSON.stringify(FENCE+'supercollider\n'+generated+'\n'+FENCE+'\nA sample sound.')+"},model:'gpt-5.4-nano'}}}};";
      await route.fulfill({status:200,contentType:'text/javascript',headers:{
        'cross-origin-resource-policy':'cross-origin','access-control-allow-origin':'*'},body:js});
    });
@@ -106,11 +136,12 @@ try{
    await page.locator('#sound-puter-signin').click();
    await page.waitForFunction(()=>document.querySelector('#sound-auth-status')?.textContent.includes('signed in'));
    await page.locator('#sound-puter-usage').click();
-   await page.waitForFunction(()=>document.querySelector('.sound-allowance')?.textContent.includes('remaining'));
+   await page.waitForFunction(()=>document.querySelector('.sound-allowance')?.textContent.includes('$0.50'));
    await page.locator('#sound-generate').click();
    await page.waitForFunction(()=>window.__puterCall?.options?.model==='gpt-5.4-nano');
    assert.ok((await page.locator('#sound-code').innerText()).includes('300'));
    assert.equal(await page.evaluate(()=>window.__puterCall.options.normalize),true);
+   assert.equal(await page.evaluate(()=>window.__puterCall.options.fallback),false,'No automatic provider fallback');
    await ctx.close();
    console.log('Sound Designer browser flows passed '+width+' px');
  }
