@@ -37,7 +37,7 @@ jobs:
           js=Path('instrument-layout.js').read_text()
           p=Scripts()
           p.feed(html)
-          assert len(p.scripts)==3, f"Found {len(p.scripts)} inline scripts"
+          assert len(p.scripts)==4, f"Found {len(p.scripts)} inline scripts"
           for i,script in enumerate(p.scripts):
               Path(f'/tmp/supercollision-{i}.js').write_text(script)
           expected=['<header>', 'class="projectbar"', 'class="editor-frame"', 'class="toolbar"', 'class="panel console-shell"']
@@ -59,6 +59,7 @@ jobs:
           node --check /tmp/supercollision-0.js
           node --check /tmp/supercollision-1.js
           node --check /tmp/supercollision-2.js
+          node --check /tmp/supercollision-3.js
           node --check instrument-layout.js
           node --check live-activity.mjs
           node --check routine-trace.mjs
