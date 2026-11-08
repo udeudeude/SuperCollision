@@ -90,3 +90,78 @@ export const OPENROUTER_FREE_MODEL='openrouter/free';
 export function isFreeOpenRouterModel(model){
  return model===OPENROUTER_FREE_MODEL || (/^[a-z0-9._-]+\/[a-z0-9._:-]+:free$/i.test(model));
 }
+
+/* Lightweight, deliberately conservative pre-audition checks. This is NOT
+ * a sandbox or a proof that generated SuperCollider code is safe.
+ * SuperCollider language code remains executable and must be trusted by user.
+ */
+export function inspectSoundCode(source){
+ const code=String(source||'');
+ const masked=code.split('');
+ let state='code';
+ for(let i=0;i<code.length;i++){
+   const ch=code[i],n=code[i+1];
+   if(state==='line'){
+     if(ch==='\n')state='code';
+     else masked[i]=' ';
+     continue;
+   }
+   if(state==='block'){
+     masked[i]=' ';
+     if(ch==='*'&&n==='/'){masked[++i]=' ';state='code'}
+     continue;
+   }
+   if(state==='string'||state==='symbol'){
+     masked[i]=' ';
+     if(ch==='\\'&&n!==undefined){masked[++i]=' ';continue}
+     if(ch===(state==='string'?'"':"'"))state='code';
+     continue;
+   }
+   if(ch==='/'&&n==='/'){masked[i]=' ';masked[++i]=' ';state='line';continue}
+   if(ch==='/'&&n==='*'){masked[i]=' ';masked[++i]=' ';state='block';continue}
+   if(ch==='"'||ch==="'"){masked[i]=' ';state=ch==='"'?'string':'symbol';continue}
+   if(ch==='$'&&n!==undefined){masked[i]=' ';masked[++i]=' ';continue}
+ }
+ const clean=masked.join('');
+ const blockers=[],warnings=[];
+ if(state==='block'||state==='string'||state==='symbol')
+   blockers.push('Unclosed comment or quoted text.');
+ const stack=[],pairs={')':'(',']':'[','}':'{'};
+ for(let i=0;i<clean.length;i++){
+   const ch=clean[i];
+   if('([{'.includes(ch))stack.push({ch,i});
+   else if(Object.hasOwn(pairs,ch)){
+     if(stack.at(-1)?.ch===pairs[ch])stack.pop();
+     else {blockers.push('Mismatched '+ch+' near character '+(i+1)+'.');break}
+   }
+ }
+ if(stack.length)blockers.push('Unclosed '+stack.at(-1).ch+' delimiter.');
+ const restricted=[
+   [/\b(?:File|Pipe|UnixCmd)\s*(?:\.|\()/,'File and operating-system command objects'],
+   [/\bthisProcess\b/,'interpreter or process manipulation'],
+   [/\b(?:s|Server)\s*\.\s*(?:quit|reboot|killAll|options)\b/,'server shutdown or reconfiguration'],
+   [/\b(?:Server|ServerOptions)\s*\.\s*(?:default|killAll|quitAll)\b/,'global server manipulation'],
+   [/\bNetAddr\s*[\.(]/,'network operations'],
+   [/\b(?:interpret|unixCmd)\s*\(/,'dynamic code or shell execution']
+ ];
+ for(const [pattern,label] of restricted){
+   if(pattern.test(clean))blockers.push('Contains '+label+'; audition disabled. You may still copy or save the code.');
+ }
+ if(!/EnvGen|Done\.freeSelf|doneAction\s*:\s*2|\.free\b/.test(clean))
+   warnings.push('No clear self-release mechanism found. The sound may continue until STOP ALL AUDIO.');
+ if(!/\b(?:Out|OffsetOut|ReplaceOut)\s*\.\s*(?:ar|kr)\s*\(/.test(clean)&&
+    !/\}\s*\.\s*play\b/.test(clean))
+   warnings.push('No recognizable audio output found. The result may be silent.');
+ warnings.push('Static checks cannot confirm output level, sound quality, or safe behavior.');
+ return {blockers:[...new Set(blockers)],warnings,canAudition:blockers.length===0};
+}
+export function formatPuterAllowance(value){
+ const info=value?.allowanceInfo;
+ const remaining=Number(info?.remaining),total=Number(info?.monthUsageAllowance);
+ const dollar=amount=>'$'+(amount/100000000).toFixed(2);
+ if(!Number.isFinite(remaining)||!Number.isFinite(total)||total<=0||remaining<0)
+   return 'Puter did not return a usable monthly balance. Check your Puter account dashboard.';
+ const remainingText=dollar(remaining);
+ return 'Account balance: '+remainingText+' of '+dollar(total)+' monthly allowance remaining ('+
+   (100*remaining/total).toFixed(1)+'%). The allowance is shared across your Puter apps.';
+}
