@@ -570,4 +570,12 @@ saveButton.onclick=()=>{
  message('WAV exported · '+Math.round(r.frames/r.ac.sampleRate)+' seconds');
 };
 </script>
-<script src="./instrument-layout.js?v=18"></script></html>
+<script src="./instrument-layout.js?v=18"></script><script defer src="https://cloud.umami.is/script.js" data-website-id="f374a945-0ea2-41ed-8eb7-4b6ab6933f9a"></script>
+<script>
+document.addEventListener('click', function(e) {
+  const control=e.target.closest('button,a,[role="button"]');
+  if (!control || !window.umami || typeof umami.track !== 'function') return;
+  const label=(control.id+' '+(control.getAttribute('aria-label')||'')+' '+(control.textContent||'').slice(0,60)).toLowerCase();
+  if (/run|play|evaluate|record/i.test(label)) umami.track('app-use',{project:'supercollision',action:'interaction'});
+},true);
+</script></html>
