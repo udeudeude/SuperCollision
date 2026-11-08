@@ -252,7 +252,7 @@ try {
         assert(await page.locator('#record-stop svg.transport-icon').count()===1,'SAVE does not use a distinct vector icon');
         assert(!(await page.locator('#evaluate').innerText()).includes('▶'),'RUN still contains emoji-prone glyph');
         const names=await page.locator('.inspector-modes button').allTextContents();
-        assert(names.join('|')==='CODE|CONSOLE|AUDIO|PERFORM|LEARN','Direct inspector tabs absent');
+        assert(names.join('|')==='CODE|CONSOLE|AUDIO|PERFORM|LEARN|SOUND','Direct inspector tabs absent');
         const codeBefore=await page.evaluate(()=>({
           audio:getComputedStyle(document.getElementById('audio-panel')).display,
           pressed:document.getElementById('inspector-code').getAttribute('aria-pressed')
