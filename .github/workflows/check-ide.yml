@@ -2,7 +2,7 @@ name: Check SuperCollision IDE
 on:
   push:
     branches: [main]
-    paths: ['index.html', 'instrument-layout.css', 'instrument-layout.js', 'live-activity.mjs', 'routine-trace.mjs', 'performance-engine.mjs', 'performance-ui.mjs', 'performance.css', 'learning.mjs', 'learning.css', 'catalog-core.mjs', 'editor-assist.mjs', 'catalog-assist.css', 'qa/catalog-test.mjs', 'qa/learning-test.mjs', 'qa/performance-test.mjs', 'qa/live-activity-test.mjs', '.github/workflows/check-ide.yml']
+    paths: ['index.html', 'instrument-layout.css', 'instrument-layout.js', 'live-activity.mjs', 'routine-trace.mjs', 'performance-engine.mjs', 'performance-ui.mjs', 'performance.css', 'learning.mjs', 'learning.css', 'catalog-core.mjs', 'editor-assist.mjs', 'catalog-assist.css', 'sound-designer.mjs', 'sound-designer-core.mjs', 'sound-designer.css', 'qa/sound-designer-test.mjs', 'qa/catalog-test.mjs', 'qa/learning-test.mjs', 'qa/performance-test.mjs', 'qa/live-activity-test.mjs', '.github/workflows/check-ide.yml']
   pull_request:
     paths: ['index.html', 'instrument-layout.css', 'instrument-layout.js', '.github/workflows/check-ide.yml']
 jobs:
@@ -67,6 +67,8 @@ jobs:
           node --check learning.mjs
           node --check catalog-core.mjs
           node --check editor-assist.mjs
+          node --check sound-designer-core.mjs
+          node --check sound-designer.mjs
           python3 - <<'PY'
           import json
           from pathlib import Path
@@ -81,5 +83,6 @@ jobs:
           PY
           node qa/learning-test.mjs
           node qa/catalog-test.mjs
+          node qa/sound-designer-test.mjs
           node qa/performance-test.mjs
           node qa/live-activity-test.mjs

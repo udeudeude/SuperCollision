@@ -202,7 +202,7 @@ body[data-theme=terminal] .projectbar button,body[data-theme=terminal] .menu>sum
 body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 @media(max-width:390px){body[data-theme=patch] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 78px}body[data-theme=scope] .toolbar button{font-size:9px}body[data-theme=score] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 65px}}
 </style>
-<link rel="stylesheet" href="./instrument-layout.css?v=22"><link rel="stylesheet" href="./performance.css?v=22"><link rel="stylesheet" href="./learning.css?v=4"><link rel="stylesheet" href="./catalog-assist.css?v=1">
+<link rel="stylesheet" href="./instrument-layout.css?v=22"><link rel="stylesheet" href="./performance.css?v=22"><link rel="stylesheet" href="./learning.css?v=4"><link rel="stylesheet" href="./catalog-assist.css?v=1"><link rel="stylesheet" href="./sound-designer.css?v=1">
 <header><svg class="identity-art" viewBox="0 0 48 40" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
 <g class="art art-bauhaus"><rect x="1" y="3" width="18" height="18" fill="#1f4b8f"/><circle cx="30" cy="13" r="11" fill="#bf4337"/><path d="M3 37L21 23L39 37Z" fill="#e8ae40"/></g>
 <g class="art art-blackmountain" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 4V36M14 4V36M24 4V36M34 4V36M44 4V36"/><path d="M2 11H46M2 21H46M2 31H46" stroke="#b7774f" stroke-width="4"/><path d="M4 11H14M24 21H34M14 31H24" stroke="#e9e1cf" stroke-width="5"/></g>
@@ -289,9 +289,10 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 <input id="file-input" type="file" hidden><input id="backup-input" type="file" hidden>
 <pre id="syntax-preview" hidden></pre>
 </div>
-<div class="panel console-shell"><div class="console-bar"><div class="inspector-modes" role="group" aria-label="Lower panel"><button type="button" id="inspector-code" aria-pressed="true">CODE</button><button type="button" id="inspector-console" aria-pressed="false">CONSOLE</button><button type="button" id="inspector-audio" aria-pressed="false">AUDIO</button><button type="button" id="inspector-perform" aria-pressed="false">PERFORM</button><button type="button" id="inspector-learn" aria-pressed="false">LEARN</button></div><p id="engine-status" role="status">Engine off · Press POWER</p></div>
+<div class="panel console-shell"><div class="console-bar"><div class="inspector-modes" role="group" aria-label="Lower panel"><button type="button" id="inspector-code" aria-pressed="true">CODE</button><button type="button" id="inspector-console" aria-pressed="false">CONSOLE</button><button type="button" id="inspector-audio" aria-pressed="false">AUDIO</button><button type="button" id="inspector-perform" aria-pressed="false">PERFORM</button><button type="button" id="inspector-learn" aria-pressed="false">LEARN</button><button type="button" id="inspector-design" aria-pressed="false">SOUND</button></div><p id="engine-status" role="status">Engine off · Press POWER</p></div>
 <details id="console-panel"><summary>SuperCollider console</summary><div class="actions"><button id="clear-console" class="secondary">Clear console</button></div><pre id="console" aria-live="off"></pre></details></div>
 <section class="panel learning-host" id="learning-host" aria-label="SuperCollider learning panel"></section>
+<section class="panel sound-host" id="sound-host" aria-label="SuperCollider sound designer"></section>
 <section class="panel performance-panel" id="perform-panel" aria-label="Live performance controls and musical event timeline">
   <div class="perform-header">
     <strong>PERFORMANCE</strong>
@@ -336,6 +337,15 @@ code.addEventListener('input',()=>{saveStatus.textContent='SAVING';updatePreview
 function flush(){clearTimeout(saveTimer);commit()}
 projectsEl.onchange=()=>{const next=projectsEl.value;flush();active=next;renderProjects()};
 function uniqueName(name){let n=name,i=2;while(Object.hasOwn(projects,n))n=name+' '+i++;return n}
+window.SCDesignerSaveComposition=({name,code:generated})=>{
+ if(typeof generated!=='string'||!generated.trim()||generated.length>100000)
+   throw Error('Invalid generated code.');
+ flush(); // always preserve the previously edited composition first
+ active=uniqueName(String(name||'Generated sound').trim().slice(0,76)||'Generated sound');
+ projects[active]=generated;
+ renderProjects();
+ return active;
+};
 document.querySelector('#live-demo').onclick=()=>{flush();active=uniqueName('Living Code Demonstration');projects[active]="(\ns.waitForBoot({\n    Routine({\n        SynthDef(\\scDrone, { |freq=110|\n            var tone = SinOsc.ar(freq, 0, 0.07);\n            Out.ar(0, tone ! 2);\n        }).add;\n        SynthDef(\\scBell, { |freq=660|\n            var env = EnvGen.kr(Env.perc(0.01, 0.55), doneAction: 2);\n            Out.ar(0, (SinOsc.ar(freq, 0, 0.19) * env) ! 2);\n        }).add;\n        s.sync;\n        ~scDrone = Synth(\\scDrone);\n        16.do {\n            Synth(\\scBell, [\\freq, [440, 550, 660, 880].choose]);\n            0.6.wait;\n        };\n    }).play(SystemClock);\n}, clock: SystemClock);\n)";renderProjects();report('Living Code Demonstration created. POWER if needed, then RUN. Amber = synth running; blue = new note requested.')};
 document.querySelector('#new-project').onclick=()=>{flush();const name=prompt('New composition name','Untitled');if(!name?.trim())return;active=uniqueName(name.trim().slice(0,80));projects[active]='';renderProjects()};
 document.querySelector('#rename-project').onclick=()=>{flush();const name=prompt('Rename composition',active)?.trim().slice(0,80);if(!name||name===active)return;if(Object.hasOwn(projects,name)){alert('That name is already in use.');return}projects[name]=projects[active];delete projects[active];active=name;renderProjects()};
@@ -401,6 +411,7 @@ import {createPerformanceUI} from "./performance-ui.mjs?v=22";
 import {encodeOsc} from "./performance-engine.mjs?v=22";
 import {createLearning} from "./learning.mjs?v=4";
 import {createLanguageTools} from "./editor-assist.mjs?v=1";
+import {createSoundDesigner} from "./sound-designer.mjs?v=1";
 let lang,synth;
 let languageReady=false,serverReady=false,serverBootRequested=false,bootRetryCount=0;
 const SERVER_READY_MARKER='__SUPERCOLLISION_AUDIO_READY__';
@@ -418,6 +429,18 @@ function refreshCompletionToggle(){completionToggle.textContent='Code suggestion
 completionToggle.onclick=()=>{languageTools.setEnabled(!languageTools.enabled);refreshCompletionToggle()};
 refreshCompletionToggle();
 const state=document.querySelector('#engine-status'),log=document.querySelector('#console'),run=document.querySelector('#evaluate'),panic=document.querySelector('#panic');
+const soundDesigner=createSoundDesigner({
+ host:document.querySelector('#sound-host'),editor:code,
+ saveComposition:spec=>window.SCDesignerSaveComposition(spec),
+ audition:source=>{
+   if(!lang||!languageReady||!serverReady)return false;
+   lang.runCode(source); // only on explicit AUDITION; never rewrites editor
+   window.scPlaybackRequested=true;requestWake();
+   return true;
+ },
+ stopAudio:()=>panic.click()
+});
+window.SCSoundDesigner=soundDesigner;
 const performanceUI=createPerformanceUI({panel:document.querySelector('#perform-panel'),editor:code,
   getComposition:()=>active,sendOsc:packet=>{if(!synth)return false;synth.sendOsc(packet);return true}});
 window.SCTimeline=performanceUI;

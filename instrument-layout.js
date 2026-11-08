@@ -12,10 +12,11 @@
     console: document.getElementById('inspector-console'),
     audio: document.getElementById('inspector-audio'),
     perform: document.getElementById('inspector-perform'),
-    learn: document.getElementById('inspector-learn')
+    learn: document.getElementById('inspector-learn'),
+    design: document.getElementById('inspector-design')
   };
   const body = document.body;
-  const views = ['code', 'console', 'audio', 'perform', 'learn'];
+  const views = ['code', 'console', 'audio', 'perform', 'learn', 'design'];
   let mode = 'code';
   let previousLineCount = -1;
   let inner = gutter.querySelector('#line-inner');
@@ -196,6 +197,7 @@
     body.classList.toggle('view-audio', next === 'audio');
     body.classList.toggle('view-perform', next === 'perform');
     body.classList.toggle('view-learn', next === 'learn');
+    body.classList.toggle('view-design', next === 'design');
     consolePanel.open = next === 'console';
     diagnostics.setAttribute('aria-hidden', String(next !== 'audio'));
     diagnostics.inert = next !== 'audio';

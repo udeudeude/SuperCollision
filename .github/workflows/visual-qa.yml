@@ -16,6 +16,9 @@ on:
       - 'catalog-core.mjs'
       - 'editor-assist.mjs'
       - 'catalog-assist.css'
+      - 'sound-designer.mjs'
+      - 'sound-designer-core.mjs'
+      - 'sound-designer.css'
       - 'qa/**'
       - '.github/workflows/visual-qa.yml'
   workflow_dispatch:
@@ -38,6 +41,7 @@ jobs:
         run: |
           node qa/layout-check.mjs
           node qa/catalog-browser-test.mjs
+          node qa/sound-designer-browser-test.mjs
       - name: Upload comparison screenshots
         if: always()
         uses: actions/upload-artifact@v4
