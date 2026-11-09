@@ -4,12 +4,14 @@
 import {
  SOUND_PRESETS,buildSoundMessages,responseText,parseSoundResponse,
  describeProviderFailure,OPENROUTER_FREE_MODEL,isFreeOpenRouterModel,
- inspectSoundCode,formatPuterAllowance
-} from './sound-designer-core.mjs';
+ inspectSoundCode,formatPuterAllowance,
+ listVerifiedFreeModels,recentSuperColliderError,normalizeSoundDrafts
+} from './sound-designer-core.mjs?v=3';
 
 const AUTH_KEY='supercollision-openrouter-session-key-v1';
 const OAUTH_KEY='supercollision-openrouter-pkce-v1';
 const PROMPT_KEY='supercollision-openrouter-draft-v1';
+const RESULTS_KEY='supercollision-sound-versions-session-v1';
 const ENDPOINT='https://openrouter.ai/api/v1';
 function node(tag,cls='',txt=''){
  const e=document.createElement(tag);
@@ -36,10 +38,10 @@ async function makeChallenge(){
     x=>x.toString(16).padStart(2,'0')).join('');
  return {verifier,challenge,state};
 }
-async function providerRequest({provider,messages,key,puter,signal}){
+async function providerRequest({provider,messages,key,puter,signal,openRouterModel=OPENROUTER_FREE_MODEL}){
  if(provider==='openrouter'){
    if(!key)throw Error('Connect your OpenRouter account first.');
-   const model=OPENROUTER_FREE_MODEL;
+   const model=openRouterModel;
    if(!isFreeOpenRouterModel(model))throw Error('Refusing a nonfree OpenRouter model.');
    const response=await fetch(ENDPOINT+'/chat/completions',{
      signal,method:'POST',headers:{'Content-Type':'application/json',
@@ -91,6 +93,16 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
  [['openrouter','OpenRouter · free models'],['puter','Puter · personal allowance']].forEach(([v,t])=>{
    const opt=node('option','',t);opt.value=v;provider.append(opt);
  });
+ const modelWrap=node('div','sound-model-wrap');
+ const modelLabel=node('label','','FREE OPENROUTER MODEL');
+ const modelSelect=node('select');
+ modelSelect.id='sound-model';modelSelect.setAttribute('aria-label','Select a free OpenRouter model');
+ const automatic=node('option','','Automatic · free models router');
+ automatic.value=OPENROUTER_FREE_MODEL;modelSelect.append(automatic);
+ const loadModels=action('FIND AVAILABLE FREE MODELS','sound-load-models','sound-secondary');
+ const modelHint=node('p','sound-fine',
+   'Automatic uses an available free model. List current free variants to compare particular models without paying for them.');
+ modelWrap.append(modelLabel,modelSelect,loadModels,modelHint);
  const authPanel=node('div','sound-auth');
  const authStatus=node('span','sound-auth-status');authStatus.id='sound-auth-status';
  const authActions=node('div','sound-actions');
@@ -135,6 +147,12 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
  const resultTitle=node('strong','','GENERATED CODE · NOT YET RUN');
  const resultModel=node('small');
  resultTop.append(resultTitle,resultModel);
+ const versionsBar=node('div','sound-versions');
+ const prev=action('PREVIOUS','sound-prev','sound-secondary');
+ const versionCount=node('small','sound-version-count');
+ const next=action('NEXT','sound-next','sound-secondary');
+ const clearDraft=action('CLEAR DRAFTS','sound-clear','sound-secondary');
+ versionsBar.append(prev,versionCount,next,clearDraft);
  const code=node('pre','sound-code');code.id='sound-code';
  const review=node('div','sound-review');review.id='sound-review';
  review.setAttribute('role','note');
@@ -142,21 +160,28 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
  const revisionLabel=node('label','','CHANGE THIS SOUND');
  const revision=node('textarea');revision.id='sound-revision';revision.rows=2;
  revision.placeholder='Example: rougher reed, less vibrato, longer decay';
+ const useError=action('USE LAST CONSOLE ERROR','sound-use-error','sound-secondary');
  const resultActions=node('div','sound-actions sound-result-actions');
  const revise=action('REVISE','sound-revise','sound-primary');
  const copy=action('COPY CODE','sound-copy','sound-secondary');
  const save=action('SAVE AS NEW COMPOSITION','sound-save','sound-secondary');
  const test=action('AUDITION','sound-audition','sound-secondary');
  const halt=action('STOP ALL AUDIO','sound-stop','sound-secondary');
- resultActions.append(revise,copy,save,test,halt);
+ resultActions.append(revise,useError,copy,save,test,halt);
  const caution=node('p','sound-fine',
   'AUDITION explicitly runs the displayed code on the shared SuperCollider server. It can affect other playing sounds. STOP ALL AUDIO also stops your current composition. Generated code is untrusted until tested.');
- scratch.append(resultTop,code,review,explanation,revisionLabel,revision,resultActions,caution);
+ scratch.append(resultTop,versionsBar,code,review,explanation,revisionLabel,revision,resultActions,caution);
  const footer=node('p','sound-fine',
-  'OpenRouter is restricted to its free-model route. Puter uses your own monthly allowance. No developer key is used, no paid OpenRouter models are requested, and no automatic retry is made.');
- box.append(head,label,provider,authPanel,promptLabel,description,presets,includeWrap,privacy,requestActions,status,scratch,footer);
+  'OpenRouter offers only its free-model route or verified free variants. Puter uses your own monthly allowance. No developer key, paid OpenRouter model, or automatic retry is used. Draft versions stay only in this browser session until you save them as compositions.');
+ box.append(head,label,provider,modelWrap,authPanel,promptLabel,description,presets,includeWrap,privacy,requestActions,status,scratch,footer);
  host.append(box);
  let key='';let puterLoaded=false;let pending=false;let latest=null;let currentAbort=null;
+ let freeModelIds=new Set();
+ let versions=[],currentVersion=-1;
+ try{
+   const stored=normalizeSoundDrafts(JSON.parse(sessionStorage.getItem(RESULTS_KEY)||'null'));
+   versions=stored.entries;currentVersion=versions.length?stored.current:-1;
+ }catch{} 
  try{key=sessionStorage.getItem(AUTH_KEY)||'';}catch{}
  try{
    const draft=sessionStorage.getItem(PROMPT_KEY);
@@ -167,6 +192,7 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
  }
  function refreshAuth(){
    const open=provider.value==='openrouter';
+   modelWrap.hidden=!open;
    connect.hidden=!open||!!key;disconnect.hidden=!open||!key;
    alternate.hidden=!open||!!key;
    puterLoad.hidden=open||puterLoaded;
@@ -179,6 +205,27 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
        'Puter library not loaded. LOAD PUTER first.';
  }
  provider.onchange=()=>{allowance.hidden=true;manual.hidden=true;refreshAuth()};
+ loadModels.onclick=async()=>{
+   loadModels.disabled=true;
+   setStatus('Checking the current OpenRouter free-model catalog. This does not use a generation request.');
+   try{
+     const response=await fetch(ENDPOINT+'/models?output_modalities=text',{cache:'no-store'});
+     if(!response.ok)throw Error('HTTP '+response.status);
+     const models=listVerifiedFreeModels(await response.json());
+     if(!models.length)throw Error('No verified free chat models were returned.');
+     const previous=modelSelect.value;
+     modelSelect.replaceChildren(node('option','','Automatic · free models router'));
+     modelSelect.options[0].value=OPENROUTER_FREE_MODEL;
+     freeModelIds=new Set(models.map(m=>m.id));
+     for(const m of models){
+       const choice=node('option','',m.name+' · '+m.id);
+       choice.value=m.id;modelSelect.append(choice);
+     }
+     modelSelect.value=freeModelIds.has(previous)?previous:OPENROUTER_FREE_MODEL;
+     setStatus(models.length+' verified free models available. Choosing a model uses no quota until GENERATE.');
+   }catch(e){setStatus('Could not load free models; Automatic remains available: '+e.message,true)}
+   finally{loadModels.disabled=false}
+ };
  disconnect.onclick=()=>{
    key='';try{sessionStorage.removeItem(AUTH_KEY)}catch{}
    refreshAuth();setStatus('OpenRouter disconnected from this browser session.');
@@ -292,6 +339,58 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
    cancel.disabled=true;
    setStatus('Cancellation requested. A provider may still count an already-started request.');
  };
+ function storeVersions(){
+   try{
+     const stored=normalizeSoundDrafts({entries:versions,current:currentVersion});
+     sessionStorage.setItem(RESULTS_KEY,JSON.stringify(stored));
+   }catch{
+     setStatus('Browser session storage unavailable. Save a composition to keep this result.',true);
+   }
+ }
+ function showVersion(index){
+   if(index<0||index>=versions.length)return;
+   currentVersion=index;
+   const item=versions[index];
+   latest={...item,inspection:inspectSoundCode(item.code)};
+   scratch.hidden=false;
+   code.textContent=item.code;
+   explanation.textContent=item.explanation||
+     'Generated SuperCollider code. Examine it before auditioning.';
+   resultModel.textContent=item.provider.toUpperCase()+' · '+item.model;
+   description.value=item.description||description.value;
+   renderInspection(latest.inspection);
+   versionCount.textContent='VERSION '+(index+1)+' / '+versions.length;
+   prev.disabled=index===0;next.disabled=index===versions.length-1;
+   storeVersions();
+ }
+ function addVersion(item){
+   versions=versions.slice(0,currentVersion+1);
+   versions.push({
+     code:item.code,explanation:item.explanation,
+     description:item.description,model:item.model,provider:item.provider
+   });
+   versions=versions.slice(-5);
+   showVersion(versions.length-1);
+ }
+ prev.onclick=()=>{showVersion(currentVersion-1);setStatus('Previous version restored. No model request used.')};
+ next.onclick=()=>{showVersion(currentVersion+1);setStatus('Next version restored. No model request used.')};
+ clearDraft.onclick=()=>{
+   if(!confirm('Clear all unsaved Sound Designer drafts from this browser session? Saved compositions are not affected.'))return;
+   versions=[];currentVersion=-1;latest=null;scratch.hidden=true;
+   try{sessionStorage.removeItem(RESULTS_KEY)}catch{}
+   setStatus('Session drafts cleared. Saved compositions are unchanged.');
+ };
+ useError.onclick=()=>{
+   const excerpt=recentSuperColliderError(document.querySelector('#console')?.textContent);
+   if(!excerpt){
+     setStatus('No recent SuperCollider error found in the console. Audition the sketch first or enter a revision.',true);
+     return;
+   }
+   revision.value=('Repair this SuperCollider execution error while preserving the requested sound.\n'+
+     excerpt+'\nReturn a complete corrected instrument.').slice(0,1500);
+   revision.focus();
+   setStatus('The latest error was added to the revision field for review. It will not be sent until you press REVISE.');
+ };
  function renderInspection(inspection){
    review.replaceChildren();
    for(const issue of inspection.blockers){
@@ -309,6 +408,10 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
  async function generateSound(isRevision=false){
    if(pending)return;
    const chosen=provider.value;
+   const chosenModel=modelSelect.value||OPENROUTER_FREE_MODEL;
+   if(chosen==='openrouter'&&chosenModel!==OPENROUTER_FREE_MODEL&&!freeModelIds.has(chosenModel)){
+     setStatus('Choose Automatic or a currently verified free model.',true);return;
+   }
    if(chosen==='openrouter'&&!key){setStatus('Connect your OpenRouter account before generating.',true);return}
    if(chosen==='puter'&&!window.puter?.auth?.isSignedIn?.()){
      setStatus('Load Puter and sign in before generating.',true);return;
@@ -331,17 +434,13 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
      '. This uses one request from your own account.');
    try{
      const answer=await providerRequest({
-       provider:chosen,messages,key,puter:window.puter,signal:controller.signal
+       provider:chosen,messages,key,puter:window.puter,signal:controller.signal,
+       openRouterModel:chosenModel
      });
      if(controller.signal.aborted)return;
      const parsed=parseSoundResponse(answer.text);
      const inspection=inspectSoundCode(parsed.code);
-     latest={...parsed,inspection,description:description.value,model:answer.model,provider:chosen};
-     scratch.hidden=false;
-     code.textContent=parsed.code;explanation.textContent=parsed.explanation||
-       'Generated SuperCollider code. Examine it before auditioning.';
-     renderInspection(inspection);
-     resultModel.textContent=chosen.toUpperCase()+' · '+answer.model;
+     addVersion({...parsed,inspection,description:description.value,model:answer.model,provider:chosen});
      setStatus((isRevision?'Revised':'Generated')+' instrument received'+prettyUsage(answer.usage)+
        '. Your current composition is unchanged.');
      scratch.scrollIntoView({block:'nearest',behavior:'smooth'});
@@ -384,12 +483,15 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
  };
  halt.onclick=()=>{stopAudio();setStatus('Stop command sent to all running SuperCollider sounds.')};
  refreshAuth();
+ if(versions.length){showVersion(currentVersion);setStatus('Restored '+versions.length+' unsaved sound version(s) from this browser session. No quota used.')}
  oauthReturn();
  return {
    open(){window.setSuperCollisionView?.('design')},
    get latest(){return latest},
    get connected(){return !!key},
    get provider(){return provider.value},
-   get pending(){return pending}
+   get pending(){return pending},
+   get versionCount(){return versions.length},
+   get currentVersion(){return currentVersion}
  };
 }

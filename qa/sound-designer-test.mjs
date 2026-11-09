@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import {
  SOUND_PRESETS,SOUND_SYSTEM_PROMPT,buildSoundMessages,responseText,parseSoundResponse,
  describeProviderFailure,isFreeOpenRouterModel,OPENROUTER_FREE_MODEL,
- inspectSoundCode,formatPuterAllowance
+ inspectSoundCode,formatPuterAllowance,
+ listVerifiedFreeModels,recentSuperColliderError,normalizeSoundDrafts
 } from '../sound-designer-core.mjs';
 const FENCE=String.fromCharCode(96).repeat(3);
 assert.equal(SOUND_PRESETS.length,5);
@@ -53,5 +54,35 @@ assert.match(formatPuterAllowance({
  allowanceInfo:{remaining:50000000,monthUsageAllowance:100000000}
 }),/\$0\.50 of \$1\.00.*50\.0%/);
 assert.match(formatPuterAllowance({allowanceInfo:{remaining:12}}),/did not return/);
-console.log('Sound Designer prompt, quota formatting, source inspection, and error handling passed.');
+
+const models=listVerifiedFreeModels({data:[
+ {id:'community/coding-good:free',name:'Coding Good',description:'Programming and code generation',
+  pricing:{prompt:'0',completion:'0'},context_length:64000,
+  architecture:{input_modalities:['text'],output_modalities:['text']}},
+ {id:'paid/normal',name:'Paid',pricing:{prompt:'0',completion:'0'},context_length:64000},
+ {id:'community/deceptive:free',name:'Deceptive',pricing:{prompt:'0.0002',completion:'0'},context_length:64000},
+ {id:'community/audio-only:free',name:'Audio only',pricing:{prompt:'0',completion:'0'},context_length:64000,
+  architecture:{output_modalities:['audio']}},
+ {id:'community/short:free',name:'Too short',pricing:{prompt:'0',completion:'0'},context_length:2000}
+]});
+assert.deepEqual(models.map(m=>m.id),['community/coding-good:free']);
+assert.deepEqual(listVerifiedFreeModels(null),[]);
+assert.match(recentSuperColliderError('INFO: running\nERROR: Message not understood\nstack detail\n'),/ERROR: Message not understood/);
+assert.equal(recentSuperColliderError('everything executed cleanly'),'');
+const versions=normalizeSoundDrafts({
+ entries:[
+  {code:'{ SinOsc.ar(1) }.play',description:'Test',model:'free',provider:'openrouter'},
+  {code:'invalid',model:'unknown',provider:'other'},
+  {code:'{ SinOsc.ar(2) }.play',description:'Second',provider:'puter',model:'nano'}
+ ],
+ current:1
+});
+assert.equal(versions.entries.length,2);
+assert.equal(versions.current,1);
+assert.deepEqual(versions.entries.map(x=>x.provider),['openrouter','puter']);
+assert.deepEqual(normalizeSoundDrafts(null),{version:1,entries:[],current:0});
+assert.equal(normalizeSoundDrafts({entries:Array.from({length:10},(_,i)=>({
+ code:'{ SinOsc.ar('+i+') }.play;',provider:'puter',model:'nano'})),current:9}).entries.length,5);
+console.log('Sound Designer prompt, free-model filtering, version restoration, console diagnostics, quota formatting and source checks passed.');
+
 

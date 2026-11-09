@@ -58,6 +58,18 @@ try{
          choices:[{message:{content:FENCE+'supercollider\n'+rawCode+'\n'+FENCE+'\nSimple test sketch.'}}],
          usage:{prompt_tokens:1120,completion_tokens:500}})});
    });
+   await page.route('https://openrouter.ai/api/v1/models?output_modalities=text',async route=>{
+     await route.fulfill({status:200,contentType:'application/json',
+       headers:{'access-control-allow-origin':'*'},
+       body:JSON.stringify({data:[
+         {id:'sample/working-code:free',name:'Working Coding Model',description:'Programming',
+           context_length:64000,pricing:{prompt:'0',completion:'0'},
+           architecture:{input_modalities:['text'],output_modalities:['text']}},
+         {id:'sample/actually-paid:free',name:'Deceptive',
+           context_length:64000,pricing:{prompt:'0.001',completion:'0'}},
+         {id:'sample/paid',name:'Paid',context_length:64000,pricing:{prompt:'0',completion:'0'}}
+       ]})});
+   });
    await page.goto(base,{waitUntil:'domcontentloaded'});
    await page.waitForFunction(()=>!!window.SCSoundDesigner,{timeout:12000});
    assert.equal(await page.evaluate(()=>crossOriginIsolated),true,'Should emulate production COOP/COEP');
@@ -78,11 +90,17 @@ try{
    assert.ok(geometry.tabRight<=geometry.modesRight+2,'SOUND tab must fit '+JSON.stringify(geometry));
    assert.ok((await page.locator('#sound-auth-status').innerText()).includes('connected'));
    assert.equal(requests.length,startCount,'No requests before explicit GENERATE');
+   await page.locator('#sound-load-models').click();
+   await page.waitForFunction(()=>document.querySelector('#sound-model')?.options.length===2);
+   assert.ok((await page.locator('#sound-model option').allTextContents()).some(x=>x.includes('Working Coding Model')));
+   assert.equal((await page.locator('#sound-model option').allTextContents()).some(x=>x.includes('Deceptive')),false);
+   assert.equal(requests.length,startCount,'Loading free models must not spend a generation request');
+   await page.locator('#sound-model').selectOption('sample/working-code:free');
    await page.locator('#sound-generate').click();
    await page.waitForFunction(()=>document.querySelector('#sound-result')?.hidden===false,{timeout:6000});
    assert.ok((await page.locator('#sound-code').innerText()).includes('SynthDef'));
    assert.equal(await page.locator('#code').inputValue(),previous,'generation must not rewrite composition');
-   assert.equal(requests.at(-1).model,'openrouter/free','paid model must not be selected');
+   assert.equal(requests.at(-1).model,'sample/working-code:free','Only a catalog-verified free model may be selected');
    assert.equal(requests.at(-1).usage.include,true,'Request should report actual token usage');
    assert.equal(await page.locator('#sound-audition').isDisabled(),false,'Valid sketch should permit audition');
    assert.ok(!requests.at(-1).messages.at(-1).content.includes(previous),
@@ -101,6 +119,28 @@ try{
    const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('supercollision-projects-v1')||'{}'));
    assert.ok(Object.values(stored).includes(previous),'original composition must remain saved');
    assert.ok(Object.values(stored).some(x=>x.includes('220')),'new composition should be saved');
+
+   await page.locator('#inspector-design').click();
+   const beforeVersions=requests.length;
+   assert.equal(await page.evaluate(()=>window.SCSoundDesigner.versionCount),2);
+   await page.locator('#sound-prev').click();
+   assert.ok((await page.locator('#sound-code').innerText()).includes('300'));
+   await page.locator('#sound-next').click();
+   assert.ok((await page.locator('#sound-code').innerText()).includes('220'));
+   assert.equal(requests.length,beforeVersions,'Browsing previous versions must use no quota');
+   await page.reload({waitUntil:'domcontentloaded'});
+   await page.waitForFunction(()=>window.SCSoundDesigner?.versionCount===2);
+   await page.locator('#inspector-design').click();
+   assert.ok((await page.locator('#sound-code').innerText()).includes('220'),
+     'Latest generated draft should survive reload without spending quota');
+   assert.equal(requests.length,beforeVersions,'Restoring session drafts must use no quota');
+
+   await page.locator('#console').evaluate(el=>{
+     el.textContent='Boot successful\nERROR: Message SinOsc not understood\nstack trace';
+   });
+   await page.locator('#sound-use-error').click();
+   assert.match(await page.locator('#sound-revision').inputValue(),/ERROR: Message SinOsc not understood/);
+   assert.equal(requests.length,beforeVersions,'Preparing a repair message must not send it');
 
    // A model can hallucinate unsafe side effects. Keep code copyable/saveable,
    // but refuse audition if static preflight detects restricted operations.
