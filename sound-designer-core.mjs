@@ -165,3 +165,64 @@ export function formatPuterAllowance(value){
  return 'Account balance: '+remainingText+' of '+dollar(total)+' monthly allowance remaining ('+
    (100*remaining/total).toFixed(1)+'%). The allowance is shared across your Puter apps.';
 }
+
+
+/* OpenRouter's model catalog can contain paid models and free variants.
+ * Only :free variants with explicitly zero prompt AND completion prices can
+ * be selected. Do not offer zero-priced non-:free entries that may require
+ * an account with pre-purchased credits.
+ */
+export function listVerifiedFreeModels(payload,limit=36){
+ const entries=Array.isArray(payload?.data)?payload.data:[];
+ const candidates=entries.filter(m=>{
+   if(!isFreeOpenRouterModel(m?.id)||m.id===OPENROUTER_FREE_MODEL)return false;
+   if(!m?.pricing||Number(m.pricing.prompt)!==0||Number(m.pricing.completion)!==0)return false;
+   const input=m.architecture?.input_modalities;
+   const output=m.architecture?.output_modalities;
+   if(Array.isArray(input)&&!input.includes('text'))return false;
+   if(Array.isArray(output)&&!output.includes('text'))return false;
+   return (m.context_length||0)>=8000;
+ });
+ const score=m=>/\b(code|coding|programming|developer|software)\b/i.test(
+   (m.name||'')+' '+(m.description||'').slice(0,260))?1:0;
+ candidates.sort((a,b)=>score(b)-score(a)||
+   (b.context_length||0)-(a.context_length||0)||
+   String(a.name||a.id).localeCompare(String(b.name||b.id)));
+ const unique=new Set();
+ return candidates.filter(x=>!unique.has(x.id)&&unique.add(x.id)).slice(0,limit)
+   .map(m=>({id:m.id,name:String(m.name||m.id).slice(0,110),
+     contextLength:m.context_length||0}));
+}
+
+export function recentSuperColliderError(log){
+ const text=String(log||'').slice(-30000);
+ const matches=[...text.matchAll(/\b(?:ERROR|FAILURE|Exception|Parse error|Syntax Error)\b/gi)];
+ if(!matches.length)return '';
+ const last=matches.at(-1).index;
+ // Include a preceding line if available, but never silently transmit the
+ // entire user console. The user reviews this excerpt before clicking REVISE.
+ const from=Math.max(0,text.lastIndexOf('\n',Math.max(0,last-2))+1);
+ return text.slice(from,from+1200).trim();
+}
+
+const MAX_DRAFTS=5;
+export function normalizeSoundDrafts(input){
+ const data=input&&typeof input==='object'?input:{};
+ const rows=Array.isArray(data.entries)?data.entries:[];
+ const entries=[];
+ for(const entry of rows.slice(-MAX_DRAFTS)){
+   if(!entry||typeof entry!=='object'||typeof entry.code!=='string')continue;
+   if(!entry.code.trim()||entry.code.length>36000)continue;
+   if(!['openrouter','puter'].includes(entry.provider))continue;
+   entries.push({
+     code:entry.code,
+     explanation:String(entry.explanation||'').slice(0,4000),
+     description:String(entry.description||'').slice(0,1800),
+     provider:entry.provider,
+     model:String(entry.model||'unknown').slice(0,120)
+   });
+ }
+ let current=Number.isInteger(data.current)?data.current:entries.length-1;
+ current=Math.max(0,Math.min(Math.max(0,entries.length-1),current));
+ return {version:1,entries,current};
+}

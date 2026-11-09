@@ -72,3 +72,13 @@ body .console-bar .inspector-modes button,body[data-theme] .console-bar .inspect
  border-left:2px solid currentColor;overflow-wrap:anywhere}
 .sound-review .sound-blocker{font-weight:750;border-width:3px}
 .sound-designer button[disabled]{opacity:.5;cursor:not-allowed}
+
+.sound-model-wrap{display:flex;flex-direction:column;gap:5px}
+.sound-model-wrap[hidden]{display:none!important}
+.sound-model-wrap select{min-height:34px}
+.sound-model-wrap button{align-self:flex-start}
+.sound-versions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;
+ padding:5px 0;border-bottom:1px solid color-mix(in srgb,currentColor 25%,transparent)}
+.sound-version-count{font:750 10px/1.3 ui-monospace,monospace}
+.sound-versions button{min-height:28px;padding:3px 6px}
+.sound-versions #sound-clear{margin-left:auto}
