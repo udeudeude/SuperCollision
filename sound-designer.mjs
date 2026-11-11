@@ -5,8 +5,9 @@ import {
  SOUND_PRESETS,buildSoundMessages,responseText,parseSoundResponse,
  describeProviderFailure,OPENROUTER_FREE_MODEL,isFreeOpenRouterModel,
  inspectSoundCode,formatPuterAllowance,
- listVerifiedFreeModels,recentSuperColliderError,normalizeSoundDrafts
-} from './sound-designer-core.mjs?v=3';
+ listVerifiedFreeModels,recentSuperColliderError,normalizeSoundDrafts,
+ PREFERRED_OPENROUTER_CODE_MODEL,OPENROUTER_COMPLETION_TOKENS,completedCodeFence
+} from './sound-designer-core.mjs?v=4';
 
 const AUTH_KEY='supercollision-openrouter-session-key-v1';
 const OAUTH_KEY='supercollision-openrouter-pkce-v1';
@@ -46,7 +47,8 @@ async function providerRequest({provider,messages,key,puter,signal,openRouterMod
    const response=await fetch(ENDPOINT+'/chat/completions',{
      signal,method:'POST',headers:{'Content-Type':'application/json',
        'Authorization':'Bearer '+key,'HTTP-Referer':location.origin,'X-Title':'SuperCollision Sound Designer'},
-     body:JSON.stringify({model,messages,temperature:0.55,max_tokens:3500,
+     body:JSON.stringify({model,messages,temperature:0.45,
+       max_completion_tokens:OPENROUTER_COMPLETION_TOKENS,
        usage:{include:true}})
    });
    const data=await response.json().catch(()=>({}));
@@ -54,9 +56,18 @@ async function providerRequest({provider,messages,key,puter,signal,openRouterMod
      const error=new Error(data?.error?.message||'HTTP '+response.status);
      error.status=response.status;throw error;
    }
-   if(data?.choices?.[0]?.finish_reason==='length')
-     throw Error('The model stopped before completing the code. Try a shorter sound description.');
-   return {text:responseText(data),model:data?.model||model,usage:data?.usage};
+   const text=responseText(data);
+   const cutOff=data?.choices?.[0]?.finish_reason==='length';
+   if(cutOff&&!completedCodeFence(text)){
+     const visible=Number(data?.usage?.completion_tokens||0)-
+       Number(data?.usage?.completion_tokens_details?.reasoning_tokens||0);
+     const detail=Number.isFinite(visible)&&visible>=0?
+       ' (about '+visible+' visible tokens)':'';
+     throw Error('The free model '+(data?.model||model)+
+       ' exhausted its completion allowance before finishing the code'+detail+
+       '. No second request was made. Try a different verified free coding model.');
+   }
+   return {text,model:data?.model||model,usage:data?.usage,codeCompleteButCapped:cutOff};
  }
  if(provider==='puter'){
    if(!puter?.ai?.chat)throw Error('Load Puter and sign in first.');
@@ -97,11 +108,15 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
  const modelLabel=node('label','','FREE OPENROUTER MODEL');
  const modelSelect=node('select');
  modelSelect.id='sound-model';modelSelect.setAttribute('aria-label','Select a free OpenRouter model');
- const automatic=node('option','','Automatic · free models router');
- automatic.value=OPENROUTER_FREE_MODEL;modelSelect.append(automatic);
+ const recommended=node('option','','Recommended · North Mini Code (free)');
+ recommended.value=PREFERRED_OPENROUTER_CODE_MODEL;
+ const automatic=node('option','','Automatic · random free model');
+ automatic.value=OPENROUTER_FREE_MODEL;
+ modelSelect.append(recommended,automatic);
+ modelSelect.value=PREFERRED_OPENROUTER_CODE_MODEL;
  const loadModels=action('FIND AVAILABLE FREE MODELS','sound-load-models','sound-secondary');
  const modelHint=node('p','sound-fine',
-   'Automatic uses an available free model. List current free variants to compare particular models without paying for them.');
+   'Recommended is a free coding model with room for full instruments. Automatic selects a random free model and may produce incomplete code. Find more free models below.');
  modelWrap.append(modelLabel,modelSelect,loadModels,modelHint);
  const authPanel=node('div','sound-auth');
  const authStatus=node('span','sound-auth-status');authStatus.id='sound-auth-status';
@@ -134,7 +149,7 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
  const include=node('input');include.type='checkbox';include.id='sound-include-source';
  includeWrap.append(include,node('span','','Send current composition as additional context (optional)'));
  const privacy=node('p','sound-fine',
-  'Only the description, optional composition context, and previous result when revising are sent to the selected provider. No model request happens until GENERATE or REVISE is pressed.');
+  'Only the description, optional composition context, and previous result when revising are sent to the selected provider. No model request happens until GENERATE or REVISE is pressed. POWER is not needed for generation, only for AUDITION.');
  const generate=action('GENERATE INSTRUMENT','sound-generate','sound-primary');
  const cancel=action('CANCEL REQUEST','sound-cancel','sound-secondary');
  cancel.hidden=true;
@@ -176,7 +191,7 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
  box.append(head,label,provider,modelWrap,authPanel,promptLabel,description,presets,includeWrap,privacy,requestActions,status,scratch,footer);
  host.append(box);
  let key='';let puterLoaded=false;let pending=false;let latest=null;let currentAbort=null;
- let freeModelIds=new Set();
+ let freeModelIds=new Set([PREFERRED_OPENROUTER_CODE_MODEL]);
  let versions=[],currentVersion=-1;
  try{
    const stored=normalizeSoundDrafts(JSON.parse(sessionStorage.getItem(RESULTS_KEY)||'null'));
@@ -214,14 +229,16 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
      const models=listVerifiedFreeModels(await response.json());
      if(!models.length)throw Error('No verified free chat models were returned.');
      const previous=modelSelect.value;
-     modelSelect.replaceChildren(node('option','','Automatic · free models router'));
-     modelSelect.options[0].value=OPENROUTER_FREE_MODEL;
+     const auto=node('option','','Automatic · random free model');
+     auto.value=OPENROUTER_FREE_MODEL;
+     modelSelect.replaceChildren(auto);
      freeModelIds=new Set(models.map(m=>m.id));
      for(const m of models){
        const choice=node('option','',m.name+' · '+m.id);
        choice.value=m.id;modelSelect.append(choice);
      }
-     modelSelect.value=freeModelIds.has(previous)?previous:OPENROUTER_FREE_MODEL;
+     modelSelect.value=freeModelIds.has(previous)||previous===OPENROUTER_FREE_MODEL?
+       previous:OPENROUTER_FREE_MODEL;
      setStatus(models.length+' verified free models available. Choosing a model uses no quota until GENERATE.');
    }catch(e){setStatus('Could not load free models; Automatic remains available: '+e.message,true)}
    finally{loadModels.disabled=false}
@@ -428,7 +445,7 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
    const controller=new AbortController();
    currentAbort=controller;
    cancel.disabled=false;
-   const timeout=setTimeout(()=>controller.abort('timeout'),90000);
+   const timeout=setTimeout(()=>controller.abort('timeout'),240000);
    busy(true);
    setStatus('Request sent to '+(chosen==='openrouter'?'OpenRouter free models':'Puter')+
      '. This uses one request from your own account.');
@@ -442,11 +459,13 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
      const inspection=inspectSoundCode(parsed.code);
      addVersion({...parsed,inspection,description:description.value,model:answer.model,provider:chosen});
      setStatus((isRevision?'Revised':'Generated')+' instrument received'+prettyUsage(answer.usage)+
-       '. Your current composition is unchanged.');
+       (answer.codeCompleteButCapped?
+         '. The model stopped after completing the code; its optional explanation may be truncated.':
+         '. Your current composition is unchanged.'));
      scratch.scrollIntoView({block:'nearest',behavior:'smooth'});
    }catch(e){
      if(controller.signal.aborted)
-       setStatus('Request cancelled or timed out. It may still count toward your provider quota.',true);
+       setStatus('Request cancelled or timed out. Slow free models can take several minutes. It may still count toward your quota.',true);
      else setStatus(describeProviderFailure(e,chosen==='openrouter'?'OpenRouter':'Puter'),true);
    }finally{
      clearTimeout(timeout);

@@ -24,7 +24,9 @@ export const SOUND_SYSTEM_PROMPT = [
  'to limit unexpectedly loud output. Avoid arbitrary server configuration and CmdPeriod.',
  'Avoid known browser-incompatible methods (external file operations, plugins).',
  'Comment major sound components in code.',
- 'After the code block, write 2-4 sentences explaining the sound and 2-5 useful controls.',
+ 'Prefer a self-contained 30-90 line instrument; do not include sprawling composition scaffolding.',
+ 'Close the SuperCollider code fence BEFORE adding any explanation. Code takes priority over commentary.',
+ 'After the closed code block, give two brief sentences and mention 2-4 useful controls.',
  'No JavaScript, no markdown table, no audio file, no invented SuperCollider class.'
 ].join(' ');
 
@@ -47,6 +49,16 @@ export function buildSoundMessages({description,revision='',priorCode='',include
  return messages;
 }
 
+export function completedCodeFence(text){
+ const raw=String(text||'');
+ const fence=/\x60\x60\x60(?:supercollider|sclang|scd|sc)[ \t]*\n[\s\S]*?\x60\x60\x60/i;
+ if(!fence.test(raw))return false;
+ try{
+   const item=parseSoundResponse(raw);
+   const shape=inspectSoundCode(item.code);
+   return !shape.blockers.some(x=>/Unclosed|Mismatched/.test(x));
+ }catch{return false}
+}
 export function responseText(value) {
  if (typeof value==='string') return value;
  const content=value?.message?.content??value?.choices?.[0]?.message?.content??value?.content??value?.text;
@@ -86,6 +98,10 @@ export function describeProviderFailure(error,provider){
  return provider+' error: '+text.slice(0,330);
 }
 
+// Verified free coding model as of November 2026. The general free router
+// remains available as an explicit alternative if this model is unavailable.
+export const PREFERRED_OPENROUTER_CODE_MODEL='cohere/north-mini-code:free';
+export const OPENROUTER_COMPLETION_TOKENS=8192;
 export const OPENROUTER_FREE_MODEL='openrouter/free';
 export function isFreeOpenRouterModel(model){
  return model===OPENROUTER_FREE_MODEL || (/^[a-z0-9._-]+\/[a-z0-9._:-]+:free$/i.test(model));
