@@ -46,6 +46,8 @@ assert.equal(parseSoundResponse(code).code,code);
 assert.throws(()=>parseSoundResponse('This is not code.'),/recognizable/);
 assert.throws(()=>parseSoundResponse(''),/no text/);
 assert.match(describeProviderFailure({status:429},'OpenRouter'),/rate limit/);
+assert.match(describeProviderFailure(new Error('Model hit its output-token limit before finishing the code'),'OpenRouter'),/output-token limit/);
+assert.doesNotMatch(describeProviderFailure(new Error('Model hit its output-token limit before finishing the code'),'OpenRouter'),/out of available credit/);
 assert.match(describeProviderFailure({status:402},'Puter'),/quota/);
 assert.match(describeProviderFailure({status:401},'OpenRouter'),/authorization/);
 
