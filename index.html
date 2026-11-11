@@ -409,6 +409,7 @@ renderProjects();document.addEventListener('visibilitychange',()=>{if(document.v
 import {createLiveActivityUI} from "./live-activity.mjs?v=22";
 import {createPerformanceUI} from "./performance-ui.mjs?v=22";
 import {encodeOsc} from "./performance-engine.mjs?v=22";
+import {createPriorityOscBridge} from "./osc-priority-bridge.mjs?v=1";
 import {createLearning} from "./learning.mjs?v=4";
 import {createLanguageTools} from "./editor-assist.mjs?v=1";
 import {createSoundDesigner} from "./sound-designer.mjs?v=3";
@@ -448,8 +449,35 @@ const liveCode=createLiveActivityUI({editor:code,gutter,overlay:document.querySe
 window.SCActivity=liveCode;
 document.querySelector("#live-activity-debug").onclick=()=>{const report=liveCode.diagnostics();alert(report);try{navigator.clipboard.writeText(report)}catch{}};
 function message(t){state.textContent=t}
-function print(t){learning.offerError(t);if(/ERROR:|FAILURE|WARNING: Server/.test(String(t))){document.querySelector('#console-panel').open=true;state.classList.add('error')}log.textContent+=(String(t)+'\n');if(log.textContent.length>120000)log.textContent=log.textContent.slice(-80000);log.scrollTop=log.scrollHeight}
-document.querySelector('#clear-console').onclick=()=>{log.textContent=''};
+// The language and synthesis engines can print in bursts during a composition.
+// Coalesce console DOM work to one update per visual frame instead of
+// repeatedly replacing and scrolling a growing string per callback.
+let printQueue=[],printScheduled=false;
+function flushPrintQueue(){
+ printScheduled=false;
+ if(!printQueue.length)return;
+ const chunk=printQueue.join('\n')+'\n';
+ printQueue=[];
+ let text=log.textContent+chunk;
+ if(text.length>120000)text=text.slice(-80000);
+ log.textContent=text;
+ log.scrollTop=log.scrollHeight;
+}
+function print(t){
+ const output=String(t);
+ if(/ERROR:|FAILURE|WARNING: Server/.test(output)){
+   learning.offerError(output);
+   document.querySelector('#console-panel').open=true;
+   state.classList.add('error');
+ }
+ printQueue.push(output);
+ if(printQueue.length>2000)printQueue=printQueue.slice(-1000);
+ if(!printScheduled){
+   printScheduled=true;
+   requestAnimationFrame(flushPrintQueue);
+ }
+}
+document.querySelector('#clear-console').onclick=()=>{printQueue=[];log.textContent=''};
 let booting=false;
 function requestServerBoot(){
  if(!lang||!languageReady||serverReady||serverBootRequested)return;
@@ -515,18 +543,20 @@ document.querySelector('#engine').onclick=async()=>{
     const visibleOutput=liveCode.consumePrint(output.replaceAll(SERVER_READY_MARKER,'').replaceAll(SERVER_FAILED_MARKER,''));
     if(visibleOutput.trim())print(visibleOutput);
   };synth.onStdout=print;
-  lang.onOsc=osc=>{
-    let controlReplies=[];
-    try{liveCode.outgoing(osc);controlReplies=performanceUI.outgoing(osc)||[]}catch(e){console.warn('Activity observer:',e)}
-    synth.sendOsc(new Uint8Array(osc));
-    for(const packet of controlReplies)synth.sendOsc(packet);
-  };
-  synth.onOscReply=osc=>{
-    let controlReplies=[];
-    try{liveCode.incoming(osc);controlReplies=performanceUI.incoming(osc)||[]}catch(e){console.warn('Activity observer:',e)}
-    lang.sendOsc(osc);
-    for(const packet of controlReplies)synth.sendOsc(packet);
-  };
+  // Deliver each original OSC packet to its audio/language destination first.
+  // Optional visual observers may be expensive under dense musical activity.
+  // They must never hold an incoming note or server reply behind their parsing.
+  const oscBridge=createPriorityOscBridge({
+    sendToSynth:bytes=>synth.sendOsc(bytes),
+    sendToLanguage:bytes=>lang.sendOsc(bytes),
+    observeOutgoing:[bytes=>liveCode.outgoing(bytes),bytes=>performanceUI.outgoing(bytes)],
+    observeIncoming:[bytes=>liveCode.incoming(bytes),bytes=>performanceUI.incoming(bytes)],
+    sendControl:bytes=>synth.sendOsc(bytes),
+    onObserverError:(error,direction)=>console.warn('Activity observer ('+direction+'):',error)
+  });
+  window.SCOscBridge=oscBridge;
+  lang.onOsc=oscBridge.fromLanguage;
+  synth.onOscReply=oscBridge.fromSynth;
   // The synthesis hook must exist before interpreter boot callbacks can use it.
   window.bootServer=options=>{if(options.numOutputBusChannels)setTimeout(async()=>{try{await synth.boot(options)}catch(e){serverBootRequested=false;print('Server boot: '+e.message);message('Audio server failed · Press POWER to retry')}},100)};
   lang.bootInterpreter();
