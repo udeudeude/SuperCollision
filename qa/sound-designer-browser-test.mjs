@@ -52,10 +52,15 @@ try{
      const rawCode=mockMode==='unsafe'?
        '(\nFile.open("scratch", "w");\n{ SinOsc.ar(440) }.play;\n)':
        (requests.length%2?generated:revised);
+     const fullCode=FENCE+'supercollider\n'+rawCode+'\n'+FENCE+'\nSimple test sketch.';
+     const responseText=mockMode==='truncated'?
+       FENCE+'supercollider\n(\n{ SinOsc.ar(440, 0, 0.1) }.play;':
+       fullCode;
      await route.fulfill({status:200,headers:{'access-control-allow-origin':'*'},
        contentType:'application/json',
        body:JSON.stringify({model:'cohere/north-mini-code:free',
-         choices:[{message:{content:FENCE+'supercollider\n'+rawCode+'\n'+FENCE+'\nSimple test sketch.'}}],
+         choices:[{finish_reason:['truncated','capped-after-code'].includes(mockMode)?'length':'stop',
+           message:{content:responseText}}],
          usage:{prompt_tokens:1120,completion_tokens:500}})});
    });
    await page.route('https://openrouter.ai/api/v1/models?output_modalities=text',async route=>{
@@ -90,6 +95,8 @@ try{
    assert.ok(geometry.tabRight<=geometry.modesRight+2,'SOUND tab must fit '+JSON.stringify(geometry));
    assert.ok((await page.locator('#sound-auth-status').innerText()).includes('connected'));
    assert.equal(requests.length,startCount,'No requests before explicit GENERATE');
+   assert.equal(await page.locator('#sound-model').inputValue(),'cohere/north-mini-code:free',
+      'Recommended free coding model should be selected by default');
    await page.locator('#sound-load-models').click();
    await page.waitForFunction(()=>document.querySelector('#sound-model')?.options.length===2);
    assert.ok((await page.locator('#sound-model option').allTextContents()).some(x=>x.includes('Working Coding Model')));
@@ -102,6 +109,8 @@ try{
    assert.equal(await page.locator('#code').inputValue(),previous,'generation must not rewrite composition');
    assert.equal(requests.at(-1).model,'sample/working-code:free','Only a catalog-verified free model may be selected');
    assert.equal(requests.at(-1).usage.include,true,'Request should report actual token usage');
+   assert.equal(requests.at(-1).max_completion_tokens,8192,'Model needs a sufficient completion budget');
+   assert.equal(requests.at(-1).max_tokens,undefined,'Deprecated max_tokens must not be used');
    assert.equal(await page.locator('#sound-audition').isDisabled(),false,'Valid sketch should permit audition');
    assert.ok(!requests.at(-1).messages.at(-1).content.includes(previous),
      'Source must not be sent by default');
@@ -134,6 +143,21 @@ try{
    assert.ok((await page.locator('#sound-code').innerText()).includes('220'),
      'Latest generated draft should survive reload without spending quota');
    assert.equal(requests.length,beforeVersions,'Restoring session drafts must use no quota');
+
+   mockMode='truncated';
+   await page.locator('#sound-generate').click();
+   await page.waitForFunction(()=>document.querySelector('#sound-status')?.textContent?.includes('exhausted'));
+   assert.equal(await page.evaluate(()=>window.SCSoundDesigner.versionCount),2,
+      'Truncated code must not replace a complete previous version');
+   assert.ok((await page.locator('#sound-code').innerText()).includes('220'));
+   mockMode='capped-after-code';
+   await page.locator('#sound-generate').click();
+   await page.waitForFunction(()=>window.SCSoundDesigner?.versionCount===3);
+   assert.match(await page.locator('#sound-status').innerText(),/stopped after completing the code/);
+   assert.ok((await page.locator('#sound-code').innerText()).includes('SynthDef'));
+   assert.equal(await page.locator('#sound-audition').isDisabled(),false,
+      'Complete fenced code can be recovered even if the explanation is truncated');
+   mockMode='normal';
 
    await page.locator('#console').evaluate(el=>{
      el.textContent='Boot successful\nERROR: Message SinOsc not understood\nstack trace';

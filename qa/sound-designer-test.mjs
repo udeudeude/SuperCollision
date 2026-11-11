@@ -3,10 +3,19 @@ import {
  SOUND_PRESETS,SOUND_SYSTEM_PROMPT,buildSoundMessages,responseText,parseSoundResponse,
  describeProviderFailure,isFreeOpenRouterModel,OPENROUTER_FREE_MODEL,
  inspectSoundCode,formatPuterAllowance,
- listVerifiedFreeModels,recentSuperColliderError,normalizeSoundDrafts
+ listVerifiedFreeModels,recentSuperColliderError,normalizeSoundDrafts,
+ PREFERRED_OPENROUTER_CODE_MODEL,OPENROUTER_COMPLETION_TOKENS,completedCodeFence
 } from '../sound-designer-core.mjs';
 const FENCE=String.fromCharCode(96).repeat(3);
 assert.equal(SOUND_PRESETS.length,5);
+assert.equal(PREFERRED_OPENROUTER_CODE_MODEL,'cohere/north-mini-code:free');
+assert.equal(isFreeOpenRouterModel(PREFERRED_OPENROUTER_CODE_MODEL),true);
+assert.ok(OPENROUTER_COMPLETION_TOKENS>=8000);
+assert.match(SOUND_SYSTEM_PROMPT,/Close the SuperCollider code fence/);
+const complete='\x60\x60\x60supercollider\n(\n{ SinOsc.ar(440,0,0.1) }.play;\n)\n\x60\x60\x60\nExplain';
+assert.equal(completedCodeFence(complete),true);
+assert.equal(completedCodeFence('\x60\x60\x60supercollider\n(\n{ SinOsc.ar(440,0,0.1) }.play;'),false);
+assert.equal(completedCodeFence('Nothing here.'),false);
 assert.ok(SOUND_SYSTEM_PROMPT.includes('s.waitForBoot'));
 assert.ok(SOUND_SYSTEM_PROMPT.includes('doneAction:2'));
 assert.ok(isFreeOpenRouterModel(OPENROUTER_FREE_MODEL));
