@@ -64,7 +64,7 @@ async function providerRequest({provider,messages,key,puter,signal,openRouterMod
      const detail=Number.isFinite(visible)&&visible>=0?
        ' (about '+visible+' visible tokens)':'';
      throw Error('The free model '+(data?.model||model)+
-       ' exhausted its completion allowance before finishing the code'+detail+
+       ' hit its output-token limit before finishing the code'+detail+
        '. No second request was made. Try a different verified free coding model.');
    }
    return {text,model:data?.model||model,usage:data?.usage,codeCompleteButCapped:cutOff};
