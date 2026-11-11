@@ -74,6 +74,10 @@ try{
  if(await page.locator('#code').inputValue()!==starter)throw Error('Boot modified user code');
  // The server-confirmed note test below uses a named SynthDef. Anonymous
  // Function.play may hide /s_new in a binary /d_recv completion bundle.
+ const bridge=await page.evaluate(()=>window.SCOscBridge?.diagnostics());
+ console.log('PRIORITY OSC BRIDGE:',bridge);
+ if(!bridge||bridge.outgoingCount===0||bridge.incomingCount===0)
+   throw Error('Priority bridge is not forwarding real language and audio-engine messages');
  console.log('PASS: POWER booted audio and evaluated the untouched starter Synth');
  await page.locator('#panic').click();
  await page.waitForTimeout(300);
