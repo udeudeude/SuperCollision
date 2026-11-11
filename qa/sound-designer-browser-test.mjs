@@ -146,7 +146,7 @@ try{
 
    mockMode='truncated';
    await page.locator('#sound-generate').click();
-   await page.waitForFunction(()=>document.querySelector('#sound-status')?.textContent?.includes('exhausted'));
+   await page.waitForFunction(()=>document.querySelector('#sound-status')?.textContent?.includes('output-token limit'));
    assert.equal(await page.evaluate(()=>window.SCSoundDesigner.versionCount),2,
       'Truncated code must not replace a complete previous version');
    assert.ok((await page.locator('#sound-code').innerText()).includes('220'));
@@ -158,13 +158,14 @@ try{
    assert.equal(await page.locator('#sound-audition').isDisabled(),false,
       'Complete fenced code can be recovered even if the explanation is truncated');
    mockMode='normal';
+   const beforeErrorRequests=requests.length;
 
    await page.locator('#console').evaluate(el=>{
      el.textContent='Boot successful\nERROR: Message SinOsc not understood\nstack trace';
    });
    await page.locator('#sound-use-error').click();
    assert.match(await page.locator('#sound-revision').inputValue(),/ERROR: Message SinOsc not understood/);
-   assert.equal(requests.length,beforeVersions,'Preparing a repair message must not send it');
+   assert.equal(requests.length,beforeErrorRequests,'Preparing a repair message must not send it');
 
    // A model can hallucinate unsafe side effects. Keep code copyable/saveable,
    // but refuse audition if static preflight detects restricted operations.
