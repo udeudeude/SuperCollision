@@ -98,7 +98,7 @@ try{
    assert.equal(await page.locator('#sound-model').inputValue(),'cohere/north-mini-code:free',
       'Recommended free coding model should be selected by default');
    await page.locator('#sound-load-models').click();
-   await page.waitForFunction(()=>document.querySelector('#sound-model')?.options.length===2);
+   await page.waitForFunction(()=>[...document.querySelector('#sound-model')?.options||[]].some(x=>x.value==='sample/working-code:free'));
    assert.ok((await page.locator('#sound-model option').allTextContents()).some(x=>x.includes('Working Coding Model')));
    assert.equal((await page.locator('#sound-model option').allTextContents()).some(x=>x.includes('Deceptive')),false);
    assert.equal(requests.length,startCount,'Loading free models must not spend a generation request');
