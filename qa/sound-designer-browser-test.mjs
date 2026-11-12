@@ -207,6 +207,41 @@ try{
    assert.ok((await page.locator('#sound-code').innerText()).includes('300'));
    assert.equal(await page.evaluate(()=>window.__puterCall.options.normalize),true);
    assert.equal(await page.evaluate(()=>window.__puterCall.options.fallback),false,'No automatic provider fallback');
+
+   // Incomplete, user-funded Puter output must not erase a valid draft or
+   // silently launch another request.
+   const beforePuterCode=await page.locator('#sound-code').innerText();
+   const beforePuterCount=await page.evaluate(()=>window.SCSoundDesigner.versionCount);
+   await page.evaluate(()=>{
+     window.__puterCalls=0;
+     window.puter.ai.chat=async()=>{
+       window.__puterCalls++;
+       const nl=String.fromCharCode(10),fence=String.fromCharCode(96).repeat(3);
+       return {message:{content:fence+'supercollider'+nl+'('+nl+'{ SinOsc.ar(333,0,0.1) }.play;'},
+         finish_reason:'length',model:'gpt-5.4-nano'};
+     };
+   });
+   await page.locator('#sound-generate').click();
+   await page.waitForFunction(()=>document.querySelector('#sound-status')?.textContent?.includes('output-token limit'));
+   assert.equal(await page.evaluate(()=>window.SCSoundDesigner.versionCount),beforePuterCount);
+   assert.equal(await page.locator('#sound-code').innerText(),beforePuterCode);
+   assert.equal(await page.evaluate(()=>window.__puterCalls),1,'No implicit retry on incomplete Puter output');
+
+   // If the code block is complete, retain it even when the explanation
+   // reaches the output limit, without charging for a second request.
+   await page.evaluate(()=>{
+     window.puter.ai.chat=async()=>{
+       window.__puterCalls++;
+       const nl=String.fromCharCode(10),fence=String.fromCharCode(96).repeat(3);
+       return {message:{content:fence+'supercollider'+nl+'('+nl+
+         '{ SinOsc.ar(777,0,0.1) }.play;'+nl+')'+nl+fence+nl},
+         finish_reason:'length',model:'gpt-5.4-nano'};
+     };
+   });
+   await page.locator('#sound-generate').click();
+   await page.waitForFunction(()=>document.querySelector('#sound-code')?.textContent?.includes('777')&&!window.SCSoundDesigner.pending);
+   assert.match(await page.locator('#sound-status').innerText(),/stopped after completing the code/);
+   assert.equal(await page.evaluate(()=>window.__puterCalls),2,'Exactly one request per click');
    await ctx.close();
    console.log('Sound Designer browser flows passed '+width+' px');
  }

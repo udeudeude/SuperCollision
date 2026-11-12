@@ -77,10 +77,14 @@ async function providerRequest({provider,messages,key,puter,signal,openRouterMod
      model:'gpt-5.4-nano',normalize:true,max_tokens:3500,
      temperature:0.5,stream:false,fallback:false,signal
    });
-   if(response?.finish_reason==='length')
-     throw Error('The model stopped before completing the code. Try a shorter description.');
-   return {text:responseText(response),model:response?.model||'gpt-5.4-nano',
-     usage:response?.usage||response?.usageDetails};
+   const text=responseText(response);
+   const cutOff=response?.finish_reason==='length';
+   // Like OpenRouter, preserve a completed instrument if only the optional
+   // explanation was cut short. Never retry a user-funded request automatically.
+   if(cutOff&&!completedCodeFence(text))
+     throw Error('The Puter model hit its output-token limit before finishing the code. No second request was made. Try a shorter description or a different model.');
+   return {text,model:response?.model||'gpt-5.4-nano',
+     usage:response?.usage||response?.usageDetails,codeCompleteButCapped:cutOff};
  }
  throw Error('Unknown provider');
 }
