@@ -258,10 +258,16 @@ export function createLearning({editor,host,modeSelect,openButton,onChange=()=>{
   }
   function refreshCue(){
     if(mode!=='guided'||dismissed){
-      openButton.classList.remove('learning-has-suggestions');return;
+      openButton.classList.remove('learning-has-suggestions');
+      openButton.title='Explain selected code and browse lessons';
+      openButton.setAttribute('aria-label','Learn: code explanations and lessons');
+      return;
     }
     const available=contextualSuggestions(editor.value);
-    openButton.title=available.length?available.length+' optional lessons from your composition':'No contextual lessons for this code yet';
+    openButton.title=available.length?available.length+' optional lessons for this composition. Open Learn to explore.':'Learn: explain selected code or browse lessons';
+    openButton.setAttribute('aria-label',available.length?
+      'Learn: '+available.length+' contextual lessons available':
+      'Learn: code explanations and lessons');
     openButton.classList.toggle('learning-has-suggestions',available.length>0);
   }
   function showSuggestions(){

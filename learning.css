@@ -55,6 +55,5 @@ body #inspector-learn[hidden]{display:none!important}
 .learning-predictions button[aria-pressed=true]{
  background:color-mix(in srgb,currentColor 18%,transparent);text-decoration:underline}
 .learning-audition-note{font-size:10px;opacity:.8}
-body #inspector-learn.learning-has-suggestions::after{
- content:"";display:inline-block;width:3px;height:3px;margin-left:3px;
- border-radius:50%;background:currentColor;vertical-align:middle;opacity:.65}
+/* Lesson availability is conveyed in the Learn tab title and accessible label
+   instead of an unexplained visual dot. */

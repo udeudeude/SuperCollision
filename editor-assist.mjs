@@ -47,7 +47,7 @@ export function createLanguageTools({editor,host,getLearningMode=()=> 'guided',o
  const frame=editor.closest('.editor-frame');
  const tray=element('div','completion-tray');tray.id='completion-tray';tray.hidden=true;
  tray.setAttribute('role','region');tray.setAttribute('aria-label','Code suggestions and argument guidance');
- frame.insertAdjacentElement('afterend',tray);
+ frame.insertAdjacentElement('beforebegin',tray);
  // A touch on the completion tray should not dismiss the keyboard or move the
  // textarea insertion point before the selection is accepted.
  tray.addEventListener('pointerdown',event=>{if(event.target.closest('button'))event.preventDefault()});
@@ -181,7 +181,7 @@ export function createLanguageTools({editor,host,getLearningMode=()=> 'guided',o
  }
  function renderSuggestions(info){
    const label=element('p','completion-label',
-     info.kind==='method'?'METHODS OF '+info.owner:'CLASS SUGGESTIONS');
+     info.kind==='method'?'METHOD SUGGESTIONS · '+info.owner:'CODE SUGGESTIONS · choose to insert');
    const row=element('div','completion-scroll');
    for(const item of info.items){
      const b=makeChoiceButton(item.name,item.summary||item.kind,()=>{
@@ -225,15 +225,26 @@ export function createLanguageTools({editor,host,getLearningMode=()=> 'guided',o
    }
  }
  function renderSignature(info){
-   const label=element('div','completion-label',
-     info.signature+(info.verified?' · VERIFIED ARGUMENT DEFAULTS':' · DOCUMENTED ARGUMENTS'));
+   const label=element('div','completion-label','ARGUMENTS · '+info.signature);
+   const dismiss=element('button','completion-dismiss','×');
+   dismiss.type='button';dismiss.setAttribute('aria-label','Close argument guide');
+   dismiss.onclick=closeTray;
    const chips=element('div','completion-slots');
+   const active=info.args[info.active];
+   const detail=element('p','completion-field-detail',
+     active?'FIELD '+(info.active+1)+' OF '+info.args.length+' · '+active.name+
+       (active.required?' (required)':' (optional)')+
+       (active.description?' · '+active.description:
+         Object.hasOwn(active,'default')?' · Default: '+active.default:''):
+       'No arguments documented');
    info.args.forEach((arg,index)=>{
      const chip=element('button','completion-slot');chip.type='button';
      chip.classList.toggle('current',index===info.active);
      chip.classList.toggle('needed',info.requiredLeft.some(a=>a.name===arg.name));
      chip.textContent=arg.name+(arg.required?' *':'')+(Object.hasOwn(arg,'default')?' = '+arg.default:'');
-     chip.title=arg.description||'Tap to locate or add '+arg.name;
+     chip.title=(arg.description||'Select or insert '+arg.name)+(arg.required?' (required)':' (optional)');
+     chip.setAttribute('aria-label',chip.title);
+     chip.setAttribute('aria-current',String(index===info.active));
      chip.onclick=()=>selectSlot(info,index);
      chips.append(chip);
    });
@@ -243,9 +254,11 @@ export function createLanguageTools({editor,host,getLearningMode=()=> 'guided',o
       info.requiredLeft.length?
       info.requiredLeft.length+' required field'+(info.requiredLeft.length===1?'':'s')+' missing':
       'No required fields missing');
+   remaining.title='Tap an argument to edit it. An asterisk marks a required field.';
    footer.append(remaining);
    if(SAFE_TEMPLATES[info.signature]&&info.fragments.length===1&&!info.fragments[0].text.trim()){
-     const template=element('button','completion-insert','INSERT NAMED EXAMPLE');template.type='button';
+     const template=element('button','completion-insert','INSERT EXAMPLE');template.type='button';
+     template.title='Insert a complete example with named arguments';
      template.onclick=()=>{
        // The opening parenthesis exists. Insert only the contents and close it.
        const text=SAFE_TEMPLATES[info.signature]+')';
@@ -254,9 +267,10 @@ export function createLanguageTools({editor,host,getLearningMode=()=> 'guided',o
      footer.append(template);
    }
    const next=element('button','completion-next','NEXT FIELD');next.type='button';
+   next.title='Move to the next argument. Tab also works.';
    next.onclick=()=>selectSlot(info,Math.min(info.args.length-1,info.active+1));
    footer.append(next);
-   tray.append(label,chips,footer);setTrayOpen(true);
+   tray.append(label,dismiss,detail,chips,footer);setTrayOpen(true);
    typing={kind:'signature',info};
  }
  function refresh(){

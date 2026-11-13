@@ -371,14 +371,15 @@ export class SoundActivityTracker{
         remaining,waiting,stale});
     }
     progress.sort((a,b)=>b.at-a.at);
-    return {active,activeVoices,pulses,instruments:recent.slice(0,8),routines:progress.slice(0,3),
+    return {active,activeVoices,pulses,instruments:recent.slice(0,12),routines:progress.slice(0,6),
       confirmed:[...this.nodes.values()].filter(n=>n.confirmed&&n.running).length,
       requested:[...this.nodes.values()].filter(n=>!n.confirmed).length,events:this.requestCount,
       linked:active.length,notifications:this.notifications};
   }
 }
 export function createLiveActivityUI({editor,gutter,overlay,status,code,composition,panel,instrumentsEl,routinesEl,panelToggle,onEnabledChange=()=>{}}){
-  let enabled=true,queued=false,refreshTimer=null;
+  let enabled=true,expanded=false,queued=false,refreshTimer=null;
+  const expandButton=panel.querySelector('#live-panel-expand');
   const track=new SoundActivityTracker(()=>schedule(),()=>performance.now());
   const scrollToLine=(line)=>{
     if(!Number.isInteger(line))return;
@@ -388,7 +389,7 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
   };
   function renderInstrumentRows(rows){
     instrumentsEl.replaceChildren();
-    for(const item of rows.slice(0,5)){
+    for(const item of rows.slice(0,expanded?12:5)){
       const row=document.createElement('button');
       row.type='button';row.className='live-instrument-row';
       row.title=item.name+': '+item.active+' running; '+item.total+' started; latest lifetime '+(item.lastDuration===null?'not yet completed':(item.lastDuration/1000).toFixed(1)+' seconds');
@@ -419,14 +420,14 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
       const noInstruments=document.createElement('div');noInstruments.className='live-idle';
       noInstruments.textContent='NO ACTIVE INSTRUMENTS';instrumentsEl.append(noInstruments);
     }
-    if(rows.length>5){
-      const extra=document.createElement('small');extra.textContent='+'+(rows.length-5);
+    if(rows.length>(expanded?12:5)){
+      const extra=document.createElement('small');extra.textContent='+'+(rows.length-(expanded?12:5));
       instrumentsEl.append(extra);
     }
   }
   function renderRoutineRows(rows){
     routinesEl.replaceChildren();
-    for(const r of rows.slice(0,2)){
+    for(const r of rows.slice(0,expanded?6:2)){
       const row=document.createElement('button');row.type='button';
       row.className='live-routine-row';row.title='Routine at last confirmed checkpoint on line '+r.line;
       const progress=r.waiting&&r.waitSeconds>0?Math.max(0,Math.min(100,(1-r.remaining/r.waitSeconds)*100)):0;
@@ -540,6 +541,13 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
     enabled=Boolean(next);
     onEnabledChange(enabled);
     panel.classList.toggle('live-collapsed',!enabled);
+    if(!enabled){
+      expanded=false;
+      panel.classList.remove('live-expanded');
+      expandButton.textContent='MORE ↑';
+      expandButton.setAttribute('aria-pressed','false');
+      expandButton.setAttribute('aria-label','Show more Live activity');
+    }
     panelToggle.setAttribute('aria-expanded',String(enabled));
     panelToggle.setAttribute('aria-label',enabled?
       'Collapse Live Code and switch tracking off':
@@ -555,6 +563,15 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
     schedule();
   }
   panelToggle.addEventListener('click',()=>setEnabled(!enabled));
+  expandButton.addEventListener('click',()=>{
+    if(!enabled)return;
+    expanded=!expanded;
+    panel.classList.toggle('live-expanded',expanded);
+    expandButton.textContent=expanded?'LESS ↓':'MORE ↑';
+    expandButton.setAttribute('aria-pressed',String(expanded));
+    expandButton.setAttribute('aria-label',expanded?'Show compact Live activity':'Show more Live activity');
+    schedule();
+  });
   editor.addEventListener('scroll',schedule,{passive:true});
   editor.addEventListener('input',()=>track.setDocument(composition(),code.value));
   window.addEventListener('resize',schedule,{passive:true});

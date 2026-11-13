@@ -38,15 +38,19 @@ try{
    const rect=await page.evaluate(()=>{
      const e=document.querySelector('.editor-frame').getBoundingClientRect();
      const t=document.querySelector('#completion-tray').getBoundingClientRect();
-     return {editorBottom:e.bottom,trayTop:t.top,trayRight:t.right,viewport:innerWidth};
+     return {editorTop:e.top,trayBottom:t.bottom,trayRight:t.right,viewport:innerWidth,
+       projectBarVisible:getComputedStyle(document.querySelector('.projectbar')).display!=='none'};
    });
-   assert.ok(rect.trayTop>=rect.editorBottom-1&&rect.trayRight<=width+2,width+': tray must sit below editor '+JSON.stringify(rect));
+   assert.ok(rect.trayBottom<=rect.editorTop+1&&rect.trayRight<=width+2&&!rect.projectBarVisible,
+     width+': keyboard-safe argument guide must replace the top composition bar '+JSON.stringify(rect));
    await page.locator('.completion-choice').filter({has:page.locator('strong:text-is("SinOsc")')}).click();
    assert.equal(await page.locator('#code').inputValue(),'SinOsc.ar(freq: 440, mul: 0.1)');
 
    await page.locator('#code').fill('SinOsc.ar(');
    await page.waitForFunction(()=>document.querySelectorAll('.completion-slot').length===4);
    assert.match(await page.locator('#completion-tray').innerText(),/freq = 440/);
+   assert.match(await page.locator('#completion-tray').innerText(),/ARGUMENTS/);
+   assert.match(await page.locator('.completion-field-detail').innerText(),/FIELD 1 OF 4/);
    assert.match(await page.locator('#completion-tray').innerText(),/No required fields missing/);
    await page.locator('.completion-insert').click();
    assert.equal(await page.locator('#code').inputValue(),'SinOsc.ar(freq: 440, mul: 0.1)');

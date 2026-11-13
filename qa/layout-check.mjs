@@ -157,7 +157,7 @@ try {
           return {upper,lower};
         });
         assert(fontBounds.upper===14,'Pinch exceeded normal maximum text size: '+fontBounds.upper);
-        assert(fontBounds.lower===6,'Pinch failed to reach minimum text size: '+fontBounds.lower);
+        assert(fontBounds.lower===4,'Pinch failed to reach minimum 29% text size: '+fontBounds.lower);
         await page.screenshot({path:path.join(root,'qa','screenshots','moog-pinch-small.png')});
         await page.locator('#file-menu > summary').click();
         await page.locator('#file-menu .file-submenu > summary').filter({hasText:'EDITOR'}).click();
@@ -252,44 +252,33 @@ try {
         assert(await page.locator('#record-stop svg.transport-icon').count()===1,'SAVE does not use a distinct vector icon');
         assert(!(await page.locator('#evaluate').innerText()).includes('▶'),'RUN still contains emoji-prone glyph');
         const names=await page.locator('.inspector-modes button').allTextContents();
-        assert(names.join('|')==='CODE|CONSOLE|AUDIO|PERFORM|LEARN|SOUND','Direct inspector tabs absent');
+        assert(names.join('|')==='CODE|CONSOLE|MIX|LEARN|GENERATE','Direct inspector tabs absent');
         const codeBefore=await page.evaluate(()=>({
-          audio:getComputedStyle(document.getElementById('audio-panel')).display,
           pressed:document.getElementById('inspector-code').getAttribute('aria-pressed')
         }));
-        assert(codeBefore.audio==='none'&&codeBefore.pressed==='true','CODE view has unexpected diagnostics');
+        assert(codeBefore.pressed==='true','CODE view not active');
         await page.locator('#inspector-console').click();
         await page.waitForTimeout(100);
         const shrink=await page.evaluate(()=>({
           height:document.querySelector('.editor-frame').getBoundingClientRect().height,
           open:document.getElementById('console-panel').open,
-          audio:getComputedStyle(document.getElementById('audio-panel')).display,
+          audio:document.getElementById('audio-panel').closest('#console-panel')!==null,
           pressed:document.getElementById('inspector-console').getAttribute('aria-pressed')
         }));
-        assert(shrink.open&&shrink.height<initialHeight-60&&shrink.audio==='none'&&shrink.pressed==='true',
-          'CONSOLE view must show console and shrink editor only');
-        await page.locator('#inspector-audio').click();
-        await page.waitForTimeout(90);
-        const audio=await page.evaluate(()=>({
-          editor:document.querySelector('.editor-frame').getBoundingClientRect().height,
-          panel:getComputedStyle(document.getElementById('audio-panel')).display,
-          panelHeight:document.getElementById('audio-panel').getBoundingClientRect().height,
-          console:document.getElementById('console-panel').open,
-          title:document.querySelector('#audio-panel h2').textContent.trim(),
-          pressed:document.getElementById('inspector-audio').getAttribute('aria-pressed')
-        }));
-        assert(audio.editor>=105&&audio.panel!=='none'&&audio.panelHeight>=120&&!audio.console&&
-          audio.title==='AUDIO TEST'&&audio.pressed==='true',
-          'AUDIO view must show only the audio test while maintaining the editor');
+        assert(shrink.open&&shrink.height<initialHeight-60&&shrink.audio&&shrink.pressed==='true',
+          'CONSOLE must reveal console output and optional audio diagnostics');
+        assert(await page.locator('#inspector-audio').count()===0,'Redundant AUDIO tab remains');
+        await page.locator('#audio-panel > summary').click();
+        assert(await page.locator('#play').isVisible(),'Speaker test must remain available in CONSOLE');
+        assert(await page.locator('#stop').isVisible(),'Stop test must remain available in CONSOLE');
         await page.locator('#inspector-code').click();
         await page.waitForTimeout(80);
         const restored=await page.evaluate(()=>({
           height:document.querySelector('.editor-frame').getBoundingClientRect().height,
-          audio:getComputedStyle(document.getElementById('audio-panel')).display,
           console:document.getElementById('console-panel').open
         }));
-        assert(restored.height>=initialHeight-35&&restored.audio==='none'&&!restored.console,
-          'CODE view should restore editor and hide lower panels');
+        assert(restored.height>=initialHeight-35&&!restored.console,
+          'CODE view should restore editor and hide CONSOLE');
 
         // LIVE is an observation switch, never a source transformation.
         assert(await page.locator('#live-code-toggle').count()===0,'Redundant FILE tracking switch remains');
@@ -314,6 +303,17 @@ try {
             unchanged:mon.evaluation('Default',text,text,1)===text};
         });
         assert(on.enabled&&on.observing&&on.unchanged,'Expanded LIVE must restore observation but not instrumentation');
+        await page.locator('#live-panel-expand').click();
+        const expandedLive=await page.evaluate(()=>({
+          pressed:document.querySelector('#live-panel-expand').getAttribute('aria-pressed'),
+          expanded:document.querySelector('#live-panel').classList.contains('live-expanded'),
+          width:document.querySelector('#live-panel').getBoundingClientRect().width
+        }));
+        assert(expandedLive.pressed==='true'&&expandedLive.expanded,
+          'LIVE MORE must independently expand the activity window');
+        await page.locator('#live-panel-expand').click();
+        assert(await page.locator('#live-panel-expand').getAttribute('aria-pressed')==='false',
+          'LIVE LESS must restore compact size without turning tracking off');
         await page.locator('#inspector-perform').click();
         await page.waitForTimeout(100);
         const performance=await page.evaluate(()=>{
@@ -325,7 +325,12 @@ try {
             original:window.SCTimeline.journal.events.length};
         });
         assert(performance.height>=120&&performance.visible!=='none'&&performance.tab==='true'&&performance.rows,
-          'PERFORM inspector must expose separate timeline and mixer: '+JSON.stringify(performance));
+          'MIX inspector must expose separate timeline and mixer: '+JSON.stringify(performance));
+        // Console output, including errors, must not interrupt the mixer view.
+        await page.locator('#console-panel').evaluate(el=>{el.open=true});
+        await page.waitForTimeout(85);
+        assert(await page.locator('#inspector-perform').getAttribute('aria-pressed')==='true',
+          'Console activity must not force navigation away from MIX during playback');
         await page.locator('#inspector-code').click();
 
         // Learning is guided by default but can be disabled completely.

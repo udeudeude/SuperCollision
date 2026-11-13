@@ -6,17 +6,15 @@
   const layer = document.getElementById('highlight-layer');
   const shell = document.querySelector('.console-shell');
   const consolePanel = document.getElementById('console-panel');
-  const diagnostics = document.getElementById('audio-panel');
   const viewButtons = {
     code: document.getElementById('inspector-code'),
     console: document.getElementById('inspector-console'),
-    audio: document.getElementById('inspector-audio'),
     perform: document.getElementById('inspector-perform'),
     learn: document.getElementById('inspector-learn'),
     design: document.getElementById('inspector-design')
   };
   const body = document.body;
-  const views = ['code', 'console', 'audio', 'perform', 'learn', 'design'];
+  const views = ['code', 'console', 'perform', 'learn', 'design'];
   let mode = 'code';
   let previousLineCount = -1;
   let inner = gutter.querySelector('#line-inner');
@@ -59,7 +57,7 @@
   // Normal code size is the upper bound. Zoom changes only the editor,
   // highlighted text and line-number gutter, never the application chrome.
   const MAX_FONT = 14;
-  const MIN_FONT = 6;
+  const MIN_FONT = 4;
   const DEFAULT_FONT = MAX_FONT;
   const ZOOM_KEY = 'supercollision-editor-font-px-v1';
   const frame = document.querySelector('.editor-frame');
@@ -72,7 +70,7 @@
 
   function updateGutterWidth(count = previousLineCount) {
     const digits = String(Math.max(count, 1)).length;
-    const labelPx = Math.max(6, Math.min(10, fontPx * 10 / MAX_FONT));
+    const labelPx = Math.max(4, Math.min(10, fontPx * 10 / MAX_FONT));
     const width = Math.max(20, Math.min(56, Math.ceil(digits * labelPx * .66 + 13)));
     gutter.style.flexBasis = width + 'px';
   }
@@ -94,7 +92,7 @@
     fontPx = next;
     document.documentElement.style.setProperty('--editor-font-size', next + 'px');
     document.documentElement.style.setProperty('--line-height', (next * 1.5) + 'px');
-    document.documentElement.style.setProperty('--gutter-font-size', Math.max(6, Math.min(10, next * 10 / MAX_FONT)) + 'px');
+    document.documentElement.style.setProperty('--gutter-font-size', Math.max(4, Math.min(10, next * 10 / MAX_FONT)) + 'px');
     updateGutterWidth();
     // Retain the source position under the pinch centre as type shrinks.
     editor.scrollTop = Math.max(0, padY + (oldScrollY + pointY - padY) * ratio - currentY);
@@ -194,13 +192,10 @@
     if (!views.includes(next)) return;
     mode = next;
     body.classList.toggle('view-console', next === 'console');
-    body.classList.toggle('view-audio', next === 'audio');
     body.classList.toggle('view-perform', next === 'perform');
     body.classList.toggle('view-learn', next === 'learn');
     body.classList.toggle('view-design', next === 'design');
     consolePanel.open = next === 'console';
-    diagnostics.setAttribute('aria-hidden', String(next !== 'audio'));
-    diagnostics.inert = next !== 'audio';
     for (const [view, button] of Object.entries(viewButtons)) {
       button.setAttribute('aria-pressed', String(view === next));
     }
@@ -251,10 +246,7 @@
   shell.querySelector('.console-bar').addEventListener('wheel', (e) => {
     if (Math.abs(e.deltaY) > 18) setMode(views[Math.max(0, Math.min(2, views.indexOf(mode) + (e.deltaY > 0 ? 1 : -1)))]);
   }, {passive:true});
-  // Errors already open details in the interpreter bridge. Ensure the output is actually visible.
-  new MutationObserver(() => {
-    if (consolePanel.open && mode !== 'console') setMode('console');
-  }).observe(consolePanel, {attributes:true, attributeFilter:['open']});
+  // Console output must not change the selected workbench during playback.
   window.addEventListener('resize', () => requestAnimationFrame(followEditor), {passive:true});
   renderGutter();
   setMode('code');
