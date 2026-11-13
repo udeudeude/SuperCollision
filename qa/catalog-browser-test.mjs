@@ -63,6 +63,11 @@ try{
    assert.equal(await page.locator('#code').evaluate(el=>el.value.slice(el.selectionStart,el.selectionEnd)),'nil');
 
    const beforeBrowse=await page.locator('#code').inputValue();
+   // The guide replaces the File/Composition row while editing. Close it
+   // deliberately before opening File, restoring the normal controls.
+   await page.locator('.completion-dismiss').click();
+   assert.equal(await page.locator('#completion-tray').isHidden(),true);
+   assert.equal(await page.locator('#file-menu').isVisible(),true);
    await page.locator('#file-menu > summary').click();
    await page.locator('#file-menu .file-submenu > summary').filter({hasText:'EDITOR'}).click();
    await page.locator('#catalog-open').click();

@@ -183,6 +183,11 @@ try{
    throw Error('Editor source modified during performance observation');
  await page.locator('#inspector-perform').click();
  await page.waitForFunction(()=>document.querySelectorAll('.perform-event').length>0,{timeout:4500});
+ // The confirmed \\qaDrone continues to run. Output from the interpreter
+ // must never steal the selected mixer while audio is playing.
+ await page.waitForTimeout(450);
+ if(await page.locator('#inspector-perform').getAttribute('aria-pressed')!=='true')
+   throw Error('MIX view was stolen while the synthesizer was playing');
  const perform=await page.evaluate(()=>({
    visible:getComputedStyle(document.querySelector('#perform-panel')).display,
    rows:document.querySelectorAll('.perform-lane').length,
