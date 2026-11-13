@@ -93,6 +93,7 @@ try{
    await page.locator('#code').fill('Syn');
    await page.waitForFunction(()=>document.querySelector('#completion-tray')?.hidden===false);
    assert.ok((await page.locator('.completion-choice strong').allTextContents()).includes('Synth'));
+   await page.locator('.completion-dismiss').click();
    await page.locator('#file-menu > summary').click();
    await page.locator('#file-menu .file-submenu > summary').filter({hasText:'EDITOR'}).click();
    await page.locator('#completion-toggle').click();
