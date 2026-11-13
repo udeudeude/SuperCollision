@@ -45,7 +45,8 @@ jobs:
           assert indices==sorted(indices), indices
           assert 'wrap="off"' in html
           assert 'id="line-inner"' in html
-          assert all('id="inspector-'+v+'"' in html for v in ('code','console','audio','perform'))
+          assert all('id="inspector-'+v+'"' in html for v in ('code','console','perform','learn','design'))
+          assert 'id="inspector-audio"' not in html
           assert 'id="audio-panel"' in html
           assert 'id="inspect-toggle"' not in html
           assert 'instrument-layout.css' in html and 'instrument-layout.js' in html
