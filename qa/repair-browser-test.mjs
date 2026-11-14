@@ -23,6 +23,7 @@ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const browser=await chromium.launch({headless:true});
 const source=[
  '(',
+ ...Array.from({length:52},(_,i)=>'// composition phrase '+(i+1)),
  'SynthDef(\\gardenMarimba, { |out=0|',
  ' var env = EnvGen.kr(',
  '   Env.perc(0.003, 0.48, 1, -5),levelScale: nil',
@@ -85,6 +86,16 @@ try{
    assert.equal(ui.focused,'code','Opening repair must focus code for typing');
    assert.equal(ui.cursor,savedCursor,
      'Opening repair must preserve caret position, not jump to an arbitrary line');
+   const caretView=await page.locator('#code').evaluate(editor=>{
+     const line=editor.value.slice(0,editor.selectionStart).split('\n').length-1;
+     const height=parseFloat(getComputedStyle(editor).lineHeight)||21;
+     return {line,caretY:12+line*height-editor.scrollTop,
+       lineHeight:height,visibleHeight:editor.clientHeight,scrollTop:editor.scrollTop};
+   });
+   assert(caretView.caretY>=-2&&
+     caretView.caretY+caretView.lineHeight<=caretView.visibleHeight+12,
+     'The cursor must be physically visible after the keyboard shrinks the editor: '+
+       JSON.stringify(caretView));
    assert(ui.repair&&ui.completionHidden&&ui.liveHidden&&ui.consoleHidden,
      'Error repair must replace arguments and other panels: '+JSON.stringify(ui));
    assert(ui.panelBottom<=ui.editorTop+2&&ui.editorHeight>=105&&
