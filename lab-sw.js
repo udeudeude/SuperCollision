@@ -10,7 +10,16 @@ async function getPointer() {
   if (!response) return null;
   try {
     const value = await response.json();
-    if (typeof value.name !== 'string' || !value.name.startsWith(PACK_PREFIX)) return null;
+    if (typeof value.name !== 'string' || !value.name.startsWith(PACK_PREFIX) ||
+        !Number.isSafeInteger(value.fileCount) || value.fileCount < 1) return null;
+    const names = await caches.keys();
+    if (!names.includes(value.name)) return null;
+    const pack = await caches.open(value.name);
+    if ((await pack.keys()).length !== value.fileCount) return null;
+    for (const required of ['./index.html', './runtime/sclang/sclang.wasm',
+                            './runtime/scsynth/scsynth.wasm']) {
+      if (!(await pack.match(new URL(required, self.registration.scope)))) return null;
+    }
     return value;
   } catch {
     return null;
@@ -42,6 +51,11 @@ self.addEventListener('fetch', event => {
         const fallback = await pack.match(new URL('./index.html', scope));
         if (fallback) return fallback;
       }
+      // A damaged offline copy must never silently fetch the missing large file.
+      if (/\\/runtime\\//.test(url.pathname) || url.pathname.endsWith('/language-catalog.json')) {
+        return new Response('Offline copy incomplete: use File > Storage to reinstall it.',
+          {status: 503, headers: {'Content-Type': 'text/plain'}});
+      }
     }
     return fetch(request);
   })());
@@ -54,6 +68,7 @@ async function installPack(manifest, port) {
   const packName = PACK_PREFIX + manifest.version + '-' + Date.now();
   const pack = await caches.open(packName);
   let bytes = 0;
+  let committed = false;
   try {
     const seen = new Set();
     for (let i = 0; i < manifest.files.length; i++) {
@@ -75,14 +90,22 @@ async function installPack(manifest, port) {
         !seen.has('/runtime/scsynth/scsynth.wasm')) throw Error('Offline pack is missing essential files');
     const meta = await caches.open(META_NAME);
     await meta.put(POINTER_URL, new Response(JSON.stringify({
-      name: packName, version: manifest.version, bytes, installed: Date.now()
+      name: packName, version: manifest.version, bytes,
+      fileCount: manifest.files.length, installed: Date.now()
     }), {headers: {'Content-Type': 'application/json'}}));
+    committed = true;
     port.postMessage({type: 'complete', version: manifest.version, bytes});
-    const names = await caches.keys();
-    await Promise.all(names.filter(name => name.startsWith(PACK_PREFIX) && name !== packName)
-      .map(name => caches.delete(name)));
+    // Cleanup is best effort after the pointer is committed. A cleanup error
+    // must never remove the new, active offline copy.
+    try {
+      const names = await caches.keys();
+      await Promise.all(names.filter(name => name.startsWith(PACK_PREFIX) && name !== packName)
+        .map(name => caches.delete(name)));
+    } catch (error) {
+      console.warn('Could not remove previous offline pack', error);
+    }
   } catch (error) {
-    await caches.delete(packName);
+    if (!committed) await caches.delete(packName);
     throw error;
   }
 }
