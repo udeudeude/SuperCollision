@@ -2,7 +2,7 @@
  * Never silently changes or executes a composition.
  */
 import {buildCatalog,searchCatalog,completionCandidates,callAtCursor,
-  insertionFor,SAFE_TEMPLATES,VERIFIED_SIGNATURES,displayName} from './catalog-core.mjs';
+  insertionFor,SAFE_TEMPLATES,VERIFIED_SIGNATURES,displayName} from './catalog-core.mjs?v=2';
 
 const PREF='supercollision-completion-enabled-v1';
 const HISTORY='supercollision-completion-history-v1';

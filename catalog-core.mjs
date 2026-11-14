@@ -6,6 +6,7 @@ const spec=(names,defaults={},required=[],descriptions={})=>names.map(name=>({
   ...(descriptions[name]?{description:descriptions[name]}:{})
 }));
 export const VERIFIED_SIGNATURES={
+  'Mix.new':spec(['array'],{},['array'],{array:'An array of sound signals to combine.'}),
   'SinOsc.ar':spec(['freq','phase','mul','add'],{freq:440,phase:0,mul:1,add:0},[],{
     freq:'Frequency in hertz (cycles per second).',phase:'Starting phase in radians.',
     mul:'Multiplies the output, commonly used to control amplitude.',add:'Adds an offset to the output.'}),
@@ -26,6 +27,7 @@ export const FREQUENT=[
  ['SynthDef','Define a reusable synthesizer','Instruments',98,'new'],
  ['Synth','Create a running synthesizer','Instruments',97,'new'],
  ['EnvGen','Play an envelope','Envelopes',95,'kr'],
+ ['Mix','Combine multiple sound signals into one','Routing',87,'new'],
  ['Out','Write audio or control signals to a bus','Routing',94,'ar'],
  ['Routine','Run a sequence that can pause and resume','Timing',93,'new'],
  ['Pbind','Bind musical event keys to patterns','Patterns',92,'new'],
