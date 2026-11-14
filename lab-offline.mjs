@@ -3,7 +3,7 @@
 const downloadButton = document.querySelector('#lab-offline-download');
 const info = document.querySelector('#lab-offline-status');
 const engine = document.querySelector('#engine');
-const ENGINE_CONSENT = 'supercollision-lab-engine-download-approved';
+let engineApprovedForNextClick = false;
 function notice(message) {
   if (info) info.textContent = message;
 }
@@ -101,9 +101,10 @@ if (downloadButton) {
 // Approval lasts only for the current tab/session, not subsequent visits.
 if (engine) {
   engine.addEventListener('click', async event => {
-    try {
-      if (sessionStorage.getItem(ENGINE_CONSENT) === 'yes') return;
-    } catch {}
+    if (engineApprovedForNextClick) {
+      engineApprovedForNextClick = false;
+      return;
+    }
     event.stopImmediatePropagation();
     event.preventDefault();
     let approved = false;
@@ -118,7 +119,7 @@ if (engine) {
       );
     }
     if (approved) {
-      try { sessionStorage.setItem(ENGINE_CONSENT, 'yes'); } catch {}
+      engineApprovedForNextClick = true;
       engine.click();
     }
   }, true);
