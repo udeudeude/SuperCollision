@@ -17,6 +17,13 @@
 - The browser test verified no large startup downloads, no engine download after declined consent, full offline-pack installation, offline reload, and cached WebAssembly engine assets in Chromium. **Real iPhone Safari results remain UNVERIFIED**.
 - Most recent experimental source version in published lab manifest: `2b1d9c6fddecaf1b189f09930f5f61a3f8c9809e`. Lab deployment branch `lab-build` at `3d1586e3dfe5912225d28d2ca93e1fb7b817b4de` after passing tests.
 
+## Work browser checkpoint — 14 November 2026
+
+- Read this handoff on `feature/offline-safe-foundation`, then opened https://dash.cloudflare.com/ in Cloud Browser.
+- Cloudflare redirected to https://dash.cloudflare.com/login. This browser is signed out; existing project configuration could not be inspected.
+- No Cloudflare settings changed, no lab project created, and no deployment tests performed. Production and deployment branches remain untouched.
+- **Next action:** user signs in using Cloud Browser within this conversation on chatgpt.com and asks Work to continue. Do not send credentials in chat. Resume by inspecting existing production settings read-only, then create the separate lab project with the settings below. Commit its actual address and configuration here immediately after creation, before testing.
+
 ## First Work-only action (highest priority)
 
 Using Cloudflare account browser access, create a **NEW** Cloudflare Pages project named `supercollision-lab` if available, connected to GitHub repository `udeudeude/SuperCollision`, deployment/production branch `lab-build`, NOT `pages-build` or `main`.
