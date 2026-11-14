@@ -46,13 +46,15 @@ try{
      {timeout:10000});
    await page.locator('#code').fill(source);
    const savedCursor=await page.locator('#code').evaluate(editor=>{
-     const pos=editor.value.indexOf('levelScale')+5;
+     // SinOsc is in the verified offline catalog even when the full class
+     // documentation has not been generated on the testing server.
+     const pos=editor.value.indexOf('SinOsc.ar(')+'SinOsc.ar('.length;
      editor.focus();editor.setSelectionRange(pos,pos);
      editor.dispatchEvent(new Event('click'));
      return pos;
    });
    await page.waitForFunction(()=>!document.querySelector('#completion-tray').hidden,
-     {timeout:3000});
+     null,{timeout:3500});
    await page.locator('#inspector-console').click();
    await page.evaluate(async output=>{
      const {explainConsoleError}=await import('/error-guide.mjs?v=2');
