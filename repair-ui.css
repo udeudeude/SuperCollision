@@ -72,3 +72,12 @@ body.repair-open .console-bar #repair-open-button{
  body #repair-description{font-size:10px}
  body #repair-panel .repair-actions button{font-size:9px;padding:3px 4px}
 }
+
+/* If no exact automatic correction is safe, use the whole dock to explain
+   the problem; do not silently truncate the only instructions available. */
+body #repair-panel:not(.repair-has-fix) #repair-description{
+ display:block;flex:1;min-height:0;overflow-y:auto;
+ -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+ white-space:normal;-webkit-line-clamp:unset
+}
+body #repair-panel:not(.repair-has-fix) #repair-feedback{max-height:35px}

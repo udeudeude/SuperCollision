@@ -252,7 +252,8 @@ export class SoundActivityTracker{
     const key=composition+'|'+name;
     let row=this.instrumentStats.get(key);
     if(!row){
-      row={name,composition,total:0,ended:0,lastDuration:null,totalDuration:0,lastAt:0,slot:this.colorSlot(name)};
+      row={name,composition,total:0,ended:0,lastDuration:null,totalDuration:0,lastAt:0,
+        firstSeen:this.instrumentStats.size,slot:this.colorSlot(name)};
       this.instrumentStats.set(key,row);
     }
     return row;
@@ -301,7 +302,7 @@ export class SoundActivityTracker{
       if(msg.address==='/n_go'&&Number.isInteger(id)){
         if(node&&!node.confirmed){node.confirmed=true;node.running=true;node.startedAt=this.now();this.statistics(node.name,node.composition).total++;this.confirmedCount++;this.lastServerMessage=this.now();this.notify()}
       }else if(msg.address==='/n_end'&&Number.isInteger(id)){
-        if(node){if(node.confirmed){const stats=this.statistics(node.name,node.composition);stats.ended++;const elapsed=Math.max(0,this.now()-(node.startedAt||node.time));stats.lastDuration=elapsed;stats.totalDuration+=elapsed}this.nodes.delete(id);this.lastServerMessage=this.now();this.notify()}
+        if(node){if(node.confirmed){const stats=this.statistics(node.name,node.composition);stats.ended++;stats.lastAt=this.now();const elapsed=Math.max(0,this.now()-(node.startedAt||node.time));stats.lastDuration=elapsed;stats.totalDuration+=elapsed}this.nodes.delete(id);this.lastServerMessage=this.now();this.notify()}
       }else if(msg.address==='/n_off'&&node){node.running=false;this.notify()}
       else if(msg.address==='/n_on'&&node){node.running=true;this.notify()}
     }
@@ -356,22 +357,34 @@ export class SoundActivityTracker{
     }
     this.pulses=this.pulses.filter(p=>now-p.at<800);
     for(const p of this.pulses)if(matches(p.site))pulses.push({site:p.site,slot:p.slot,voiceSlot:p.voiceSlot,name:p.name});
-    const recent=Array.from(instruments.values()).filter(x=>x.active>0||x.latestAge<15000);
-    recent.sort((a,b)=>b.active-a.active||b.lastAt-a.lastAt);
+    // A new note never moves its instrument to the top. Follow source
+    // declaration order where known, otherwise the first confirmed/requested
+    // appearance. Resting rows retain full height until their grace expires.
+    const recent=Array.from(instruments.values()).filter(x=>
+      x.active>0||x.pending>0||x.paused>0||x.latestAge<15000);
+    recent.sort((a,b)=>{
+      const x=Number.isInteger(a.def?.start)?a.def.start:null;
+      const y=Number.isInteger(b.def?.start)?b.def.start:null;
+      if(x!==null&&y!==null&&x!==y)return x-y;
+      if(x!==null&&y===null)return -1;
+      if(x===null&&y!==null)return 1;
+      return a.firstSeen-b.firstSeen;
+    });
     const progress=[];
-    for(const r of this.routines.values()){
+    for(const [traceKey,r] of this.routines){
       if(!doc||r.composition!==doc.composition||r.snapshot!==doc.text||!r.lastAt)continue;
       const elapsed=now-r.lastAt;
       if(elapsed>Math.max(45000,(r.waitSeconds||0)*1000+15000))continue; // A trace position is not proof the Routine still runs.
       const waiting=r.lastKind==='wait'&&r.waitUntil!==null;
       const remaining=waiting?Math.max(0,(r.waitUntil-now)/1000):null;
       const stale=elapsed>Math.max(15000,(r.waitSeconds||0)*1000+1500);
-      progress.push({id:r.id,line:r.lastLine,kind:r.lastKind,at:r.lastAt,
+      progress.push({key:traceKey,id:r.id,line:r.lastLine,kind:r.lastKind,at:r.lastAt,
         ago:elapsed,steps:r.steps,wait:r.wait,tempo:r.tempo,waitSeconds:r.waitSeconds,
         remaining,waiting,stale});
     }
-    progress.sort((a,b)=>b.at-a.at);
-    return {active,activeVoices,pulses,instruments:recent.slice(0,12),routines:progress.slice(0,6),
+    // Routine checkpoints advance constantly; their rows stay in creation
+    // order instead of jumping each time a different Routine wakes up.
+    return {active,activeVoices,pulses,instruments:recent.slice(0,32),routines:progress.slice(0,12),
       confirmed:[...this.nodes.values()].filter(n=>n.confirmed&&n.running).length,
       requested:[...this.nodes.values()].filter(n=>!n.confirmed).length,events:this.requestCount,
       linked:active.length,notifications:this.notifications};
@@ -387,62 +400,100 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
     editor.scrollTop=Math.max(0,(line-1)*h-editor.clientHeight*0.33);
     editor.dispatchEvent(new Event('scroll'));
   };
+  const instrumentNodes=new Map();
+  const idleNotice=document.createElement('div');
+  idleNotice.className='live-idle';idleNotice.textContent='NO ACTIVE INSTRUMENTS';
+  const overflowNotice=document.createElement('small');
   function renderInstrumentRows(rows){
-    instrumentsEl.replaceChildren();
-    for(const item of rows.slice(0,expanded?12:5)){
-      const row=document.createElement('button');
-      row.type='button';row.className='live-instrument-row';
-      row.title=item.name+': '+item.active+' running; '+item.total+' started; latest lifetime '+(item.lastDuration===null?'not yet completed':(item.lastDuration/1000).toFixed(1)+' seconds');
-      row.style.setProperty('--voice-color','var(--voice-'+item.slot+')');
-      const name=document.createElement('span');name.className='live-instrument-name';name.textContent=item.name;
-      const count=document.createElement('span');count.className='live-instrument-count';
-      count.textContent='●'+item.active;
-      count.dataset.active=String(item.active>0);
-      const runs=document.createElement('span');runs.className='live-instrument-total';
-      runs.textContent='/'+item.total;
-      const age=document.createElement('span');age.className='live-instrument-duration';
-      const duration=item.active>0?(track.now()-(item.oldestStartAt||track.now())):item.lastDuration;
-      age.textContent=duration===null?'·':(duration/1000).toFixed(1)+'s';
-      const voices=document.createElement('span');
-      voices.className='live-voice-marks';voices.setAttribute('aria-hidden','true');
-      for(const v of item.voices.slice(0,4)){
-        const mark=document.createElement('span');
-        mark.className='live-voice-mark';
-        mark.style.setProperty('--voice-color','var(--voice-'+v.slot+')');
-        mark.title='Node '+v.id;
-        voices.append(mark);
+    const max=expanded?32:5,shown=rows.slice(0,max);
+    const wanted=new Set(shown.map(item=>item.name));
+    for(const [name,node] of instrumentNodes){
+      if(!wanted.has(name)){node.remove();instrumentNodes.delete(name)}
+    }
+    const desired=[];
+    for(const item of shown){
+      let row=instrumentNodes.get(item.name);
+      if(!row){
+        row=document.createElement('button');row.type='button';
+        row.className='live-instrument-row';
+        const name=document.createElement('span');
+        name.className='live-instrument-name';name.textContent=item.name;
+        const voices=document.createElement('span');
+        voices.className='live-voice-marks';voices.setAttribute('aria-hidden','true');
+        const count=document.createElement('span');count.className='live-instrument-count';
+        const runs=document.createElement('span');runs.className='live-instrument-total';
+        const age=document.createElement('span');age.className='live-instrument-duration';
+        row.append(name,voices,count,runs,age);
+        row.addEventListener('click',()=>{if(row._definition)scrollToLine(row._definition.start)});
+        instrumentNodes.set(item.name,row);
       }
-      row.append(name,voices,count,runs,age);
-      if(item.def)row.addEventListener('click',()=>scrollToLine(item.def.start));
-      instrumentsEl.append(row);
+      row._definition=item.def;
+      row.classList.toggle('live-resting',item.active===0);
+      row.style.setProperty('--voice-color','var(--voice-'+item.slot+')');
+      row.title=item.name+': '+item.active+' running; '+item.total+' started'+
+        (item.active===0?' · resting (will disappear after 15 seconds of silence)':'');
+      const count=row.querySelector('.live-instrument-count');
+      count.textContent='●'+item.active;count.dataset.active=String(item.active>0);
+      row.querySelector('.live-instrument-total').textContent='/'+item.total;
+      const duration=item.active>0?(track.now()-(item.oldestStartAt||track.now())):item.lastDuration;
+      row.querySelector('.live-instrument-duration').textContent=
+        duration===null?'·':(duration/1000).toFixed(1)+'s';
+      const voiceMarks=row.querySelector('.live-voice-marks');
+      const marks=[];
+      for(const v of item.voices.slice(0,4)){
+        const mark=document.createElement('span');mark.className='live-voice-mark';
+        mark.style.setProperty('--voice-color','var(--voice-'+v.slot+')');
+        mark.title='Node '+v.id;marks.push(mark);
+      }
+      voiceMarks.replaceChildren(...marks);
+      desired.push(row);
     }
-    if(!rows.length){
-      const noInstruments=document.createElement('div');noInstruments.className='live-idle';
-      noInstruments.textContent='NO ACTIVE INSTRUMENTS';instrumentsEl.append(noInstruments);
+    if(!rows.length)desired.push(idleNotice);
+    if(rows.length>max){
+      overflowNotice.textContent='+'+(rows.length-max)+
+        (expanded?' additional instruments':' more · tap MORE to view');
+      desired.push(overflowNotice);
     }
-    if(rows.length>(expanded?12:5)){
-      const extra=document.createElement('small');extra.textContent='+'+(rows.length-(expanded?12:5));
-      instrumentsEl.append(extra);
-    }
+    // Do not detach/recreate identical rows on every animation frame. This
+    // prevents focus loss and visually unstable reflow during dense passages.
+    const existing=[...instrumentsEl.children];
+    if(existing.length!==desired.length||existing.some((el,i)=>el!==desired[i]))
+      instrumentsEl.replaceChildren(...desired);
   }
+  const routineNodes=new Map();
   function renderRoutineRows(rows){
-    routinesEl.replaceChildren();
-    for(const r of rows.slice(0,expanded?6:2)){
-      const row=document.createElement('button');row.type='button';
-      row.className='live-routine-row';row.title='Routine at last confirmed checkpoint on line '+r.line;
-      const progress=r.waiting&&r.waitSeconds>0?Math.max(0,Math.min(100,(1-r.remaining/r.waitSeconds)*100)):0;
+    const shown=rows.slice(0,expanded?12:2),desired=[],wanted=new Set(shown.map(r=>r.key??r.id));
+    for(const [id,row] of routineNodes){
+      if(!wanted.has(id)){row.remove();routineNodes.delete(id)}
+    }
+    for(const r of shown){
+      const identity=r.key??r.id;
+      let row=routineNodes.get(identity);
+      if(!row){
+        row=document.createElement('button');row.type='button';
+        row.className='live-routine-row';
+        const name=document.createElement('span');
+        const state=document.createElement('span');state.className='live-routine-state';
+        row.append(name,state);
+        row.addEventListener('click',()=>scrollToLine(row._line));
+        routineNodes.set(identity,row);
+      }
+      row._line=r.line;
+      row.title='Routine at last confirmed checkpoint on line '+r.line;
+      const progress=r.waiting&&r.waitSeconds>0?
+        Math.max(0,Math.min(100,(1-r.remaining/r.waitSeconds)*100)):0;
       row.style.setProperty('--wait-progress',progress+'%');
-      if(r.waiting&&!r.stale)row.classList.add('live-waiting');
-      if(r.stale)row.classList.add('live-routine-stale');
-      const name=document.createElement('span');name.textContent='R'+r.id+' · L'+r.line;
-      const state=document.createElement('span');state.className='live-routine-state';
-      state.textContent=r.stale?'LAST':r.waiting&&r.remaining!==null?
+      row.classList.toggle('live-waiting',r.waiting&&!r.stale);
+      row.classList.toggle('live-routine-stale',r.stale);
+      row.firstElementChild.textContent='R'+r.id+' · L'+r.line;
+      row.lastElementChild.textContent=r.stale?'LAST':r.waiting&&r.remaining!==null?
         (r.remaining>0?'WAIT '+r.remaining.toFixed(1)+'s':'DUE'):
         r.kind==='wait'?'WAIT ·':'STEP';
-      row.append(name,state);
-      row.addEventListener('click',()=>scrollToLine(r.line));
-      routinesEl.append(row);
+      desired.push(row);
     }
+    const existing=[...routinesEl.children];
+    if(existing.length!==desired.length||existing.some((el,i)=>el!==desired[i]))
+      routinesEl.replaceChildren(...desired);
   }
   const render=()=>{
     queued=false;
@@ -509,7 +560,8 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
     renderRoutineRows(enabled?v.routines:[]);
     routinesEl.hidden=!enabled||!v.routines.length;
     clearTimeout(refreshTimer);
-    if(enabled&&(track.pulses.length||v.routines.length||v.confirmed>0)){
+    if(enabled&&(track.pulses.length||v.routines.length||v.confirmed>0||
+      v.instruments.some(item=>item.active===0))){
       const counting=v.routines.some(r=>r.waiting&&r.remaining!==null&&r.remaining>0&&!r.stale);
       refreshTimer=setTimeout(schedule,counting?100:650);
     }

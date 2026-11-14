@@ -74,14 +74,27 @@ export class PerformanceJournal{
     const map=new Map();
     for(const e of this.events){
       if(e.composition!==this.composition)continue;
-      if(!map.has(e.name))map.set(e.name,{name:e.name,count:0,last:0,slot:e.slot});
+      if(!map.has(e.name))map.set(e.name,{name:e.name,count:0,last:0,slot:e.slot,firstSeen:map.size});
       const row=map.get(e.name);row.count++;row.last=Math.max(row.last,e.start||e.request);
     }
     for(const n of this.nodes.values()){
       if(n.composition!==this.composition||n.ended)continue;
-      if(!map.has(n.name))map.set(n.name,{name:n.name,count:0,last:n.request,slot:n.slot});
+      if(!map.has(n.name))map.set(n.name,{name:n.name,count:0,last:n.request,slot:n.slot,firstSeen:map.size});
     }
-    return [...map.values()].sort((a,b)=>b.last-a.last).map(row=>{
+    // Stable score order: defined instruments follow their declaration lines,
+    // otherwise retain their first-observed position. Playing a new note must
+    // never shuffle mixer lanes while the user adjusts a control.
+    const sourceOrder=row=>{
+      const site=this.defs.get(row.name)?.site;
+      return site?.composition===this.composition?site.start:null;
+    };
+    return [...map.values()].sort((a,b)=>{
+      const x=sourceOrder(a),y=sourceOrder(b);
+      if(x!==null&&y!==null&&x!==y)return x-y;
+      if(x!==null&&y===null)return -1;
+      if(x===null&&y!==null)return 1;
+      return a.firstSeen-b.firstSeen;
+    }).map(row=>{
       const st=this.stateFor(row.name),nodes=this.active(row.name).filter(n=>n.composition===this.composition);
       return {...row,active:nodes.length,compatible:this.compatible(row.name),
         params:this.defs.get(row.name)?.params||{},gain:st.gain,muted:st.muted,solo:st.solo,

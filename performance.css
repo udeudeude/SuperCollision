@@ -110,3 +110,17 @@ body .console-bar .inspector-modes,body[data-theme] .console-bar .inspector-mode
 body .console-bar .inspector-modes button,body[data-theme] .console-bar .inspector-modes button{
   font-size:clamp(6px,1.9vw,9px);padding-left:2px;padding-right:2px;min-width:0;
 }
+
+/* Fixed-height, score-ordered mixer rows. Resting never changes lane size.
+   The optional active-only filter is a user choice, not automatic reshuffling. */
+body .perform-lane.perform-resting{min-height:72px}
+body .perform-lane.perform-resting .perform-voices{opacity:.6}
+body .perform-lane.perform-resting .perform-track{opacity:.78}
+body .perform-header #perform-show[aria-pressed=true]{
+ background:var(--perform-border);color:var(--perform-bg)
+}
+body .perform-header #perform-show{min-width:31px}
+@media(max-width:420px){
+ body .perform-header{gap:3px;padding-left:4px;padding-right:4px}
+ body .perform-header button{padding-left:3px;padding-right:3px;letter-spacing:0}
+}

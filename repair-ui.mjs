@@ -1,7 +1,7 @@
 /* Repair mode: keep instructions, keyboard, and code visible together.
  * Never changes source except for an explicitly requested, uniquely located edit.
  */
-import {resolveCorrection} from './error-guide.mjs?v=2';
+import {resolveCorrection} from './error-guide.mjs?v=3';
 export function createRepairUI({editor}){
  const frame=editor.closest('.editor-frame');
  const panel=document.createElement('section');
@@ -68,8 +68,11 @@ export function createRepairUI({editor}){
  function draw(){
    if(!latest||!showing)return;
    const patch=resolveCorrection(editor.value,latest.fix);
-   title.textContent=latest.title+(latest.line?' · line '+latest.line:'');
+   const validLine=Number.isInteger(latest.line)&&latest.line>0&&
+     latest.line<=editor.value.split('\n').length;
+   title.textContent=latest.title+(validLine?' · line '+latest.line:'');
    description.textContent=latest.message;
+   panel.classList.toggle('repair-has-fix',!!latest.fix);
    preview.hidden=!(latest.fix||latest.correction);
    before.textContent=latest.fix?.before||'Exact code location not verified.';
    after.textContent=latest.fix?.after||latest.correction||'';
@@ -77,7 +80,7 @@ export function createRepairUI({editor}){
    apply.disabled=!patch;
    undo.hidden=!applied;
    undo.disabled=!!applied&&!sameApplied();
-   location.hidden=!(patch||latest.line);
+   location.hidden=!(patch||validLine);
    location.textContent=patch?'GO TO THIS CODE':'GO TO REPORTED LINE';
    if(applied){
      feedback.textContent=sameApplied()?
