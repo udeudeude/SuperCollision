@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {canDownloadResource, isLargeOrUnknown, CELLULAR_UNKNOWN_BUDGET_BYTES} from '../offline-cache-policy.mjs';
+assert.equal(canDownloadResource({bytes: 200_000}), true);
+assert.equal(canDownloadResource({bytes: CELLULAR_UNKNOWN_BUDGET_BYTES}), true);
+assert.equal(canDownloadResource({bytes: CELLULAR_UNKNOWN_BUDGET_BYTES + 1}), false);
+assert.equal(canDownloadResource({}), false);
+assert.equal(canDownloadResource({bytes: 5_000_000, explicitlyApproved: true}), true);
+assert.equal(canDownloadResource({bytes: 5_000_000, verifiedWifi: true}), true);
+assert.equal(isLargeOrUnknown(undefined), true);
+assert.equal(isLargeOrUnknown(1_000_001), true);
+console.log('Offline download policy checks passed');
