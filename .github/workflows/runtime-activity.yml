@@ -15,6 +15,7 @@ on:
       - 'learning.css'
       - 'catalog-core.mjs'
       - 'editor-assist.mjs'
+      - 'error-guide.mjs'
       - 'catalog-assist.css'
       - 'sound-designer.mjs'
       - 'sound-designer-core.mjs'
@@ -36,7 +37,7 @@ jobs:
           path: site
       - name: Overlay current frontend onto compiled production runtime
         run: |
-          cp index.html instrument-layout.css instrument-layout.js live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs performance.css learning.mjs learning.css catalog-core.mjs editor-assist.mjs catalog-assist.css osc-priority-bridge.mjs sound-designer.mjs sound-designer-core.mjs sound-designer.css site/
+          cp index.html instrument-layout.css instrument-layout.js live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs performance.css learning.mjs learning.css catalog-core.mjs editor-assist.mjs error-guide.mjs catalog-assist.css osc-priority-bridge.mjs sound-designer.mjs sound-designer-core.mjs sound-designer.css site/
           test -s site/runtime/sclang/sclang.js
           test -s site/runtime/scsynth/scsynth.js
       - uses: actions/setup-node@v4

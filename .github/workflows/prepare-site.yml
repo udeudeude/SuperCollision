@@ -51,7 +51,7 @@ jobs:
           python3 -m pip install --quiet cairosvg
           python3 app/scripts/render_icons.py
           mkdir -p dist/runtime
-          cp app/index.html app/_headers app/instrument-layout.css app/instrument-layout.js app/live-activity.mjs app/routine-trace.mjs app/performance-engine.mjs app/performance-ui.mjs app/performance.css app/learning.mjs app/learning.css app/catalog-core.mjs app/editor-assist.mjs app/catalog-assist.css app/osc-priority-bridge.mjs app/sound-designer.mjs app/sound-designer-core.mjs app/sound-designer.css app/app-icon.svg app/manifest.webmanifest app/apple-touch-icon.png app/app-icon-192.png app/app-icon-512.png dist/
+          cp app/index.html app/_headers app/instrument-layout.css app/instrument-layout.js app/live-activity.mjs app/routine-trace.mjs app/performance-engine.mjs app/performance-ui.mjs app/performance.css app/learning.mjs app/learning.css app/catalog-core.mjs app/editor-assist.mjs app/error-guide.mjs app/catalog-assist.css app/osc-priority-bridge.mjs app/sound-designer.mjs app/sound-designer-core.mjs app/sound-designer.css app/app-icon.svg app/manifest.webmanifest app/apple-touch-icon.png app/app-icon-192.png app/app-icon-512.png dist/
           python3 app/scripts/build_language_catalog.py upstream/HelpSource/Classes dist/language-catalog.json
           cp -a build/wasm-dist/sclang build/wasm-dist/scsynth dist/runtime/
           python3 app/scripts/verify_runtime.py dist/runtime

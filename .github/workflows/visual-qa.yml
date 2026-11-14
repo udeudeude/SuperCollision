@@ -16,6 +16,7 @@ on:
       - 'learning.css'
       - 'catalog-core.mjs'
       - 'editor-assist.mjs'
+      - 'error-guide.mjs'
       - 'catalog-assist.css'
       - 'sound-designer.mjs'
       - 'sound-designer-core.mjs'
