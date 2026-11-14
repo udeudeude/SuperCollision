@@ -1,6 +1,6 @@
 # SuperCollision Lab: live handoff record
 
-**Commit/push after meaningful recoverable milestones, not each small edit.** Aim to limit possible loss of work to about 5-10 minutes during substantial changes; push sooner before risky operations. Update this handoff at major milestones, when a blocker appears, and before an intentional stop. The session may end unexpectedly, so never rely on a closing message. Avoid repetitive administration that wastes Work usage. No credentials here; mark unverified items UNVERIFIED.
+**Checkpoint by completed operation, not elapsed minutes. Work credits may expire exceptionally quickly.** Start with browser-only tasks, beginning with creation of the separate Cloudflare Pages lab project. After each consequential browser-only action (especially an external setting or deployment), record the confirmed result and any required next action in this handoff and push once. For code-only work, commit coherent milestones rather than every edit. Never defer the first useful commit or status record until the end. Avoid repetitive administration that wastes Work usage. No credentials in this file. No credentials here; mark unverified items UNVERIFIED.
 
 ## Known-good separation (14 November 2026)
 
@@ -64,6 +64,6 @@ Using Cloudflare account browser access, create a **NEW** Cloudflare Pages proje
 
 ## Recoverability
 
-At each meaningful checkpoint, **commit and push** to the experimental source branch. Do not interrupt every tiny edit with a GitHub operation. About 5-10 minutes of recoverable work at risk is the target, but sooner for risky operations. Update this handoff for major milestones and blockers with: last verified commit, actual deployment URL, files changed, tests actually run/results, blocker, and next 1-2 concrete actions. GitHub commits are the canonical state, not Work's temporary computer. Avoid accumulating substantial uncommitted work. If unexpectedly cut off, the next session should start by reading this document and GitHub status, without needing the previous Work session transcript.
+**Checkpoint after each consequential browser-only operation**, even if it is the first thing Work does. For code-only work, commit/push coherent completed milestones, not each keystroke. Keep the handoff current after an external configuration change, a significant milestone, or a blocker. Record verified commit, actual deployment URL, exact settings completed, tests actually run/results, blocker, and next concrete action. GitHub is the canonical state, not Work's temporary computer. If abruptly stopped, the latest browser-only configuration should be intelligible without the Work transcript. If unexpectedly cut off, the next session should start by reading this document and GitHub status, without needing the previous Work session transcript.
 
 Never merge `feature/offline-safe-foundation` to `main` or push to `pages-build` without explicit user authorization after comprehensive testing.
