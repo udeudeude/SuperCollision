@@ -401,8 +401,8 @@ try {
         const menus=await page.locator('#file-menu .file-submenu > summary').allTextContents();
         assert(menus.map(x=>x.trim()).join('|')==='IMPORT / EXPORT|EXAMPLES|EDITOR|STORAGE|LEARNING|TOOLS',
           'FILE submenus unexpected: '+menus.join('|'));
-        assert(await page.locator('#file-menu .menu-items > button').count()===4,
-          'New, Rename, Delete and Undo should remain direct FILE actions');
+        assert(await page.locator('#file-menu .menu-items > button').count()===5,
+          'New, Save as, Rename, Delete and Undo should remain direct FILE actions');
         await page.locator('#file-menu > summary').click();
         await page.locator('#file-menu .file-submenu > summary').filter({hasText:'IMPORT / EXPORT'}).click();
         const openBefore=await page.evaluate(()=>[...document.querySelectorAll('#file-menu .file-submenu')].filter(el=>el.open).length);
@@ -422,6 +422,80 @@ try {
         await page.locator('#file-menu > summary').click();
         assert(!(await page.locator('#file-menu').evaluate(el=>el.open)),'FILE summary must dismiss drawer');
 
+        // Save As must create a new composition without linking future edits
+        // to the original. Verify the browser-persisted copy on all phone sizes.
+        if(theme==='moog'){
+          const originalName=await page.evaluate(()=>localStorage.getItem('supercollision-active-v1'));
+          const source='(\n{ SinOsc.ar(533, 0, 0.1) ! 2 }.play;\n)';
+          const copyName='Independent composition '+width;
+          await page.locator('#code').fill(source);
+          await page.locator('#file-menu > summary').click();
+          page.once('dialog',dialog=>dialog.accept(copyName));
+          await page.locator('#save-as-project').click();
+          const afterCopy=await page.evaluate(()=>({
+            active:localStorage.getItem('supercollision-active-v1'),
+            saved:JSON.parse(localStorage.getItem('supercollision-projects-v1')||'{}'),
+            code:document.querySelector('#code').value,
+            menuOpen:document.querySelector('#file-menu').open
+          }));
+          assert(afterCopy.active===copyName&&afterCopy.code===source&&
+            afterCopy.saved[originalName]===source&&afterCopy.saved[copyName]===source&&
+            !afterCopy.menuOpen,
+            'Save As must preserve original and copy current edits: '+JSON.stringify(afterCopy));
+          const changed=source+'\n// only the new composition changes';
+          await page.locator('#code').fill(changed);
+          await page.waitForTimeout(350);
+          await page.reload();
+          const afterReload=await page.evaluate(()=>({
+            active:localStorage.getItem('supercollision-active-v1'),
+            saved:JSON.parse(localStorage.getItem('supercollision-projects-v1')||'{}'),
+            code:document.querySelector('#code').value
+          }));
+          assert(afterReload.active===copyName&&afterReload.code===changed&&
+            afterReload.saved[originalName]===source&&afterReload.saved[copyName]===changed,
+            'Save As must survive reload without modifying the original');
+          await page.locator('#project-toggle').click();
+          await page.locator('#project-list').getByRole('button',{name:originalName,exact:true}).click();
+          assert(await page.locator('#code').inputValue()===source,
+            'Switching back must restore the original composition without copied edits');
+          await page.locator('#project-toggle').click();
+          await page.locator('#project-list').getByRole('button',{name:copyName,exact:true}).click();
+          assert(await page.locator('#code').inputValue()===changed,
+            'Reopening the copy must restore its independent edits');
+
+          await page.locator('#file-menu > summary').click();
+          const dialogKinds=[];
+          const onDialog=dialog=>{
+            dialogKinds.push(dialog.type());
+            if(dialog.type()==='prompt')dialog.accept(copyName);
+            else dialog.accept();
+          };
+          page.on('dialog',onDialog);
+          await page.locator('#save-as-project').click();
+          page.off('dialog',onDialog);
+          assert(dialogKinds.join('|')==='prompt|alert',
+            'Save As must refuse an existing composition name');
+          const namesAfterDuplicate=await page.evaluate(()=>Object.keys(
+            JSON.parse(localStorage.getItem('supercollision-projects-v1')||'{}')));
+          assert(namesAfterDuplicate.filter(n=>n===copyName).length===1,
+            'Save As must not overwrite the existing copy');
+          await page.locator('#file-menu > summary').click();
+          page.once('dialog',dialog=>dialog.dismiss());
+          await page.locator('#save-as-project').click();
+          assert(await page.locator('#code').inputValue()===changed,
+            'Canceling Save As must keep the current composition untouched');
+
+          // Export remains a separate, downloadable SuperCollider source file.
+          await page.locator('#file-menu > summary').click();
+          await page.locator('#file-menu .file-submenu > summary').filter({hasText:'IMPORT / EXPORT'}).click();
+          const downloadPromise=page.waitForEvent('download',{timeout:5000});
+          await page.locator('#export-file').click();
+          const download=await downloadPromise;
+          assert(download.suggestedFilename().endsWith('.scd'),
+            'Save to Files must export a SuperCollider .scd file');
+          assert((await readFile(await download.path(),'utf8'))===changed,
+            'Export must contain the selected copy, not the original');
+        }
       }
     }
     await context.close();
