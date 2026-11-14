@@ -1,7 +1,7 @@
 {
-  "name": "SuperCollision",
-  "short_name": "SuperCollision",
-  "description": "SuperCollider composition and performance workbench",
+  "name": "SuperCollision Lab",
+  "short_name": "SuperCollision Lab",
+  "description": "Experimental SuperCollision workbench, separate from production",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
