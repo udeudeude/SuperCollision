@@ -76,7 +76,7 @@ try{
     } catch { return false; }
   }, storedCode, {timeout:10000});
   await page.waitForTimeout(400); // Allow the asynchronous IndexedDB transaction to commit.
-  const vaultStatus = await page.locator('#lab-vault-status').innerText();
+  const vaultStatus = await page.locator('#lab-vault-status').textContent();
   assert(vaultStatus.includes('Extra local copy saved'),
     'IndexedDB save status after edit: ' + vaultStatus);
   await page.reload({waitUntil:'load'});
