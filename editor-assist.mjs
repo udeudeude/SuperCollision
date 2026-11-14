@@ -15,7 +15,7 @@ function element(tag,className='',text=''){
  return el;
 }
 export function createLanguageTools({editor,host,getLearningMode=()=> 'guided',onEdit=()=>{}}){
- let catalog=buildCatalog(),enabled=true,selection=null,typing=null,
+ let catalog=buildCatalog(),enabled=true,suspended=false,selection=null,typing=null,
    lastCaret=0,previousFocus=null,completed=false;
  let history={counts:{},recent:[]};
  try{
@@ -156,7 +156,7 @@ export function createLanguageTools({editor,host,getLearningMode=()=> 'guided',o
  search.addEventListener('input',()=>{detail.hidden=true;list.hidden=false;renderList()});
  sorts.addEventListener('change',renderList);categories.addEventListener('change',renderList);
  function setTrayOpen(open){
-   if(!enabled)open=false;
+   if(!enabled||suspended)open=false;
    tray.hidden=!open;document.body.classList.toggle('completion-open',open);
  }
  function insertAt(start,end,text,name){
@@ -317,7 +317,7 @@ export function createLanguageTools({editor,host,getLearningMode=()=> 'guided',o
    typing={kind:'signature',info};
  }
  function refresh(){
-   if(!enabled||document.activeElement!==editor){closeTray();return}
+   if(!enabled||suspended||document.activeElement!==editor){closeTray();return}
    const caret=editor.selectionStart;
    if(editor.selectionEnd!==caret){closeTray();return}
    lastCaret=caret;
@@ -381,6 +381,10 @@ export function createLanguageTools({editor,host,getLearningMode=()=> 'guided',o
    if(!panel.hidden){buildCategories();renderList()}
    refresh();
  })();
- return {open,hide,refresh,setEnabled,modeChanged,get enabled(){return enabled},
+ function suspend(next){
+   suspended=Boolean(next);
+   if(suspended)closeTray();else refresh();
+ }
+ return {open,hide,refresh,setEnabled,modeChanged,suspend,get enabled(){return enabled},
    get catalog(){return catalog},get isOpen(){return !panel.hidden}};
 }

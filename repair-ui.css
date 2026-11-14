@@ -1,0 +1,74 @@
+/* Error repair lives above the code, where the keyboard cannot cover it.
+   It replaces argument assistance; the console is not an editing surface. */
+body #repair-panel[hidden],body[data-theme] #repair-panel[hidden]{display:none!important}
+body #repair-panel,body[data-theme] #repair-panel{display:none}
+body.repair-open,body[data-theme].repair-open{
+ --chrome:36px;--console:36px;
+ height:min(100dvh,var(--repair-visual-height,100dvh))!important;
+}
+body.repair-open main>.panel:first-child,
+body[data-theme].repair-open main>.panel:first-child{
+ grid-template-rows:var(--repair-dock-height,150px) minmax(0,1fr) 45px!important;
+ grid-template-areas:"repair" "editor" "transport"!important;
+}
+body.repair-open main .projectbar,body[data-theme].repair-open main .projectbar,
+body.repair-open main #completion-tray,body[data-theme].repair-open main #completion-tray{
+ display:none!important
+}
+body.repair-open main #live-panel,body[data-theme].repair-open main #live-panel{
+ display:none!important
+}
+body.repair-open main #repair-panel,body[data-theme].repair-open main #repair-panel{
+ grid-area:repair!important;display:flex!important;flex-direction:column;
+ box-sizing:border-box;min-height:0;height:100%;width:100%;overflow:hidden;
+ margin:0!important;padding:5px 8px!important;gap:4px;
+ border:2px solid var(--file-border,#a88a5e);
+ background:var(--file-bg,#292520);color:var(--file-fg,#eadcbe);
+ border-radius:0;z-index:10;
+}
+body .repair-head{display:flex;flex:none;align-items:center;justify-content:space-between;gap:5px}
+body #repair-title{font:800 12px/1.25 system-ui,sans-serif;overflow:hidden;
+ text-overflow:ellipsis;white-space:nowrap}
+body #repair-panel button,body #repair-open-button{
+ border:1px solid currentColor;border-radius:2px;background:transparent;
+ color:inherit;box-shadow:none;letter-spacing:0;
+ font:800 10px/1.2 system-ui,sans-serif;padding:4px 7px;min-height:29px;
+ white-space:nowrap
+}
+body #repair-panel #repair-close{min-height:26px;height:26px}
+body #repair-description{flex:none;margin:0;font:11px/1.35 system-ui,sans-serif;
+ display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+ overflow:hidden}
+body .repair-preview{display:flex;flex:1;min-height:0;overflow-y:auto;flex-direction:column;
+ gap:3px;border-top:1px solid color-mix(in srgb,currentColor 45%,transparent);
+ padding-top:3px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+body .repair-preview[hidden]{display:none!important}
+body .repair-preview small{display:inline-block;min-width:92px;vertical-align:top;
+ font:800 9px/1.35 system-ui,sans-serif;opacity:.85}
+body .repair-preview code{display:inline;color:inherit;white-space:pre-wrap;
+ overflow-wrap:anywhere;font:10px/1.3 ui-monospace,monospace}
+body .repair-preview>div:first-child code{color:#eeb8ac}
+body .repair-preview>div:last-child code{color:#b0e5b9}
+body #repair-feedback{flex:none;max-height:28px;overflow:hidden;margin:0;
+ font:10px/1.25 system-ui,sans-serif}
+body .repair-actions{display:flex;flex:none;gap:5px;align-items:center;justify-content:flex-start}
+body #repair-panel .repair-actions button{min-height:30px;max-width:100%;overflow:hidden;
+ text-overflow:ellipsis;padding:4px 6px}
+body #repair-apply{font-weight:900;background:var(--inspector-active-bg,#d3ac6d)!important;
+ color:var(--inspector-active-fg,#221b13)!important;border-color:transparent!important}
+body #repair-panel button:disabled{opacity:.45}
+body #repair-panel [hidden],body #repair-open-button[hidden]{display:none!important}
+body #repair-open-button{flex:none;max-width:70px;padding:4px 5px!important;
+ margin-right:2px;min-height:30px;height:30px;font-size:9px}
+body.repair-available .console-bar #engine-status{display:none!important}
+body.repair-open .console-bar #repair-open-button{
+ background:var(--inspector-active-bg,#d3ac6d);
+ color:var(--inspector-active-fg,#221b13)
+}
+@media(max-width:360px){
+ body .repair-preview small{min-width:75px;font-size:8px}
+ body .repair-preview code{font-size:9px}
+ body #repair-title{font-size:11px}
+ body #repair-description{font-size:10px}
+ body #repair-panel .repair-actions button{font-size:9px;padding:3px 4px}
+}

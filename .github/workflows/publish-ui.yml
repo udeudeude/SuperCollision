@@ -17,6 +17,8 @@ on:
       - 'catalog-core.mjs'
       - 'editor-assist.mjs'
       - 'error-guide.mjs'
+      - 'repair-ui.mjs'
+      - 'repair-ui.css'
       - 'catalog-assist.css'
       - 'sound-designer.mjs'
       - 'sound-designer-core.mjs'
@@ -69,7 +71,7 @@ jobs:
           cp source/performance-engine.mjs site/performance-engine.mjs
           cp source/performance-ui.mjs site/performance-ui.mjs
           cp source/performance.css site/performance.css
-          cp source/learning.mjs source/learning.css source/catalog-core.mjs source/editor-assist.mjs source/error-guide.mjs source/catalog-assist.css source/osc-priority-bridge.mjs source/sound-designer.mjs source/sound-designer-core.mjs source/sound-designer.css site/
+          cp source/learning.mjs source/learning.css source/catalog-core.mjs source/editor-assist.mjs source/error-guide.mjs source/repair-ui.mjs source/repair-ui.css source/catalog-assist.css source/osc-priority-bridge.mjs source/sound-designer.mjs source/sound-designer-core.mjs source/sound-designer.css site/
           python3 source/scripts/build_language_catalog.py upstream-help/HelpSource/Classes site/language-catalog.json
           cp source/app-icon.svg source/manifest.webmanifest site/
           python3 -m pip install --quiet --break-system-packages cairosvg
@@ -79,7 +81,7 @@ jobs:
           cd site
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html _headers instrument-layout.css instrument-layout.js live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs performance.css learning.mjs learning.css catalog-core.mjs editor-assist.mjs error-guide.mjs catalog-assist.css osc-priority-bridge.mjs sound-designer.mjs sound-designer-core.mjs sound-designer.css language-catalog.json app-icon.svg manifest.webmanifest apple-touch-icon.png app-icon-192.png app-icon-512.png
+          git add index.html _headers instrument-layout.css instrument-layout.js live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs performance.css learning.mjs learning.css catalog-core.mjs editor-assist.mjs error-guide.mjs repair-ui.mjs repair-ui.css catalog-assist.css osc-priority-bridge.mjs sound-designer.mjs sound-designer-core.mjs sound-designer.css language-catalog.json app-icon.svg manifest.webmanifest apple-touch-icon.png app-icon-192.png app-icon-512.png
           if git diff --cached --quiet; then
             echo "Already current"
           else

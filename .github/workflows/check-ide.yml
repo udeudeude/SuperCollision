@@ -71,6 +71,8 @@ jobs:
           node --check catalog-core.mjs
           node --check editor-assist.mjs
           node --check error-guide.mjs
+          node --check repair-ui.mjs
+          node --check qa/repair-browser-test.mjs
           node --check sound-designer-core.mjs
           node --check sound-designer.mjs
           python3 - <<'PY'

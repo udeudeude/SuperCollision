@@ -1,6 +1,6 @@
 /* Human-readable error diagnosis without modifying SuperCollider source. */
 import assert from 'node:assert/strict';
-import {explainConsoleError} from '../error-guide.mjs';
+import {explainConsoleError,resolveCorrection} from '../error-guide.mjs';
 
 const source=[
  'SynthDef(\\gardenMarimba, {',
@@ -23,6 +23,20 @@ assert.match(diagnostic.message,/levelScale: nil/);
 assert.equal(diagnostic.line,3);
 assert.equal(diagnostic.correction,
  'EnvGen.kr(Env.perc(0.003, 0.48, 1, -5), doneAction: 2)');
+assert.equal(source.slice(diagnostic.fix.start,diagnostic.fix.end),diagnostic.fix.before);
+assert.equal(diagnostic.fix.after,diagnostic.correction);
+const located=resolveCorrection(source,diagnostic.fix);
+assert.equal(located.start,source.indexOf('EnvGen.kr('));
+const amended=source.slice(0,located.start)+located.after+source.slice(located.end);
+assert.ok(amended.includes(diagnostic.correction));
+assert.equal(resolveCorrection(amended,diagnostic.fix),null,
+ 'Never apply the same correction twice');
+assert.equal(resolveCorrection(source+source,diagnostic.fix),null,
+ 'Never apply to an ambiguous duplicate');
+const prefix='// a new note first\n';
+const shifted=prefix+source;
+assert.equal(resolveCorrection(shifted,diagnostic.fix).start,located.start+prefix.length,
+ 'A unique edit must survive unrelated insertions before it');
 assert.equal(source.split('\n')[3].includes('levelScale: nil'),true,
  'The diagnostic must never rewrite the original source');
 

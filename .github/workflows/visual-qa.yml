@@ -17,6 +17,8 @@ on:
       - 'catalog-core.mjs'
       - 'editor-assist.mjs'
       - 'error-guide.mjs'
+      - 'repair-ui.mjs'
+      - 'repair-ui.css'
       - 'catalog-assist.css'
       - 'sound-designer.mjs'
       - 'sound-designer-core.mjs'
@@ -43,6 +45,7 @@ jobs:
         run: |
           node qa/layout-check.mjs
           node qa/catalog-browser-test.mjs
+          node qa/repair-browser-test.mjs
           node qa/sound-designer-browser-test.mjs
       - name: Upload comparison screenshots
         if: always()

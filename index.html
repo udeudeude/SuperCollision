@@ -202,7 +202,7 @@ body[data-theme=terminal] .projectbar button,body[data-theme=terminal] .menu>sum
 body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 @media(max-width:390px){body[data-theme=patch] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 78px}body[data-theme=scope] .toolbar button{font-size:9px}body[data-theme=score] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 65px}}
 </style>
-<link rel="stylesheet" href="./instrument-layout.css?v=24"><link rel="stylesheet" href="./performance.css?v=22"><link rel="stylesheet" href="./learning.css?v=5"><link rel="stylesheet" href="./catalog-assist.css?v=3"><link rel="stylesheet" href="./sound-designer.css?v=3">
+<link rel="stylesheet" href="./instrument-layout.css?v=24"><link rel="stylesheet" href="./performance.css?v=22"><link rel="stylesheet" href="./learning.css?v=5"><link rel="stylesheet" href="./catalog-assist.css?v=3"><link rel="stylesheet" href="./repair-ui.css?v=1"><link rel="stylesheet" href="./sound-designer.css?v=3">
 <header><svg class="identity-art" viewBox="0 0 48 40" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
 <g class="art art-bauhaus"><rect x="1" y="3" width="18" height="18" fill="#1f4b8f"/><circle cx="30" cy="13" r="11" fill="#bf4337"/><path d="M3 37L21 23L39 37Z" fill="#e8ae40"/></g>
 <g class="art art-blackmountain" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 4V36M14 4V36M24 4V36M34 4V36M44 4V36"/><path d="M2 11H46M2 21H46M2 31H46" stroke="#b7774f" stroke-width="4"/><path d="M4 11H14M24 21H34M14 31H24" stroke="#e9e1cf" stroke-width="5"/></g>
@@ -217,7 +217,7 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 <g class="art art-scope" fill="none" stroke="currentColor"><path d="M2 20H46M24 1V39M2 8H46M2 32H46" opacity=".3"/><path d="M2 20H7L12 10L18 31L24 4L30 30L36 13L42 20H46" stroke="#a0ffae" stroke-width="2.5"/></g>
 <g class="art art-patch" fill="none" stroke="#342b20" stroke-width="2"><path d="M8 12Q24 -2 40 12M8 12Q5 34 24 31M24 31Q47 37 40 12" stroke="#d27c3b" stroke-width="3"/><circle cx="8" cy="12" r="6" fill="#eee2c4"/><circle cx="40" cy="12" r="6" fill="#eee2c4"/><circle cx="24" cy="31" r="6" fill="#eee2c4"/></g>
 <g class="art art-terminal" fill="none" stroke="currentColor" stroke-width="3"><path d="M2 6L16 20L2 34M23 34H46"/><rect x="27" y="7" width="10" height="10" stroke="none" fill="currentColor"/></g>
-</svg><h1>SuperCollision</h1><small><span class="version-prefix">INSTRUMENT / </span>2.5</small><div class="theme-strip"><label for="theme-choice">DESIGN</label><select id="theme-choice" aria-label="Visual design"><option value="bauhaus">Bauhaus</option><option value="blackmountain">Black Mountain</option><option value="moog">Moog</option><option value="makenoise">Make Noise</option><option value="score">01 / Living Score</option><option value="scope">02 / Oscilloscope</option><option value="patch">03 / Patch Diagram</option><option value="terminal">04 / Brutalist Terminal</option></select></div></header>
+</svg><h1>SuperCollision</h1><small><span class="version-prefix">INSTRUMENT / </span>2.6</small><div class="theme-strip"><label for="theme-choice">DESIGN</label><select id="theme-choice" aria-label="Visual design"><option value="bauhaus">Bauhaus</option><option value="blackmountain">Black Mountain</option><option value="moog">Moog</option><option value="makenoise">Make Noise</option><option value="score">01 / Living Score</option><option value="scope">02 / Oscilloscope</option><option value="patch">03 / Patch Diagram</option><option value="terminal">04 / Brutalist Terminal</option></select></div></header>
 <main>
 <div class="panel">
 <div class="projectbar"><div class="composition-picker"><button id="project-toggle" type="button" class="secondary" aria-expanded="false" aria-controls="project-list">Composition ▾</button><div id="project-list" class="project-list" hidden role="listbox" aria-label="Saved compositions"></div></div><select id="projects" aria-label="Saved compositions" hidden></select><details class="menu" id="file-menu">
@@ -327,7 +327,7 @@ const fixedLivingDemo="(\ns.waitForBoot({\n    Routine({\n        SynthDef(\\scD
 for(const name of Object.keys(projects)){if(/^(?:Living Code Demo|Living Code Demonstration)(?: [0-9]+)?$/.test(name)&&(projects[name]===legacyLivingDemo||projects[name]===intermediateLivingDemo))projects[name]=fixedLivingDemo;}
 if(!Object.hasOwn(projects,active))active=Object.keys(projects)[0];
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(projects));localStorage.setItem(ACTIVE,active);saveStatus.textContent='SAVED'}catch(e){saveStatus.textContent='SAVE ERROR'}}
-function renderProjects(){projectsEl.replaceChildren();for(const name of Object.keys(projects)){const option=document.createElement('option');option.value=name;option.textContent=name;projectsEl.append(option)}projectsEl.value=active;code.value=projects[active]||'';code.scrollTop=0;code.scrollLeft=0;updatePreview();persist();renderPicker();window.SCActivity?.document(active,code.value);window.SCTimeline?.document(active,code.value);window.SCLanguageTools?.refresh()}
+function renderProjects(){window.SCRepair?.clear();projectsEl.replaceChildren();for(const name of Object.keys(projects)){const option=document.createElement('option');option.value=name;option.textContent=name;projectsEl.append(option)}projectsEl.value=active;code.value=projects[active]||'';code.scrollTop=0;code.scrollLeft=0;updatePreview();persist();renderPicker();window.SCActivity?.document(active,code.value);window.SCTimeline?.document(active,code.value);window.SCLanguageTools?.refresh()}
 function commit(){projects[active]=code.value;persist()}
 const toggle=document.querySelector('#project-toggle'),list=document.querySelector('#project-list');
 let recentlyDeleted=null;const undoDelete=document.querySelector('#undo-delete');
@@ -437,8 +437,9 @@ import {createPerformanceUI} from "./performance-ui.mjs?v=22";
 import {encodeOsc} from "./performance-engine.mjs?v=22";
 import {createPriorityOscBridge} from "./osc-priority-bridge.mjs?v=1";
 import {createLearning} from "./learning.mjs?v=5";
-import {explainConsoleError} from "./error-guide.mjs?v=1";
-import {createLanguageTools} from "./editor-assist.mjs?v=4";
+import {explainConsoleError} from "./error-guide.mjs?v=2";
+import {createRepairUI} from "./repair-ui.mjs?v=1";
+import {createLanguageTools} from "./editor-assist.mjs?v=5";
 import {createSoundDesigner} from "./sound-designer.mjs?v=6";
 let lang,synth;
 let languageReady=false,serverReady=false,serverBootRequested=false,bootRetryCount=0;
@@ -451,6 +452,8 @@ document.querySelector('#learning-open').onclick=()=>learning.open();
 const languageTools=createLanguageTools({editor:code,host:document.querySelector('#learning-host'),
   getLearningMode:()=>learning.mode});
 window.SCLanguageTools=languageTools;
+const repair=createRepairUI({editor:code});
+window.SCRepair=repair;
 document.querySelector('#catalog-open').onclick=()=>languageTools.open();
 const completionToggle=document.querySelector('#completion-toggle');
 function refreshCompletionToggle(){completionToggle.textContent='Code suggestions: '+(languageTools.enabled?'on':'off')}
@@ -499,6 +502,7 @@ const explanationJump=document.querySelector('#console-guidance-jump');
 const explanationCopy=document.querySelector('#console-guidance-copy');
 function showConsoleExplanation(info){
  if(!info)return;
+ repair.offer(info);
  const key=info.kind+'|'+info.title+'|'+(info.line||'');
  if(key===shownErrorKey&&!explanation.hidden)return;
  shownErrorKey=key;
@@ -506,25 +510,15 @@ function showConsoleExplanation(info){
  document.querySelector('#console-guidance-title').textContent=info.title;
  document.querySelector('#console-guidance-text').textContent=info.message;
  explanationJump.hidden=!info.line;
- explanationJump.onclick=()=>{
-   if(!info.line)return;
-   window.setSuperCollisionView?.('code');
-   const lines=code.value.split('\n'),line=Math.max(1,Math.min(lines.length,info.line));
-   const start=lines.slice(0,line-1).reduce((n,v)=>n+v.length+1,0);
-   code.focus({preventScroll:true});
-   code.setSelectionRange(start,start+lines[line-1].length);
-   const h=parseFloat(getComputedStyle(code).lineHeight)||21;
-   code.scrollTop=Math.max(0,(line-1)*h-code.clientHeight*.25);
-   code.dispatchEvent(new Event('scroll'));
- };
- explanationCopy.hidden=!info.correction;
- explanationCopy.onclick=()=>{
-   if(!info.correction)return;
-   navigator.clipboard?.writeText(info.correction).then(()=>{explanationCopy.textContent='COPIED'}).catch(()=>{explanationCopy.textContent='COPY UNAVAILABLE'});
- };
- explanationCopy.textContent='COPY CORRECTION';
+ explanationJump.onclick=()=>repair.open({jump:true});
+ explanationJump.textContent='GO TO ERROR IN EDITOR';
+ explanationCopy.hidden=false;
+ // Copying an unexplained string was ambiguous. Instead show the exact
+ // original and proposed replacement together, then let the user apply it.
+ explanationCopy.onclick=()=>repair.open();
+ explanationCopy.textContent=info.fix?'REVIEW FIX IN EDITOR':'EDIT WITH ERROR HELP';
 }
-document.querySelector('#console-guidance-dismiss').onclick=()=>{explanation.hidden=true;shownErrorKey=''};
+document.querySelector('#console-guidance-dismiss').onclick=()=>{explanation.hidden=true;shownErrorKey='';repair.clear()};
 function print(t){
  const output=String(t);
  if(/ERROR:|FAILURE|WARNING: Server/.test(output)){
@@ -540,7 +534,7 @@ function print(t){
    requestAnimationFrame(flushPrintQueue);
  }
 }
-document.querySelector('#clear-console').onclick=()=>{printQueue=[];log.textContent='';diagnosticTail='';explanation.hidden=true;shownErrorKey=''};
+document.querySelector('#clear-console').onclick=()=>{printQueue=[];log.textContent='';diagnosticTail='';explanation.hidden=true;shownErrorKey='';repair.clear()};
 let booting=false;
 function requestServerBoot(){
  if(!lang||!languageReady||serverReady||serverBootRequested)return;
@@ -627,7 +621,7 @@ document.querySelector('#engine').onclick=async()=>{
   message('Initializing language and audio server.');
  }catch(e){message('Runtime unavailable: '+e.message);print(e.stack||e.message)}finally{booting=false;document.querySelector('#engine').disabled=false}
 };
-function submitCode(source,start,end){if(!lang)return;try{diagnosticTail='';explanation.hidden=true;shownErrorKey='';flush();activeRegion=null;updateLines();state.classList.remove('error');liveCode.evaluation(active,code.value,source,start);performanceUI.evaluation(active,code.value,source,start);lang.runCode(source);window.scPlaybackRequested=true;requestWake();message('EVALUATED L'+start+'–'+end+' · execution submitted')}catch(e){message('Evaluation failed: '+e.message)}}
+function submitCode(source,start,end){if(!lang)return;try{diagnosticTail='';explanation.hidden=true;shownErrorKey='';repair.clear();flush();activeRegion=null;updateLines();state.classList.remove('error');liveCode.evaluation(active,code.value,source,start);performanceUI.evaluation(active,code.value,source,start);lang.runCode(source);window.scPlaybackRequested=true;requestWake();message('EVALUATED L'+start+'–'+end+' · execution submitted')}catch(e){message('Evaluation failed: '+e.message)}}
 run.onclick=()=>submitCode(code.value,1,code.value.split('\n').length);
 document.querySelector('#run-region').onclick=()=>{const a=code.selectionStart,b=code.selectionEnd,text=code.value;let from=a,to=b;if(a===b){from=text.lastIndexOf('\n',Math.max(0,a-1))+1;to=text.indexOf('\n',a);if(to<0)to=text.length}const source=text.slice(from,to);if(!source.trim())return;const start=text.slice(0,from).split('\n').length,end=start+source.split('\n').length-1;submitCode(source,start,end)};
 panic.onclick=()=>{if(!lang)return;try{
@@ -686,7 +680,7 @@ saveButton.onclick=()=>{
  message('WAV exported · '+Math.round(r.frames/r.ac.sampleRate)+' seconds');
 };
 </script>
-<script src="./instrument-layout.js?v=19"></script><script defer src="https://cloud.umami.is/script.js" data-website-id="f374a945-0ea2-41ed-8eb7-4b6ab6933f9a"></script>
+<script src="./instrument-layout.js?v=20"></script><script defer src="https://cloud.umami.is/script.js" data-website-id="f374a945-0ea2-41ed-8eb7-4b6ab6933f9a"></script>
 <script>
 document.addEventListener('click', function(e) {
   const control=e.target.closest('button,a,[role="button"]');
