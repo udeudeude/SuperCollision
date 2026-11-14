@@ -17,6 +17,17 @@
 - The browser test verified no large startup downloads, no engine download after declined consent, full offline-pack installation, offline reload, and cached WebAssembly engine assets in Chromium. **Real iPhone Safari results remain UNVERIFIED**.
 - Most recent experimental source version in published lab manifest: `2b1d9c6fddecaf1b189f09930f5f61a3f8c9809e`. Lab deployment branch `lab-build` at `3d1586e3dfe5912225d28d2ca93e1fb7b817b4de` after passing tests.
 
+## Composition recovery milestone — 14 November 2026
+
+- Built `lab-composition-vault.mjs`, an experimental IndexedDB snapshot mirror. Existing `localStorage` compositions and Save to Files remain intact.
+- Lab File > Storage displays the backup state and, if snapshots diverge, offers **Recover extra local copy** (merge as separately named compositions, never overwrite current ones) or **Keep current compositions** (explicitly replace the extra copy after confirmation). No automatic destructive restoration.
+- Browser test verifies initial mirror, updated composition persistence, simulated differing localStorage content, non-destructive recovery, continued offline cache installation and offline reload.
+- **SUCCESS:** GitHub Actions publish run https://github.com/udeudeude/SuperCollision/actions/runs/43648014674. `lab-build` now contains the recovery module and refreshed offline manifest, 37 files / 8,052,055 bytes.
+- Also changed navigation policy in laboratory service worker: network-first for online page navigations, falling back to the complete cached offline copy on failed network requests.
+- Production branches `main` and `pages-build` unchanged as verified after publication.
+- **iPhone behavior not yet tested for this milestone.** The user's previously downloaded offline pack is an older version; test the original Airplane Mode behavior first, then on Wi-Fi opt in to updating the offline pack through File > Storage > Make available offline. Browser caching may continue showing the old interface until the app is updated. Do not advise clearing website data because that can delete stored compositions.
+- This IndexedDB mirror is NOT a durable Files backup: iOS may evict both databases together; recording files are not mirrored by this feature.
+
 ## iPhone offline installation checkpoint — 14 November 2026, about 5:16 PM local
 
 - User-supplied iPhone Safari screenshot at `https://lab-build.supercollision.pages.dev/` displays the modal: "Offline copy saved. You can now test in Airplane Mode. Export important compositions and recordings to Files as backups."
@@ -82,7 +93,7 @@
 - Audit all runtime network fetches and document the size/triggering behavior.
 - Laboratory publishing and automated Chromium offline reload verified in successful GitHub Actions run 43631530605. Continue testing only when new changes warrant it.
 - Experimental service worker, download controls, and Chromium offline test harness implemented and passed. Validate deployed Cloudflare and real iPhone Safari before calling the feature production-ready.
-- Add IndexedDB working storage with migration from existing localStorage; add backup recovery tests.
+- **Implemented non-destructive IndexedDB mirror and recovery controls for compositions**, browser-tested. A full transition from localStorage to IndexedDB and persistence for audio recordings remain future tasks; user Files backups are still essential.
 - Improve user-mediated Files exports; do not compromise current saving behavior.
 
 ## Recoverability
