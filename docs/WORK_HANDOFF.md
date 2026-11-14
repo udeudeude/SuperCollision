@@ -17,6 +17,12 @@
 - The browser test verified no large startup downloads, no engine download after declined consent, full offline-pack installation, offline reload, and cached WebAssembly engine assets in Chromium. **Real iPhone Safari results remain UNVERIFIED**.
 - Most recent experimental source version in published lab manifest: `2b1d9c6fddecaf1b189f09930f5f61a3f8c9809e`. Lab deployment branch `lab-build` at `3d1586e3dfe5912225d28d2ca93e1fb7b817b4de` after passing tests.
 
+## iPhone offline installation checkpoint — 14 November 2026, about 5:16 PM local
+
+- User-supplied iPhone Safari screenshot at `https://lab-build.supercollision.pages.dev/` displays the modal: "Offline copy saved. You can now test in Airplane Mode. Export important compositions and recordings to Files as backups."
+- The File > Storage > Make available offline command is visible behind the success modal. **The client reports successful cache installation**, but offline reload, actual synthesizer output, and reopening after restart are still **UNVERIFIED**.
+- Immediate next user test: Airplane Mode with Wi-Fi separately disabled, reload the preview, confirm editor appears; then POWER, RUN the default `SinOsc`, STOP. Report outcomes before calling offline iPhone functionality verified.
+
 ## Preview address discovered without another Cloudflare project — 14 November 2026
 
 - User opened `https://lab-build.supercollision.pages.dev/` in Safari on iPhone, and supplied a screenshot showing SuperCollision's editor and controls, version 2.7. The preview address is a separate origin from production.
