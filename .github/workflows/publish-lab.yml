@@ -1,0 +1,135 @@
+name: Publish isolated SuperCollision lab
+on:
+  push:
+    branches:
+      - feature/offline-safe-foundation
+    paths:
+      - '*.html'
+      - '*.css'
+      - '*.js'
+      - '*.mjs'
+      - '*.json'
+      - '*.webmanifest'
+      - '*.svg'
+      - '_headers'
+      - 'qa/offline-policy-test.mjs'
+      - 'qa/lab-offline-browser-test.mjs'
+      - '.github/workflows/publish-lab.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: supercollision-lab-publish
+  cancel-in-progress: true
+jobs:
+  publish-lab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout experimental application source
+        uses: actions/checkout@v4
+        with:
+          ref: feature/offline-safe-foundation
+          path: source
+      - name: Checkout isolated compiled lab site
+        uses: actions/checkout@v4
+        with:
+          ref: lab-build
+          path: site
+          persist-credentials: true
+      - name: Verify lab runtime exists
+        run: |
+          python3 source/scripts/verify_runtime.py site/runtime
+      - name: Run experimental download policy tests
+        run: |
+          node source/qa/offline-policy-test.mjs
+      - name: Overlay frontend files without touching compiled runtime
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from shutil import copy2
+          source, target = Path("source"), Path("site")
+          frontend_suffixes = {".html", ".js", ".mjs", ".css", ".json", ".webmanifest", ".svg"}
+          for item in source.iterdir():
+              if item.is_file() and (item.suffix in frontend_suffixes or item.name == "_headers"):
+                  copy2(item, target / item.name)
+          assert (target / "runtime/sclang/sclang.wasm").is_file()
+          assert (target / "runtime/scsynth/scsynth.wasm").is_file()
+          PY
+      - name: Assemble explicit offline pack manifest
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          import subprocess
+          target = Path("site")
+          allowed = {".html", ".js", ".mjs", ".css", ".json", ".webmanifest", ".svg", ".png"}
+          roots = [p for p in target.iterdir()
+                   if p.is_file() and p.suffix in allowed
+                   and p.name not in {"lab-offline-assets.json"}]
+          runtime = [
+              target / "runtime/sclang/sclang.js",
+              target / "runtime/sclang/sclang.wasm",
+              target / "runtime/sclang/sclang.data",
+              target / "runtime/sclang/init.js",
+              target / "runtime/scsynth/scsynth.js",
+              target / "runtime/scsynth/scsynth.wasm",
+              target / "runtime/scsynth/init.js",
+          ]
+          required = [target / "index.html", target / "lab-sw.js",
+                      target / "lab-offline.mjs", target / "language-catalog.json"]
+          files = sorted(set(roots + runtime), key=lambda p: str(p))
+          if any(not f.is_file() for f in required + runtime):
+              raise SystemExit("Lab offline manifest: missing essential resources")
+          source_sha = subprocess.check_output(
+              ["git", "-C", "source", "rev-parse", "HEAD"], text=True).strip()
+          entries = [{"path": "/" + p.relative_to(target).as_posix(),
+                      "bytes": p.stat().st_size} for p in files]
+          manifest = {"format": "supercollision-lab-offline-v1",
+                      "version": source_sha, "files": entries}
+          (target / "lab-offline-assets.json").write_text(
+              json.dumps(manifest, separators=(",", ":")) + "\n")
+          print(f"Offline pack: {len(entries)} files, {sum(e['bytes'] for e in entries)} bytes")
+          PY
+      - name: Validate offline scripts, policy and manifest
+        run: |
+          node --check source/lab-sw.js
+          node --check source/lab-offline.mjs
+          node --check source/editor-assist.mjs
+          node source/qa/offline-policy-test.mjs
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          site = Path("site")
+          manifest = json.loads((site / "lab-offline-assets.json").read_text())
+          paths = {entry["path"] for entry in manifest["files"]}
+          assert "/index.html" in paths
+          assert "/lab-sw.js" in paths
+          assert "/lab-offline.mjs" in paths
+          assert "/runtime/sclang/sclang.wasm" in paths
+          assert "/runtime/scsynth/scsynth.wasm" in paths
+          for item in manifest["files"]:
+              asset = site / item["path"].lstrip("/")
+              assert asset.is_file() and asset.stat().st_size == item["bytes"]
+          html = (site / "index.html").read_text()
+          assert 'id="lab-offline-download"' in html
+          assert 'src="./lab-offline.mjs"' in html
+          assert "Load complete catalog (1.5 MB)" in (site / "editor-assist.mjs").read_text()
+          PY
+      - name: Browser-test experimental offline mode before publishing
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+          node source/qa/lab-offline-browser-test.mjs
+      - name: Commit and publish laboratory branch only
+        run: |
+          cd site
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Lab branch is already current"
+          else
+            git commit -m "Publish isolated SuperCollision lab frontend"
+            git push origin HEAD:lab-build
+          fi

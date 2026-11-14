@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {canDownloadResource, isLargeOrUnknown, CELLULAR_UNKNOWN_BUDGET_BYTES} from '../offline-cache-policy.mjs';
+assert.equal(canDownloadResource({bytes: 200_000}), true);
+assert.equal(canDownloadResource({bytes: CELLULAR_UNKNOWN_BUDGET_BYTES}), true);
+assert.equal(canDownloadResource({bytes: CELLULAR_UNKNOWN_BUDGET_BYTES + 1}), false);
+assert.equal(canDownloadResource({}), false);
+assert.equal(canDownloadResource({bytes: 5_000_000, explicitlyApproved: true}), true);
+assert.equal(canDownloadResource({bytes: 5_000_000, verifiedWifi: true}), true);
+assert.equal(isLargeOrUnknown(undefined), true);
+assert.equal(isLargeOrUnknown(1_000_001), true);
+assert.equal(canDownloadResource({bytes: 700_000, alreadyDownloadedBytes: 300_000}), true);
+assert.equal(canDownloadResource({bytes: 700_001, alreadyDownloadedBytes: 300_000}), false);
+assert.equal(canDownloadResource({bytes: 1, alreadyDownloadedBytes: 1_000_000}), false);
+assert.equal(canDownloadResource({bytes: 200_000, alreadyDownloadedBytes: undefined}), true);
+assert.equal(canDownloadResource({bytes: 200_000, alreadyDownloadedBytes: -1}), false);
+assert.equal(canDownloadResource({bytes: 1, alreadyDownloadedBytes: 0.1}), false);
+assert.equal(canDownloadResource({bytes: 200_000, alreadyDownloadedBytes: 999_999, explicitlyApproved: true}), true);
+console.log('Offline download policy checks passed');
