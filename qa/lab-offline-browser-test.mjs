@@ -63,6 +63,46 @@ try{
   assert.equal(requests.some(x=>x.startsWith('/runtime/')),false,
     'The audio runtime downloaded without permission');
 
+  // IndexedDB mirror is additive. Confirm it persists edits and offers
+  // non-destructive recovery if browser localStorage later differs.
+  await page.waitForFunction(() =>
+    document.querySelector('#lab-vault-status')?.textContent?.includes('Extra local copy'),
+    null, {timeout:10000});
+  const storedCode='(\\n{ SinOsc.ar(330, 0, 0.12) ! 2 }.play;\\n)';
+  await page.locator('#code').fill(storedCode);
+  await page.waitForFunction(() =>
+    document.querySelector('#lab-vault-status')?.textContent?.includes('Extra local copy saved'),
+    null, {timeout:10000});
+  await page.reload({waitUntil:'load'});
+  assert.equal(await page.locator('#code').inputValue(), storedCode,
+    'Existing composition did not survive reload');
+  await page.waitForFunction(() =>
+    document.querySelector('#lab-vault-status')?.textContent?.includes('Extra local copy'),
+    null, {timeout:10000});
+  // Simulate localStorage contents changing outside this instance.
+  await page.evaluate(() => {
+    localStorage.setItem('supercollision-projects-v1', JSON.stringify({Default:'replaced'}));
+  });
+  await page.reload({waitUntil:'load'});
+  await page.waitForFunction(() =>
+    !document.querySelector('#lab-vault-recover')?.hidden,
+    null,{timeout:10000});
+  assert.equal(await page.locator('#code').inputValue(),'replaced',
+    'Vault must not silently overwrite localStorage');
+  await page.locator('#lab-vault-recover').evaluate(button => button.click());
+  await page.waitForFunction(() =>
+    document.querySelector('#lab-vault-status')?.textContent?.includes('Extra local copy saved'),
+    null,{timeout:10000});
+  assert.equal(await page.locator('#code').inputValue(), 'replaced',
+    'Recovery must not replace active composition');
+  const recovered=await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('supercollision-projects-v1')));
+  assert(Object.values(recovered).includes(storedCode),
+    'Non-destructive vault recovery lost old composition');
+  assert(Object.values(recovered).includes('replaced'),
+    'Non-destructive vault recovery lost current composition');
+
+
   await page.locator('#engine').click();
   await page.waitForTimeout(200);
   assert.equal(enginePrompts,1,'Engine was not gated by cellular download consent');
