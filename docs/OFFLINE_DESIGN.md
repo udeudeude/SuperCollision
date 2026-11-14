@@ -1,18 +1,18 @@
 # Offline-first development, staged safely
 
-Status: design and standalone policy module only. **Not enabled on the deployed application.**
+Status (14 November 2026): working opt-in offline pack and tests on the **isolated lab branch only**. GitHub Actions run 43631530605 passed Chromium offline reload and asset tests. Production is unchanged. The separate Cloudflare lab project and iPhone Safari tests are still outstanding.
 
 ## Existing functionality found in main
 
 - Compositions are currently stored in localStorage, not a durable Files folder.
 - File menu already exports .scd files and a JSON backup.
 - Audio recording already exports a WAV file via browser download.
-- The app has a web manifest, but the current deployment build does not install a service worker.
-- Runtime binaries are compiled separately; never precache them without size and startup testing.
+- Production has a manifest and no service worker. Experimental lab registers `lab-sw.js` only after user chooses **Make available offline** from File > Storage.
+- Runtime binaries are compiled separately. The lab only caches them after explicit user approval, using a generated 8.0 MB manifest; no automatic large transfer on normal startup.
 
 ## Cellular download policy
 
-The user's default preference is to avoid downloads larger than a normal text-only webpage when not on Wi-Fi. Use 1,000,000 bytes as a **provisional aggregate optional-download session budget** on unknown or cellular connections. The standalone, not-yet-connected policy module accepts the current session's consumed bytes and rejects unknown-size requests, but the production app still lacks transfer accounting and enforcement. A production implementation must track actual transferred bytes, avoid automatic large downloads, and offer explicit overrides. On iOS, browser network APIs cannot reliably distinguish Wi-Fi from cellular. Treat unknown connectivity conservatively. Service-worker registration, navigation, HTTP caching, and the initial app load can still incur network transfers, so never promise zero large cellular transfers.
+The user's default preference is to avoid downloads larger than a normal text-only webpage when not on Wi-Fi. Use 1,000,000 bytes as a **provisional aggregate optional-download session budget** on unknown or cellular connections. A standalone policy module accepts consumed bytes, but comprehensive transfer measurement and enforcement are not yet connected. The laboratory instead proactively gates its known large downloads (engine, full language catalog and complete offline pack). A production implementation must track actual transferred bytes, avoid automatic large downloads, and offer explicit overrides. On iOS, browser network APIs cannot reliably distinguish Wi-Fi from cellular. Treat unknown connectivity conservatively. Service-worker registration, navigation, HTTP caching, and the initial app load can still incur network transfers, so never promise zero large cellular transfers.
 
 ## Files integration
 
@@ -20,12 +20,12 @@ iOS browsers can export .scd, .wav, and JSON files through user-mediated Save to
 
 ## Safe implementation sequence
 
-1. Inventory all runtime assets and their transfer sizes; check cross-origin isolation and WebAssembly fetch paths.
-2. Add automated tests for the download policy and offline reload; test iOS after full browser termination and phone restart.
-3. Implement versioned, opt-in, small-shell caching in a separate branch. Do not cache audio, compiled runtimes, or models automatically.
+1. **Done:** Inventory runtime and create a manifest of 36 files (8,044,853 bytes). Cross-origin isolation works in local Chromium tests; actual Cloudflare deployment remains to test.
+2. **Partly done:** Browser tests pass in Chromium, including offline reload. Real iPhone tests after app termination and phone restart remain.
+3. **Done in lab:** Implement transactional, versioned, explicitly approved download of full offline pack. Runtime binaries are never preloaded without user consent.
 4. Add explicit offline-resource download controls and aggregate download budget accounting.
 5. Add IndexedDB working storage and a reliable export/restore path, with migration from localStorage.
-6. Enable offline loading only after browser and iPhone validation. Never silently switch production to a new service worker.
+6. **Experimental browser verification passed:** Offline loading is now available for the lab after opt-in. Do not enable it on production until Cloudflare and iPhone Safari checks pass.
 
 ## Rollback
 
