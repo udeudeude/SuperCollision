@@ -202,7 +202,7 @@ body[data-theme=terminal] .projectbar button,body[data-theme=terminal] .menu>sum
 body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 @media(max-width:390px){body[data-theme=patch] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 78px}body[data-theme=scope] .toolbar button{font-size:9px}body[data-theme=score] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 65px}}
 </style>
-<link rel="stylesheet" href="./instrument-layout.css?v=24"><link rel="stylesheet" href="./performance.css?v=22"><link rel="stylesheet" href="./learning.css?v=5"><link rel="stylesheet" href="./catalog-assist.css?v=3"><link rel="stylesheet" href="./repair-ui.css?v=2"><link rel="stylesheet" href="./sound-designer.css?v=3">
+<link rel="stylesheet" href="./instrument-layout.css?v=25"><link rel="stylesheet" href="./performance.css?v=23"><link rel="stylesheet" href="./learning.css?v=5"><link rel="stylesheet" href="./catalog-assist.css?v=3"><link rel="stylesheet" href="./repair-ui.css?v=2"><link rel="stylesheet" href="./sound-designer.css?v=3">
 <header><svg class="identity-art" viewBox="0 0 48 40" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
 <g class="art art-bauhaus"><rect x="1" y="3" width="18" height="18" fill="#1f4b8f"/><circle cx="30" cy="13" r="11" fill="#bf4337"/><path d="M3 37L21 23L39 37Z" fill="#e8ae40"/></g>
 <g class="art art-blackmountain" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 4V36M14 4V36M24 4V36M34 4V36M44 4V36"/><path d="M2 11H46M2 21H46M2 31H46" stroke="#b7774f" stroke-width="4"/><path d="M4 11H14M24 21H34M14 31H24" stroke="#e9e1cf" stroke-width="5"/></g>
@@ -217,7 +217,7 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 <g class="art art-scope" fill="none" stroke="currentColor"><path d="M2 20H46M24 1V39M2 8H46M2 32H46" opacity=".3"/><path d="M2 20H7L12 10L18 31L24 4L30 30L36 13L42 20H46" stroke="#a0ffae" stroke-width="2.5"/></g>
 <g class="art art-patch" fill="none" stroke="#342b20" stroke-width="2"><path d="M8 12Q24 -2 40 12M8 12Q5 34 24 31M24 31Q47 37 40 12" stroke="#d27c3b" stroke-width="3"/><circle cx="8" cy="12" r="6" fill="#eee2c4"/><circle cx="40" cy="12" r="6" fill="#eee2c4"/><circle cx="24" cy="31" r="6" fill="#eee2c4"/></g>
 <g class="art art-terminal" fill="none" stroke="currentColor" stroke-width="3"><path d="M2 6L16 20L2 34M23 34H46"/><rect x="27" y="7" width="10" height="10" stroke="none" fill="currentColor"/></g>
-</svg><h1>SuperCollision</h1><small><span class="version-prefix">INSTRUMENT / </span>2.6</small><div class="theme-strip"><label for="theme-choice">DESIGN</label><select id="theme-choice" aria-label="Visual design"><option value="bauhaus">Bauhaus</option><option value="blackmountain">Black Mountain</option><option value="moog">Moog</option><option value="makenoise">Make Noise</option><option value="score">01 / Living Score</option><option value="scope">02 / Oscilloscope</option><option value="patch">03 / Patch Diagram</option><option value="terminal">04 / Brutalist Terminal</option></select></div></header>
+</svg><h1>SuperCollision</h1><small><span class="version-prefix">INSTRUMENT / </span>2.7</small><div class="theme-strip"><label for="theme-choice">DESIGN</label><select id="theme-choice" aria-label="Visual design"><option value="bauhaus">Bauhaus</option><option value="blackmountain">Black Mountain</option><option value="moog">Moog</option><option value="makenoise">Make Noise</option><option value="score">01 / Living Score</option><option value="scope">02 / Oscilloscope</option><option value="patch">03 / Patch Diagram</option><option value="terminal">04 / Brutalist Terminal</option></select></div></header>
 <main>
 <div class="panel">
 <div class="projectbar"><div class="composition-picker"><button id="project-toggle" type="button" class="secondary" aria-expanded="false" aria-controls="project-list">Composition ▾</button><div id="project-list" class="project-list" hidden role="listbox" aria-label="Saved compositions"></div></div><select id="projects" aria-label="Saved compositions" hidden></select><details class="menu" id="file-menu">
@@ -303,6 +303,7 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
   <div class="perform-header">
     <strong>PERFORMANCE</strong>
     <span id="perform-summary">0 instruments · 0 events</span>
+    <button id="perform-show" type="button" aria-pressed="true" title="All instruments remain in fixed rows, including when resting">ALL</button>
     <button id="perform-follow" type="button" aria-pressed="true">FOLLOW ●</button>
     <button id="perform-reset" type="button">RESET MIX</button>
   </div>
@@ -432,13 +433,13 @@ document.querySelector('#info').textContent='Platform: '+navigator.platform+' | 
 renderProjects();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flush()});
 </script>
 <script type="module">
-import {createLiveActivityUI} from "./live-activity.mjs?v=23";
-import {createPerformanceUI} from "./performance-ui.mjs?v=22";
-import {encodeOsc} from "./performance-engine.mjs?v=22";
+import {createLiveActivityUI} from "./live-activity.mjs?v=24";
+import {createPerformanceUI} from "./performance-ui.mjs?v=23";
+import {encodeOsc} from "./performance-engine.mjs?v=23";
 import {createPriorityOscBridge} from "./osc-priority-bridge.mjs?v=1";
 import {createLearning} from "./learning.mjs?v=5";
-import {explainConsoleError} from "./error-guide.mjs?v=2";
-import {createRepairUI} from "./repair-ui.mjs?v=2";
+import {explainConsoleError} from "./error-guide.mjs?v=3";
+import {createRepairUI} from "./repair-ui.mjs?v=3";
 import {createLanguageTools} from "./editor-assist.mjs?v=5";
 import {createSoundDesigner} from "./sound-designer.mjs?v=6";
 let lang,synth;
@@ -492,7 +493,9 @@ function flushPrintQueue(){
  if(text.length>120000)text=text.slice(-80000);
  log.textContent=text;
  log.scrollTop=log.scrollHeight;
- if(chunk.includes('ERROR:'))diagnosticTail=chunk.slice(chunk.lastIndexOf('ERROR:'));
+ const markers=['ERROR:','FAILURE IN SERVER','FAILURE:'];
+ const lastFailure=Math.max(...markers.map(marker=>chunk.lastIndexOf(marker)));
+ if(lastFailure>=0)diagnosticTail=chunk.slice(lastFailure);
  else if(diagnosticTail&&diagnosticTail.length<16000)diagnosticTail+=chunk;
  if(diagnosticTail)showConsoleExplanation(explainConsoleError(diagnosticTail,code.value));
 }
