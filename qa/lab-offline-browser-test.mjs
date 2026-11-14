@@ -76,9 +76,9 @@ try{
     } catch { return false; }
   }, storedCode, {timeout:10000});
   await page.waitForTimeout(400); // Allow the asynchronous IndexedDB transaction to commit.
-  await page.waitForFunction(() =>
-    document.querySelector('#lab-vault-status')?.textContent?.includes('Extra local copy saved'),
-    null, {timeout:10000});
+  const vaultStatus = await page.locator('#lab-vault-status').innerText();
+  assert(vaultStatus.includes('Extra local copy saved'),
+    'IndexedDB save status after edit: ' + vaultStatus);
   await page.reload({waitUntil:'load'});
   assert.equal(await page.locator('#code').inputValue(), storedCode,
     'Existing composition did not survive reload');
