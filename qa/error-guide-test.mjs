@@ -48,4 +48,32 @@ const generic=explainConsoleError('ERROR: Class not defined: Wibble\nfile://inte
 assert.equal(generic.kind,'runtime');
 assert.equal(generic.line,7);
 assert.equal(explainConsoleError('All notes completed.',''),null);
-console.log('Error guidance: known envelope input, source preservation, unknown error, line navigation passed.');
+const errorCases=[
+ {log:"ERROR: syntax error, unexpected VAR, expecting '}'\\nfile://interpreted_text:4:2",
+  kind:'variable-declaration',includes:'beginning of that function'},
+ {log:"ERROR: syntax error, unexpected ')'\\nfile://interpreted_text:4:2",
+  kind:'closing-delimiter',includes:'closing parenthesis'},
+ {log:"ERROR: syntax error, unexpected end of file",
+  kind:'unclosed-expression',includes:'unclosed'},
+ {log:"ERROR: Class not defined: DoesNotExist\\nfile://interpreted_text:7:2",
+  kind:'undefined-class',includes:'DoesNotExist'},
+ {log:"ERROR: Variable 'melody' not defined\\nfile://interpreted_text:3:2",
+  kind:'undefined-variable',includes:'melody'},
+ {log:"ERROR: Message 'ar' not understood.\\nRECEIVER: nil",
+  kind:'unknown-message',includes:'receiver'},
+ {log:"ERROR: Primitive '_BinaryOpFailure' failed.",
+  kind:'primitive-failure',includes:'built-in'},
+ {log:"FAILURE IN SERVER /s_new SynthDef not found: bagpipe",
+  kind:'missing-synthdef',includes:'server received'},
+ {log:"FAILURE IN SERVER /n_set Node 404 not found",
+  kind:'missing-node',includes:'already have finished'}
+];
+for(const item of errorCases){
+ const guidance=explainConsoleError(item.log,source);
+ assert.equal(guidance?.kind,item.kind,'Unexpected diagnosis: '+item.log);
+ assert.match(guidance.message,new RegExp(item.includes,'i'));
+ assert.equal(guidance.fix,undefined,'Unverified errors must never offer a one-tap patch');
+ assert.equal(guidance.correction,null,'Unverified errors must never generate replacement code');
+}
+assert.equal(explainConsoleError("ERROR: Class not defined: Foo",source).line,null);
+console.log('Error guidance: verified patch, nine common diagnostic classes, safe no-fix fallbacks and line navigation passed.');

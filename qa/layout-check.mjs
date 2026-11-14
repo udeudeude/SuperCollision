@@ -212,6 +212,7 @@ try {
           'Server /n_go must illuminate UGen lines and gutter: '+JSON.stringify(confirmed));
         const chip=await page.evaluate(()=>{
           const r=document.querySelector('#live-instruments .live-instrument-row');
+          window.__qaLiveRow=r;
           return {name:r?.querySelector('.live-instrument-name')?.textContent,
             count:r?.querySelector('.live-instrument-count')?.textContent,
             total:r?.querySelector('.live-instrument-total')?.textContent,
@@ -230,11 +231,17 @@ try {
         await page.screenshot({path:path.join(root,'qa','screenshots','live-sound-activity.png')});
         await page.evaluate(()=>window.SCActivity.incoming(window.__oscQA('/n_end','iiiii',[1001,1,-1,-1,0])));
         await page.waitForTimeout(70);
-        const ended=await page.evaluate(()=>({
-          amber:document.querySelectorAll('#activity-overlay .live-source-active').length,
-          count:window.SCActivity.tracker.visible().confirmed
-        }));
+        const ended=await page.evaluate(()=>{
+          const r=document.querySelector('#live-instruments .live-instrument-row');
+          return {amber:document.querySelectorAll('#activity-overlay .live-source-active').length,
+            count:window.SCActivity.tracker.visible().confirmed,
+            stillThere:!!r,resting:r?.classList.contains('live-resting'),
+            identical:r===window.__qaLiveRow,height:r?.getBoundingClientRect().height,
+            name:r?.querySelector('.live-instrument-name')?.textContent};
+        });
         assert(ended.amber===0&&ended.count===0,'Server /n_end must clear active sound highlight');
+        assert(ended.stillThere&&ended.resting&&ended.identical&&ended.height>15&&ended.name==='bell',
+          'Silent Live rows must keep their existing DOM node and full height: '+JSON.stringify(ended));
 
         // Strict compatibility: even a Routine must be submitted verbatim.
         const exactRoutine=await page.evaluate(()=>{
@@ -334,6 +341,19 @@ try {
         });
         assert(performance.height>=120&&performance.visible!=='none'&&performance.tab==='true'&&performance.rows,
           'MIX inspector must expose separate timeline and mixer: '+JSON.stringify(performance));
+        assert(await page.locator('#perform-show').getAttribute('aria-pressed')==='true',
+          'MIX must default to stable ALL lanes');
+        await page.locator('#perform-show').click();
+        assert(await page.locator('#perform-show').innerText()==='ACTIVE',
+          'MIX must allow optional active-only view without changing default ordering');
+        await page.locator('#perform-show').click();
+        assert(await page.locator('#perform-show').innerText()==='ALL',
+          'MIX ALL must restore full-height historical lanes');
+        const headerWithin=await page.locator('.perform-header').evaluate(h=>{
+          const right=h.getBoundingClientRect().right;
+          return [...h.querySelectorAll('button')].every(b=>b.getBoundingClientRect().right<=right+2);
+        });
+        assert(headerWithin,'MIX filter buttons overflow the phone width');
         // Console output, including errors, must not interrupt the mixer view.
         await page.locator('#console-panel').evaluate(el=>{el.open=true});
         await page.waitForTimeout(85);

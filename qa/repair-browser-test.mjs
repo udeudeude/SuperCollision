@@ -58,7 +58,7 @@ try{
      null,{timeout:3500});
    await page.locator('#inspector-console').click();
    await page.evaluate(async output=>{
-     const {explainConsoleError}=await import('/error-guide.mjs?v=2');
+     const {explainConsoleError}=await import('/error-guide.mjs?v=3');
      window.SCRepair.offer(explainConsoleError(output,document.querySelector('#code').value));
    },error);
    assert.equal(await page.locator('#repair-open-button').isVisible(),true,

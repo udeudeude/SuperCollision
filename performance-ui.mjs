@@ -8,6 +8,8 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   const followBtn=panel.querySelector('#perform-follow');
   const resetBtn=panel.querySelector('#perform-reset');
   const summary=panel.querySelector('#perform-summary');
+  const filterBtn=panel.querySelector('#perform-show');
+  let showAll=true;
   const SCALE=16,LANE_HEIGHT=61,LEFT=162;
   let follow=true,frame=0,timer=null,lastNodesKey='',lastRows=new Map(),userDragging=false;
   const journal=new PerformanceJournal({now:()=>performance.now(),onChange:schedule,send:bytes=>{
@@ -95,7 +97,10 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     for(const row of rows){
       let dom=lastRows.get(row.name);
       if(!dom){dom=createLane(row);lastRows.set(row.name,dom)}
-      dom.info.textContent=row.active+' live / '+row.count+' notes';
+      dom.info.textContent=row.active?
+        row.active+' playing · '+row.count+' total':
+        'Resting · '+row.count+' total';
+      dom.lane.classList.toggle('perform-resting',row.active===0);
       dom.mute.disabled=!row.compatible;
       dom.mute.setAttribute('aria-pressed',String(row.muted));
       dom.mute.classList.toggle('selected',row.muted);
@@ -108,8 +113,12 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       const n=Object.entries(row.params).filter(([k,v])=>k!=='amp'&&Number.isFinite(v)).length;
       dom.params.hidden=n===0;
     }
-    // Show currently active instruments first, retaining lane DOM and scroll.
-    for(const row of rows)rowsEl.append(lastRows.get(row.name).lane);
+    // Preserve the existing nodes and controls. Reorder only when the user
+    // changes the filter or the underlying composition actually changes.
+    const desired=rows.map(row=>lastRows.get(row.name).lane);
+    const existing=[...rowsEl.children].filter(el=>el.classList.contains('perform-lane'));
+    if(existing.length!==desired.length||existing.some((el,i)=>el!==desired[i]))
+      rowsEl.replaceChildren(...desired);
     if(!rows.length){
       if(!rowsEl.querySelector('.perform-empty')){
         const empty=document.createElement('div');empty.className='perform-empty';
@@ -120,7 +129,9 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   function draw(){
     frame=0;
     if(document.hidden)return;
-    const rows=journal.getInstrumentRows(),t=journal.now();
+    const allRows=journal.getInstrumentRows();
+    const rows=showAll?allRows:allRows.filter(row=>row.active>0);
+    const t=journal.now();
     updateLanes(rows);
     const timespan=Math.max(32,Math.ceil((t-journal.zero)/1000)+6);
     const graphWidth=Math.min(24000,Math.max(500,Math.ceil(timespan*SCALE)));
@@ -156,7 +167,8 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       }
       dom.track.replaceChildren(...bars);
     }
-    summary.textContent=rows.length+' instruments · '+number+' events · '+formatTime((t-journal.zero)/1000);
+    summary.textContent=rows.length+(showAll?' instruments':' playing')+
+      ' · '+number+' events · '+formatTime((t-journal.zero)/1000);
     if(follow){
       scroller.scrollLeft=Math.max(0,scroller.scrollWidth-scroller.clientWidth);
     }
@@ -166,6 +178,14 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   function schedule(){
     if(frame)return;frame=requestAnimationFrame(draw);
   }
+  filterBtn.addEventListener('click',()=>{
+    showAll=!showAll;
+    filterBtn.setAttribute('aria-pressed',String(showAll));
+    filterBtn.textContent=showAll?'ALL':'ACTIVE';
+    filterBtn.title=showAll?'Showing all played instruments in fixed positions':
+      'Showing only instruments playing right now';
+    schedule();
+  });
   followBtn.addEventListener('click',()=>{follow=!follow;followBtn.setAttribute('aria-pressed',String(follow));followBtn.textContent=follow?'FOLLOW ●':'FOLLOW ○';schedule()});
   resetBtn.addEventListener('click',()=>{journal.reset();schedule()});
   scroller.addEventListener('pointerdown',()=>{userDragging=true},{passive:true});

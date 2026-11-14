@@ -591,3 +591,15 @@ body #console-guidance button{height:auto;min-height:30px;padding:5px 8px;
  background:transparent;color:inherit;border-radius:2px}
 body #console-guidance .console-guidance-actions{display:flex;gap:6px;flex-wrap:wrap}
 body #console-guidance .console-guidance-actions [hidden]{display:none}
+
+/* Stable Live rows: silent instruments retain their normal height and
+   position for 15 seconds following the last confirmed note ending. */
+body .live-instrument-row.live-resting,
+body[data-theme] .live-instrument-row.live-resting{opacity:.65}
+body .live-instrument-row.live-resting .live-instrument-count{
+ color:inherit!important;opacity:.75
+}
+body .live-instrument-row.live-resting .live-instrument-name{
+ text-decoration:none
+}
+body .live-panel .live-panel-content{overscroll-behavior:contain}

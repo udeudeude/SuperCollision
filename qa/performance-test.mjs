@@ -106,4 +106,35 @@ assert.ok(!html.includes('lang.runCode(evaluated)'),'Do not substitute modified/
 assert.ok(!live.includes('registerRoutinePlan(plan,compositionName,whole)'), 'No injected Routine tracing in live execution');
 assert.ok(html.includes('id="inspector-perform"'),'PERFORM must be accessible');
 assert.ok(notifications>0);
+
+// Stable score ordering must not change when recent note activity changes.
+const ordered=new PerformanceJournal({now:()=>tick});
+ordered.evaluation('Stable',program,program,1);
+ordered.outgoing(encodeOsc('/s_new',['bell',4101,0,1]));
+ordered.incoming(encodeOsc('/n_go',[4101,1,-1,-1,0]));
+ordered.outgoing(encodeOsc('/s_new',['haze',4102,0,1]));
+ordered.incoming(encodeOsc('/n_go',[4102,1,-1,-1,0]));
+const scoreOrder=ordered.getInstrumentRows().map(row=>row.name);
+assert.deepEqual(scoreOrder,['haze','bell'],
+ 'Instrument lanes follow code definition order, not most recent notes');
+ordered.outgoing(encodeOsc('/s_new',['bell',4103,0,1]));
+ordered.incoming(encodeOsc('/n_go',[4103,1,-1,-1,0]));
+assert.deepEqual(ordered.getInstrumentRows().map(row=>row.name),scoreOrder,
+ 'A newly played note must not move its lane to the top');
+ordered.incoming(encodeOsc('/n_end',[4102,1,-1,-1,0]));
+const resting=ordered.getInstrumentRows();
+assert.deepEqual(resting.map(row=>row.name),scoreOrder,
+ 'Resting and playing lanes maintain stable positions');
+assert.equal(resting[0].active,0);
+assert.equal(resting[1].active,2);
+ordered.outgoing(encodeOsc('/s_new',['unknownOne',4104,0,1]));
+ordered.outgoing(encodeOsc('/s_new',['unknownTwo',4105,0,1]));
+assert.deepEqual(ordered.getInstrumentRows().map(row=>row.name),
+ ['haze','bell','unknownOne','unknownTwo'],
+ 'Unmapped instruments append in first-seen order behind mapped definitions');
+ordered.outgoing(encodeOsc('/s_new',['unknownOne',4106,0,1]));
+assert.deepEqual(ordered.getInstrumentRows().map(row=>row.name),
+ ['haze','bell','unknownOne','unknownTwo'],
+ 'Repeated unmapped notes do not reshuffle lane order');
+
 console.log('Performance journal: exact source, immutable OSC observation, confirmed timelines, amp, mute, solo, parameters, compatibility checks passed.');

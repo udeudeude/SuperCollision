@@ -212,4 +212,37 @@ assert.equal(lifetimeTracker.colorSlot('bell'),hue,'Instrument hue must stay sta
 assert.notEqual(lifetimeTracker.colorSlot('drone'),hue,'Different named instruments use distinct palette slots');
 assert.ok(lifetimeTracker.visible().instruments.find(x=>x.name==='bell').voices[0].slot>=0,'Individual concurrent voices expose colored tick identity');
 
+
+// Live and Mix agree on source-order identities; a note ending never pops
+// another row to the top. Silent rows remain full-sized for a grace period.
+const orderedSource=[
+ 'SynthDef(\\first, { |freq=220| SinOsc.ar(freq) }).add;',
+ 'SynthDef(\\second, { |freq=330| SinOsc.ar(freq) }).add;'
+].join('\n');
+let orderClock=1000;
+const stableLive=new SoundActivityTracker(()=>{},()=>orderClock);
+stableLive.evaluation('Stable Live',orderedSource,orderedSource);
+stableLive.outgoing(pack('/s_new','siii',['second',9011,0,1]));
+stableLive.incoming(pack('/n_go','iiiii',[9011,1,-1,-1,0]));
+orderClock=1200;
+stableLive.outgoing(pack('/s_new','siii',['first',9012,0,1]));
+stableLive.incoming(pack('/n_go','iiiii',[9012,1,-1,-1,0]));
+assert.deepEqual(stableLive.visible().instruments.map(x=>x.name),['first','second'],
+ 'Live rows are stable in declaration order despite arrival order');
+orderClock=1400;
+stableLive.incoming(pack('/n_end','iiiii',[9012,1,-1,-1,0]));
+assert.deepEqual(stableLive.visible().instruments.map(x=>x.name),['first','second'],
+ 'Ended notes retain their slot without shrinking other rows');
+assert.equal(stableLive.visible().instruments[0].active,0);
+orderClock=16399;
+assert.deepEqual(stableLive.visible().instruments.map(x=>x.name),['first','second'],
+ 'Silent instrument remains for fifteen seconds after server-confirmed end');
+orderClock=16401;
+assert.deepEqual(stableLive.visible().instruments.map(x=>x.name),['second'],
+ 'Silent instrument finally expires without accumulating clutter');
+stableLive.outgoing(pack('/s_new','siii',['first',9013,0,1]));
+stableLive.incoming(pack('/n_go','iiiii',[9013,1,-1,-1,0]));
+assert.deepEqual(stableLive.visible().instruments.map(x=>x.name),['first','second'],
+ 'Returning instruments reclaim their original source-order position');
+
 console.log('Live source activity: OSC, instrument lifetimes, safe Routine checkpoints, source mapping and safety checks passed.');
