@@ -1,0 +1,58 @@
+name: Publish isolated SuperCollision lab
+on:
+  push:
+    branches:
+      - feature/offline-safe-foundation
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: supercollision-lab-publish
+  cancel-in-progress: false
+jobs:
+  publish-lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout experimental application source
+        uses: actions/checkout@v4
+        with:
+          ref: feature/offline-safe-foundation
+          path: source
+      - name: Checkout isolated compiled lab site
+        uses: actions/checkout@v4
+        with:
+          ref: lab-build
+          path: site
+          persist-credentials: true
+      - name: Verify lab runtime exists
+        run: |
+          python3 source/scripts/verify_runtime.py site/runtime
+      - name: Run experimental download policy tests
+        run: |
+          node source/qa/offline-policy-test.mjs
+      - name: Overlay frontend files without touching compiled runtime
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from shutil import copy2
+          source, target = Path("source"), Path("site")
+          frontend_suffixes = {".html", ".js", ".mjs", ".css", ".json", ".webmanifest", ".svg"}
+          for item in source.iterdir():
+              if item.is_file() and (item.suffix in frontend_suffixes or item.name == "_headers"):
+                  copy2(item, target / item.name)
+          assert (target / "runtime/sclang/sclang.wasm").is_file()
+          assert (target / "runtime/scsynth/scsynth.wasm").is_file()
+          PY
+      - name: Commit and publish laboratory branch only
+        run: |
+          cd site
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Lab branch is already current"
+          else
+            git commit -m "Publish isolated SuperCollision lab frontend"
+            git push origin HEAD:lab-build
+          fi
