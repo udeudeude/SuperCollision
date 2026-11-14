@@ -49,18 +49,26 @@ try{
    await page.locator('#code').fill('SinOsc.ar(');
    await page.waitForFunction(()=>document.querySelectorAll('.completion-slot').length===4);
    assert.match(await page.locator('#completion-tray').innerText(),/freq = 440/);
-   assert.match(await page.locator('#completion-tray').innerText(),/ARGUMENTS/);
-   assert.match(await page.locator('.completion-field-detail').innerText(),/FIELD 1 OF 4/);
-   assert.match(await page.locator('#completion-tray').innerText(),/No required fields missing/);
+   assert.match(await page.locator('.completion-heading').innerText(),/Make a pure tone/);
+   assert.match(await page.locator('.completion-purpose').innerText(),/sine-wave/);
+   assert.match(await page.locator('.completion-field-detail').innerText(),/INPUT 1 OF 4/);
+   await page.locator('.completion-technical > summary').click();
+   assert.match(await page.locator('.completion-technical').innerText(),/No required fields missing/);
    await page.locator('.completion-insert').click();
    assert.equal(await page.locator('#code').inputValue(),'SinOsc.ar(freq: 440, mul: 0.1)');
 
    await page.locator('#code').fill('Out.ar(');
    await page.waitForFunction(()=>document.querySelectorAll('.completion-slot').length===2);
-   assert.match(await page.locator('#completion-tray').innerText(),/2 required fields missing/);
+   assert.match(await page.locator('.completion-footer').innerText(),/bus/);
    await page.locator('.completion-slot').filter({hasText:'bus'}).click();
-   assert.equal(await page.locator('#code').inputValue(),'Out.ar(bus: nil');
-   assert.equal(await page.locator('#code').evaluate(el=>el.value.slice(el.selectionStart,el.selectionEnd)),'nil');
+   assert.equal(await page.locator('#code').inputValue(),'Out.ar(',
+     'An input without a safe default must never insert nil into code');
+   await page.locator('#code').fill('Mix(');
+   await page.waitForFunction(()=>document.querySelector('.completion-heading')?.textContent.includes('Mix'));
+   assert.match(await page.locator('.completion-heading').innerText(),/Combine sounds/);
+   assert.match(await page.locator('.completion-purpose').innerText(),/square brackets/);
+   assert.equal(await page.locator('.completion-next').count(),0,
+     'A command with one input must not offer NEXT INPUT');
 
    const beforeBrowse=await page.locator('#code').inputValue();
    // The guide replaces the File/Composition row while editing. Close it

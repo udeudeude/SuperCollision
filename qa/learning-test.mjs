@@ -10,6 +10,7 @@ assert.match(explainSelection(source,source.indexOf('|'),source.indexOf('|')).ex
 assert.equal(errorLesson('normal server message'),null);
 assert.match(errorLesson('ERROR: syntax error, unexpected NAME')[0],/Syntax error/);
 assert.match(errorLesson('ERROR: Message xyz not understood')[0],/Message not understood/);
+assert.match(errorLesson("ERROR: Nil does not understand the message 'doneAction'")[0],/Envelope input error/);
 
 const playable='(\n{ SinOsc.ar(440, 0, 0.15) ! 2 }.play;\n)';
 const original=playable;

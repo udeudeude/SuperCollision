@@ -133,6 +133,10 @@ export function explainSelection(source,start,end){
 }
 export function errorLesson(output){
   const text=String(output);
+  if(/Nil\s+does not understand\s+the message\s+['"]doneAction['"]/i.test(text))
+    return ['Envelope input error',
+      'Check that doneAction: 2 is an input to EnvGen.kr, with a comma before it. It must not follow nil as if nil were a function.',
+      'For a short percussion note, use EnvGen.kr(Env.perc(0.003, 0.48, 1, -5), doneAction: 2).'];
   if(/Class not defined|not defined/i.test(text))return ['Unknown class or name','Check the spelling and capitalization of the name. Is it a class, a variable, or a Symbol?','Compare the exact name against its definition or the SuperCollider help index.'];
   if(/Message .*not understood|doesNotUnderstand/i.test(text))return ['Message not understood','Identify the receiver immediately before the method name. What kind of object is it?','Check whether that receiver implements the requested method, and whether you meant .ar, .kr, or .play.'];
   if(/syntax error|parse failed|unexpected|expected/i.test(text))return ['Syntax error','Find the first reported line and check paired parentheses, brackets, braces, quotes and vertical bars.','Inspect the statement just before the reported location. A missing delimiter can shift the apparent error.'];
@@ -349,7 +353,7 @@ export function createLearning({editor,host,modeSelect,openButton,onChange=()=>{
     if(signature===lastError)return;
     lastError=signature;activeError={title:item[0],selection:String(output).trim().slice(0,240),explanation:'An error occurred. Want to investigate it step by step?',steps:[item[1],item[2]]};
     // A suggestion, never an unsolicited lesson or interruption.
-    openButton.textContent='DEBUG?';openButton.hidden=false;
+    openButton.textContent='HELP';openButton.title='Explain the most recent SuperCollider error';openButton.hidden=false;
     openButton.dataset.error='true';
   }
   openButton.addEventListener('click',()=>{

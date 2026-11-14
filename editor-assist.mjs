@@ -218,59 +218,102 @@ export function createLanguageTools({editor,host,getLearningMode=()=> 'guided',o
      lastCaret=range.start;
    }else if(info.fragments.at(-1).text.trim()===''){
      const a=info.args[index];
-     const fallback=Object.hasOwn(a,'default')?a.default:'nil';
-     const insert=a.name+': '+fallback;
-     insertAt(editor.selectionStart,editor.selectionEnd,insert,a.name);
+     // Unspecified input values must not silently become nil. In many audio
+     // commands a fabricated nil makes an otherwise valid instrument fail.
+     if(!Object.hasOwn(a,'default'))return;
+     const fallback=String(a.default);
+     insertAt(editor.selectionStart,editor.selectionEnd,a.name+': '+fallback,a.name);
      editor.setSelectionRange(editor.selectionStart-fallback.length,editor.selectionStart);
    }
  }
+ const PLAIN_GUIDES={
+   'Mix.new':{title:'Mix · Combine sounds',
+     purpose:'Adds several sounds together. The square brackets [ ] contain the sounds to combine.',
+     example:'Mix([SinOsc.ar(440), SinOsc.ar(660)])',
+     fields:{array:'the list of sounds being combined'}},
+   'SinOsc.ar':{title:'SinOsc · Make a pure tone',
+     purpose:'Creates a smooth sine-wave sound. Its frequency sets the pitch.',
+     fields:{freq:'pitch in hertz (440 is a concert A)',phase:'where the wave begins',mul:'volume or scaling',add:'offset added to the output'}},
+   'SinOsc.kr':{title:'SinOsc · Make a slow-changing signal',
+     purpose:'Creates a sine wave at control rate, often for vibrato or other slow changes.',
+     fields:{freq:'speed of oscillation per second',phase:'starting position',mul:'depth of modulation',add:'offset'}},
+   'EnvGen.kr':{title:'EnvGen · Shape a note',
+     purpose:'Uses an envelope to change a sound over time, such as a quick attack and fading release.',
+     fields:{envelope:'the shape of the sound over time',gate:'whether an envelope should continue',levelScale:'strength of the envelope',doneAction:'what to do when the envelope finishes (2 frees the synthesizer)'}},
+   'Env.perc':{title:'Env.perc · Make a short note shape',
+     purpose:'Creates a sound that rises and falls, useful for struck or plucked notes.',
+     fields:{attackTime:'seconds to reach maximum level',releaseTime:'seconds to fade away',level:'peak strength',curve:'the shape of the rise and fall'}},
+   'Out.ar':{title:'Out · Send sound to an output',
+     purpose:'Sends a sound signal to an audio bus. Output bus 0 is normally the main speaker output.',
+     fields:{bus:'which audio output to use',channelsArray:'the sound signal or signals to send'}},
+   'Pan2.ar':{title:'Pan2 · Position sound in stereo',
+     purpose:'Moves one sound between the left and right speakers.',
+     fields:{in:'the sound to position',pos:'stereo position: -1 left, 0 center, 1 right',level:'output volume'}},
+   'LPF.ar':{title:'LPF · Soften the sound',
+     purpose:'Reduces high frequencies above a chosen cutoff.',
+     fields:{in:'the sound to filter',freq:'cutoff frequency in hertz'}},
+   'Synth.new':{title:'Synth · Play an instrument',
+     purpose:'Starts an instrument already defined with SynthDef.',
+     fields:{defName:'which instrument to start',args:'values to send to its controls'}},
+   'SynthDef.new':{title:'SynthDef · Define an instrument',
+     purpose:'Describes how an instrument creates its sound.',
+     fields:{name:'the instrument name',ugenGraphFunc:'the function describing its sound'}}
+ };
+ const INPUT_HINTS={freq:'frequency or pitch',amp:'volume',dur:'duration in seconds',
+   pan:'left/right position',out:'output bus',gate:'on/off or envelope control',
+   mul:'multiplier',add:'offset',array:'list of values'};
  function renderSignature(info){
-   const label=element('div','completion-label','ARGUMENTS · '+info.signature);
+   const guide=PLAIN_GUIDES[info.signature];
+   const display=info.method==='new'?info.owner:info.signature;
+   const headline=element('strong','completion-heading',guide?.title||display+' · Inputs');
    const dismiss=element('button','completion-dismiss','×');
-   dismiss.type='button';dismiss.setAttribute('aria-label','Close argument guide');
-   dismiss.onclick=closeTray;
-   const chips=element('div','completion-slots');
+   dismiss.type='button';dismiss.setAttribute('aria-label','Close argument guide');dismiss.onclick=closeTray;
+   const purpose=element('p','completion-purpose',
+     guide?.purpose||'You are inside '+display+'(...). These are the values this command can use.');
    const active=info.args[info.active];
+   const fieldDesc=active?(guide?.fields?.[active.name]||INPUT_HINTS[active.name]||active.description||'the value for '+active.name):'';
    const detail=element('p','completion-field-detail',
-     active?'FIELD '+(info.active+1)+' OF '+info.args.length+' · '+active.name+
-       (active.required?' (required)':' (optional)')+
-       (active.description?' · '+active.description:
-         Object.hasOwn(active,'default')?' · Default: '+active.default:''):
-       'No arguments documented');
+     active?'INPUT '+(info.active+1)+' OF '+info.args.length+': '+active.name+' · '+fieldDesc:'No inputs documented');
+   const chips=element('div','completion-slots');
    info.args.forEach((arg,index)=>{
      const chip=element('button','completion-slot');chip.type='button';
      chip.classList.toggle('current',index===info.active);
-     chip.classList.toggle('needed',info.requiredLeft.some(a=>a.name===arg.name));
-     chip.textContent=arg.name+(arg.required?' *':'')+(Object.hasOwn(arg,'default')?' = '+arg.default:'');
-     chip.title=(arg.description||'Select or insert '+arg.name)+(arg.required?' (required)':' (optional)');
-     chip.setAttribute('aria-label',chip.title);
+     chip.classList.toggle('needed',!!info.verified&&info.requiredLeft.some(a=>a.name===arg.name));
+     chip.textContent=arg.name+(Object.hasOwn(arg,'default')?' = '+arg.default:'');
+     chip.title=guide?.fields?.[arg.name]||INPUT_HINTS[arg.name]||arg.description||'Select the '+arg.name+' input';
+     chip.setAttribute('aria-label',arg.name+': '+chip.title);
      chip.setAttribute('aria-current',String(index===info.active));
      chip.onclick=()=>selectSlot(info,index);
      chips.append(chip);
    });
    const footer=element('div','completion-footer');
-   const remaining=element('span','',!info.verified?
-      'Argument requirements not verified':
-      info.requiredLeft.length?
-      info.requiredLeft.length+' required field'+(info.requiredLeft.length===1?'':'s')+' missing':
-      'No required fields missing');
-   remaining.title='Tap an argument to edit it. An asterisk marks a required field.';
-   footer.append(remaining);
+   const note=element('span','',guide?.example?
+     'Example: '+guide.example:
+     info.verified&&info.requiredLeft.length?
+       'Still needs: '+info.requiredLeft.map(a=>a.name).join(', '):
+       'Tap a named input to edit it; code changes only when you insert something.');
+   note.title=note.textContent;footer.append(note);
    if(SAFE_TEMPLATES[info.signature]&&info.fragments.length===1&&!info.fragments[0].text.trim()){
      const template=element('button','completion-insert','INSERT EXAMPLE');template.type='button';
-     template.title='Insert a complete example with named arguments';
-     template.onclick=()=>{
-       // The opening parenthesis exists. Insert only the contents and close it.
-       const text=SAFE_TEMPLATES[info.signature]+')';
-       insertAt(info.open+1,editor.selectionStart,text,info.owner);
-     };
+     template.title='Put a working example in your composition';
+     template.onclick=()=>insertAt(info.open+1,editor.selectionStart,SAFE_TEMPLATES[info.signature]+')',info.owner);
      footer.append(template);
    }
-   const next=element('button','completion-next','NEXT FIELD');next.type='button';
-   next.title='Move to the next argument. Tab also works.';
-   next.onclick=()=>selectSlot(info,Math.min(info.args.length-1,info.active+1));
-   footer.append(next);
-   tray.append(label,dismiss,detail,chips,footer);setTrayOpen(true);
+   if(info.args.length>1){
+     const next=element('button','completion-next','NEXT INPUT');next.type='button';
+     next.title='Move to the next input. Tab also works.';
+     next.onclick=()=>selectSlot(info,(info.active+1)%info.args.length);
+     footer.append(next);
+   }
+   const technical=element('details','completion-technical');
+   const technicalSummary=element('summary','','Technical details');technical.append(technicalSummary);
+   technical.append(element('p','',info.signature+' · '+
+     (info.verified?
+       (info.requiredLeft.length?'Missing required inputs: '+info.requiredLeft.map(a=>a.name).join(', '):
+        'No required fields missing'):
+       'The reference does not confirm which inputs are required.')));
+   tray.append(headline,dismiss,purpose,detail,chips,footer,technical);
+   setTrayOpen(true);
    typing={kind:'signature',info};
  }
  function refresh(){

@@ -70,6 +70,7 @@ jobs:
           node --check learning.mjs
           node --check catalog-core.mjs
           node --check editor-assist.mjs
+          node --check error-guide.mjs
           node --check sound-designer-core.mjs
           node --check sound-designer.mjs
           python3 - <<'PY'
@@ -85,6 +86,7 @@ jobs:
           assert Path('app-icon.svg').exists()
           PY
           node qa/learning-test.mjs
+          node qa/error-guide-test.mjs
           node qa/catalog-test.mjs
           node qa/sound-designer-test.mjs
           node qa/performance-test.mjs

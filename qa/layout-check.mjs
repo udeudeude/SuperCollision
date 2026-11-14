@@ -262,15 +262,20 @@ try {
         const shrink=await page.evaluate(()=>({
           height:document.querySelector('.editor-frame').getBoundingClientRect().height,
           open:document.getElementById('console-panel').open,
-          audio:document.getElementById('audio-panel').closest('#console-panel')!==null,
+          audio:document.getElementById('audio-panel').closest('#file-menu')!==null,
           pressed:document.getElementById('inspector-console').getAttribute('aria-pressed')
         }));
         assert(shrink.open&&shrink.height<initialHeight-60&&shrink.audio&&shrink.pressed==='true',
-          'CONSOLE must reveal console output and optional audio diagnostics');
+          'CONSOLE must reveal output while speaker diagnostics remain under File');
         assert(await page.locator('#inspector-audio').count()===0,'Redundant AUDIO tab remains');
+        assert(await page.locator('#audio-panel').isHidden(),
+          'Speaker test must not take space in CONSOLE');
+        await page.locator('#file-menu > summary').click();
+        await page.locator('#file-menu .file-submenu > summary').filter({hasText:'TOOLS'}).click();
         await page.locator('#audio-panel > summary').click();
-        assert(await page.locator('#play').isVisible(),'Speaker test must remain available in CONSOLE');
-        assert(await page.locator('#stop').isVisible(),'Stop test must remain available in CONSOLE');
+        assert(await page.locator('#play').isVisible(),'Speaker test must be available under File > Tools');
+        assert(await page.locator('#stop').isVisible(),'Speaker stop must be available under File > Tools');
+        await page.locator('#file-menu > summary').click();
         await page.locator('#inspector-code').click();
         await page.waitForTimeout(80);
         const restored=await page.evaluate(()=>({
@@ -303,14 +308,17 @@ try {
             unchanged:mon.evaluation('Default',text,text,1)===text};
         });
         assert(on.enabled&&on.observing&&on.unchanged,'Expanded LIVE must restore observation but not instrumentation');
+        const compactLive=await page.locator('#live-panel').evaluate(el=>el.getBoundingClientRect().toJSON());
         await page.locator('#live-panel-expand').click();
         const expandedLive=await page.evaluate(()=>({
           pressed:document.querySelector('#live-panel-expand').getAttribute('aria-pressed'),
           expanded:document.querySelector('#live-panel').classList.contains('live-expanded'),
-          width:document.querySelector('#live-panel').getBoundingClientRect().width
+          width:document.querySelector('#live-panel').getBoundingClientRect().width,
+          height:document.querySelector('#live-panel').getBoundingClientRect().height
         }));
-        assert(expandedLive.pressed==='true'&&expandedLive.expanded,
-          'LIVE MORE must independently expand the activity window');
+        assert(expandedLive.pressed==='true'&&expandedLive.expanded&&
+          Math.abs(expandedLive.width-compactLive.width)<2&&expandedLive.height>compactLive.height,
+          'LIVE MORE should increase height but never width: '+JSON.stringify({compactLive,expandedLive}));
         await page.locator('#live-panel-expand').click();
         assert(await page.locator('#live-panel-expand').getAttribute('aria-pressed')==='false',
           'LIVE LESS must restore compact size without turning tracking off');
