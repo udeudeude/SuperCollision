@@ -90,9 +90,28 @@ try{
     localStorage.setItem('supercollision-projects-v1', JSON.stringify({Default:'replaced'}));
   });
   await page.reload({waitUntil:'load'});
-  await page.waitForFunction(() =>
-    !document.querySelector('#lab-vault-recover')?.hidden,
-    null,{timeout:10000});
+  await page.waitForTimeout(750);
+  const conflictState=await page.evaluate(async () => {
+    const current=JSON.parse(localStorage.getItem('supercollision-projects-v1'));
+    const request=indexedDB.open('supercollision-lab-vault-v1');
+    const saved=await new Promise((resolve,reject)=>{
+      request.onsuccess=()=>{
+        const db=request.result;
+        const query=db.transaction('snapshots','readonly').objectStore('snapshots').get('compositions');
+        query.onsuccess=()=>resolve(query.result);
+        query.onerror=()=>reject(query.error);
+      };
+      request.onerror=()=>reject(request.error);
+    });
+    return {
+      status:document.querySelector('#lab-vault-status')?.textContent,
+      recoverHidden:document.querySelector('#lab-vault-recover')?.hidden,
+      current, savedProjects:saved?.projects,
+      currentActive:localStorage.getItem('supercollision-active-v1')
+    };
+  });
+  assert.equal(conflictState.recoverHidden,false,
+    'Expected recovery choices after localStorage diverges: '+JSON.stringify(conflictState));
   assert.equal(await page.locator('#code').inputValue(),'replaced',
     'Vault must not silently overwrite localStorage');
   await page.locator('#lab-vault-recover').evaluate(button => button.click());
