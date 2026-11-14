@@ -190,6 +190,8 @@
   }
   function setMode(next) {
     if (!views.includes(next)) return;
+    // Leaving CODE also leaves its keyboard-safe error repair dock.
+    if(next!=='code'&&window.SCRepair?.active)window.SCRepair.close();
     mode = next;
     body.classList.toggle('view-console', next === 'console');
     body.classList.toggle('view-perform', next === 'perform');
