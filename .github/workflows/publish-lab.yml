@@ -3,12 +3,23 @@ on:
   push:
     branches:
       - feature/offline-safe-foundation
+    paths:
+      - '*.html'
+      - '*.css'
+      - '*.js'
+      - '*.mjs'
+      - '*.json'
+      - '*.webmanifest'
+      - '*.svg'
+      - '_headers'
+      - 'qa/offline-policy-test.mjs'
+      - '.github/workflows/publish-lab.yml'
   workflow_dispatch:
 permissions:
   contents: write
 concurrency:
   group: supercollision-lab-publish
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   publish-lab:
     runs-on: ubuntu-latest
