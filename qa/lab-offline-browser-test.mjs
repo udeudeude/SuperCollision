@@ -86,7 +86,11 @@ try{
     document.querySelector('#lab-vault-status')?.textContent?.includes('Extra local copy'),
     null, {timeout:10000});
   // Simulate localStorage contents changing outside this instance.
-  await page.evaluate(() => {
+  // App unload handlers flush the old editor state. Apply divergence on the
+  // NEXT document's initialization, after unload but before app startup.
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('lab-qa-diverged')) return;
+    sessionStorage.setItem('lab-qa-diverged', 'yes');
     localStorage.setItem('supercollision-projects-v1', JSON.stringify({Default:'replaced'}));
   });
   await page.reload({waitUntil:'load'});
