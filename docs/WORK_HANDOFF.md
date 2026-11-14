@@ -11,22 +11,30 @@
 - Laboratory compiled deployment branch: `lab-build`, initially copied from `pages-build` to retain WebAssembly runtime.
 - Laboratory publication workflow: `.github/workflows/publish-lab.yml`, only pushes `lab-build`. Latest confirmed complete browser-tested run: https://github.com/udeudeude/SuperCollision/actions/runs/43631530605 (SUCCESS, 14 November 2026). Documentation-only commits do not trigger lab redeployment.
 - Draft source pull request (do NOT merge yet): https://github.com/udeudeude/SuperCollision/pull/1
-- Experimental Cloudflare site address: **NOT YET CREATED OR VERIFIED**.
-- Laboratory browser and iPhone behavior: **UNVERIFIED**.
+- Experimental Cloudflare preview address: **https://lab-build.supercollision.pages.dev/**. User screenshot on iPhone Safari (14 November 2026, approximately 5:15 PM local) verifies that the code editor visibly loads at this address. Audio boot, offline installation, and iPhone Airplane Mode remain UNVERIFIED.
+- Laboratory iPhone Safari initial page load: **VISUALLY VERIFIED BY USER SCREENSHOT**; engine/audio and offline functionality still UNVERIFIED.
 - **Experiment implemented and browser-verified:** opt-in 8.0 MB offline package, safe service worker caching, manual permission for first-time engine download, no automatic 1.5 MB catalog download. The first experimental website visit has no offline guarantee until the user explicitly installs an offline package.
 - The browser test verified no large startup downloads, no engine download after declined consent, full offline-pack installation, offline reload, and cached WebAssembly engine assets in Chromium. **Real iPhone Safari results remain UNVERIFIED**.
 - Most recent experimental source version in published lab manifest: `2b1d9c6fddecaf1b189f09930f5f61a3f8c9809e`. Lab deployment branch `lab-build` at `3d1586e3dfe5912225d28d2ca93e1fb7b817b4de` after passing tests.
+
+## Preview address discovered without another Cloudflare project — 14 November 2026
+
+- User opened `https://lab-build.supercollision.pages.dev/` in Safari on iPhone, and supplied a screenshot showing SuperCollision's editor and controls, version 2.7. The preview address is a separate origin from production.
+- The existing Cloudflare Pages project evidently serves an experimental branch preview. The user has NOT created a second Cloudflare Pages project; **do not attempt to create one merely to establish the lab URL**.
+- `lab-build` contains the experimental `index.html` with `<title>SuperCollision Lab`; the visible `header h1` remains SuperCollision intentionally.
+- Next immediate user device checks: File > Storage > Make available offline, on Wi-Fi only and after accepting the ~8 MB transfer. Confirm successful installation, then test Airplane Mode reload; subsequently test POWER, RUN, STOP, and export/restore.
+- Preview Cloudflare settings (headers, deployment protection, preview-on-push behavior) remain **UNVERIFIED**; do not assume automatic updates or production deployment independence beyond distinct origin.
 
 ## Work browser checkpoint — 14 November 2026
 
 - Read this handoff on `feature/offline-safe-foundation`, then opened https://dash.cloudflare.com/ in Cloud Browser.
 - Cloudflare redirected to https://dash.cloudflare.com/login. This browser is signed out; existing project configuration could not be inspected.
 - No Cloudflare settings changed, no lab project created, and no deployment tests performed. Production and deployment branches remain untouched.
-- **Next action:** user signs in using Cloud Browser within this conversation on chatgpt.com and asks Work to continue. Do not send credentials in chat. Resume by inspecting existing production settings read-only, then create the separate lab project with the settings below. Commit its actual address and configuration here immediately after creation, before testing.
+- **Superseded:** user found the existing branch preview address on their iPhone without signing into Cloud Browser. No Cloudflare account browser setup is currently required. Do not spend Work credits retrying Cloudflare authentication for this purpose.
 
 ## First Work-only action (highest priority)
 
-Using Cloudflare account browser access, create a **NEW** Cloudflare Pages project named `supercollision-lab` if available, connected to GitHub repository `udeudeude/SuperCollision`, deployment/production branch `lab-build`, NOT `pages-build` or `main`.
+**Historical fallback only; no longer necessary for obtaining a lab URL.** Cloudflare already serves https://lab-build.supercollision.pages.dev/ as a branch-preview origin. Do not spend Work credits creating another project unless later testing proves this preview inadequate. If truly necessary, create a NEW Pages project named `supercollision-lab` connected to `lab-build`, never `pages-build` or `main`.
 
 - Project type: Pages, Git-connected.
 - Framework preset: None.
