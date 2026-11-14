@@ -13,6 +13,7 @@ on:
       - '*.svg'
       - '_headers'
       - 'qa/offline-policy-test.mjs'
+      - 'qa/lab-offline-browser-test.mjs'
       - '.github/workflows/publish-lab.yml'
   workflow_dispatch:
 permissions:
@@ -115,6 +116,11 @@ jobs:
           assert 'src="./lab-offline.mjs"' in html
           assert "Load complete catalog (1.5 MB)" in (site / "editor-assist.mjs").read_text()
           PY
+      - name: Browser-test experimental offline mode before publishing
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+          node source/qa/lab-offline-browser-test.mjs
       - name: Commit and publish laboratory branch only
         run: |
           cd site
