@@ -52,7 +52,7 @@ self.addEventListener('fetch', event => {
         if (fallback) return fallback;
       }
       // A damaged offline copy must never silently fetch the missing large file.
-      if (/\\/runtime\\//.test(url.pathname) || url.pathname.endsWith('/language-catalog.json')) {
+      if (url.pathname.includes('/runtime/') || url.pathname.endsWith('/language-catalog.json')) {
         return new Response('Offline copy incomplete: use File > Storage to reinstall it.',
           {status: 503, headers: {'Content-Type': 'text/plain'}});
       }
