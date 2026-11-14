@@ -42,6 +42,15 @@ self.addEventListener('fetch', event => {
   // The manifest is deliberately network-fresh so a new pack can be discovered.
   if (url.pathname.endsWith('/lab-offline-assets.json')) return;
   event.respondWith((async () => {
+    // Online navigation should discover tested lab updates even when an older
+    // offline pack exists. Fall back to the last complete pack if disconnected.
+    // Large runtime files still remain cache-first and consent-gated.
+    if (request.mode === 'navigate') {
+      try {
+        const fresh = await fetch(request);
+        if (fresh.ok) return fresh;
+      } catch {}
+    }
     const pointer = await getPointer();
     if (pointer) {
       const pack = await caches.open(pointer.name);
