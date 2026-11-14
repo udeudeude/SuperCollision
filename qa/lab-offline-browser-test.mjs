@@ -70,6 +70,12 @@ try{
     null, {timeout:10000});
   const storedCode='(\\n{ SinOsc.ar(330, 0, 0.12) ! 2 }.play;\\n)';
   await page.locator('#code').fill(storedCode);
+  await page.waitForFunction(expected => {
+    try {
+      return JSON.parse(localStorage.getItem('supercollision-projects-v1')).Default === expected;
+    } catch { return false; }
+  }, storedCode, {timeout:10000});
+  await page.waitForTimeout(400); // Allow the asynchronous IndexedDB transaction to commit.
   await page.waitForFunction(() =>
     document.querySelector('#lab-vault-status')?.textContent?.includes('Extra local copy saved'),
     null, {timeout:10000});
