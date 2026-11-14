@@ -12,7 +12,7 @@ Status: design and standalone policy module only. **Not enabled on the deployed 
 
 ## Cellular download policy
 
-The user's default preference is to avoid downloads larger than a normal text-only webpage when not on Wi-Fi. Use 1,000,000 bytes as a **provisional per-resource ceiling**, not a guarantee or a session-wide budget. A production implementation must track aggregate transfer size, avoid automatic large downloads, and offer explicit overrides. On iOS, browser network APIs cannot reliably distinguish Wi-Fi from cellular. Treat unknown connectivity conservatively. Service-worker registration, navigation, HTTP caching, and the initial app load can still incur network transfers, so never promise zero large cellular transfers.
+The user's default preference is to avoid downloads larger than a normal text-only webpage when not on Wi-Fi. Use 1,000,000 bytes as a **provisional aggregate optional-download session budget** on unknown or cellular connections. The standalone, not-yet-connected policy module accepts the current session's consumed bytes and rejects unknown-size requests, but the production app still lacks transfer accounting and enforcement. A production implementation must track actual transferred bytes, avoid automatic large downloads, and offer explicit overrides. On iOS, browser network APIs cannot reliably distinguish Wi-Fi from cellular. Treat unknown connectivity conservatively. Service-worker registration, navigation, HTTP caching, and the initial app load can still incur network transfers, so never promise zero large cellular transfers.
 
 ## Files integration
 
