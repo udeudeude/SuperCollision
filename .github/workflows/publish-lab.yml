@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   publish-lab:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout experimental application source
