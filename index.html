@@ -262,6 +262,9 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
       <button id="storage-info" class="secondary">Storage / cleanup</button>
       <button id="lab-offline-download" class="secondary" type="button">Make available offline</button>
       <span id="lab-offline-status" class="muted" role="status">Offline copy not installed</span>
+      <span id="lab-vault-status" class="muted" role="status">Checking extra local copy...</span>
+      <button id="lab-vault-recover" class="secondary" type="button" hidden>Recover extra local copy</button>
+      <button id="lab-vault-keep" class="secondary" type="button" hidden>Keep current compositions</button>
     </div>
   </details>
   <details class="file-submenu">
@@ -329,7 +332,28 @@ const intermediateLivingDemo="(\ns.waitForBoot {\n    Routine({\n        SynthDe
 const fixedLivingDemo="(\ns.waitForBoot({\n    Routine({\n        SynthDef(\\scDrone, { |freq=110|\n            var tone = SinOsc.ar(freq, 0, 0.07);\n            Out.ar(0, tone ! 2);\n        }).add;\n        SynthDef(\\scBell, { |freq=660|\n            var env = EnvGen.kr(Env.perc(0.01, 0.55), doneAction: 2);\n            Out.ar(0, (SinOsc.ar(freq, 0, 0.19) * env) ! 2);\n        }).add;\n        s.sync;\n        ~scDrone = Synth(\\scDrone);\n        16.do {\n            Synth(\\scBell, [\\freq, [440, 550, 660, 880].choose]);\n            0.6.wait;\n        };\n    }).play(SystemClock);\n}, clock: SystemClock);\n)";
 for(const name of Object.keys(projects)){if(/^(?:Living Code Demo|Living Code Demonstration)(?: [0-9]+)?$/.test(name)&&(projects[name]===legacyLivingDemo||projects[name]===intermediateLivingDemo))projects[name]=fixedLivingDemo;}
 if(!Object.hasOwn(projects,active))active=Object.keys(projects)[0];
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(projects));localStorage.setItem(ACTIVE,active);saveStatus.textContent='SAVED'}catch(e){saveStatus.textContent='SAVE ERROR'}}
+function persist(){
+ try{
+  localStorage.setItem(KEY,JSON.stringify(projects));
+  localStorage.setItem(ACTIVE,active);
+  saveStatus.textContent='SAVED';
+  // An additional local mirror listens for this only after its initial
+  // comparison. The existing synchronous saving behavior remains unchanged.
+  window.dispatchEvent(new CustomEvent('supercollision:compositions-saved',{
+   detail:{projects:structuredClone(projects),active}
+  }));
+ }catch(e){saveStatus.textContent='SAVE ERROR'}
+}
+window.SCCompositionSnapshot=()=>({format:'supercollision-lab-vault-v1',projects:structuredClone(projects),active});
+window.SCCompositionRecover=record=>{
+ if(!record||!record.projects||typeof record.projects!=='object'||Array.isArray(record.projects))throw Error('Invalid recovery record');
+ const entries=Object.entries(record.projects);
+ if(entries.length>1000||entries.some(([name,text])=>!name||name==='__proto__'||name.length>80||typeof text!=='string'||text.length>2000000))throw Error('Invalid recovery contents');
+ flush();
+ for(const [name,text] of entries)projects[uniqueName(name)]=text;
+ renderProjects();
+ report('Recovered '+entries.length+' compositions without overwriting existing ones');
+};
 function renderProjects(){window.SCRepair?.clear();projectsEl.replaceChildren();for(const name of Object.keys(projects)){const option=document.createElement('option');option.value=name;option.textContent=name;projectsEl.append(option)}projectsEl.value=active;code.value=projects[active]||'';code.scrollTop=0;code.scrollLeft=0;updatePreview();persist();renderPicker();window.SCActivity?.document(active,code.value);window.SCTimeline?.document(active,code.value);window.SCLanguageTools?.refresh()}
 function commit(){projects[active]=code.value;persist()}
 const toggle=document.querySelector('#project-toggle'),list=document.querySelector('#project-list');
@@ -693,4 +717,4 @@ document.addEventListener('click', function(e) {
   const label=(control.id+' '+(control.getAttribute('aria-label')||'')+' '+(control.textContent||'').slice(0,60)).toLowerCase();
   if (/run|play|evaluate|record/i.test(label)) umami.track('app-use',{project:'supercollision',action:'interaction'});
 },true);
-</script><script type="module" src="./lab-offline.mjs"></script></html>
+</script><script type="module" src="./lab-offline.mjs"></script><script type="module" src="./lab-composition-vault.mjs"></script></html>
