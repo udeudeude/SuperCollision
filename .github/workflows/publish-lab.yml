@@ -95,6 +95,7 @@ jobs:
         run: |
           node --check source/lab-sw.js
           node --check source/lab-offline.mjs
+          node --check source/lab-composition-vault.mjs
           node --check source/editor-assist.mjs
           node source/qa/offline-policy-test.mjs
           python3 - <<'PY'
@@ -114,6 +115,7 @@ jobs:
           html = (site / "index.html").read_text()
           assert 'id="lab-offline-download"' in html
           assert 'src="./lab-offline.mjs"' in html
+          assert 'src="./lab-composition-vault.mjs"' in html
           assert "Load complete catalog (1.5 MB)" in (site / "editor-assist.mjs").read_text()
           PY
       - name: Browser-test experimental offline mode before publishing
