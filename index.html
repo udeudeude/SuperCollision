@@ -340,7 +340,7 @@ function persist(){
   // An additional local mirror listens for this only after its initial
   // comparison. The existing synchronous saving behavior remains unchanged.
   window.dispatchEvent(new CustomEvent('supercollision:compositions-saved',{
-   detail:{projects:structuredClone(projects),active}
+   detail:{format:'supercollision-lab-vault-v1',projects:structuredClone(projects),active}
   }));
  }catch(e){saveStatus.textContent='SAVE ERROR'}
 }
