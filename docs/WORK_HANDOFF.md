@@ -1,6 +1,6 @@
 # SuperCollision Lab: live handoff record
 
-**Update this file and push after every completed atomic task. Never rely on end-of-session messaging.** No credentials here. All unverified items must stay marked UNVERIFIED.
+**Commit/push after meaningful recoverable milestones, not each small edit.** Aim to limit possible loss of work to about 5-10 minutes during substantial changes; push sooner before risky operations. Update this handoff at major milestones, when a blocker appears, and before an intentional stop. The session may end unexpectedly, so never rely on a closing message. Avoid repetitive administration that wastes Work usage. No credentials here; mark unverified items UNVERIFIED.
 
 ## Known-good separation (14 November 2026)
 
@@ -9,7 +9,7 @@
 - Production compiled deployment branch: `pages-build`.
 - Laboratory source branch: `feature/offline-safe-foundation`.
 - Laboratory compiled deployment branch: `lab-build`, initially copied from `pages-build` to retain WebAssembly runtime.
-- Laboratory publication workflow: `.github/workflows/publish-lab.yml`, only pushes `lab-build`.
+- Laboratory publication workflow: `.github/workflows/publish-lab.yml`, only pushes `lab-build`. GitHub run 43630559536 succeeded; later runs may be newer.
 - Draft source pull request (do NOT merge yet): https://github.com/udeudeude/SuperCollision/pull/1
 - Experimental Cloudflare site address: **NOT YET CREATED OR VERIFIED**.
 - Laboratory browser and iPhone behavior: **UNVERIFIED**.
@@ -64,6 +64,6 @@ Using Cloudflare account browser access, create a **NEW** Cloudflare Pages proje
 
 ## Recoverability
 
-After every meaningful change, **commit and push immediately** to experimental source branch; promptly update this document with: last verified commit, URL, objective, files changed, tests actually run/results, blocker, and next 1-2 concrete actions. Do not accumulate uncommitted local work. If unexpectedly cut off, the next session should start by reading this document and GitHub status, without needing the previous Work session transcript.
+At each meaningful checkpoint, **commit and push** to the experimental source branch. Do not interrupt every tiny edit with a GitHub operation. About 5-10 minutes of recoverable work at risk is the target, but sooner for risky operations. Update this handoff for major milestones and blockers with: last verified commit, actual deployment URL, files changed, tests actually run/results, blocker, and next 1-2 concrete actions. GitHub commits are the canonical state, not Work's temporary computer. Avoid accumulating substantial uncommitted work. If unexpectedly cut off, the next session should start by reading this document and GitHub status, without needing the previous Work session transcript.
 
 Never merge `feature/offline-safe-foundation` to `main` or push to `pages-build` without explicit user authorization after comprehensive testing.
