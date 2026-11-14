@@ -40,12 +40,24 @@ export function createRepairUI({editor}){
  });
  let latest=null,applied=null,showing=false,key='';
  const visual=window.visualViewport;
+ function revealCaret(){
+   if(!showing||document.activeElement!==editor)return;
+   // Shrinking the editor for the keyboard must not leave its insertion point
+   // below the visible text area. Scroll the editor, never change the caret.
+   const lines=editor.value.slice(0,editor.selectionStart).split('\n').length-1;
+   const step=parseFloat(getComputedStyle(editor).lineHeight)||21;
+   const y=12+lines*step,top=editor.scrollTop,bottom=top+editor.clientHeight;
+   if(y<top+step)editor.scrollTop=Math.max(0,y-step);
+   else if(y+step>bottom-step)
+     editor.scrollTop=Math.max(0,y+2*step-editor.clientHeight);
+ }
  function resize(){
    if(!showing)return;
    const height=visual?.height||window.innerHeight;
    document.body.style.setProperty('--repair-visual-height',Math.max(280,height)+'px');
    document.body.style.setProperty('--repair-dock-height',
      Math.max(128,Math.min(172,Math.round(height*.34)))+'px');
+   requestAnimationFrame(revealCaret);
  }
  visual?.addEventListener('resize',resize);
  window.addEventListener('resize',resize);
@@ -139,6 +151,7 @@ export function createRepairUI({editor}){
    editor.setSelectionRange(a,b);
    editor.scrollTop=top;editor.scrollLeft=left;
    if(jump)goToError();
+   else requestAnimationFrame(revealCaret);
  }
  function offer(info){
    if(!info)return;
