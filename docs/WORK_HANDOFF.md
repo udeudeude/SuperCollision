@@ -9,7 +9,7 @@
 - Production compiled deployment branch: `pages-build`.
 - Laboratory source branch: `feature/offline-safe-foundation`.
 - Laboratory compiled deployment branch: `lab-build`, initially copied from `pages-build` to retain WebAssembly runtime.
-- Laboratory publication workflow: `.github/workflows/publish-lab.yml`, only pushes `lab-build`. GitHub run 43630559536 succeeded; later runs may be newer.
+- Laboratory publication workflow: `.github/workflows/publish-lab.yml`, only pushes `lab-build`. GitHub run 43630559536 succeeded; later runs may be newer. Subsequent commits to docs do not trigger lab redeployment.
 - Draft source pull request (do NOT merge yet): https://github.com/udeudeude/SuperCollision/pull/1
 - Experimental Cloudflare site address: **NOT YET CREATED OR VERIFIED**.
 - Laboratory browser and iPhone behavior: **UNVERIFIED**.
@@ -48,7 +48,7 @@ Using Cloudflare account browser access, create a **NEW** Cloudflare Pages proje
 
 ## Cellular policy and storage constraints
 
-- Default conservatively: avoid automatic downloads larger than an ordinary text-only website unless user approves. Proposed guard: 1 MB per-resource ceiling; aggregate per-session budget is **NOT YET IMPLEMENTED**.
+- Default conservatively: avoid automatic downloads larger than an ordinary text-only website unless user approves. Proposed guard: 1 MB aggregate session ceiling. A pure policy helper now checks remaining budget; actual network interception and transfer accounting are **NOT YET IMPLEMENTED**.
 - iOS browsers cannot reliably identify Wi-Fi vs cellular; unknown connection must be treated cautiously. Do not claim a guaranteed Wi-Fi detector.
 - Current published static site has approximately 8.1 MB of stored assets; runtime modules and language catalog each exceed 1 MB.
 - User explicitly wants recording, samples, and compositions offline, plus user-mediated Files > On My iPhone exports. Continuous write access to an arbitrary Files folder is not generally available in iOS Safari.
