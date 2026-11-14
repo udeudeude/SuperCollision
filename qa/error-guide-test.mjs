@@ -45,21 +45,21 @@ assert.equal(unrecognized.kind,'envelope-argument');
 assert.equal(unrecognized.correction,null);
 assert.equal(unrecognized.line,56);
 const generic=explainConsoleError('ERROR: Class not defined: Wibble\nfile://interpreted_text:7:2','');
-assert.equal(generic.kind,'runtime');
+assert.equal(generic.kind,'undefined-class');
 assert.equal(generic.line,7);
 assert.equal(explainConsoleError('All notes completed.',''),null);
 const errorCases=[
- {log:"ERROR: syntax error, unexpected VAR, expecting '}'\\nfile://interpreted_text:4:2",
+ {log:"ERROR: syntax error, unexpected VAR, expecting '}'\nfile://interpreted_text:4:2",
   kind:'variable-declaration',includes:'beginning of that function'},
- {log:"ERROR: syntax error, unexpected ')'\\nfile://interpreted_text:4:2",
+ {log:"ERROR: syntax error, unexpected ')'\nfile://interpreted_text:4:2",
   kind:'closing-delimiter',includes:'closing parenthesis'},
  {log:"ERROR: syntax error, unexpected end of file",
   kind:'unclosed-expression',includes:'unclosed'},
- {log:"ERROR: Class not defined: DoesNotExist\\nfile://interpreted_text:7:2",
+ {log:"ERROR: Class not defined: DoesNotExist\nfile://interpreted_text:7:2",
   kind:'undefined-class',includes:'DoesNotExist'},
- {log:"ERROR: Variable 'melody' not defined\\nfile://interpreted_text:3:2",
+ {log:"ERROR: Variable 'melody' not defined\nfile://interpreted_text:3:2",
   kind:'undefined-variable',includes:'melody'},
- {log:"ERROR: Message 'ar' not understood.\\nRECEIVER: nil",
+ {log:"ERROR: Message 'ar' not understood.\nRECEIVER: nil",
   kind:'unknown-message',includes:'receiver'},
  {log:"ERROR: Primitive '_BinaryOpFailure' failed.",
   kind:'primitive-failure',includes:'built-in'},

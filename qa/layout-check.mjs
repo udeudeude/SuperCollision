@@ -25,9 +25,19 @@ try {
   for(const width of [320,390,430]) {
     const context=await browser.newContext({viewport:{width,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
     const page=await context.newPage();
+    const browserErrors=[];
+    page.on('pageerror',error=>browserErrors.push(String(error)));
+    page.on('console',message=>{
+      if(message.type()==='error')browserErrors.push(message.text());
+    });
     for(const theme of studies) {
       await page.goto('http://127.0.0.1:'+port+'/?design='+theme,{waitUntil:'load'});
-      await page.waitForTimeout(150);
+      await page.waitForFunction(t=>document.body.dataset.theme===t,theme,
+        {timeout:7000}).catch(error=>{
+          throw new Error('Browser startup did not initialize '+theme+
+            ' at '+width+'px: '+browserErrors.join(' | ')+'; '+error.message);
+        });
+      await page.waitForTimeout(80);
       const mobileMeta=await page.evaluate(()=>({
         viewport:document.querySelector('meta[name="viewport"]')?.content,
         standalone:document.querySelector('meta[name="apple-mobile-web-app-capable"]')?.content,
