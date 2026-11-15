@@ -21,8 +21,10 @@ const mime = {
   '.svg':'image/svg+xml',
   '.png':'image/png'
 };
+let interfaceNetworkHits=0;
 const server=createServer(async (req,res)=>{
   const pathname=new URL(req.url,'http://localhost').pathname;
+  if(pathname==='/lab-offline.mjs')interfaceNetworkHits++;
   const full=path.resolve(root,'.'+(pathname==='/'?'/index.html':pathname));
   const headers={
     'Cross-Origin-Opener-Policy':'same-origin',
@@ -211,6 +213,18 @@ try{
   assert(saved.isolated,'Cross-origin isolation missing');
   assert(saved.cacheNames.some(x=>x.startsWith('supercollision-lab-pack-')),
     'No completed offline pack');
+
+  // Installing a package must not freeze the phone's small frontend scripts.
+  // On Wi-Fi/online, updated menu logic should come from the server. Large
+  // engine binaries and language catalog remain cache-first/opt-in.
+  const beforeRefresh=interfaceNetworkHits;
+  const shellResult=await page.evaluate(async()=>{
+    const response=await fetch('./lab-offline.mjs');
+    return {ok:response.ok,bytes:(await response.text()).length};
+  });
+  assert(shellResult.ok && shellResult.bytes>1000,'Small shell script unavailable');
+  assert(interfaceNetworkHits>beforeRefresh,
+    'Offline worker served a stale script instead of refreshing small frontend assets');
 
   await context.setOffline(true);
   await page.reload({waitUntil:'domcontentloaded',timeout:20000});
