@@ -75,7 +75,7 @@ async function downloadPack() {
     if (result.type !== 'complete') throw Error('Offline installation did not finish');
     notice('Offline ready (' + displaySize(result.bytes) + '). Files and recordings still need backups.');
     downloadButton.textContent = 'Check offline copy';
-    window.alert('Offline copy saved. You can now test in Airplane Mode. Export important compositions and recordings to Files as backups.');
+    window.alert('Offline files saved. Verify Airplane Mode reload and reopening Safari before depending on them. Export important compositions and recordings to Files as backups.');
   } finally {
     downloadButton.disabled = false;
   }
@@ -96,6 +96,51 @@ if (downloadButton) {
     }
   }).catch(() => notice('Offline status unknown.'));
 }
+// Diagnostics perform only local storage reads: no network or cellular transfer.
+// This distinguishes a missing offline pack from a page that has no controller.
+// If Safari cannot open the page at all, the user can inspect this on Wi-Fi.
+const diagnostics = document.querySelector('#lab-offline-diagnostics');
+if (diagnostics) diagnostics.addEventListener('click', async () => {
+  try {
+    const registration = await navigator.serviceWorker?.getRegistration();
+    const active = !!registration?.active;
+    const controlled = !!navigator.serviceWorker?.controller;
+    const pointer = active ? await existingPack() : null;
+    const important = [
+      './index.html', './lab-offline.mjs', './lab-composition-vault.mjs',
+      './instrument-layout.css', './instrument-layout.js',
+      './runtime/sclang/sclang.js', './runtime/sclang/sclang.wasm',
+      './runtime/sclang/sclang.data',
+      './runtime/scsynth/scsynth.js', './runtime/scsynth/scsynth.wasm',
+      './runtime/scsynth/init.js'
+    ];
+    let missing = [];
+    if (pointer) {
+      const pack = await caches.open(pointer.name);
+      const results = await Promise.all(important.map(async name =>
+        ({name, found: !!(await pack.match(new URL(name,registration.scope)))})));
+      missing = results.filter(item=>!item.found).map(item=>item.name);
+    }
+    const lines = [
+      'Service worker: '+(active?'active':'not active'),
+      'This page controlled: '+(controlled?'yes':'no'),
+      'Offline pack: '+(pointer?'installed':'not found'),
+      'Essential cached files: '+(pointer ? (important.length-missing.length)+'/'+important.length : 'unknown'),
+      'Cross-origin isolation: '+(crossOriginIsolated?'yes':'no'),
+      'Browser reports online: '+(navigator.onLine?'yes':'no')
+    ];
+    if (missing.length) lines.push('Missing: '+missing.join(', '));
+    if (active && !controlled) lines.push('Reload on Wi-Fi before testing offline.');
+    lines.push('Note: only a real offline restart establishes reliability on iPhone.');
+    const report=lines.join('\n');
+    notice(lines.slice(0,4).join(' | '));
+    window.alert(report);
+  } catch (error) {
+    notice('Offline diagnosis failed: '+(error.message||error));
+    window.alert('Offline diagnosis failed: '+(error.message||error));
+  }
+});
+
 // The original app imports ~6 MB of runtime assets on the first POWER click.
 // Prevent an accidental large cellular download by asking at that moment.
 // Approval lasts only for the current tab/session, not subsequent visits.
