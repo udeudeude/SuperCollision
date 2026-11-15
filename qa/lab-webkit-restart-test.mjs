@@ -53,12 +53,36 @@ try {
     isolated:crossOriginIsolated
   }));
   console.log('WebKit installed pack: '+JSON.stringify(before));
+  async function diagnosePage(){
+    return page.evaluate(async()=>{
+      const registration=await navigator.serviceWorker.getRegistration();
+      const meta=await caches.open('supercollision-lab-offline-meta');
+      const stored=await meta.match(new URL('./__lab_offline_pointer__',registration.scope));
+      const pointer=stored?await stored.json():null;
+      const pack=pointer?await caches.open(pointer.name):null;
+      const urls=['./index.html','./runtime/sclang/sclang.wasm','./runtime/scsynth/scsynth.wasm'];
+      const required=await Promise.all(urls.map(async relative=>({
+        relative,exists:pack?!!(await pack.match(new URL(relative,registration.scope))):false
+      })));
+      const keys=pack?await pack.keys():[];
+      const msg=await new Promise(resolve=>{
+        const channel=new MessageChannel();
+        const timeout=setTimeout(()=>resolve({timeout:true}),4000);
+        channel.port1.onmessage=event=>{clearTimeout(timeout);resolve(event.data)};
+        registration.active.postMessage({type:'status'},[channel.port2]);
+      });
+      return {pointer,packKeys:keys.length,required,workerStatus:msg,
+        online:navigator.onLine,controller:!!navigator.serviceWorker.controller};
+    });
+  }
+  console.log('WebKit local storage before outage: '+JSON.stringify(await diagnosePage()));
   // Playwright WebKit setOffline(true) is known to break service-worker
   // navigations even when returning literal cached HTML (issue #42775).
   // Use a real unreachable origin: stop the HTTP server without affecting
   // the service worker, then reload and relaunch the browser process.
   await new Promise(resolve=>server.close(resolve));
   serverStopped=true;
+  console.log('WebKit local storage after outage: '+JSON.stringify(await diagnosePage()));
   await page.reload({waitUntil:'domcontentloaded',timeout:20000});
   assert(await page.locator('#code').isVisible(),'Offline WebKit reload did not load editor');
   console.log('WebKit same-process offline reload: PASS');
