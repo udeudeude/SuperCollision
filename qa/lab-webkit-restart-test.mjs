@@ -57,8 +57,11 @@ try {
     return page.evaluate(async()=>{
       const registration=await navigator.serviceWorker.getRegistration();
       const meta=await caches.open('supercollision-lab-offline-meta');
-      const stored=await meta.match(new URL('./__lab_offline_pointer__',registration.scope).href);
+      const pointerURL=new URL('./__lab_offline_pointer__',registration.scope).href;
+      const stored=await meta.match(pointerURL);
       const pointer=stored?await stored.json():null;
+      const cacheNames=await caches.keys();
+      const metaKeys=(await meta.keys()).map(r=>r.url);
       const pack=pointer?await caches.open(pointer.name):null;
       const urls=['./index.html','./runtime/sclang/sclang.wasm','./runtime/scsynth/scsynth.wasm'];
       const required=await Promise.all(urls.map(async relative=>({
@@ -71,7 +74,7 @@ try {
         channel.port1.onmessage=event=>{clearTimeout(timeout);resolve(event.data)};
         registration.active.postMessage({type:'status'},[channel.port2]);
       });
-      return {pointer,packKeys:keys.length,required,workerStatus:msg,
+      return {pointer,pointerURL,cacheNames,metaKeys,packKeys:keys.length,required,workerStatus:msg,
         online:navigator.onLine,controller:!!navigator.serviceWorker.controller};
     });
   }
