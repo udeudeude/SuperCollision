@@ -216,6 +216,24 @@ try{
   assert(!/Runtime unavailable|Audio server failed/.test(restartState),
     'Offline engine failed after browser-process restart: '+restartState);
   console.log('Cold offline browser restart passed: '+restartState);
+
+  // Safari may evict a noncritical cached icon. The service worker should
+  // still recover the cached editor and engine without rejecting the entire
+  // offline pack because the file count changed.
+  const evicted=await restarted.evaluate(async()=>{
+    const registration=await navigator.serviceWorker.getRegistration();
+    const meta=await caches.open('supercollision-lab-offline-meta');
+    const response=await meta.match(new URL('./__lab_offline_pointer__',registration.scope));
+    if(!response) return false;
+    const pointer=await response.json();
+    const pack=await caches.open(pointer.name);
+    return pack.delete(new URL('./app-icon.svg',registration.scope));
+  });
+  assert(evicted,'Could not simulate optional cache entry eviction');
+  await restarted.reload({waitUntil:'domcontentloaded',timeout:20000});
+  assert.equal(await restarted.locator('#code').isVisible(),true,
+    'Offline page failed after noncritical cache eviction');
+  console.log('Optional cache-entry eviction recovery passed');
   console.log('Lab offline browser smoke test passed');
 }finally{
   if(context)await context.close();
