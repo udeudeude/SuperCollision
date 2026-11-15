@@ -587,13 +587,13 @@ document.querySelector('#engine').onclick=async()=>{
  }
  if(booting)return;
  booting=true;document.querySelector('#engine').disabled=true;
- message('Checking runtime assets...');
+ message('Loading SuperCollider engine...');
  try{
   const base=new URL('./runtime/',location.href);
-  for(const name of ['sclang/sclang.js','scsynth/scsynth.js']){
-   const res=await fetch(new URL(name,base),{method:'HEAD',cache:'no-store'});
-   if(!res.ok)throw Error(name+' missing (HTTP '+res.status+')');
-  }
+  // Do not issue network-only HEAD probes here: they bypass the offline pack
+  // and abort POWER in Airplane Mode even when both runtime modules are cached.
+  // Module imports below provide the actual availability check and resolve
+  // directly from the service worker cache when offline.
   if(!crossOriginIsolated)throw Error('Cross-origin isolation is unavailable. SuperCollider WebAssembly threading requires COOP/COEP headers; ordinary GitHub Pages does not supply them.');
   message('Loading real SuperCollider modules...');
   const [{default:ScLang},{default:ScSynth}]=await Promise.all([import('./runtime/sclang/sclang.js'),import('./runtime/scsynth/scsynth.js')]);
