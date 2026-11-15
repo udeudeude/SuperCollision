@@ -3,7 +3,8 @@
  * Device-specific iPhone acceptance still requires separate real-device tests. */
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {readFile} from 'node:fs/promises';
+import {readFile, mkdtemp, rm} from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
@@ -39,11 +40,12 @@ const server=createServer(async (req,res)=>{
 });
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const origin='http://127.0.0.1:'+server.address().port+'/';
-const browser=await chromium.launch({headless:true});
+const profileDir=await mkdtemp(path.join(os.tmpdir(),'supercollision-lab-test-'));
+const browserOptions={headless:true,viewport:{width:390,height:844},isMobile:true,hasTouch:true};
 let context;
 try{
-  context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
-  const page=await context.newPage();
+  context=await chromium.launchPersistentContext(profileDir,browserOptions);
+  const page=context.pages()[0]||await context.newPage();
   const requests=[];
   let enginePrompts=0;
   page.on('request',request=>requests.push(new URL(request.url()).pathname));
@@ -189,9 +191,34 @@ try{
   assert(!/Runtime unavailable|Audio server failed/.test(engineState),
     'Offline SuperCollider engine boot failed: '+engineState+'; '+consoleState.slice(-1000));
   console.log('Offline POWER reached SuperCollider initialization: '+engineState);
+
+  // Full browser-process restart, retaining the on-disk profile and service
+  // worker registration. Network is disabled BEFORE reloading the URL.
+  await context.close();
+  context=null;
+  context=await chromium.launchPersistentContext(profileDir,browserOptions);
+  await context.setOffline(true);
+  const restarted=context.pages()[0]||await context.newPage();
+  await restarted.goto(origin,{waitUntil:'domcontentloaded',timeout:20000});
+  assert.equal(await restarted.locator('#code').isVisible(),true,
+    'Editor failed after complete offline browser-process restart');
+  const persistentInfo=await restarted.evaluate(async()=>({
+    controlled:!!navigator.serviceWorker?.controller,
+    registrations:(await navigator.serviceWorker?.getRegistrations()||[]).length
+  }));
+  assert(persistentInfo.controlled,'Restarted browser not controlled by service worker: '+JSON.stringify(persistentInfo));
+  await restarted.locator('#engine').click();
+  await restarted.waitForFunction(()=>{
+    const value=document.querySelector('#engine-status')?.textContent||'';
+    return /Initializing language and audio server|AUDIO SERVER READY|Runtime unavailable|Audio server failed/.test(value);
+  },null,{timeout:90000});
+  const restartState=await restarted.locator('#engine-status').textContent();
+  assert(!/Runtime unavailable|Audio server failed/.test(restartState),
+    'Offline engine failed after browser-process restart: '+restartState);
+  console.log('Cold offline browser restart passed: '+restartState);
   console.log('Lab offline browser smoke test passed');
 }finally{
   if(context)await context.close();
-  await browser.close();
+  await rm(profileDir,{recursive:true,force:true});
   await new Promise(resolve=>server.close(resolve));
 }
