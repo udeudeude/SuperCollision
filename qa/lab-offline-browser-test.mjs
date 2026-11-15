@@ -223,11 +223,11 @@ try{
   const evicted=await restarted.evaluate(async()=>{
     const registration=await navigator.serviceWorker.getRegistration();
     const meta=await caches.open('supercollision-lab-offline-meta');
-    const response=await meta.match(new URL('./__lab_offline_pointer__',registration.scope));
+    const response=await meta.match(new URL('./__lab_offline_pointer__',registration.scope).href);
     if(!response) return false;
     const pointer=await response.json();
     const pack=await caches.open(pointer.name);
-    return pack.delete(new URL('./app-icon.svg',registration.scope));
+    return pack.delete(new URL('./app-icon.svg',registration.scope).href);
   });
   assert(evicted,'Could not simulate optional cache entry eviction');
   await restarted.reload({waitUntil:'domcontentloaded',timeout:20000});
