@@ -9,13 +9,23 @@
 - Production compiled deployment branch: `pages-build`.
 - Laboratory source branch: `feature/offline-safe-foundation`.
 - Laboratory compiled deployment branch: `lab-build`, initially copied from `pages-build` to retain WebAssembly runtime.
-- Laboratory publication workflow: `.github/workflows/publish-lab.yml`, only pushes `lab-build`. Latest confirmed complete browser-tested run: https://github.com/udeudeude/SuperCollision/actions/runs/43631530605 (SUCCESS, 14 November 2026). Documentation-only commits do not trigger lab redeployment.
+- Laboratory publication workflow: `.github/workflows/publish-lab.yml`, only pushes `lab-build`. Latest confirmed full Chromium browser-tested lab publication: https://github.com/udeudeude/SuperCollision/actions/runs/43728979858 (SUCCESS, 15 November 2026). Documentation-only commits do not trigger lab redeployment.
 - Draft source pull request (do NOT merge yet): https://github.com/udeudeude/SuperCollision/pull/1
-- Experimental Cloudflare preview address: **https://lab-build.supercollision.pages.dev/**. User screenshot on iPhone Safari (14 November 2026, approximately 5:15 PM local) verifies that the code editor visibly loads at this address. Audio boot, offline installation, and iPhone Airplane Mode remain UNVERIFIED.
-- Laboratory iPhone Safari initial page load: **VISUALLY VERIFIED BY USER SCREENSHOT**; engine/audio and offline functionality still UNVERIFIED.
+- Experimental Cloudflare preview address: **https://lab-build.supercollision.pages.dev/**. User screenshots verified page loads online and initial in-session audio works offline. **Offline reload and cold Safari reopening are user-reported FAILING as of 15 November 2026**.
+- Laboratory iPhone initial page load and in-session offline synthesis: **USER VERIFIED**; full offline reload and closing/reopening Safari **NOT WORKING** as most recently reported.
 - **Experiment implemented and browser-verified:** opt-in 8.0 MB offline package, safe service worker caching, manual permission for first-time engine download, no automatic 1.5 MB catalog download. The first experimental website visit has no offline guarantee until the user explicitly installs an offline package.
 - The browser test verified no large startup downloads, no engine download after declined consent, full offline-pack installation, offline reload, and cached WebAssembly engine assets in Chromium. **Real iPhone Safari results remain UNVERIFIED**.
-- Most recent experimental source version in published lab manifest: `2b1d9c6fddecaf1b189f09930f5f61a3f8c9809e`. Lab deployment branch `lab-build` at `3d1586e3dfe5912225d28d2ca93e1fb7b817b4de` after passing tests.
+- Latest tested lab offline manifest source version: `82a98dedf12757abb53e375fad97a649dcd45aab`, 37 files, 8,055,700 bytes. Lab deployment branch is independent of production.
+
+## Follow-up: WebKit cache readback diagnostics — 15 November 2026
+
+- Lab service worker and offline UI now use standard URL string keys for Cache API reads/writes (instead of raw URL objects), prioritize cached navigation when offline, and tolerate eviction of nonessential entries.
+- Critical finding from Linux Playwright WebKit (NOT actual iPhone Safari): the browser accepted a package installation and left named CacheStorage containers, but their entries were unreadable even before the offline reload. This causes an offline navigation error. Playwright has a documented WebKit cache-persistence issue; these findings cannot be assumed to reproduce Apple's shipping Safari precisely.
+- **Correctness safeguard implemented:** after writing a new offline pack, the service worker independently reads the cache/essential files back before declaring success; it restores the previous cache pointer and deletes the incomplete new pack if validation fails. The UI also independently rechecks status before showing success. The new WebKit diagnostic now correctly reports installation failure rather than falsely announcing success.
+- Separate diagnostic workflow: `qa/lab-webkit-restart-test.mjs` and `.github/workflows/lab-webkit-restart.yml`; most recent WebKit result `43728983279` failed as expected with: `Offline package was written but could not be verified. Previous saved copy retained.` This is an informative platform diagnostic, not a production blocker.
+- Chromium publication gate **PASSED**: https://github.com/udeudeude/SuperCollision/actions/runs/43728979858. Verified package install/readback, offline reload, shutdown/restart with persistent profile, cache-entry eviction resilience, engine initialization. Production branches `main` and `pages-build` remain unchanged after publication.
+- **NEXT USER ACTION (Wi-Fi only):** Open/reload lab, select File > Storage > **Check offline readiness**, send a screenshot of that diagnostic. Do not clear website data, and do not reinstall the ~8 MB pack until necessary. Also distinguish a Safari "cannot connect" screen from a loaded editor whose POWER/RUN fails. Once diagnostic is understood, deliberately approve any large new offline download on Wi-Fi.
+- Offline restart on user's actual iPhone is still **UNRESOLVED**. Do not call the application reliably offline-first until the user can reload and reopen Safari without connectivity.
 
 ## Offline reload/cold start failure report and hardening — 15 November 2026
 
