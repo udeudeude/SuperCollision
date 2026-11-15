@@ -17,6 +17,13 @@
 - The browser test verified no large startup downloads, no engine download after declined consent, full offline-pack installation, offline reload, and cached WebAssembly engine assets in Chromium. **Real iPhone Safari results remain UNVERIFIED**.
 - Most recent experimental source version in published lab manifest: `2b1d9c6fddecaf1b189f09930f5f61a3f8c9809e`. Lab deployment branch `lab-build` at `3d1586e3dfe5912225d28d2ca93e1fb7b817b4de` after passing tests.
 
+## iPhone offline synthesis success — 15 November 2026
+
+- After installing the updated offline package and following the Airplane Mode retest instructions, the user reported **"Worked!"**. This is user-reported confirmation of the immediate offline editor/POWER/RUN/STOP test, including audible synthesis as requested in the test steps, not a separately instrumented device measurement.
+- The earlier offline POWER failure is therefore resolved on the user's iPhone in the tested session. The experimental preview remains the test environment; production remains unchanged.
+- Remaining device resilience tests: reopen the application after fully closing Safari and after an iPhone restart, both offline; verify existing compositions remain accessible; test Save to Files and audio exports as user-mediated backups. Do not claim these tests have passed until user verifies them.
+- Never tell the user to clear browser website data or delete the offline pack as a routine update step, since that can endanger locally saved compositions.
+
 ## Offline POWER regression and fix — 15 November 2026
 
 - Real iPhone Safari user screenshot at about 9:45 AM local time, with Airplane Mode active on `https://lab-build.supercollision.pages.dev/`, showed the code editor available offline but engine failed: status `Runtime unavailable: Load failed` and console `Load failed`.
