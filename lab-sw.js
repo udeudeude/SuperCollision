@@ -20,7 +20,7 @@ async function getPointer() {
     // written; here we verify the essential entrypoints on every restart.
     for (const required of ['./index.html', './runtime/sclang/sclang.wasm',
                             './runtime/scsynth/scsynth.wasm']) {
-      if (!(await pack.match(new URL(required, self.registration.scope)))) return null;
+      if (!(await pack.match(new URL(required, self.registration.scope).href))) return null;
     }
     return value;
   } catch {
@@ -53,7 +53,7 @@ self.addEventListener('fetch', event => {
     if (request.mode === 'navigate') {
       const saved = pack && (
         await pack.match(request, {ignoreSearch: true}) ||
-        await pack.match(new URL('./index.html', scope))
+        await pack.match(new URL('./index.html', scope).href)
       );
       if (saved && self.navigator?.onLine === false) return saved;
       try {
@@ -99,7 +99,7 @@ async function installPack(manifest, port) {
       const url = new URL(asset.path.slice(1), self.registration.scope);
       const response = await fetch(url, {cache: 'reload'});
       if (!response.ok || response.type === 'opaque') throw Error('Could not download ' + asset.path);
-      await pack.put(url, response);
+      await pack.put(url.href, response);
       bytes += asset.bytes;
       port.postMessage({type: 'progress', completed: i + 1, total: manifest.files.length, path: asset.path});
     }
