@@ -223,6 +223,7 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 <div class="projectbar"><div class="composition-picker"><button id="project-toggle" type="button" class="secondary" aria-expanded="false" aria-controls="project-list">Composition ▾</button><div id="project-list" class="project-list" hidden role="listbox" aria-label="Saved compositions"></div></div><select id="projects" aria-label="Saved compositions" hidden></select><details class="menu" id="file-menu">
 <summary aria-label="Composition actions">FILE ▾</summary>
 <div class="menu-items" id="file-menu-items" role="group" aria-label="File commands">
+  <button id="file-menu-back" class="secondary" type="button" hidden>‹ All FILE sections</button>
   <button id="new-project" class="secondary">New composition</button>
   <button id="save-as-project" class="secondary" type="button" title="Create a separate named copy in this browser without replacing your current composition">Save as...</button>
   <button id="rename-project" class="secondary">Rename composition</button>
@@ -261,7 +262,8 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
       <button id="restore-projects" class="secondary">Restore backup</button>
       <button id="storage-info" class="secondary">Storage / cleanup</button>
       <button id="lab-offline-download" class="secondary" type="button">Make available offline</button>
-      <button id="lab-offline-diagnostics" class="secondary" type="button">Check offline readiness</button>
+      <button id="lab-offline-diagnostics" class="secondary" type="button" aria-controls="lab-offline-report" aria-expanded="false">Check offline readiness</button>
+      <section id="lab-offline-report" role="status" aria-live="polite" hidden></section>
       <span id="lab-offline-status" class="muted" role="status">Offline copy not installed</span>
       <span id="lab-vault-status" class="muted" role="status">Checking extra local copy...</span>
       <button id="lab-vault-recover" class="secondary" type="button" hidden>Recover extra local copy</button>
@@ -426,28 +428,63 @@ document.querySelector('#import-file').onclick=()=>document.querySelector('#file
 document.querySelector('#file-input').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>2000000)throw Error('File exceeds 2 MB');if(!/\.(scd|sc|txt)$/i.test(file.name))throw Error('Choose a .scd, .sc, or .txt file');flush();active=uniqueName(file.name.replace(/\.(scd|sc|txt)$/i,'').slice(0,80)||'Imported');projects[active]=await file.text();renderProjects();report('Imported '+file.name)}catch(err){report('Import failed: '+err.message)}e.target.value=''};
 document.querySelector('#export-file').onclick=()=>{flush();const blob=new Blob([code.value],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=active.replace(/[^a-z0-9_-]/gi,'_')+'.scd';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000)};
 document.querySelector('#clear').onclick=()=>{if(code.value&&!confirm('Replace current composition with the example?'))return;code.value=example;code.dispatchEvent(new Event('input'))};
-// Compact FILE drawer: only one submenu expands at a time.
+// File sections use a focused view so opening STORAGE, EDITOR, etc.
+// shows the actual commands instead of hiding them below a long scroll.
 const fileMenu=document.querySelector('#file-menu');
 const fileItems=document.querySelector('#file-menu-items');
+const fileBack=document.querySelector('#file-menu-back');
 const fileGroups=[...fileItems.querySelectorAll('.file-submenu')];
+function fitFileMenu(){
+  if(!fileMenu.open)return;
+  const bounds=fileItems.getBoundingClientRect();
+  const viewport=window.visualViewport;
+  const bottom=(viewport?viewport.offsetTop+viewport.height:window.innerHeight)-10;
+  fileItems.style.maxHeight=Math.max(150,Math.floor(bottom-bounds.top))+'px';
+}
+function focusFileSection(group){
+  const active=Boolean(group&&group.open);
+  fileMenu.classList.toggle('file-section-focused',active);
+  fileBack.hidden=!active;
+  fileItems.scrollTop=0;
+  requestAnimationFrame(()=>{fitFileMenu();fileItems.scrollTop=0});
+}
 fileGroups.forEach(group=>{
-  // Close siblings before the browser toggles this summary, so two sections
-  // cannot briefly remain open during a quick sequence of taps on iOS.
-  group.querySelector('summary').addEventListener('click',()=>{
-    for(const other of fileGroups)if(other!==group)other.open=false;
-  });
   group.addEventListener('toggle',()=>{
-    if(group.open)for(const other of fileGroups)if(other!==group)other.open=false;
+    if(!fileMenu.open)return;
+    if(group.open){
+      for(const other of fileGroups)if(other!==group)other.open=false;
+      focusFileSection(group);
+    }else if(!fileGroups.some(other=>other.open)){
+      focusFileSection(null);
+    }
   });
+});
+fileBack.addEventListener('click',()=>{
+  for(const group of fileGroups)group.open=false;
+  focusFileSection(null);
 });
 fileMenu.addEventListener('toggle',()=>{
-  if(!fileMenu.open){fileGroups.forEach(group=>group.open=false);if(osc)stop()}
+  if(!fileMenu.open){
+    for(const group of fileGroups)group.open=false;
+    focusFileSection(null);
+    fileItems.style.maxHeight='';
+    if(osc)stop();
+  }else{
+    requestAnimationFrame(fitFileMenu);
+  }
 });
+window.addEventListener('resize',fitFileMenu);
+window.visualViewport?.addEventListener('resize',fitFileMenu);
 fileItems.addEventListener('click',event=>{
+  const summary=event.target.closest('#audio-panel > summary');
+  if(summary)requestAnimationFrame(()=>summary.scrollIntoView({block:'nearest'}));
   const button=event.target.closest('button');
   if(!button||button.disabled)return;
-  // Keep the editor size tools and screen-awake control readily repeatable.
-  if(!['code-size-smaller','code-size-larger','wake-toggle','play','stop'].includes(button.id))
+  // Keep diagnostic output and progress visible. Other one-shot actions
+  // continue to dismiss FILE as they did before.
+  if(!['file-menu-back','lab-offline-diagnostics','lab-offline-download',
+        'lab-vault-recover','lab-vault-keep','code-size-smaller',
+        'code-size-larger','wake-toggle','play','stop'].includes(button.id))
     fileMenu.open=false;
 });
 document.addEventListener('pointerdown',event=>{
