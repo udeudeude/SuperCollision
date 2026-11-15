@@ -17,6 +17,19 @@
 - The browser test verified no large startup downloads, no engine download after declined consent, full offline-pack installation, offline reload, and cached WebAssembly engine assets in Chromium. **Real iPhone Safari results remain UNVERIFIED**.
 - Most recent experimental source version in published lab manifest: `2b1d9c6fddecaf1b189f09930f5f61a3f8c9809e`. Lab deployment branch `lab-build` at `3d1586e3dfe5912225d28d2ca93e1fb7b817b4de` after passing tests.
 
+## Offline reload/cold start failure report and hardening — 15 November 2026
+
+- **Important correction:** user reported that the previously successful offline playback **does not survive reloading the page or completely closing and reopening Safari**. This supersedes the earlier broad statement that the instrument was fully usable offline. Offline audio in an already-running page worked; reliable offline restart on the user's actual iPhone is **NOT VERIFIED and currently reported as failing**.
+- Exact symptom after reopening (native Safari offline error vs app shell opens without audio) remains **UNDETERMINED**. Ask for a screenshot or a precise distinction before claiming a root cause.
+- Read Apple WebKit guidance: service workers can be terminated between page visits, and Cache Storage can be evicted. No browser-only solution can guarantee storage persistence across all iPhone circumstances.
+- Experimental lab service worker now prepares the cached navigation before attempting network access, bypasses that attempt when the worker reports offline, and no longer invalidates the entire saved package if a nonessential entry is evicted. This is robustness hardening, **not an established iPhone fix**.
+- Added File > Storage > **Check offline readiness**, a network-free check of worker registration, page controller, essential cached files, and cross-origin isolation.
+- Added Chromium persistent-profile test: register and install the offline copy, reload offline, completely close Chromium, reopen using the same on-disk profile while still offline, check editor and engine initialization, then delete a noncritical cached icon and confirm the application still loads.
+- GitHub Actions run https://github.com/udeudeude/SuperCollision/actions/runs/43728266000 **PASSED** for experimental lab publication with new checks. A separate WebKit-based test is in progress or should be checked via `.github/workflows/lab-webkit-restart.yml`; WebKit on Linux is not a substitute for Safari on the user's iPhone.
+- Remain on experimental `feature/offline-safe-foundation` / `lab-build` only. The working production site must not be modified.
+- Next user test **only on Wi-Fi**: back up any irreplaceable compositions via Files, reload the lab to get the changed service worker, choose Make available offline and approve the approximately 8 MB update, then use Check offline readiness. Try Airplane Mode reload and complete Safari restart. Do not clear website data.
+- If still failing, capture what Safari shows on reload and whether the entire page fails or only engine/audio. This directly determines whether to investigate worker/scope/cache persistence or cached page headers and WebAssembly initialization.
+
 ## iPhone offline synthesis success — 15 November 2026
 
 - After installing the updated offline package and following the Airplane Mode retest instructions, the user reported **"Worked!"**. This is user-reported confirmation of the immediate offline editor/POWER/RUN/STOP test, including audible synthesis as requested in the test steps, not a separately instrumented device measurement.
