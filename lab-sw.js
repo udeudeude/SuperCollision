@@ -106,10 +106,19 @@ async function installPack(manifest, port) {
     if (!seen.has('/index.html') || !seen.has('/runtime/sclang/sclang.wasm') ||
         !seen.has('/runtime/scsynth/scsynth.wasm')) throw Error('Offline pack is missing essential files');
     const meta = await caches.open(META_NAME);
+    const previousPointer = await meta.match(POINTER_URL);
     await meta.put(POINTER_URL, new Response(JSON.stringify({
       name: packName, version: manifest.version, bytes,
       fileCount: manifest.files.length, installed: Date.now()
     }), {headers: {'Content-Type': 'application/json'}}));
+    // Some browser implementations accept cache.put but cannot read back
+    // the newly written entry. Do not advertise success in that situation.
+    const confirmed = await getPointer();
+    if (!confirmed || confirmed.name !== packName) {
+      if (previousPointer) await meta.put(POINTER_URL, previousPointer.clone());
+      else await meta.delete(POINTER_URL);
+      throw Error('Offline package was written but could not be verified. Previous saved copy retained.');
+    }
     committed = true;
     port.postMessage({type: 'complete', version: manifest.version, bytes});
     // Cleanup is best effort after the pointer is committed. A cleanup error
