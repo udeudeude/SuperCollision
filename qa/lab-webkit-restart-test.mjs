@@ -45,7 +45,7 @@ try {
   });
   await page.locator('#lab-offline-download').click();
   await page.waitForFunction(
-    ()=>document.querySelector('#lab-offline-status')?.textContent?.startsWith('Offline ready'),
+    ()=>document.querySelector('#lab-offline-status')?.textContent?.startsWith('Offline files installed'),
     null,{timeout:90000});
   const before=await page.evaluate(async()=>({
     controlled:!!navigator.serviceWorker?.controller,
