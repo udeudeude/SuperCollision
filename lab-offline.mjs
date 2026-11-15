@@ -99,49 +99,84 @@ if (downloadButton) {
     }
   }).catch(() => notice('Offline status unknown.'));
 }
-// Diagnostics perform only local storage reads: no network or cellular transfer.
-// This distinguishes a missing offline pack from a page that has no controller.
-// If Safari cannot open the page at all, the user can inspect this on Wi-Fi.
+// Readiness diagnostics use only local Cache Storage, with no network fetch.
+// Never dismiss the File menu to show an asynchronous browser alert: Safari
+// may suppress dialogs after an await and leave the user with no feedback.
 const diagnostics = document.querySelector('#lab-offline-diagnostics');
-if (diagnostics) diagnostics.addEventListener('click', async () => {
+const offlineReport = document.querySelector('#lab-offline-report');
+async function inspectOfflineCopy() {
+  const registration = await navigator.serviceWorker?.getRegistration();
+  const active = Boolean(registration?.active);
+  const controlled = Boolean(navigator.serviceWorker?.controller);
+  let pointer = null;
+  let cachedFiles = 0;
+  let missing = [];
+  let storageError = '';
+  const essential = [
+    './index.html','./lab-offline.mjs','./lab-composition-vault.mjs',
+    './instrument-layout.css','./instrument-layout.js',
+    './runtime/sclang/sclang.js','./runtime/sclang/sclang.wasm',
+    './runtime/sclang/sclang.data','./runtime/scsynth/scsynth.js',
+    './runtime/scsynth/scsynth.wasm','./runtime/scsynth/init.js'
+  ];
   try {
-    const registration = await navigator.serviceWorker?.getRegistration();
-    const active = !!registration?.active;
-    const controlled = !!navigator.serviceWorker?.controller;
-    const pointer = active ? await existingPack() : null;
-    const important = [
-      './index.html', './lab-offline.mjs', './lab-composition-vault.mjs',
-      './instrument-layout.css', './instrument-layout.js',
-      './runtime/sclang/sclang.js', './runtime/sclang/sclang.wasm',
-      './runtime/sclang/sclang.data',
-      './runtime/scsynth/scsynth.js', './runtime/scsynth/scsynth.wasm',
-      './runtime/scsynth/init.js'
-    ];
-    let missing = [];
-    if (pointer) {
-      const pack = await caches.open(pointer.name);
-      const results = await Promise.all(important.map(async name =>
-        ({name, found: !!(await pack.match(new URL(name,registration.scope).href))})));
-      missing = results.filter(item=>!item.found).map(item=>item.name);
+    if (active && 'caches' in window) {
+      const meta = await caches.open('supercollision-lab-offline-meta');
+      const response = await meta.match(new URL('./__lab_offline_pointer__', registration.scope).href);
+      if (response) {
+        const data = await response.json();
+        if (typeof data.name === 'string' && data.name.startsWith('supercollision-lab-pack-')) {
+          const names = await caches.keys();
+          if (names.includes(data.name)) {
+            pointer = data;
+            const pack = await caches.open(data.name);
+            const checks = await Promise.all(essential.map(async relative => ({
+              path:relative,
+              found:Boolean(await pack.match(new URL(relative,registration.scope).href))
+            })));
+            cachedFiles=checks.filter(check=>check.found).length;
+            missing=checks.filter(check=>!check.found).map(check=>check.path);
+          }
+        }
+      }
     }
-    const lines = [
-      'Service worker: '+(active?'active':'not active'),
-      'This page controlled: '+(controlled?'yes':'no'),
-      'Offline pack: '+(pointer?'installed':'not found'),
-      'Essential cached files: '+(pointer ? (important.length-missing.length)+'/'+important.length : 'unknown'),
-      'Cross-origin isolation: '+(crossOriginIsolated?'yes':'no'),
-      'Browser reports online: '+(navigator.onLine?'yes':'no')
-    ];
-    if (missing.length) lines.push('Missing: '+missing.join(', '));
-    if (active && !controlled) lines.push('Reload on Wi-Fi before testing offline.');
-    lines.push('Note: only a real offline restart establishes reliability on iPhone.');
-    const report=lines.join('\n');
-    notice(lines.slice(0,4).join(' | '));
-    window.alert(report);
   } catch (error) {
-    notice('Offline diagnosis failed: '+(error.message||error));
-    window.alert('Offline diagnosis failed: '+(error.message||error));
+    storageError=String(error.message||error);
   }
+  const lines=[
+    'Service worker: '+(active?'active':'NOT ACTIVE'),
+    'Page controlled: '+(controlled?'yes':'NO'),
+    'Saved package: '+(pointer?'found':'NOT FOUND'),
+    'Essential files: '+(pointer?cachedFiles+'/'+essential.length:'unknown'),
+    'Isolation: '+(crossOriginIsolated?'yes':'NO'),
+    'Connection: '+(navigator.onLine?'online':'offline')
+  ];
+  if(missing.length)lines.push('Missing: '+missing.join(', '));
+  if(storageError)lines.push('Storage error: '+storageError);
+  if(!active||!controlled||!pointer||missing.length||!crossOriginIsolated)
+    lines.push('Not ready for reliable offline reopening.');
+  else
+    lines.push('Cached files look ready; an offline restart still needs testing.');
+  return lines.join('\n');
+}
+if(diagnostics && offlineReport) diagnostics.addEventListener('click',()=>{
+  diagnostics.setAttribute('aria-expanded','true');
+  offlineReport.hidden=false;
+  offlineReport.textContent='Checking saved files on this phone...';
+  // A browser with unhealthy storage must not leave the user waiting forever.
+  Promise.race([
+    inspectOfflineCopy(),
+    new Promise((_,reject)=>setTimeout(()=>reject(Error('Local storage check timed out')),7000))
+  ]).then(report=>{
+    offlineReport.textContent=report;
+    notice('Offline readiness check finished. See results below.');
+  }).catch(error=>{
+    offlineReport.textContent='Offline readiness check failed: '+String(error.message||error)+
+      '\nNo new files were downloaded.';
+    notice('Offline readiness check failed; see report below.');
+  }).finally(()=>{
+    requestAnimationFrame(()=>offlineReport.scrollIntoView({block:'nearest',inline:'nearest'}));
+  });
 });
 
 // The original app imports ~6 MB of runtime assets on the first POWER click.
