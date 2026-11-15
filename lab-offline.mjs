@@ -73,7 +73,10 @@ async function downloadPack() {
       notice('Saving offline: ' + progress.completed + '/' + progress.total + ' files');
     });
     if (result.type !== 'complete') throw Error('Offline installation did not finish');
-    notice('Offline ready (' + displaySize(result.bytes) + '). Files and recordings still need backups.');
+    const verified = await existingPack();
+    if (!verified || verified.version !== manifest.version)
+      throw Error('Saved files could not be verified. Existing copies were not erased.');
+    notice('Offline files installed (' + displaySize(result.bytes) + '). Restart behavior still needs testing on iPhone.');
     downloadButton.textContent = 'Check offline copy';
     window.alert('Offline files saved. Verify Airplane Mode reload and reopening Safari before depending on them. Export important compositions and recordings to Files as backups.');
   } finally {
