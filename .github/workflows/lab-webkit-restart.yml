@@ -24,6 +24,12 @@ jobs:
         with:
           ref: lab-build
           path: site
+      - name: Overlay latest experimental frontend for diagnostics
+        run: |
+          cp source/lab-sw.js site/lab-sw.js
+          cp source/lab-offline.mjs site/lab-offline.mjs
+          cp source/lab-composition-vault.mjs site/lab-composition-vault.mjs
+          cp source/index.html site/index.html
       - name: Install WebKit test browser
         run: |
           npm install --no-save playwright@1.56.1
