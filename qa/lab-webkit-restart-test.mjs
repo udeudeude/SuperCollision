@@ -45,8 +45,10 @@ try {
   });
   await page.locator('#lab-offline-download').click();
   await page.waitForFunction(
-    ()=>document.querySelector('#lab-offline-status')?.textContent?.startsWith('Offline files installed'),
+    ()=>/^(Offline files installed|Offline download failed)/.test(document.querySelector('#lab-offline-status')?.textContent||''),
     null,{timeout:90000});
+  const installState=await page.locator('#lab-offline-status').textContent();
+  assert(installState.startsWith('Offline files installed'), 'Offline installation not verified: '+installState);
   const before=await page.evaluate(async()=>({
     controlled:!!navigator.serviceWorker?.controller,
     registration:!!(await navigator.serviceWorker?.getRegistration())?.active,
