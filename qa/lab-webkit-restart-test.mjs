@@ -32,6 +32,7 @@ const origin='http://127.0.0.1:'+server.address().port+'/';
 const profile=await mkdtemp(path.join(tmpdir(),'supercollision-webkit-'));
 const options={headless:true,viewport:{width:390,height:844},isMobile:true,hasTouch:true};
 let context;
+let serverStopped=false;
 try {
   context=await webkit.launchPersistentContext(profile,options);
   let page=context.pages()[0]||await context.newPage();
@@ -52,7 +53,12 @@ try {
     isolated:crossOriginIsolated
   }));
   console.log('WebKit installed pack: '+JSON.stringify(before));
-  await context.setOffline(true);
+  // Playwright WebKit setOffline(true) is known to break service-worker
+  // navigations even when returning literal cached HTML (issue #42775).
+  // Use a real unreachable origin: stop the HTTP server without affecting
+  // the service worker, then reload and relaunch the browser process.
+  await new Promise(resolve=>server.close(resolve));
+  serverStopped=true;
   await page.reload({waitUntil:'domcontentloaded',timeout:20000});
   assert(await page.locator('#code').isVisible(),'Offline WebKit reload did not load editor');
   console.log('WebKit same-process offline reload: PASS');
@@ -60,7 +66,6 @@ try {
   await context.close();
   context=null;
   context=await webkit.launchPersistentContext(profile,options);
-  await context.setOffline(true);
   page=context.pages()[0]||await context.newPage();
   await page.goto(origin,{waitUntil:'domcontentloaded',timeout:20000});
   assert(await page.locator('#code').isVisible(),'Offline WebKit cold browser reopen did not load editor');
@@ -73,5 +78,5 @@ try {
 } finally {
   if(context)await context.close();
   await rm(profile,{recursive:true,force:true});
-  await new Promise(resolve=>server.close(resolve));
+  if(!serverStopped)await new Promise(resolve=>server.close(resolve));
 }
