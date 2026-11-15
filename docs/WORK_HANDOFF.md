@@ -17,6 +17,17 @@
 - The browser test verified no large startup downloads, no engine download after declined consent, full offline-pack installation, offline reload, and cached WebAssembly engine assets in Chromium. **Real iPhone Safari results remain UNVERIFIED**.
 - Most recent experimental source version in published lab manifest: `2b1d9c6fddecaf1b189f09930f5f61a3f8c9809e`. Lab deployment branch `lab-build` at `3d1586e3dfe5912225d28d2ca93e1fb7b817b4de` after passing tests.
 
+## Offline POWER regression and fix — 15 November 2026
+
+- Real iPhone Safari user screenshot at about 9:45 AM local time, with Airplane Mode active on `https://lab-build.supercollision.pages.dev/`, showed the code editor available offline but engine failed: status `Runtime unavailable: Load failed` and console `Load failed`.
+- Root cause strongly supported by source: POWER performed unconditional `fetch(...,{method:'HEAD',cache:'no-store'})` against runtime JavaScript files. The service worker only intercepted GET. HEAD probes failed without internet even though the engine modules were stored locally.
+- Removed these optional network-only HEAD preflight probes on experimental source branch. Actual JavaScript module imports now check runtime availability, using the offline cache when disconnected.
+- Extended Chromium test to install the offline pack, go offline, reload, press POWER, reject any HEAD requests and verify it proceeds to language/audio initialization without `Runtime unavailable`.
+- **Passed:** https://github.com/udeudeude/SuperCollision/actions/runs/43726379544 on 15 November 2026. Log: `Offline POWER reached SuperCollider initialization: Initializing language and audio server.` Note this **does not yet prove an actual sound plays**; real iPhone verification still required.
+- Published `lab-build` manifest source version `0d663611fb84ef1f00551b338a0b4c56fe020aae`, 37 files, 8,052,140 bytes. `main` and `pages-build` unchanged after publish.
+- **Next iPhone test:** While on Wi-Fi, reload the lab preview page (do not clear site data); File > Storage > Make available offline, explicitly approve the updated package (~8 MB); test editor reload and POWER/RUN/STOP in Airplane Mode with Wi-Fi also off. Existing offline copy must be updated to pick up fix. Then retry after closing Safari and phone restart.
+- If offline POWER still fails, capture full expanded console text and report whether browser security/worker failures occur. Do not claim fully functional offline synthesis until actual audio is heard and STOP verified.
+
 ## Composition recovery milestone — 14 November 2026
 
 - Built `lab-composition-vault.mjs`, an experimental IndexedDB snapshot mirror. Existing `localStorage` compositions and Save to Files remain intact.
