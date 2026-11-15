@@ -57,12 +57,12 @@ try {
     return page.evaluate(async()=>{
       const registration=await navigator.serviceWorker.getRegistration();
       const meta=await caches.open('supercollision-lab-offline-meta');
-      const stored=await meta.match(new URL('./__lab_offline_pointer__',registration.scope));
+      const stored=await meta.match(new URL('./__lab_offline_pointer__',registration.scope).href);
       const pointer=stored?await stored.json():null;
       const pack=pointer?await caches.open(pointer.name):null;
       const urls=['./index.html','./runtime/sclang/sclang.wasm','./runtime/scsynth/scsynth.wasm'];
       const required=await Promise.all(urls.map(async relative=>({
-        relative,exists:pack?!!(await pack.match(new URL(relative,registration.scope))):false
+        relative,exists:pack?!!(await pack.match(new URL(relative,registration.scope).href)):false
       })));
       const keys=pack?await pack.keys():[];
       const msg=await new Promise(resolve=>{
