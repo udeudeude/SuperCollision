@@ -169,6 +169,26 @@ try{
   });
   assert(files.wasmOk && files.wasmBytes>2_000_000,'Offline SuperCollider engine asset missing');
   assert(files.catalogOk,'Offline language catalog missing');
+
+  // Reproduce the real iPhone failure: POWER was sending uncached HEAD probes,
+  // producing "Runtime unavailable: Load failed" in Airplane Mode.
+  // The editor and cached wasm files alone were not enough to detect it.
+  const offlineHeadRequests=[];
+  page.on('request', req=>{
+    if(req.method()==='HEAD') offlineHeadRequests.push(req.url());
+  });
+  await page.locator('#engine').click();
+  await page.waitForFunction(()=>{
+    const value=document.querySelector('#engine-status')?.textContent||'';
+    return /Initializing language and audio server|AUDIO SERVER READY|Runtime unavailable|Audio server failed/.test(value);
+  }, null, {timeout:90000});
+  const engineState=await page.locator('#engine-status').textContent();
+  const consoleState=await page.locator('#console').textContent();
+  assert.equal(offlineHeadRequests.length,0,
+    'Offline POWER issued network-only HEAD requests: '+offlineHeadRequests.join(', '));
+  assert(!/Runtime unavailable|Audio server failed/.test(engineState),
+    'Offline SuperCollider engine boot failed: '+engineState+'; '+consoleState.slice(-1000));
+  console.log('Offline POWER reached SuperCollider initialization: '+engineState);
   console.log('Lab offline browser smoke test passed');
 }finally{
   if(context)await context.close();
