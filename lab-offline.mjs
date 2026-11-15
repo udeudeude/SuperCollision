@@ -118,7 +118,7 @@ if (diagnostics) diagnostics.addEventListener('click', async () => {
     if (pointer) {
       const pack = await caches.open(pointer.name);
       const results = await Promise.all(important.map(async name =>
-        ({name, found: !!(await pack.match(new URL(name,registration.scope)))})));
+        ({name, found: !!(await pack.match(new URL(name,registration.scope).href))})));
       missing = results.filter(item=>!item.found).map(item=>item.name);
     }
     const lines = [
