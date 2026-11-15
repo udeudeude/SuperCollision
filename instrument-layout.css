@@ -603,3 +603,33 @@ body .live-instrument-row.live-resting .live-instrument-name{
  text-decoration:none
 }
 body .live-panel .live-panel-content{overscroll-behavior:contain}
+
+
+/* SuperCollision Lab: focused File submenus.
+ * A subsection shows its whole command group instead of requiring the user
+ * to discover controls hidden below an unrelated category scroll. */
+body #file-menu .menu-items > [hidden],
+body #file-menu .file-submenu-items [hidden] {display:none!important}
+body #file-menu.file-section-focused .menu-items > button:not(#file-menu-back),
+body #file-menu.file-section-focused .menu-items > .file-submenu:not([open]) {
+  display:none!important
+}
+body #file-menu #file-menu-back:not([hidden]){
+  display:block;width:100%;text-align:left;min-height:38px;
+  font-weight:750;background:color-mix(in srgb,var(--file-border) 18%,transparent);
+  border-bottom:1px solid var(--file-border)
+}
+body #file-menu.file-section-focused .menu-items{
+  gap:2px;overscroll-behavior:contain;
+  max-height:min(80dvh,700px)
+}
+body #file-menu .file-submenu-items #lab-offline-report:not([hidden]){
+  display:block;white-space:pre-wrap;overflow-wrap:anywhere;
+  padding:9px 10px;margin:3px 1px;
+  border:1px solid var(--file-border);border-radius:4px;
+  background:color-mix(in srgb,var(--file-border) 15%,transparent);
+  color:var(--file-fg);font:12px/1.45 ui-monospace,monospace
+}
+body #file-menu #lab-offline-diagnostics[aria-expanded="true"]{
+  border-color:var(--file-border);font-weight:750
+}
