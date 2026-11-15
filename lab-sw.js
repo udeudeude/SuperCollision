@@ -47,6 +47,27 @@ self.addEventListener('fetch', event => {
     const pointer = await getPointer();
     const pack = pointer ? await caches.open(pointer.name) : null;
 
+    // Refresh only ordinary small interface files when online, otherwise an
+    // older explicitly installed pack keeps serving stale menu scripts/styles
+    // even when the HTML navigation itself was freshly fetched.
+    // NEVER automatically refresh WebAssembly, sound samples, or the large
+    // 1.5 MB language catalog. Those remain opt-in.
+    const relativePath=url.pathname.slice(scope.pathname.length);
+    const smallInterfaceFile=relativePath &&
+      !relativePath.includes('/') &&
+      !/^language-catalog\.json$/.test(relativePath) &&
+      /\.(?:mjs|js|css|webmanifest|svg)$/.test(relativePath);
+    if(smallInterfaceFile) {
+      const stored=pack&&await pack.match(request,{ignoreSearch:true});
+      if(self.navigator?.onLine===false&&stored)return stored;
+      try {
+        const fresh=await fetch(request);
+        if(fresh.ok)return fresh;
+      }catch{}
+      if(stored)return stored;
+      return Response.error();
+    }
+
     // iOS Safari may terminate and restart the worker between page visits.
     // The offline entrypoint must be retrievable before any network attempt.
     // An offline navigator hint skips an unnecessary network navigation.
