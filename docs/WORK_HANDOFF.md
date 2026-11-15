@@ -17,6 +17,16 @@
 - The browser test verified no large startup downloads, no engine download after declined consent, full offline-pack installation, offline reload, and cached WebAssembly engine assets in Chromium. **Real iPhone Safari results remain UNVERIFIED**.
 - Latest tested lab offline manifest source version: `82a98dedf12757abb53e375fad97a649dcd45aab`, 37 files, 8,055,700 bytes. Lab deployment branch is independent of production.
 
+## iPhone File menu visibility and offline diagnostic fix — 15 November 2026
+
+- User iPhone screenshots show FILE > STORAGE expanded with controls below the menu scroll boundary, requiring undiscoverable scrolling. Tapping **Check offline readiness** closed FILE without showing any result.
+- Root causes confirmed in source: the File drawer had a fixed maximum height and did not scroll its selected category into view. The shared File click handler closed the drawer for every button except a small allowlist, including **Check offline readiness**; an asynchronously shown `alert()` could be suppressed by Safari.
+- Fixed all File subsections with an automatic focused category view and an explicit **All FILE sections** back button. Active section gets the available iPhone viewport height; unrelated sections are hidden while focused. True HTML `hidden` controls (including recovery actions) now stay hidden.
+- The readiness check now writes a persistent inline report in FILE > STORAGE, checking the worker, controller, stored package, essential cached files, and isolation using only local Cache Storage. The diagnostic no longer calls `alert()` and never downloads resources.
+- Mobile Chromium browser test confirms focused STORAGE controls fit, the back button restores categories, the diagnostic remains visible after tap, and zero network requests are made by the diagnostic. Successful lab publishing test: https://github.com/udeudeude/SuperCollision/actions/runs/43733951957.
+- Added a further experimental change to fetch only small, root-level scripts/styles from the network when online, falling back to cached versions when offline. Large synthesis runtime and the 1.5 MB catalog remain opt-in. Combined testing is in progress: https://github.com/udeudeude/SuperCollision/actions/runs/43734172484.
+- Current iPhone offline reload/reopen failure remains **UNRESOLVED**. The next practical test is to reload on Wi-Fi and tap Check offline readiness, then send a screenshot of the inline report. Do not clear browsing/site data or delete compositions.
+
 ## Follow-up: WebKit cache readback diagnostics — 15 November 2026
 
 - Lab service worker and offline UI now use standard URL string keys for Cache API reads/writes (instead of raw URL objects), prioritize cached navigation when offline, and tolerate eviction of nonessential entries.
