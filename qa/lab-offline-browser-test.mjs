@@ -65,6 +65,58 @@ try{
   assert.equal(requests.some(x=>x.startsWith('/runtime/')),false,
     'The audio runtime downloaded without permission');
 
+  // Phone-sized File drawer must reveal the selected category automatically.
+  // Previously the Storage section expanded below a scroll boundary, hiding
+  // both the offline controls and later recovery actions.
+  await page.locator('#file-menu > summary').click();
+  const storageGroup=page.locator('#file-menu .file-submenu').filter({
+    has:page.locator('summary:text-is("STORAGE")')
+  });
+  await storageGroup.locator('summary').click();
+  await page.waitForFunction(()=>document.querySelector('#file-menu')?.classList.contains('file-section-focused'));
+  const menuLayout=await page.evaluate(()=>{
+    const menu=document.querySelector('#file-menu');
+    const body=document.querySelector('#file-menu-items');
+    const actions=[...menu.querySelector('.file-submenu[open] .file-submenu-items').children];
+    const visibles=actions.filter(element=>getComputedStyle(element).display!=='none');
+    return {
+      menuOpen:menu.open,
+      backVisible:!document.querySelector('#file-menu-back').hidden,
+      otherGroupsHidden:[...menu.querySelectorAll('.file-submenu:not([open])')]
+        .every(group=>getComputedStyle(group).display==='none'),
+      buttonsVisible:visibles.every(element=>{
+        const box=element.getBoundingClientRect();
+        const viewport=body.getBoundingClientRect();
+        return box.top>=viewport.top-2 && box.bottom<=viewport.bottom+2;
+      }),
+      diagnosticsVisible:!!document.querySelector('#lab-offline-diagnostics')
+        .getBoundingClientRect().height,
+      hiddenRecovery:getComputedStyle(document.querySelector('#lab-vault-recover')).display==='none'
+    };
+  });
+  assert(menuLayout.menuOpen&&menuLayout.backVisible&&menuLayout.otherGroupsHidden,
+    'Expanded File category did not focus: '+JSON.stringify(menuLayout));
+  assert(menuLayout.buttonsVisible&&menuLayout.diagnosticsVisible&&menuLayout.hiddenRecovery,
+    'Storage controls still hidden or clipped: '+JSON.stringify(menuLayout));
+  const noFetchBefore=requests.length;
+  await page.locator('#lab-offline-diagnostics').click();
+  await page.waitForFunction(()=>
+    document.querySelector('#lab-offline-report')?.textContent?.includes('Service worker:'),
+    null,{timeout:10000});
+  assert(await page.locator('#file-menu').evaluate(el=>el.open),
+    'Offline diagnostic dismissed the File menu');
+  assert(await page.locator('#lab-offline-report').isVisible(),
+    'Offline diagnostic did not remain visible inline');
+  assert.equal(requests.length,noFetchBefore,
+    'Offline readiness diagnostic unexpectedly requested network resources');
+  await page.locator('#file-menu-back').click();
+  await page.waitForFunction(()=>!document.querySelector('#file-menu')?.classList.contains('file-section-focused'));
+  assert(await page.locator('#file-menu .file-submenu').filter({
+    has:page.locator('summary:text-is("EDITOR")')
+  }).isVisible(),'Back control did not restore File sections');
+  await page.locator('#file-menu > summary').click();
+
+
   // IndexedDB mirror is additive. Confirm it persists edits and offers
   // non-destructive recovery if browser localStorage later differs.
   await page.waitForFunction(() =>
