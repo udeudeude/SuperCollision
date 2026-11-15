@@ -15,7 +15,9 @@ async function getPointer() {
     const names = await caches.keys();
     if (!names.includes(value.name)) return null;
     const pack = await caches.open(value.name);
-    if ((await pack.keys()).length !== value.fileCount) return null;
+    // Do not invalidate the entire instrument because Safari has evicted
+    // one optional cache entry. A complete installation was verified when
+    // written; here we verify the essential entrypoints on every restart.
     for (const required of ['./index.html', './runtime/sclang/sclang.wasm',
                             './runtime/scsynth/scsynth.wasm']) {
       if (!(await pack.match(new URL(required, self.registration.scope)))) return null;
@@ -42,24 +44,30 @@ self.addEventListener('fetch', event => {
   // The manifest is deliberately network-fresh so a new pack can be discovered.
   if (url.pathname.endsWith('/lab-offline-assets.json')) return;
   event.respondWith((async () => {
-    // Online navigation should discover tested lab updates even when an older
-    // offline pack exists. Fall back to the last complete pack if disconnected.
-    // Large runtime files still remain cache-first and consent-gated.
+    const pointer = await getPointer();
+    const pack = pointer ? await caches.open(pointer.name) : null;
+
+    // iOS Safari may terminate and restart the worker between page visits.
+    // The offline entrypoint must be retrievable before any network attempt.
+    // An offline navigator hint skips an unnecessary network navigation.
     if (request.mode === 'navigate') {
+      const saved = pack && (
+        await pack.match(request, {ignoreSearch: true}) ||
+        await pack.match(new URL('./index.html', scope))
+      );
+      if (saved && self.navigator?.onLine === false) return saved;
       try {
         const fresh = await fetch(request);
         if (fresh.ok) return fresh;
       } catch {}
+      if (saved) return saved;
+      // No complete offline pack, no unsafe fallback to a partial version.
+      return Response.error();
     }
-    const pointer = await getPointer();
-    if (pointer) {
-      const pack = await caches.open(pointer.name);
+
+    if (pack) {
       const cached = await pack.match(request, {ignoreSearch: true});
       if (cached) return cached;
-      if (request.mode === 'navigate') {
-        const fallback = await pack.match(new URL('./index.html', scope));
-        if (fallback) return fallback;
-      }
       // A damaged offline copy must never silently fetch the missing large file.
       if (url.pathname.includes('/runtime/') || url.pathname.endsWith('/language-catalog.json')) {
         return new Response('Offline copy incomplete: use File > Storage to reinstall it.',
