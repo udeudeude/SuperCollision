@@ -633,3 +633,43 @@ body #file-menu .file-submenu-items #lab-offline-report:not([hidden]){
 body #file-menu #lab-offline-diagnostics[aria-expanded="true"]{
   border-color:var(--file-border);font-weight:750
 }
+
+
+/* Lab: concise engine status can be swiped horizontally or opened fully. */
+body main .console-shell{position:relative}
+body .console-bar #engine-status-open,
+body[data-theme] .console-bar #engine-status-open{
+ display:flex;align-items:center;flex:1 1 0;min-width:0;width:auto;
+ margin:0;padding:0 2px;height:31px;min-height:0;max-height:31px;
+ border:0;border-radius:0;box-shadow:none;background:transparent;
+ color:inherit;text-align:left;cursor:pointer;letter-spacing:normal
+}
+body .console-bar #engine-status{
+ display:block;flex:1 1 auto;min-width:0;width:100%;
+ overflow-x:auto;overflow-y:hidden;white-space:nowrap;text-overflow:clip;
+ scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x;
+ color:inherit;font:10px/1.4 ui-monospace,monospace;
+}
+body .console-bar #engine-status::-webkit-scrollbar{display:none}
+body #engine-status-dialog{
+ box-sizing:border-box;border:2px solid var(--file-border,#8e7c5a);
+ border-radius:8px;background:var(--file-bg,#25241f);
+ color:var(--file-fg,#eee0c8);width:min(420px,calc(100vw - 36px));
+ max-height:min(70dvh,500px);overflow:auto;padding:18px;
+ box-shadow:0 15px 40px #000a
+}
+body #engine-status-dialog::backdrop{background:#0009}
+body #engine-status-dialog h2{font:750 15px/1.3 system-ui,sans-serif;margin:0 0 11px}
+body #engine-status-full{font:14px/1.5 ui-monospace,monospace;
+ white-space:pre-wrap;overflow-wrap:anywhere}
+body #engine-status-close{margin-top:12px;min-height:40px}
+body .console-shell #console-follow:not([hidden]){
+ display:block;position:absolute;right:8px;bottom:10px;z-index:5;
+ width:auto;height:35px;min-height:35px;padding:5px 12px;
+ border:1px solid currentColor;border-radius:4px;
+ background:var(--inspector-active-bg,#d3ac6d);
+ color:var(--inspector-active-fg,#211c16);
+ font:700 11px/1.2 ui-monospace,monospace;box-shadow:0 4px 12px #0006
+}
+body:not(.view-console) .console-shell #console-follow{display:none!important}
+body #console-panel{scroll-behavior:auto}
