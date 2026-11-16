@@ -3,6 +3,14 @@
 const downloadButton = document.querySelector('#lab-offline-download');
 const info = document.querySelector('#lab-offline-status');
 const engine = document.querySelector('#engine');
+// Refresh an already-installed service worker when online, without
+// registering a new worker or downloading the 8 MB runtime. This checks only
+// the small lab-sw.js script, so existing offline packs can receive fixes.
+if ('serviceWorker' in navigator && navigator.onLine) {
+  navigator.serviceWorker.getRegistration().then(registration=>{
+    if (registration) return registration.update();
+  }).catch(()=>{ /* Existing saved pack remains usable. */ });
+}
 let engineApprovedForNextClick = false;
 function notice(message) {
   if (info) info.textContent = message;
