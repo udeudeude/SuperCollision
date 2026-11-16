@@ -9,13 +9,26 @@
 - Production compiled deployment branch: `pages-build`.
 - Laboratory source branch: `feature/offline-safe-foundation`.
 - Laboratory compiled deployment branch: `lab-build`, initially copied from `pages-build` to retain WebAssembly runtime.
-- Laboratory publication workflow: `.github/workflows/publish-lab.yml`, only pushes `lab-build`. Latest confirmed full Chromium browser-tested lab publication: https://github.com/udeudeude/SuperCollision/actions/runs/43728979858 (SUCCESS, 15 November 2026). Documentation-only commits do not trigger lab redeployment.
+- Laboratory publication workflow: `.github/workflows/publish-lab.yml`, only pushes `lab-build`. Latest confirmed full Chromium browser-tested lab publication: https://github.com/udeudeude/SuperCollision/actions/runs/43975891638 (SUCCESS, 16 November 2026). Documentation-only commits do not trigger lab redeployment.
 - Draft source pull request (do NOT merge yet): https://github.com/udeudeude/SuperCollision/pull/1
 - Experimental Cloudflare preview address: **https://lab-build.supercollision.pages.dev/**. User screenshots verified page loads online and initial in-session audio works offline. **Offline reload and cold Safari reopening are user-reported FAILING as of 15 November 2026**.
 - Laboratory iPhone initial page load and in-session offline synthesis: **USER VERIFIED**; full offline reload and closing/reopening Safari **NOT WORKING** as most recently reported.
 - **Experiment implemented and browser-verified:** opt-in 8.0 MB offline package, safe service worker caching, manual permission for first-time engine download, no automatic 1.5 MB catalog download. The first experimental website visit has no offline guarantee until the user explicitly installs an offline package.
 - The browser test verified no large startup downloads, no engine download after declined consent, full offline-pack installation, offline reload, and cached WebAssembly engine assets in Chromium. **Real iPhone Safari results remain UNVERIFIED**.
 - Latest tested lab offline manifest source version: `82a98dedf12757abb53e375fad97a649dcd45aab`, 37 files, 8,055,700 bytes. Lab deployment branch is independent of production.
+
+## 16 November 2026: iPhone Safari redirect discovery and adjustable workbench
+
+- User provided real Safari Airplane Mode screenshot with the explicit error: `Response served by service worker has redirections`. Earlier online readiness showed service worker active, page controlled, saved package found, essential cached files 11/11, and isolation yes. Thus cached-file presence was not the blocker: redirected cached navigation was rejected by Safari. The screenshot also showed the editor's long `EVALUATED L1-758...` message clipped, and console history not following new output as desired.
+- Fixed `lab-sw.js` to convert redirected HTML responses into clean 200 responses, retaining required cross-origin isolation headers and stripping invalid transport headers. Applies both to new packages and legacy saved redirected HTML: the goal is a *small service-worker-only update*, not automatic redownloading of the ~8 MB engine.
+- When online, an already-installed service worker now checks for a new small `lab-sw.js` script. No large optional resources are downloaded automatically.
+- Engine status can now be swiped horizontally or tapped for a full wrapping modal message.
+- Console automatically follows new output until the user manually scrolls away; a visible `Latest output` control resumes following, and scrolling back to the bottom also resumes. The scrollable element is the console PANEL, not the inner `pre` alone.
+- Added an accessible draggable editor/console divider, shown in CONSOLE view only. Touch/pointer dragging changes the proportions, double-tap resets, arrow keys work, and the ratio persists in localStorage across reloads. Other lower-panel types remain unchanged pending device feedback.
+- **Browser test passed and published:** https://github.com/udeudeude/SuperCollision/actions/runs/43975891638. Chromium verifies intentional `/index.html` redirects are normalized while preserving isolation, a simulated legacy redirect can be served offline, editor and engine initialize offline, and browser cold restart passes; also tests status dialog, console follow control and resized/persisted divider. Lab manifest version: `b90afa220376b548797534248b3d80e9f7daf83c`, 37 files / 8,073,173 bytes.
+- Production `main` and `pages-build` unchanged after publishing. **Real Safari Airplane Mode reload and cold restart still require retesting; do not claim fixed on-device.**
+- Next user test: while on Wi-Fi reload `https://lab-build.supercollision.pages.dev/` to acquire updated small service worker; no need to clear website data or proactively download 8 MB. Then Airplane Mode with Wi-Fi separately off, reload, try closing/reopening Safari. If offline works, test PWR/RUN/STOP. Separately tap truncated console-bar status for full text, and drag the grip visible in CONSOLE view. Preserve compositions by exporting to Files.
+- If Safari still reports redirects, inspect which response URL is rejected; consider normalizing *all* navigation responses and confirming service-worker activation. Do not purge caches or user files without a safe backup.
 
 ## iPhone File menu visibility and offline diagnostic fix — 15 November 2026
 
