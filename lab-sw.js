@@ -39,6 +39,11 @@ async function cleanNavigationResponse(response) {
   if (!response.redirected && response.type !== 'opaqueredirect') return response;
   const headers = new Headers(response.headers);
   headers.delete('location');
+  // The Fetch body has already been decoded. Retaining transport encoding
+  // or byte-length headers can corrupt a reconstructed response on Safari.
+  headers.delete('content-encoding');
+  headers.delete('content-length');
+  headers.delete('transfer-encoding');
   return new Response(await response.clone().arrayBuffer(), {
     status: 200, statusText: 'OK', headers
   });
