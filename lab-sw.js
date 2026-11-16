@@ -28,6 +28,22 @@ async function getPointer() {
   }
 }
 
+
+// Safari rejects navigation responses whose final Response carries a redirect
+// chain, even when CacheStorage reports the HTML as available. Canonicalize
+// the HTML *and its security headers* to a fresh, nonredirected Response.
+// This also repairs older packs that cached a redirected index.html response.
+async function cleanNavigationResponse(response) {
+  if (!response) return response;
+  if (!response.ok) return response;
+  if (!response.redirected && response.type !== 'opaqueredirect') return response;
+  const headers = new Headers(response.headers);
+  headers.delete('location');
+  return new Response(await response.clone().arrayBuffer(), {
+    status: 200, statusText: 'OK', headers
+  });
+}
+
 self.addEventListener('install', event => {
   event.waitUntil(self.skipWaiting());
 });
@@ -76,12 +92,12 @@ self.addEventListener('fetch', event => {
         await pack.match(request, {ignoreSearch: true}) ||
         await pack.match(new URL('./index.html', scope).href)
       );
-      if (saved && self.navigator?.onLine === false) return saved;
+      if (saved && self.navigator?.onLine === false) return cleanNavigationResponse(saved);
       try {
         const fresh = await fetch(request);
-        if (fresh.ok) return fresh;
+        if (fresh.ok) return cleanNavigationResponse(fresh);
       } catch {}
-      if (saved) return saved;
+      if (saved) return cleanNavigationResponse(saved);
       // No complete offline pack, no unsafe fallback to a partial version.
       return Response.error();
     }
@@ -119,8 +135,13 @@ async function installPack(manifest, port) {
       seen.add(asset.path);
       const url = new URL(asset.path.slice(1), self.registration.scope);
       const response = await fetch(url, {cache: 'reload'});
-      if (!response.ok || response.type === 'opaque') throw Error('Could not download ' + asset.path);
-      await pack.put(url.href, response);
+      if (!response.ok || response.type === 'opaque' ||
+          response.type === 'opaqueredirect') throw Error('Could not download ' + asset.path);
+      // Cloudflare Pages can redirect /index.html to /. Never retain that
+      // redirect chain in HTML served by the service worker on Safari.
+      const safeResponse = asset.path === '/index.html'
+        ? await cleanNavigationResponse(response) : response;
+      await pack.put(url.href, safeResponse);
       bytes += asset.bytes;
       port.postMessage({type: 'progress', completed: i + 1, total: manifest.files.length, path: asset.path});
     }
