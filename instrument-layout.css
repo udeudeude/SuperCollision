@@ -673,3 +673,31 @@ body .console-shell #console-follow:not([hidden]){
 }
 body:not(.view-console) .console-shell #console-follow{display:none!important}
 body #console-panel{scroll-behavior:auto}
+
+
+/* Finder-style editor/console splitter: a slim visible grip with a generous
+ * finger target; only appears for the Console workbench. */
+body #workspace-divider{display:none}
+body.view-console #workspace-divider,
+body[data-theme].view-console #workspace-divider{
+ display:flex;flex:0 0 16px;align-items:center;justify-content:center;
+ box-sizing:border-box;height:16px;min-height:16px;margin:0;
+ touch-action:none;user-select:none;-webkit-user-select:none;
+ cursor:row-resize;position:relative;z-index:4;
+ border-block:1px solid color-mix(in srgb,currentColor 45%,transparent);
+ background:color-mix(in srgb,currentColor 8%,transparent)
+}
+body #workspace-divider>span{
+ display:block;width:62px;height:4px;border-radius:5px;
+ background:currentColor;opacity:.48;pointer-events:none
+}
+body #workspace-divider:focus-visible{
+ outline:2px solid var(--focus,#ffbc6e);outline-offset:-2px
+}
+body.resizing-panes,body.resizing-panes *{cursor:row-resize!important}
+body.view-console main .console-shell,
+body[data-theme].view-console main .console-shell{
+ flex:0 0 var(--console-pane-size,46%)!important;min-height:0
+}
+body.view-console main>.panel:first-child,
+body[data-theme].view-console main>.panel:first-child{min-height:130px}
