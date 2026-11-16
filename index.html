@@ -303,8 +303,10 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 <input id="file-input" type="file" hidden><input id="backup-input" type="file" hidden>
 <pre id="syntax-preview" hidden></pre>
 </div>
-<div class="panel console-shell"><div class="console-bar"><div class="inspector-modes" role="group" aria-label="Lower panel"><button type="button" id="inspector-code" aria-pressed="true">CODE</button><button type="button" id="inspector-console" aria-pressed="false">CONSOLE</button><button type="button" id="inspector-perform" aria-pressed="false" title="Instrument mixer and event timeline">MIX</button><button type="button" id="inspector-learn" aria-pressed="false">LEARN</button><button type="button" id="inspector-design" aria-pressed="false" title="Generate SuperCollider sounds from descriptions">GENERATE</button></div><p id="engine-status" role="status">Engine off · Press POWER</p></div>
+<div class="panel console-shell"><div class="console-bar"><div class="inspector-modes" role="group" aria-label="Lower panel"><button type="button" id="inspector-code" aria-pressed="true">CODE</button><button type="button" id="inspector-console" aria-pressed="false">CONSOLE</button><button type="button" id="inspector-perform" aria-pressed="false" title="Instrument mixer and event timeline">MIX</button><button type="button" id="inspector-learn" aria-pressed="false">LEARN</button><button type="button" id="inspector-design" aria-pressed="false" title="Generate SuperCollider sounds from descriptions">GENERATE</button></div><button id="engine-status-open" type="button" aria-label="Read full engine status" aria-haspopup="dialog" title="Swipe sideways, or tap to read full status"><span id="engine-status" role="status" aria-live="polite">Engine off · Press POWER</span></button></div>
+<button id="console-follow" type="button" hidden aria-label="Jump to latest console output">↓ Latest output</button>
 <details id="console-panel"><summary>SuperCollider console</summary><div class="actions"><button id="clear-console" class="secondary">Clear console</button></div><section id="console-guidance" hidden aria-label="Explanation of the latest error"><div class="console-guidance-head"><strong id="console-guidance-title"></strong><button type="button" id="console-guidance-dismiss" aria-label="Dismiss error explanation">×</button></div><p id="console-guidance-text"></p><div class="console-guidance-actions"><button type="button" id="console-guidance-jump" hidden>GO TO CODE</button><button type="button" id="console-guidance-copy" hidden>COPY CORRECTION</button></div></section><pre id="console" aria-live="off"></pre></details></div>
+<dialog id="engine-status-dialog" aria-labelledby="engine-status-dialog-title"><h2 id="engine-status-dialog-title">Engine status</h2><p id="engine-status-full"></p><button type="button" id="engine-status-close">Close</button></dialog>
 <section class="panel learning-host" id="learning-host" aria-label="SuperCollider learning panel"></section>
 <section class="panel sound-host" id="sound-host" aria-label="SuperCollider sound designer"></section>
 <section class="panel performance-panel" id="perform-panel" aria-label="Live performance controls and musical event timeline">
@@ -525,6 +527,54 @@ function refreshCompletionToggle(){completionToggle.textContent='Code suggestion
 completionToggle.onclick=()=>{languageTools.setEnabled(!languageTools.enabled);refreshCompletionToggle()};
 refreshCompletionToggle();
 const state=document.querySelector('#engine-status'),log=document.querySelector('#console'),run=document.querySelector('#evaluate'),panic=document.querySelector('#panic');
+const statusDialog=document.querySelector('#engine-status-dialog');
+const completeStatus=document.querySelector('#engine-status-full');
+document.querySelector('#engine-status-open').addEventListener('click',()=>{
+ completeStatus.textContent=state.textContent;
+ if(!statusDialog.open)statusDialog.showModal();
+});
+document.querySelector('#engine-status-close').addEventListener('click',()=>statusDialog.close());
+statusDialog.addEventListener('click',event=>{if(event.target===statusDialog)statusDialog.close()});
+new MutationObserver(()=>{if(statusDialog.open)completeStatus.textContent=state.textContent})
+ .observe(state,{childList:true,characterData:true,subtree:true});
+const consoleScroll=document.querySelector('#console-panel');
+const consoleFollowButton=document.querySelector('#console-follow');
+let consoleFollowing=true,unreadConsoleLines=0,userScrollingConsole=false,autoScrollingConsole=false,consoleIntentReset=0;
+function nearConsoleEnd(){return consoleScroll.scrollHeight-consoleScroll.scrollTop-consoleScroll.clientHeight<=20}
+function updateConsoleFollowButton(){
+ consoleFollowButton.hidden=consoleFollowing;
+ consoleFollowButton.textContent=unreadConsoleLines
+  ? '↓ Latest output ('+Math.min(999,unreadConsoleLines)+(unreadConsoleLines>999?'+':'')+')'
+  : '↓ Latest output';
+}
+function jumpToConsoleEnd(){
+ if(!document.body.classList.contains('view-console'))return;
+ autoScrollingConsole=true;
+ consoleScroll.scrollTop=consoleScroll.scrollHeight;
+ requestAnimationFrame(()=>{autoScrollingConsole=false});
+}
+function resumeConsoleFollow(){
+ consoleFollowing=true;unreadConsoleLines=0;
+ updateConsoleFollowButton();jumpToConsoleEnd();
+}
+consoleFollowButton.addEventListener('click',resumeConsoleFollow);
+function markConsoleInteraction(){
+ userScrollingConsole=true;clearTimeout(consoleIntentReset);
+ consoleIntentReset=setTimeout(()=>{userScrollingConsole=false},900);
+}
+for(const type of ['touchstart','pointerdown','wheel'])
+ consoleScroll.addEventListener(type,markConsoleInteraction,{passive:true});
+consoleScroll.addEventListener('scroll',()=>{
+ if(autoScrollingConsole||!userScrollingConsole)return;
+ consoleFollowing=nearConsoleEnd();
+ if(consoleFollowing)unreadConsoleLines=0;
+ updateConsoleFollowButton();
+},{passive:true});
+window.SCConsoleOnShow=()=>{
+ if(consoleFollowing)jumpToConsoleEnd();
+ else updateConsoleFollowButton();
+};
+
 const soundDesigner=createSoundDesigner({
  host:document.querySelector('#sound-host'),editor:code,
  saveComposition:spec=>window.SCDesignerSaveComposition(spec),
@@ -553,10 +603,12 @@ function flushPrintQueue(){
  if(!printQueue.length)return;
  const chunk=printQueue.join('\n')+'\n';
  printQueue=[];
+ const previousScroll=consoleScroll.scrollTop;
  let text=log.textContent+chunk;
  if(text.length>120000)text=text.slice(-80000);
  log.textContent=text;
- log.scrollTop=log.scrollHeight;
+ if(consoleFollowing){jumpToConsoleEnd()}
+ else{consoleScroll.scrollTop=previousScroll;unreadConsoleLines+=chunk.split('\n').length-1;updateConsoleFollowButton()}
  const markers=['ERROR:','FAILURE IN SERVER','FAILURE:'];
  const lastFailure=Math.max(...markers.map(marker=>chunk.lastIndexOf(marker)));
  if(lastFailure>=0)diagnosticTail=chunk.slice(lastFailure);
@@ -601,7 +653,7 @@ function print(t){
    requestAnimationFrame(flushPrintQueue);
  }
 }
-document.querySelector('#clear-console').onclick=()=>{printQueue=[];log.textContent='';diagnosticTail='';explanation.hidden=true;shownErrorKey='';repair.clear()};
+document.querySelector('#clear-console').onclick=()=>{printQueue=[];log.textContent='';diagnosticTail='';explanation.hidden=true;shownErrorKey='';repair.clear();resumeConsoleFollow()};
 let booting=false;
 function requestServerBoot(){
  if(!lang||!languageReady||serverReady||serverBootRequested)return;
