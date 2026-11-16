@@ -125,6 +125,63 @@ try{
   await page.locator('#file-menu > summary').click();
 
 
+  // The compact engine status supports sideways swiping plus a full
+  // readable dialog, rather than permanently hiding execution details.
+  const longStatus='EVALUATED L1–758 • execution succeeded • composition saved';
+  await page.locator('#engine-status').evaluate((el,text)=>{el.textContent=text},longStatus);
+  await page.locator('#engine-status-open').click();
+  assert(await page.locator('#engine-status-dialog').isVisible(),
+    'The full engine status dialog did not open');
+  assert.equal(await page.locator('#engine-status-full').textContent(),longStatus);
+  await page.locator('#engine-status-close').click();
+
+  // Resize the editor and Console with the same pointer path as an iPhone
+  // touch gesture, then check the persisted proportion after a reload.
+  await page.locator('#inspector-console').click();
+  const grip=page.locator('#workspace-divider');
+  assert(await grip.isVisible(),'Console divider is not visible');
+  const before=await page.locator('.console-shell').boundingBox();
+  const box=await grip.boundingBox();
+  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
+  await page.mouse.down();
+  await page.mouse.move(box.x+box.width/2,box.y+box.height/2-65,{steps:5});
+  await page.mouse.up();
+  const after=await page.locator('.console-shell').boundingBox();
+  assert(after.height>before.height+25,
+    'Dragging divider up did not enlarge Console: '+JSON.stringify({before,after}));
+  const storedRatio=await page.evaluate(()=>
+    Number(localStorage.getItem('supercollision-console-pane-ratio-v1')));
+  assert(storedRatio>.46,'Dragged pane ratio not persisted: '+storedRatio);
+
+  // Inject enough test text to simulate a long-running composition and
+  // verify that scrolling upward pauses follow until the user resumes.
+  await page.locator('#console').evaluate(el=>{
+    el.textContent=Array.from({length:200},(_,i)=>'output '+i).join('\\n');
+  });
+  await page.evaluate(()=>window.SCConsoleOnShow?.());
+  await page.waitForTimeout(120);
+  await page.locator('#console-panel').evaluate(el=>{
+    el.dispatchEvent(new Event('pointerdown',{bubbles:true}));
+    el.scrollTop=0;
+    el.dispatchEvent(new Event('scroll'));
+  });
+  assert(await page.locator('#console-follow').isVisible(),
+    'Scrolling back did not expose Latest output control');
+  await page.locator('#console-follow').click();
+  assert(await page.locator('#console-follow').isHidden(),
+    'Latest output did not resume console following');
+  const followPosition=await page.locator('#console-panel').evaluate(el=>({
+    distance:el.scrollHeight-el.scrollTop-el.clientHeight
+  }));
+  assert(followPosition.distance<=20,
+    'Latest output did not scroll to bottom: '+JSON.stringify(followPosition));
+  await page.reload({waitUntil:'load'});
+  await page.locator('#inspector-console').click();
+  const afterReload=await page.locator('.console-shell').boundingBox();
+  assert(Math.abs(afterReload.height-after.height)<20,
+    'Console split did not survive page reload: '+JSON.stringify({after,afterReload}));
+  await page.locator('#inspector-code').click();
+
   // IndexedDB mirror is additive. Confirm it persists edits and offers
   // non-destructive recovery if browser localStorage later differs.
   await page.waitForFunction(() =>
