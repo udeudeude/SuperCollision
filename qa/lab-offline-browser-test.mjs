@@ -24,6 +24,12 @@ const mime = {
 let interfaceNetworkHits=0;
 const server=createServer(async (req,res)=>{
   const pathname=new URL(req.url,'http://localhost').pathname;
+  // Emulate Cloudflare Pages' canonical-index redirect. Safari rejects an
+  // offline navigation if this redirected response is cached unmodified.
+  if (pathname === '/index.html' && req.method === 'GET') {
+    res.writeHead(302, {'Location':'/'}).end();
+    return;
+  }
   if(pathname==='/lab-offline.mjs')interfaceNetworkHits++;
   const full=path.resolve(root,'.'+(pathname==='/'?'/index.html':pathname));
   const headers={
@@ -213,6 +219,19 @@ try{
   assert(saved.isolated,'Cross-origin isolation missing');
   assert(saved.cacheNames.some(x=>x.startsWith('supercollision-lab-pack-')),
     'No completed offline pack');
+  const cachedHtml=await page.evaluate(async()=>{
+    const reg=await navigator.serviceWorker.getRegistration();
+    const meta=await caches.open('supercollision-lab-offline-meta');
+    const ptr=await (await meta.match(new URL('./__lab_offline_pointer__',reg.scope).href)).json();
+    const pack=await caches.open(ptr.name);
+    const html=await pack.match(new URL('./index.html',reg.scope).href);
+    return {exists:!!html,redirected:html?.redirected,
+      isolated:html?.headers.get('cross-origin-embedder-policy'),
+      opener:html?.headers.get('cross-origin-opener-policy')};
+  });
+  assert(cachedHtml.exists&&!cachedHtml.redirected&&
+      cachedHtml.isolated==='require-corp'&&cachedHtml.opener==='same-origin',
+    'Offline HTML must be nonredirected with isolation headers: '+JSON.stringify(cachedHtml));
 
   // Installing a package must not freeze the phone's small frontend scripts.
   // On Wi-Fi/online, updated menu logic should come from the server. Large
