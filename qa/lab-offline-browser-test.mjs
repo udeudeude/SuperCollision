@@ -69,8 +69,10 @@ try{
   // Save a realistic redirected HTML response before the service worker
   // exists so we can reproduce a legacy Safari offline cache later.
   const legacyRedirected=await page.evaluate(async()=>{
-    window.__labLegacyHtml=await fetch('./index.html',{cache:'reload'});
-    return window.__labLegacyHtml.redirected;
+    const response=await fetch('./index.html',{cache:'reload'});
+    const fixture=await caches.open('lab-qa-redirect-fixture');
+    await fixture.put(new URL('./index.html',location.href).href,response.clone());
+    return response.redirected;
   });
   assert(legacyRedirected,'Redirect fixture did not simulate Cloudflare');
   await page.waitForTimeout(1000);
@@ -305,7 +307,11 @@ try{
     const ptr=await (await meta.match(new URL('./__lab_offline_pointer__',reg.scope).href)).json();
     const pack=await caches.open(ptr.name);
     const url=new URL('./index.html',reg.scope).href;
-    await pack.put(url,window.__labLegacyHtml.clone());
+    const fixture=await caches.open('lab-qa-redirect-fixture');
+    const legacy=await fixture.match(url);
+    if (!legacy) throw Error('Redirect fixture was lost during reload');
+    await pack.put(url,legacy.clone());
+    await caches.delete('lab-qa-redirect-fixture');
     return (await pack.match(url)).redirected;
   });
   assert(oldPackRedirect,'Did not create legacy redirected cache fixture');
