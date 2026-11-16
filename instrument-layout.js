@@ -207,7 +207,10 @@
       window.SCLanguageTools?.hide({switchView:false});
     }
     if(next==='perform')window.SCTimeline?.show();
-    requestAnimationFrame(followEditor);
+    requestAnimationFrame(()=>{
+      followEditor();
+      if(next==='console')window.SCConsoleOnShow?.();
+    });
   }
   window.setSuperCollisionView=setMode;
   for (const [view, button] of Object.entries(viewButtons)) {
