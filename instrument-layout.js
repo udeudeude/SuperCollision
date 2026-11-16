@@ -185,6 +185,89 @@
   window.getSuperCollisionCodeFontSize = () => fontPx;
 
 
+  // Adjustable code/console split, without changing keyboard behavior or
+  // the editor's existing pinch-to-shrink gesture. Saved as a proportional
+  // preference so it adapts to portrait, landscape and phone rotation.
+  const divider=document.getElementById('workspace-divider');
+  const workspace=document.querySelector('body > main');
+  const DIVIDER_KEY='supercollision-console-pane-ratio-v1';
+  const DEFAULT_SPLIT=.46;
+  let paneRatio=DEFAULT_SPLIT;
+  try {
+    const stored=Number(localStorage.getItem(DIVIDER_KEY));
+    if(Number.isFinite(stored)&&stored>=.2&&stored<=.75)paneRatio=stored;
+  }catch{}
+  function paneBounds(){
+    const height=workspace.getBoundingClientRect().height||600;
+    const gap=divider.getBoundingClientRect().height||14;
+    // Keep at least 150px of code and 125px of console on a full screen,
+    // proportionally easing the bounds when the on-screen keyboard is open.
+    const lower=Math.max(.20,Math.min(.42,125/height));
+    const upper=Math.max(lower,Math.min(.75,(height-Math.min(150,height*.30)-gap)/height));
+    return {lower,upper,height};
+  }
+  function setPaneRatio(value,persist=false){
+    const {lower,upper}=paneBounds();
+    paneRatio=Math.min(upper,Math.max(lower,value));
+    body.style.setProperty('--console-pane-size',(paneRatio*100).toFixed(3)+'%');
+    divider.setAttribute('aria-valuenow',String(Math.round(paneRatio*100)));
+    divider.setAttribute('aria-valuetext',Math.round(paneRatio*100)+'% console, '+
+      Math.round((1-paneRatio)*100)+'% code');
+    if(persist){
+      try{localStorage.setItem(DIVIDER_KEY,String(paneRatio))}catch{}
+    }
+    if(mode==='console')requestAnimationFrame(()=>window.SCConsoleOnShow?.());
+  }
+  let dividerDrag=null;
+  let lastDividerTap=0;
+  divider.addEventListener('pointerdown',event=>{
+    if(mode!=='console'||!event.isPrimary)return;
+    const height=workspace.getBoundingClientRect().height;
+    dividerDrag={id:event.pointerId,startY:event.clientY,
+      startHeight:shell.getBoundingClientRect().height,height,travel:0};
+    divider.setPointerCapture(event.pointerId);
+    body.classList.add('resizing-panes');
+    event.preventDefault();
+  });
+  divider.addEventListener('pointermove',event=>{
+    if(!dividerDrag||dividerDrag.id!==event.pointerId)return;
+    dividerDrag.travel=Math.max(dividerDrag.travel,Math.abs(event.clientY-dividerDrag.startY));
+    const next=(dividerDrag.startHeight+dividerDrag.startY-event.clientY)/dividerDrag.height;
+    setPaneRatio(next);
+    event.preventDefault();
+  });
+  function finishDivider(event){
+    if(!dividerDrag||dividerDrag.id!==event.pointerId)return;
+    const moved=dividerDrag.travel>8;
+    dividerDrag=null;
+    body.classList.remove('resizing-panes');
+    if(!moved&&Date.now()-lastDividerTap<350){
+      setPaneRatio(DEFAULT_SPLIT,true);
+      lastDividerTap=0;
+    }else{
+      lastDividerTap=moved?0:Date.now();
+      setPaneRatio(paneRatio,true);
+    }
+    if(divider.hasPointerCapture(event.pointerId))divider.releasePointerCapture(event.pointerId);
+  }
+  divider.addEventListener('pointerup',finishDivider);
+  divider.addEventListener('pointercancel',finishDivider);
+  divider.addEventListener('dblclick',event=>{event.preventDefault();setPaneRatio(DEFAULT_SPLIT,true)});
+  divider.addEventListener('keydown',event=>{
+    const {lower,upper}=paneBounds();
+    let next=paneRatio;
+    if(event.key==='ArrowUp')next+=.04;
+    else if(event.key==='ArrowDown')next-=.04;
+    else if(event.key==='Home')next=lower;
+    else if(event.key==='End')next=upper;
+    else if(event.key==='0')next=DEFAULT_SPLIT;
+    else return;
+    event.preventDefault();
+    setPaneRatio(next,true);
+  });
+  window.addEventListener('resize',()=>setPaneRatio(paneRatio),{passive:true});
+  setPaneRatio(paneRatio);
+
   function compactChrome() {
     body.classList.toggle('compact', editor.scrollTop > 20 || mode !== 'code');
   }
