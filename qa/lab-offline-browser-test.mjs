@@ -156,7 +156,7 @@ try{
   // Inject enough test text to simulate a long-running composition and
   // verify that scrolling upward pauses follow until the user resumes.
   await page.locator('#console').evaluate(el=>{
-    el.textContent=Array.from({length:200},(_,i)=>'output '+i).join('\\n');
+    el.textContent=Array.from({length:200},(_,i)=>'output '+i).join('\n');
   });
   await page.evaluate(()=>window.SCConsoleOnShow?.());
   await page.waitForTimeout(120);
