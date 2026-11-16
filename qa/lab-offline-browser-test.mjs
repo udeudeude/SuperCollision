@@ -66,6 +66,13 @@ try{
     }
   });
   await page.goto(origin,{waitUntil:'load'});
+  // Save a realistic redirected HTML response before the service worker
+  // exists so we can reproduce a legacy Safari offline cache later.
+  const legacyRedirected=await page.evaluate(async()=>{
+    window.__labLegacyHtml=await fetch('./index.html',{cache:'reload'});
+    return window.__labLegacyHtml.redirected;
+  });
+  assert(legacyRedirected,'Redirect fixture did not simulate Cloudflare');
   await page.waitForTimeout(1000);
   assert.equal(await page.locator('#code').isVisible(),true,'Editor did not load');
   assert.equal(requests.some(x=>x.includes('language-catalog.json')),false,
@@ -289,6 +296,20 @@ try{
   assert(cachedHtml.exists&&!cachedHtml.redirected&&
       cachedHtml.isolated==='require-corp'&&cachedHtml.opener==='same-origin',
     'Offline HTML must be nonredirected with isolation headers: '+JSON.stringify(cachedHtml));
+  // Reproduce an older already-installed pack whose HTML retained a
+  // redirect chain. A service-worker-only update must repair this on read;
+  // no user-visible 8 MB reinstallation is required.
+  const oldPackRedirect=await page.evaluate(async()=>{
+    const reg=await navigator.serviceWorker.getRegistration();
+    const meta=await caches.open('supercollision-lab-offline-meta');
+    const ptr=await (await meta.match(new URL('./__lab_offline_pointer__',reg.scope).href)).json();
+    const pack=await caches.open(ptr.name);
+    const url=new URL('./index.html',reg.scope).href;
+    await pack.put(url,window.__labLegacyHtml.clone());
+    return (await pack.match(url)).redirected;
+  });
+  assert(oldPackRedirect,'Did not create legacy redirected cache fixture');
+
 
   // Installing a package must not freeze the phone's small frontend scripts.
   // On Wi-Fi/online, updated menu logic should come from the server. Large
