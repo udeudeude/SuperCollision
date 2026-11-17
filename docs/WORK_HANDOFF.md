@@ -17,6 +17,15 @@
 - The browser test verified no large startup downloads, no engine download after declined consent, full offline-pack installation, offline reload, and cached WebAssembly engine assets in Chromium. **Real iPhone Safari results remain UNVERIFIED**.
 - Latest tested lab offline manifest source version: `82a98dedf12757abb53e375fad97a649dcd45aab`, 37 files, 8,055,700 bytes. Lab deployment branch is independent of production.
 
+## 17 November 2026: real iPhone post-restart offline acceptance and first-boot stall
+
+- **Real-device test after iPhone restart, Airplane Mode enabled, Wi-Fi off** (user screenshot around 12:17 local): SuperCollision launched from Home Screen icon, loaded a saved composition, language initialized (`Welcome to SuperCollider 3.15.0-dev`, `-> localhost`), but remained at **STARTING AUDIO SERVER · RUN unlocks when ready** and RUN was disabled. The precise waiting duration was not provided.
+- User then opened the laboratory website in Safari while still offline; POWER, RUN, and sound playback all worked. User returned to the Home Screen app, fully closed and reopened it while still offline; this time POWER/RUN and playback also worked. Only after these successful tests did the user disable Airplane Mode.
+- Thus **Safari offline restart and Home Screen offline launch/playback on the second attempt are user-confirmed**, but **first Home Screen cold boot is intermittently stuck**. This is not an offline cache failure. Do NOT mark uninterrupted first-try boot reliable or assume audio engine startup issue solved.
+- Source investigation: `requestServerBoot()` sets `serverBootRequested=true` and disables RUN until the language prints the success or failure marker. If neither arrives, there is no timeout and subsequent POWER taps silently do nothing. This is a recoverability problem independently of the underlying startup stall.
+- WebKit reports intermittent AudioContext suspension and failed resumes on iPhone, including standalone web apps (https://bugs.webkit.org/show_bug.cgi?id=291892, https://bugs.webkit.org/show_bug.cgi?id=263627); these are plausible related platform issues, not confirmed as this project's exact cause.
+- Keep experimental-only changes isolated to `feature/offline-safe-foundation` and published lab branch. Preserve separate Safari/Home Screen local storage, Files backups, and manual Wi-Fi consent for large downloads.
+
 ## 17 November 2026: tentative Home Screen offline success
 
 - After the new standalone-specific offline setup was published, the user reported **"Seemed to work!"** following the requested Home Screen offline test. Treat this as **encouraging user-reported provisional success**, not as definitive verification of every step (cold app restart, actual audible POWER/RUN/STOP, persistence after phone restart), since no individual outcomes were specified.
