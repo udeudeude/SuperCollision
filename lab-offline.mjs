@@ -107,6 +107,59 @@ if (downloadButton) {
     }
   }).catch(() => notice('Offline status unknown.'));
 }
+// iOS Home Screen apps have a separate website-data container. Installing the
+// pack in Safari does not provision this standalone copy. Never silently
+// download the 8 MB synthesizer when a Home Screen icon launches.
+const homeScreenMode=window.navigator.standalone===true ||
+  window.matchMedia('(display-mode: standalone)').matches;
+const homeStorageNote=document.querySelector('#lab-home-screen-storage');
+if(homeStorageNote)homeStorageNote.hidden=!homeScreenMode;
+if(homeScreenMode){
+  const homeSetup=document.createElement('aside');
+  homeSetup.id='lab-home-screen-setup';
+  homeSetup.setAttribute('aria-label','Home Screen offline setup');
+  homeSetup.hidden=true;
+  homeSetup.innerHTML=
+    '<strong>Prepare this Home Screen app for offline use</strong>'+
+    '<p>Safari and this app keep separate offline files and compositions. '+
+    'On Wi-Fi, save the synthesizer here before using Airplane Mode. '+
+    'To move compositions, export and import through Files.</p>'+
+    '<div class="lab-home-setup-actions">'+
+    '<button type="button" id="lab-home-setup-now">Save offline files</button>'+
+    '<button type="button" id="lab-home-setup-later">Later</button></div>';
+  document.body.append(homeSetup);
+  const laterKey='supercollision-lab-homescreen-setup-later';
+  const setupNow=homeSetup.querySelector('#lab-home-setup-now');
+  homeSetup.querySelector('#lab-home-setup-later').addEventListener('click',()=>{
+    homeSetup.hidden=true;
+    try{sessionStorage.setItem(laterKey,'1')}catch{}
+  });
+  setupNow.addEventListener('click',()=>{
+    setupNow.disabled=true;
+    // The existing opt-in download checks for current package, requests
+    // explicit consent, and verifies each file before announcing success.
+    downloadPack().then(async()=>{
+      if(await existingPack())homeSetup.hidden=true;
+    }).catch(error=>{
+      notice('Home Screen offline setup failed: '+(error.message||error));
+      window.alert('Home Screen offline setup failed: '+(error.message||error));
+    }).finally(()=>{setupNow.disabled=false});
+  });
+  const showSetup=async()=>{
+    let dismissed=false;
+    try{dismissed=sessionStorage.getItem(laterKey)==='1'}catch{}
+    if(dismissed)return;
+    let hasPack=false;
+    try{
+      hasPack=Boolean(await Promise.race([
+        existingPack(),new Promise(resolve=>setTimeout(()=>resolve(null),6000))
+      ]));
+    }catch{}
+    homeSetup.hidden=hasPack;
+  };
+  showSetup();
+}
+
 // Readiness diagnostics use only local Cache Storage, with no network fetch.
 // Never dismiss the File menu to show an asynchronous browser alert: Safari
 // may suppress dialogs after an await and leave the user with no feedback.
