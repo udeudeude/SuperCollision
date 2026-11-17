@@ -391,8 +391,82 @@ export class SoundActivityTracker{
   }
 }
 export function createLiveActivityUI({editor,gutter,overlay,status,code,composition,panel,instrumentsEl,routinesEl,panelToggle,onEnabledChange=()=>{}}){
-  let enabled=true,expanded=false,queued=false,refreshTimer=null;
-  const expandButton=panel.querySelector('#live-panel-expand');
+  let enabled=true,queued=false,refreshTimer=null;
+  const resizeGrip=panel.querySelector('#live-panel-resizer');
+  const frame=panel.parentElement;
+  const LIVE_SIZE_KEY='supercollision-live-monitor-ratio-v1';
+  const DEFAULT_LIVE_HEIGHT=82;
+  let liveHeight=DEFAULT_LIVE_HEIGHT,liveRatio=0;
+  let savedRatio=null;
+  try {
+    const previous=Number(localStorage.getItem(LIVE_SIZE_KEY));
+    if(Number.isFinite(previous)&&previous>=.08&&previous<=.75)savedRatio=previous;
+  }catch{}
+  function liveLimits(){
+    const available=frame.getBoundingClientRect().height||350;
+    const minimum=Math.min(78,Math.max(54,available*.22));
+    const maximum=Math.max(minimum,Math.min(500,available*.72));
+    return {available,minimum,maximum};
+  }
+  function setLiveHeight(height,persist=false){
+    const {available,minimum,maximum}=liveLimits();
+    liveHeight=Math.round(Math.max(minimum,Math.min(maximum,height)));
+    liveRatio=liveHeight/available;
+    panel.style.setProperty('--live-panel-height',liveHeight+'px');
+    resizeGrip.setAttribute('aria-valuemin',String(Math.round(minimum)));
+    resizeGrip.setAttribute('aria-valuemax',String(Math.round(maximum)));
+    resizeGrip.setAttribute('aria-valuenow',String(liveHeight));
+    resizeGrip.setAttribute('aria-valuetext',liveHeight+' pixel height; drag up to enlarge');
+    if(persist){
+      try{localStorage.setItem(LIVE_SIZE_KEY,String(liveRatio))}catch{}
+    }
+  }
+  let liveDrag=null,lastLiveTap=0;
+  resizeGrip.addEventListener('pointerdown',event=>{
+    if(!enabled||!event.isPrimary)return;
+    liveDrag={id:event.pointerId,y:event.clientY,height:panel.getBoundingClientRect().height,travel:0};
+    resizeGrip.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  });
+  resizeGrip.addEventListener('pointermove',event=>{
+    if(!liveDrag||event.pointerId!==liveDrag.id)return;
+    liveDrag.travel=Math.max(liveDrag.travel,Math.abs(event.clientY-liveDrag.y));
+    setLiveHeight(liveDrag.height+liveDrag.y-event.clientY);
+    event.preventDefault();
+  });
+  function finishLiveDrag(event){
+    if(!liveDrag||event.pointerId!==liveDrag.id)return;
+    const moved=liveDrag.travel>8;
+    liveDrag=null;
+    if(!moved&&Date.now()-lastLiveTap<350){
+      setLiveHeight(DEFAULT_LIVE_HEIGHT,true);lastLiveTap=0;
+    }else{
+      lastLiveTap=moved?0:Date.now();
+      setLiveHeight(liveHeight,true);
+    }
+    if(resizeGrip.hasPointerCapture(event.pointerId))
+      resizeGrip.releasePointerCapture(event.pointerId);
+  }
+  resizeGrip.addEventListener('pointerup',finishLiveDrag);
+  resizeGrip.addEventListener('pointercancel',finishLiveDrag);
+  resizeGrip.addEventListener('dblclick',event=>{
+    event.preventDefault();setLiveHeight(DEFAULT_LIVE_HEIGHT,true);
+  });
+  resizeGrip.addEventListener('keydown',event=>{
+    const {minimum,maximum}=liveLimits();
+    let next=liveHeight;
+    if(event.key==='ArrowUp')next+=16;
+    else if(event.key==='ArrowDown')next-=16;
+    else if(event.key==='Home')next=minimum;
+    else if(event.key==='End')next=maximum;
+    else if(event.key==='0')next=DEFAULT_LIVE_HEIGHT;
+    else return;
+    event.preventDefault();setLiveHeight(next,true);
+  });
+  requestAnimationFrame(()=>{
+    const available=liveLimits().available;
+    setLiveHeight(savedRatio?available*savedRatio:DEFAULT_LIVE_HEIGHT);
+  });
   const track=new SoundActivityTracker(()=>schedule(),()=>performance.now());
   const scrollToLine=(line)=>{
     if(!Number.isInteger(line))return;
@@ -405,7 +479,8 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
   idleNotice.className='live-idle';idleNotice.textContent='NO ACTIVE INSTRUMENTS';
   const overflowNotice=document.createElement('small');
   function renderInstrumentRows(rows){
-    const max=expanded?32:5,shown=rows.slice(0,max);
+    // A scrollable list replaces the former More/Less row cutoff.
+    const max=32,shown=rows.slice(0,max);
     const wanted=new Set(shown.map(item=>item.name));
     for(const [name,node] of instrumentNodes){
       if(!wanted.has(name)){node.remove();instrumentNodes.delete(name)}
@@ -451,7 +526,7 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
     if(!rows.length)desired.push(idleNotice);
     if(rows.length>max){
       overflowNotice.textContent='+'+(rows.length-max)+
-        (expanded?' additional instruments':' more · tap MORE to view');
+        ' additional instruments';
       desired.push(overflowNotice);
     }
     // Do not detach/recreate identical rows on every animation frame. This
@@ -462,7 +537,7 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
   }
   const routineNodes=new Map();
   function renderRoutineRows(rows){
-    const shown=rows.slice(0,expanded?12:2),desired=[],wanted=new Set(shown.map(r=>r.key??r.id));
+    const shown=rows.slice(0,12),desired=[],wanted=new Set(shown.map(r=>r.key??r.id));
     for(const [id,row] of routineNodes){
       if(!wanted.has(id)){row.remove();routineNodes.delete(id)}
     }
@@ -593,13 +668,6 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
     enabled=Boolean(next);
     onEnabledChange(enabled);
     panel.classList.toggle('live-collapsed',!enabled);
-    if(!enabled){
-      expanded=false;
-      panel.classList.remove('live-expanded');
-      expandButton.textContent='MORE ↑';
-      expandButton.setAttribute('aria-pressed','false');
-      expandButton.setAttribute('aria-label','Show more Live activity');
-    }
     panelToggle.setAttribute('aria-expanded',String(enabled));
     panelToggle.setAttribute('aria-label',enabled?
       'Collapse Live Code and switch tracking off':
@@ -615,15 +683,9 @@ export function createLiveActivityUI({editor,gutter,overlay,status,code,composit
     schedule();
   }
   panelToggle.addEventListener('click',()=>setEnabled(!enabled));
-  expandButton.addEventListener('click',()=>{
-    if(!enabled)return;
-    expanded=!expanded;
-    panel.classList.toggle('live-expanded',expanded);
-    expandButton.textContent=expanded?'LESS ↓':'MORE ↑';
-    expandButton.setAttribute('aria-pressed',String(expanded));
-    expandButton.setAttribute('aria-label',expanded?'Show compact Live activity':'Show more Live activity');
-    schedule();
-  });
+  window.addEventListener('resize',()=>{
+    if(liveRatio)setLiveHeight(liveLimits().available*liveRatio);
+  },{passive:true});
   editor.addEventListener('scroll',schedule,{passive:true});
   editor.addEventListener('input',()=>track.setDocument(composition(),code.value));
   window.addEventListener('resize',schedule,{passive:true});
