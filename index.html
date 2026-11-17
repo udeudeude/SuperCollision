@@ -659,16 +659,41 @@ function print(t){
 }
 document.querySelector('#clear-console').onclick=()=>{printQueue=[];log.textContent='';diagnosticTail='';explanation.hidden=true;shownErrorKey='';repair.clear();resumeConsoleFollow()};
 let booting=false;
+let synthBootPending=false;
+let synthBootStage='not requested';
+let serverBootWatchdog=null;
+const SERVER_BOOT_WATCHDOG_MS=45000;
+function clearServerBootWatchdog(){
+ if(serverBootWatchdog!==null)clearTimeout(serverBootWatchdog);
+ serverBootWatchdog=null;
+}
 function requestServerBoot(){
- if(!lang||!languageReady||serverReady||serverBootRequested)return;
+ if(!lang||!languageReady||serverReady||serverBootRequested||synthBootPending)return;
  serverBootRequested=true;
  run.disabled=true;document.querySelector('#run-region').disabled=true;
  document.querySelector('#record').disabled=true;
  message('STARTING AUDIO SERVER · RUN unlocks when ready');
+ clearServerBootWatchdog();
+ // On iPhone, audio initialization can stall after language boot. Never
+ // automatically start duplicate servers; report the phase and safe retry.
+ serverBootWatchdog=setTimeout(()=>{
+  serverBootWatchdog=null;
+  if(serverReady||!serverBootRequested)return;
+  serverBootRequested=false;
+  let contextState='unavailable';
+  try{contextState=synth?.getAudioContext?.()?.state||'not created'}catch{}
+  print('Audio startup delayed after '+(SERVER_BOOT_WATCHDOG_MS/1000)+
+    ' seconds. Stage: '+synthBootStage+'; audio context: '+contextState+
+    '. No automatic retry was attempted.');
+  message(synthBootPending
+    ? 'AUDIO START STALLED · CLOSE AND REOPEN TO RETRY'
+    : 'AUDIO START DELAYED · TAP POWER TO RETRY');
+ },SERVER_BOOT_WATCHDOG_MS);
  try{
   // Application startup only. Never wrap or modify the composition.
   lang.runCode('s.waitForBoot({ "'+SERVER_READY_MARKER+'".postln; }, onFailure: { "'+SERVER_FAILED_MARKER+'".postln; }, clock: SystemClock);');
  }catch(e){
+  clearServerBootWatchdog();
   serverBootRequested=false;
   message('Audio server start failed · Press POWER to retry');
   print('Audio server start failed: '+e.message);
@@ -676,7 +701,15 @@ function requestServerBoot(){
 }
 document.querySelector('#engine').onclick=async()=>{
  if(lang){
-   if(!serverReady){requestServerBoot();return}
+   if(!serverReady){
+     if(synthBootPending){
+       message('AUDIO START STILL PENDING · CLOSE AND REOPEN TO RETRY');return
+     }
+     if(serverBootRequested){
+       message('AUDIO SERVER STARTING · RUN unlocks when ready');return
+     }
+     requestServerBoot();return
+   }
    message('Audio server already running · RUN is ready');return
  }
  if(booting)return;
@@ -703,12 +736,14 @@ document.querySelector('#engine').onclick=async()=>{
     }
     if(output.includes(SERVER_READY_MARKER)){
       serverReady=true;serverBootRequested=false;bootRetryCount=0;
+      clearServerBootWatchdog();
       run.disabled=false;document.querySelector('#run-region').disabled=false;
       document.querySelector('#record').disabled=false;
       state.classList.remove('error');message('AUDIO SERVER READY · RUN to play');
     }
     if(output.includes('sclang client not running!')&&!serverReady){
       serverBootRequested=false;
+      clearServerBootWatchdog();
       if(bootRetryCount<5){
         const retryDelay=500*(++bootRetryCount);
         message('LANGUAGE STARTING · Retrying audio boot');
@@ -717,6 +752,7 @@ document.querySelector('#engine').onclick=async()=>{
     }
     if(output.includes(SERVER_FAILED_MARKER)){
       serverReady=false;serverBootRequested=false;
+      clearServerBootWatchdog();
       message('Audio server failed · Press POWER to retry');
       print('SuperCollider audio server failed to boot. Press POWER to retry.');
     }
@@ -738,7 +774,30 @@ document.querySelector('#engine').onclick=async()=>{
   lang.onOsc=oscBridge.fromLanguage;
   synth.onOscReply=oscBridge.fromSynth;
   // The synthesis hook must exist before interpreter boot callbacks can use it.
-  window.bootServer=options=>{if(options.numOutputBusChannels)setTimeout(async()=>{try{await synth.boot(options)}catch(e){serverBootRequested=false;print('Server boot: '+e.message);message('Audio server failed · Press POWER to retry')}},100)};
+  window.bootServer=options=>{
+    if(!options.numOutputBusChannels)return;
+    if(synthBootPending){
+      print('Audio server boot already pending; ignoring duplicate initialization request.');
+      return;
+    }
+    synthBootPending=true;
+    synthBootStage='synth.boot scheduled';
+    setTimeout(async()=>{
+      synthBootStage='synth.boot pending';
+      try{
+        await synth.boot(options);
+        synthBootStage='synth.boot resolved';
+      }catch(e){
+        synthBootStage='synth.boot failed';
+        serverBootRequested=false;
+        clearServerBootWatchdog();
+        print('Server boot: '+e.message);
+        message('Audio server failed · Press POWER to retry');
+      }finally{
+        synthBootPending=false;
+      }
+    },100);
+  };
   lang.bootInterpreter();
   panic.disabled=false;
   message('Initializing language and audio server.');
