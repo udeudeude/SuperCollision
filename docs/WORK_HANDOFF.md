@@ -17,6 +17,13 @@
 - The browser test verified no large startup downloads, no engine download after declined consent, full offline-pack installation, offline reload, and cached WebAssembly engine assets in Chromium. **Real iPhone Safari results remain UNVERIFIED**.
 - Latest tested lab offline manifest source version: `82a98dedf12757abb53e375fad97a649dcd45aab`, 37 files, 8,055,700 bytes. Lab deployment branch is independent of production.
 
+## 17 November 2026: tentative Home Screen offline success
+
+- After the new standalone-specific offline setup was published, the user reported **"Seemed to work!"** following the requested Home Screen offline test. Treat this as **encouraging user-reported provisional success**, not as definitive verification of every step (cold app restart, actual audible POWER/RUN/STOP, persistence after phone restart), since no individual outcomes were specified.
+- Earlier Safari offline reload, Safari close/reopen, and manually re-entering the URL offline were already user-confirmed working.
+- Next useful acceptance check, without resetting app data: with Airplane Mode enabled and Wi-Fi off, fully close the Home Screen app, relaunch via its icon, confirm editor loads and POWER/RUN produces audible synthesis, and STOP silences it. Later test once after restarting the iPhone. Retain separate Safari/Home Screen Files backups and Wi-Fi-only opt-in for large downloads.
+- Do not claim Home Screen cold start or device restart fully verified until explicit user confirmation; do not modify production branches.
+
 ## 17 November 2026: Safari offline confirmed; Home Screen storage isolated
 
 - **New real iPhone result:** user reports offline reload in Safari succeeds, fully closing and reopening Safari succeeds, and completely closing the page then pasting the URL into Safari while offline succeeds. This supersedes earlier Safari reload failure entries. **Home Screen-installed web app still fails offline** (exact error message not yet captured).
