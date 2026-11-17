@@ -551,7 +551,8 @@ body #file-menu #audio-panel .actions button{min-width:0;flex:1;min-height:34px;
  padding:5px 3px;font:700 10px/1.2 system-ui,sans-serif}
 body #file-menu #audio-panel p,body #file-menu #audio-panel small{
  display:block;margin:3px 0;font:11px/1.4 system-ui,sans-serif;white-space:normal}
-/* Independently expand the live monitor without changing sound observation. */
+/* Live monitor vertical splitter. Never widen the floating panel when
+   enlarging it; its content scrolls inside the user-selected height. */
 body .editor-frame .live-panel .live-panel-head{
   display:flex;align-items:stretch;flex:none;min-width:0;
   border-bottom:1px solid var(--live-panel-border,#bc9861)
@@ -559,20 +560,36 @@ body .editor-frame .live-panel .live-panel-head{
 body .editor-frame .live-panel .live-panel-head #live-panel-toggle{
   flex:1;min-width:0;width:auto!important;border-bottom:0;gap:3px
 }
-body .editor-frame .live-panel #live-panel-expand{
-  flex:0 0 auto;min-height:28px;height:30px;max-height:30px;
-  padding:2px 6px;margin:0;border:0;border-left:1px solid var(--live-panel-border,#bc9861);
-  border-radius:0;background:transparent;color:inherit;
-  font:800 9px/1 ui-monospace,monospace;letter-spacing:0
+body .editor-frame .live-panel:not(.live-collapsed),
+body[data-theme] .editor-frame .live-panel:not(.live-collapsed){
+  height:var(--live-panel-height,82px);
+  max-height:min(72%,500px);
 }
-body .editor-frame .live-panel.live-expanded,body[data-theme] .editor-frame .live-panel.live-expanded{
-  /* Only grow vertically: the code to the left must remain readable. */
-  height:min(78%,500px);max-height:calc(100% - 14px);
+body .editor-frame .live-panel-content{
+  flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
 }
-body .editor-frame .live-panel.live-expanded .live-panel-content{flex:1;min-height:0}
-body .live-panel.live-collapsed #live-panel-expand{display:none}
+body .live-panel #live-panel-resizer{
+  display:flex;flex:0 0 12px;align-items:center;justify-content:center;
+  box-sizing:border-box;height:12px;min-height:12px;
+  margin:0;touch-action:none;cursor:ns-resize;
+  user-select:none;-webkit-user-select:none;
+  border-bottom:1px solid var(--live-panel-border,#bc9861);
+  background:color-mix(in srgb,var(--live-panel-fg,#eee) 9%,transparent);
+}
+body .live-panel #live-panel-resizer>span{
+  display:block;pointer-events:none;width:48px;height:3px;
+  border-radius:5px;background:var(--live-panel-fg,#eee);opacity:.55
+}
+body .live-panel #live-panel-resizer:focus-visible{
+  outline:2px solid var(--live-panel-border,#bc9861);outline-offset:-2px
+}
+body .editor-frame .live-panel.live-collapsed,
+body[data-theme] .editor-frame .live-panel.live-collapsed{
+  height:31px!important;max-height:31px!important
+}
+body .live-panel.live-collapsed #live-panel-resizer{display:none!important}
 @media(max-width:370px){
-  body .editor-frame .live-panel #live-panel-expand{height:28px;min-height:28px;padding:2px 4px;font-size:8px}
+  body .editor-frame .live-panel #live-panel-resizer{height:11px;min-height:11px;flex-basis:11px}
 }
 
 /* Focused, human-readable explanation of console errors. */
