@@ -362,6 +362,20 @@ try{
   assert(!/Runtime unavailable|Audio server failed/.test(engineState),
     'Offline SuperCollider engine boot failed: '+engineState+'; '+consoleState.slice(-1000));
   console.log('Offline POWER reached SuperCollider initialization: '+engineState);
+  // Earlier tests stopped here, even though the real iPhone could become
+  // permanently stuck at STARTING AUDIO SERVER with RUN disabled.
+  await page.waitForFunction(()=>{
+    const status=document.querySelector('#engine-status')?.textContent||'';
+    return /AUDIO SERVER READY|AUDIO START STALLED|AUDIO START DELAYED|Audio server failed/.test(status);
+  },null,{timeout:70000});
+  const fullBoot=await page.evaluate(()=>({
+    status:document.querySelector('#engine-status')?.textContent,
+    runEnabled:!document.querySelector('#evaluate')?.disabled,
+    consoleTail:(document.querySelector('#console')?.textContent||'').slice(-1200)
+  }));
+  assert(fullBoot.status.includes('AUDIO SERVER READY')&&fullBoot.runEnabled,
+    'Offline engine reached language but not runnable audio: '+JSON.stringify(fullBoot));
+  console.log('Offline SuperCollider RUN enabled after audio boot');
 
   // Full browser-process restart, retaining the on-disk profile and service
   // worker registration. Network is disabled BEFORE reloading the URL.
