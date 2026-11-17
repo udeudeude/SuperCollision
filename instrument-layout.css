@@ -701,3 +701,34 @@ body[data-theme].view-console main .console-shell{
 }
 body.view-console main>.panel:first-child,
 body[data-theme].view-console main>.panel:first-child{min-height:130px}
+
+
+/* Home Screen setup is explicit and never auto-downloads large resources.
+ * It appears only in the standalone application's own storage container. */
+body #lab-home-screen-storage:not([hidden]){
+ display:block;margin:6px 2px;padding:6px 9px;line-height:1.45;
+ border-left:2px solid var(--file-border,#bc9861);
+ font:12px/1.45 system-ui,sans-serif;color:inherit
+}
+body #lab-home-screen-setup:not([hidden]){
+ position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));
+ transform:translateX(-50%);z-index:50;box-sizing:border-box;
+ display:block;width:min(430px,calc(100vw - 22px));
+ max-height:min(55dvh,310px);overflow:auto;
+ background:var(--file-bg,#26221f);color:var(--file-fg,#efe4d1);
+ border:2px solid var(--file-border,#c5a06b);
+ box-shadow:0 5px 24px #000b;border-radius:6px;padding:12px 14px
+}
+body #lab-home-screen-setup strong{display:block;font:750 14px/1.35 system-ui,sans-serif}
+body #lab-home-screen-setup p{margin:6px 0 10px;font:12px/1.45 system-ui,sans-serif}
+body #lab-home-screen-setup .lab-home-setup-actions{
+ display:flex;gap:7px;flex-wrap:wrap
+}
+body #lab-home-screen-setup button{
+ flex:1 1 120px;min-height:44px;width:auto;height:auto;
+ border:1px solid currentColor;border-radius:3px;
+ padding:7px 10px;font:750 12px/1.2 system-ui,sans-serif
+}
+body #lab-home-screen-setup #lab-home-setup-now{
+ background:var(--file-border,#c5a06b);color:#201c17
+}
