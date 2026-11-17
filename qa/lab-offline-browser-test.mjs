@@ -473,7 +473,19 @@ try{
     await reopened.goto(origin,{waitUntil:'domcontentloaded',timeout:20000});
     assert(await reopened.locator('#code').isVisible(),
       'Standalone cold offline restart failed after setup');
-    console.log('Isolated Home Screen-style setup and offline cold restart passed');
+    await reopened.locator('#engine').click();
+    await reopened.waitForFunction(()=>{
+      const label=document.querySelector('#engine-status')?.textContent||'';
+      return /AUDIO SERVER READY|AUDIO START STALLED|AUDIO START DELAYED|Audio server failed/.test(label);
+    },null,{timeout:70000});
+    const coldHomeBoot=await reopened.evaluate(()=>({
+      status:document.querySelector('#engine-status')?.textContent,
+      runEnabled:!document.querySelector('#evaluate')?.disabled,
+      consoleTail:(document.querySelector('#console')?.textContent||'').slice(-800)
+    }));
+    assert(coldHomeBoot.status.includes('AUDIO SERVER READY')&&coldHomeBoot.runEnabled,
+      'Standalone first cold offline POWER failed: '+JSON.stringify(coldHomeBoot));
+    console.log('Isolated Home Screen-style cold offline audio RUN enabled');
   }finally{
     if(homeContext)await homeContext.close();
     await rm(homeProfile,{recursive:true,force:true});
