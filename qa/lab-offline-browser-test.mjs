@@ -405,6 +405,64 @@ try{
   assert.equal(await restarted.locator('#code').isVisible(),true,
     'Offline page failed after noncritical cache eviction');
   console.log('Optional cache-entry eviction recovery passed');
+
+  // Home Screen applications have separate website data from Safari.
+  // Simulate an isolated install with a fresh persistent browser profile and
+  // standalone display mode, and confirm nothing large is downloaded until
+  // the user chooses the explicit Home Screen setup action.
+  const homeProfile=await mkdtemp(path.join(os.tmpdir(),'supercollision-home-screen-'));
+  let homeContext;
+  try {
+    homeContext=await chromium.launchPersistentContext(homeProfile,browserOptions);
+    await homeContext.addInitScript(()=>{
+      Object.defineProperty(navigator,'standalone',{configurable:true,value:true});
+    });
+    const home=homeContext.pages()[0]||await homeContext.newPage();
+    const homeRequests=[];
+    home.on('request',request=>homeRequests.push(new URL(request.url()).pathname));
+    home.on('dialog',dialog=>dialog.accept());
+    await home.goto(origin,{waitUntil:'load'});
+    await home.waitForSelector('#lab-home-screen-setup:not([hidden])',{timeout:12000});
+    assert(await home.locator('#lab-home-screen-storage').isVisible(),
+      'Standalone copy missing separate-storage notice');
+    assert.equal(homeRequests.some(url=>url.startsWith('/runtime/')),false,
+      'Standalone first launch downloaded large audio assets without consent');
+    assert.equal(homeRequests.includes('/language-catalog.json'),false,
+      'Standalone first launch downloaded optional catalog');
+    const homeInitial=await home.evaluate(async()=>({
+      packNames:(await caches.keys()).filter(name=>name.startsWith('supercollision-lab-pack-')),
+      registration:!!(await navigator.serviceWorker.getRegistration())
+    }));
+    assert.equal(homeInitial.packNames.length,0,
+      'Standalone was unexpectedly sharing Safari offline CacheStorage');
+    await home.locator('#lab-home-setup-now').click();
+    await home.waitForFunction(()=>document.querySelector('#lab-home-screen-setup')?.hidden===true &&
+      document.querySelector('#lab-offline-status')?.textContent?.startsWith('Offline files installed'),
+      null,{timeout:120000});
+    assert.equal(await home.evaluate(async()=>(
+      (await caches.keys()).filter(name=>name.startsWith('supercollision-lab-pack-')).length
+    )),1,'Standalone pack did not save into its own storage');
+    await homeContext.setOffline(true);
+    await home.reload({waitUntil:'domcontentloaded',timeout:20000});
+    assert(await home.locator('#code').isVisible(),
+      'Standalone offline reload failed after explicit setup');
+
+    await homeContext.close();
+    homeContext=null;
+    homeContext=await chromium.launchPersistentContext(homeProfile,browserOptions);
+    await homeContext.addInitScript(()=>{
+      Object.defineProperty(navigator,'standalone',{configurable:true,value:true});
+    });
+    await homeContext.setOffline(true);
+    const reopened=homeContext.pages()[0]||await homeContext.newPage();
+    await reopened.goto(origin,{waitUntil:'domcontentloaded',timeout:20000});
+    assert(await reopened.locator('#code').isVisible(),
+      'Standalone cold offline restart failed after setup');
+    console.log('Isolated Home Screen-style setup and offline cold restart passed');
+  }finally{
+    if(homeContext)await homeContext.close();
+    await rm(homeProfile,{recursive:true,force:true});
+  }
   console.log('Lab offline browser smoke test passed');
 }finally{
   if(context)await context.close();
