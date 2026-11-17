@@ -11,7 +11,8 @@ if ('serviceWorker' in navigator && navigator.onLine) {
     if (registration) return registration.update();
   }).catch(()=>{ /* Existing saved pack remains usable. */ });
 }
-let engineApprovedForNextClick = false;
+let offlinePackConfirmed = false;
+let engineApprovedForSession = false;
 function notice(message) {
   if (info) info.textContent = message;
 }
@@ -61,6 +62,7 @@ async function downloadPack() {
   const bytes = manifest.files.reduce((total, item) => total + (item.bytes || 0), 0);
   const current = await existingPack();
   if (current?.version === manifest.version) {
+    offlinePackConfirmed = true;
     notice('Offline copy is already installed (' + displaySize(current.bytes || bytes) + ').');
     window.alert('This version is already saved for offline use.');
     return;
@@ -84,6 +86,7 @@ async function downloadPack() {
     const verified = await existingPack();
     if (!verified || verified.version !== manifest.version)
       throw Error('Saved files could not be verified. Existing copies were not erased.');
+    offlinePackConfirmed = true;
     notice('Offline files installed (' + displaySize(result.bytes) + '). Restart behavior still needs testing on iPhone.');
     downloadButton.textContent = 'Check offline copy';
     window.alert('Offline files saved. Verify Airplane Mode reload and reopening Safari before depending on them. Export important compositions and recordings to Files as backups.');
@@ -100,6 +103,7 @@ if (downloadButton) {
   });
   existingPack().then(pack => {
     if (pack) {
+      offlinePackConfirmed = true;
       notice('Offline copy installed (' + displaySize(pack.bytes || 0) + ').');
       downloadButton.textContent = 'Check offline copy';
     } else {
@@ -240,31 +244,26 @@ if(diagnostics && offlineReport) diagnostics.addEventListener('click',()=>{
   });
 });
 
-// The original app imports ~6 MB of runtime assets on the first POWER click.
-// Prevent an accidental large cellular download by asking at that moment.
-// Approval lasts only for the current tab/session, not subsequent visits.
+// Real iPhone taps carry transient user activation needed for Web Audio.
+// Previously the consent gate waited for CacheStorage and replayed POWER via
+// a synthetic .click(). That could strip the trusted tap at the moment the
+// audio engine begins initializing, especially after a cold Home Screen launch.
+// Offline packs are checked ahead of time; all unresolved cases still ask for
+// explicit permission synchronously before allowing the ORIGINAL tap through.
 if (engine) {
-  engine.addEventListener('click', async event => {
-    if (engineApprovedForNextClick) {
-      engineApprovedForNextClick = false;
-      return;
-    }
-    event.stopImmediatePropagation();
-    event.preventDefault();
-    let approved = false;
-    try {
-      approved = Boolean(await existingPack());
-    } catch {}
+  engine.addEventListener('click', event => {
+    if (offlinePackConfirmed || engineApprovedForSession) return;
+    const approved = window.confirm(
+      'Starting SuperCollider without a verified offline copy may download about 6 MB. ' +
+      'iOS cannot reliably tell whether you are on Wi-Fi. Tap OK only if you are ' +
+      'on Wi-Fi or explicitly permit this download over cellular.'
+    );
     if (!approved) {
-      approved = window.confirm(
-        'Starting SuperCollider without an offline copy may download about 6 MB. ' +
-        'iOS cannot reliably tell whether you are on Wi-Fi. Tap OK only if you are ' +
-        'on Wi-Fi or explicitly permit this one download over cellular.'
-      );
-    }
-    if (approved) {
-      engineApprovedForNextClick = true;
-      engine.click();
+      event.stopImmediatePropagation();
+      event.preventDefault();
+    } else {
+      // One explicit approval covers this tab session only.
+      engineApprovedForSession = true;
     }
   }, true);
 }
