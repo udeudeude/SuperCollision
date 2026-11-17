@@ -678,8 +678,8 @@ body #console-panel{scroll-behavior:auto}
 /* Finder-style editor/console splitter: a slim visible grip with a generous
  * finger target; only appears for the Console workbench. */
 body #workspace-divider{display:none}
-body.view-console #workspace-divider,
-body[data-theme].view-console #workspace-divider{
+body:is(.view-console,.view-perform,.view-learn,.view-design) #workspace-divider,
+body[data-theme]:is(.view-console,.view-perform,.view-learn,.view-design) #workspace-divider{
  display:flex;flex:0 0 16px;align-items:center;justify-content:center;
  box-sizing:border-box;height:16px;min-height:16px;margin:0;
  touch-action:none;user-select:none;-webkit-user-select:none;
@@ -698,6 +698,20 @@ body.resizing-panes,body.resizing-panes *{cursor:row-resize!important}
 body.view-console main .console-shell,
 body[data-theme].view-console main .console-shell{
  flex:0 0 var(--console-pane-size,46%)!important;min-height:0
+}
+/* Each mode retains its own editor/lower-panel split. Later component
+   stylesheets have ordinary flex-basis rules; these user sizes take priority. */
+body.view-perform main>.performance-panel,
+body[data-theme].view-perform main>.performance-panel{
+ flex:0 0 var(--perform-pane-size,52%)!important;min-height:0
+}
+body.view-learn main>.learning-host,
+body[data-theme].view-learn main>.learning-host{
+ flex:0 0 var(--learn-pane-size,48%)!important;min-height:0
+}
+body.view-design main>.sound-host,
+body[data-theme].view-design main>.sound-host{
+ flex:0 0 var(--design-pane-size,62%)!important;min-height:0
 }
 body.view-console main>.panel:first-child,
 body[data-theme].view-console main>.panel:first-child{min-height:130px}
