@@ -185,46 +185,85 @@
   window.getSuperCollisionCodeFontSize = () => fontPx;
 
 
-  // Adjustable code/console split, without changing keyboard behavior or
-  // the editor's existing pinch-to-shrink gesture. Saved as a proportional
-  // preference so it adapts to portrait, landscape and phone rotation.
+  // One accessible touch/keyboard divider, with independent saved proportions
+  // for CONSOLE, MIX, LEARN and GENERATE. CODE retains the full editor.
   const divider=document.getElementById('workspace-divider');
   const workspace=document.querySelector('body > main');
-  const DIVIDER_KEY='supercollision-console-pane-ratio-v1';
-  const DEFAULT_SPLIT=.46;
-  let paneRatio=DEFAULT_SPLIT;
-  try {
-    const stored=Number(localStorage.getItem(DIVIDER_KEY));
-    if(Number.isFinite(stored)&&stored>=.2&&stored<=.75)paneRatio=stored;
-  }catch{}
-  function paneBounds(){
+  const paneTargets={
+    console:shell,
+    perform:document.getElementById('perform-panel'),
+    learn:document.getElementById('learning-host'),
+    design:document.getElementById('sound-host')
+  };
+  const paneDefaults={console:.46,perform:.52,learn:.48,design:.62};
+  const paneProperties={
+    console:'--console-pane-size',
+    perform:'--perform-pane-size',
+    learn:'--learn-pane-size',
+    design:'--design-pane-size'
+  };
+  // Retain the existing Console preference for compatibility with earlier lab.
+  const paneKeys={
+    console:'supercollision-console-pane-ratio-v1',
+    perform:'supercollision-mix-pane-ratio-v1',
+    learn:'supercollision-learn-pane-ratio-v1',
+    design:'supercollision-generate-pane-ratio-v1'
+  };
+  const paneRatios={...paneDefaults};
+  for(const view of Object.keys(paneDefaults)){
+    try{
+      const stored=Number(localStorage.getItem(paneKeys[view]));
+      if(Number.isFinite(stored)&&stored>=.15&&stored<=.85)paneRatios[view]=stored;
+    }catch{}
+  }
+  function paneBounds(view=mode){
     const height=workspace.getBoundingClientRect().height||600;
-    const gap=divider.getBoundingClientRect().height||14;
-    // Keep at least 150px of code and 125px of console on a full screen,
-    // proportionally easing the bounds when the on-screen keyboard is open.
-    const lower=Math.max(.20,Math.min(.42,125/height));
-    const upper=Math.max(lower,Math.min(.75,(height-Math.min(150,height*.30)-gap)/height));
+    const separator=divider.getBoundingClientRect().height||16;
+    // Other views reserve the non-resizable 40px mode/status tab strip.
+    const reserved=separator+(view==='console'?0:shell.getBoundingClientRect().height||40);
+    const minimumCode=Math.min(150,Math.max(80,height*.25));
+    const minimumPanel=Math.min(125,Math.max(65,height*.19));
+    const lower=Math.max(.15,minimumPanel/height);
+    const upper=Math.max(lower,Math.min(.8,(height-minimumCode-reserved)/height));
     return {lower,upper,height};
   }
-  function setPaneRatio(value,persist=false){
-    const {lower,upper}=paneBounds();
-    paneRatio=Math.min(upper,Math.max(lower,value));
-    body.style.setProperty('--console-pane-size',(paneRatio*100).toFixed(3)+'%');
-    divider.setAttribute('aria-valuenow',String(Math.round(paneRatio*100)));
-    divider.setAttribute('aria-valuetext',Math.round(paneRatio*100)+'% console, '+
-      Math.round((1-paneRatio)*100)+'% code');
-    if(persist){
-      try{localStorage.setItem(DIVIDER_KEY,String(paneRatio))}catch{}
+  function setPaneRatio(view,value,persist=false){
+    if(!(view in paneTargets))return;
+    const {lower,upper}=paneBounds(view);
+    const ratio=Math.max(lower,Math.min(upper,value));
+    paneRatios[view]=ratio;
+    body.style.setProperty(paneProperties[view],(ratio*100).toFixed(3)+'%');
+    if(view===mode){
+      divider.setAttribute('aria-valuemin',String(Math.round(lower*100)));
+      divider.setAttribute('aria-valuemax',String(Math.round(upper*100)));
+      divider.setAttribute('aria-valuenow',String(Math.round(ratio*100)));
+      divider.setAttribute('aria-valuetext',Math.round(ratio*100)+'% '+
+        ({console:'console',perform:'mix',learn:'learning',design:'generator'}[view])+' and '+
+        Math.round((1-ratio)*100)+'% remaining workspace');
     }
-    if(mode==='console')requestAnimationFrame(()=>window.SCConsoleOnShow?.());
+    if(persist){
+      try{localStorage.setItem(paneKeys[view],String(ratio))}catch{}
+    }
+    if(view==='console'&&mode===view)
+      requestAnimationFrame(()=>window.SCConsoleOnShow?.());
   }
-  let dividerDrag=null;
-  let lastDividerTap=0;
+  function refreshDivider(){
+    if(!(mode in paneTargets)){
+      divider.setAttribute('aria-label','Resize lower panel');
+      return;
+    }
+    const name={console:'Console',perform:'Mix',learn:'Learn',design:'Generate'}[mode];
+    divider.setAttribute('aria-label','Resize code editor and '+name+' panel');
+    divider.setAttribute('title','Drag to resize '+name+'; double-tap to reset');
+    setPaneRatio(mode,paneRatios[mode]);
+  }
+  let dividerDrag=null,lastDividerTap=0;
   divider.addEventListener('pointerdown',event=>{
-    if(mode!=='console'||!event.isPrimary)return;
+    if(!(mode in paneTargets)||!event.isPrimary)return;
+    const target=paneTargets[mode];
     const height=workspace.getBoundingClientRect().height;
-    dividerDrag={id:event.pointerId,startY:event.clientY,
-      startHeight:shell.getBoundingClientRect().height,height,travel:0};
+    dividerDrag={id:event.pointerId,view:mode,startY:event.clientY,
+      startHeight:target.getBoundingClientRect().height,height,travel:0};
     divider.setPointerCapture(event.pointerId);
     body.classList.add('resizing-panes');
     event.preventDefault();
@@ -233,40 +272,49 @@
     if(!dividerDrag||dividerDrag.id!==event.pointerId)return;
     dividerDrag.travel=Math.max(dividerDrag.travel,Math.abs(event.clientY-dividerDrag.startY));
     const next=(dividerDrag.startHeight+dividerDrag.startY-event.clientY)/dividerDrag.height;
-    setPaneRatio(next);
+    setPaneRatio(dividerDrag.view,next);
     event.preventDefault();
   });
   function finishDivider(event){
     if(!dividerDrag||dividerDrag.id!==event.pointerId)return;
-    const moved=dividerDrag.travel>8;
+    const view=dividerDrag.view,moved=dividerDrag.travel>8;
     dividerDrag=null;
     body.classList.remove('resizing-panes');
     if(!moved&&Date.now()-lastDividerTap<350){
-      setPaneRatio(DEFAULT_SPLIT,true);
+      setPaneRatio(view,paneDefaults[view],true);
       lastDividerTap=0;
     }else{
       lastDividerTap=moved?0:Date.now();
-      setPaneRatio(paneRatio,true);
+      setPaneRatio(view,paneRatios[view],true);
     }
-    if(divider.hasPointerCapture(event.pointerId))divider.releasePointerCapture(event.pointerId);
+    if(divider.hasPointerCapture(event.pointerId))
+      divider.releasePointerCapture(event.pointerId);
   }
   divider.addEventListener('pointerup',finishDivider);
   divider.addEventListener('pointercancel',finishDivider);
-  divider.addEventListener('dblclick',event=>{event.preventDefault();setPaneRatio(DEFAULT_SPLIT,true)});
+  divider.addEventListener('dblclick',event=>{
+    if(!(mode in paneTargets))return;
+    event.preventDefault();
+    setPaneRatio(mode,paneDefaults[mode],true);
+  });
   divider.addEventListener('keydown',event=>{
-    const {lower,upper}=paneBounds();
-    let next=paneRatio;
+    if(!(mode in paneTargets))return;
+    const {lower,upper}=paneBounds(mode);
+    let next=paneRatios[mode];
     if(event.key==='ArrowUp')next+=.04;
     else if(event.key==='ArrowDown')next-=.04;
     else if(event.key==='Home')next=lower;
     else if(event.key==='End')next=upper;
-    else if(event.key==='0')next=DEFAULT_SPLIT;
+    else if(event.key==='0')next=paneDefaults[mode];
     else return;
     event.preventDefault();
-    setPaneRatio(next,true);
+    setPaneRatio(mode,next,true);
   });
-  window.addEventListener('resize',()=>setPaneRatio(paneRatio),{passive:true});
-  setPaneRatio(paneRatio);
+  window.addEventListener('resize',()=>{
+    if(mode in paneTargets)setPaneRatio(mode,paneRatios[mode]);
+  },{passive:true});
+  for(const view of Object.keys(paneTargets))
+    body.style.setProperty(paneProperties[view],(paneRatios[view]*100).toFixed(3)+'%');
 
   function compactChrome() {
     body.classList.toggle('compact', editor.scrollTop > 20 || mode !== 'code');
@@ -276,6 +324,7 @@
     // Leaving CODE also leaves its keyboard-safe error repair dock.
     if(next!=='code'&&window.SCRepair?.active)window.SCRepair.close();
     mode = next;
+    refreshDivider();
     body.classList.toggle('view-console', next === 'console');
     body.classList.toggle('view-perform', next === 'perform');
     body.classList.toggle('view-learn', next === 'learn');
