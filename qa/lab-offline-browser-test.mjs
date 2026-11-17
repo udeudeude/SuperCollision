@@ -189,6 +189,65 @@ try{
   const afterReload=await page.locator('.console-shell').boundingBox();
   assert(Math.abs(afterReload.height-after.height)<20,
     'Console split did not survive page reload: '+JSON.stringify({after,afterReload}));
+  // All lower workbench sections share the same adjustable divider,
+  // but must keep separate persistent proportions.
+  const paneCases=[
+    ['perform','#inspector-perform','#perform-panel','supercollision-mix-pane-ratio-v1'],
+    ['learn','#inspector-learn','#learning-host','supercollision-learn-pane-ratio-v1'],
+    ['design','#inspector-design','#sound-host','supercollision-generate-pane-ratio-v1']
+  ];
+  const paneHeights={};
+  for(const [name,tab,panel,key] of paneCases){
+    await page.locator(tab).click();
+    assert(await grip.isVisible(),'Resizer missing in '+name);
+    const beforePanel=await page.locator(panel).boundingBox();
+    assert(beforePanel?.height>60,name+' lower panel is not visible');
+    const handle=await grip.boundingBox();
+    await page.mouse.move(handle.x+handle.width/2,handle.y+handle.height/2);
+    await page.mouse.down();
+    await page.mouse.move(handle.x+handle.width/2,handle.y+handle.height/2-48,{steps:5});
+    await page.mouse.up();
+    const afterPanel=await page.locator(panel).boundingBox();
+    assert(afterPanel.height>beforePanel.height+19,
+      name+' pane failed to enlarge: '+JSON.stringify({beforePanel,afterPanel}));
+    paneHeights[name]=afterPanel.height;
+    assert(await page.evaluate(k=>Number(localStorage.getItem(k))>0,key),
+      name+' divider preference not stored');
+  }
+  await page.locator('#inspector-code').click();
+  assert(await grip.isHidden(),'Resizer must stay hidden in full Code view');
+
+  // The floating Live monitor gets a VERTICAL grip, not an expanding width.
+  // Its list should be scrollable instead of being truncated by More/Less.
+  const liveGrip=page.locator('#live-panel-resizer');
+  assert(await liveGrip.isVisible(),'Live panel resize grip missing');
+  assert.equal(await page.locator('#live-panel-expand').count(),0,
+    'Old More/Less button still exists');
+  const beforeLive=await page.locator('#live-panel').boundingBox();
+  const liveHandle=await liveGrip.boundingBox();
+  await page.mouse.move(liveHandle.x+liveHandle.width/2,liveHandle.y+liveHandle.height/2);
+  await page.mouse.down();
+  await page.mouse.move(liveHandle.x+liveHandle.width/2,liveHandle.y+liveHandle.height/2-75,{steps:5});
+  await page.mouse.up();
+  const afterLive=await page.locator('#live-panel').boundingBox();
+  assert(afterLive.height>beforeLive.height+30,
+    'Live activity panel failed to grow upward: '+JSON.stringify({beforeLive,afterLive}));
+  assert(Math.abs(afterLive.width-beforeLive.width)<2,
+    'Live resize unexpectedly widened overlay and obscured code');
+  const savedLive=await page.evaluate(()=>
+    Number(localStorage.getItem('supercollision-live-monitor-ratio-v1')));
+  assert(savedLive>.10,'Live panel height preference not saved');
+
+  await page.reload({waitUntil:'load'});
+  const restoredLive=await page.locator('#live-panel').boundingBox();
+  assert(Math.abs(restoredLive.height-afterLive.height)<18,
+    'Live resize did not persist: '+JSON.stringify({afterLive,restoredLive}));
+  for(const [name,tab,panel] of paneCases){
+    await page.locator(tab).click();
+    const restored=await page.locator(panel).boundingBox();
+    assert(Math.abs(restored.height-paneHeights[name])<20,
+      name+' pane size did not persist across reload: '+restored.height+' vs '+paneHeights[name]);
+  }
   await page.locator('#inspector-code').click();
 
   // IndexedDB mirror is additive. Confirm it persists edits and offers
