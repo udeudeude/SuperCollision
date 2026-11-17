@@ -17,6 +17,13 @@
 - The browser test verified no large startup downloads, no engine download after declined consent, full offline-pack installation, offline reload, and cached WebAssembly engine assets in Chromium. **Real iPhone Safari results remain UNVERIFIED**.
 - Latest tested lab offline manifest source version: `82a98dedf12757abb53e375fad97a649dcd45aab`, 37 files, 8,055,700 bytes. Lab deployment branch is independent of production.
 
+## 17 November 2026: iPhone Home Screen offline startup retest successful
+
+- Following experimental lab publication of trusted POWER-tap handling and bounded audio-startup diagnostics, the user retested the Home Screen app offline and reported **"It worked."** This confirms the requested subsequent offline Home Screen PWR/RUN scenario succeeded on the user's real iPhone.
+- Prior real-device observations: Safari reload, Safari restart, and re-entered URL all worked offline; Home Screen app worked on a second offline attempt after phone reboot, while one earlier first startup stalled at STARTING AUDIO SERVER.
+- **Current acceptance:** standalone Home Screen offline synthesis now user-reported working after the code update. An earlier intermittent first-launch stall warrants monitoring over multiple launches; a single success does not prove permanent absence of intermittent failures.
+- Preserve Wi-Fi-only explicit consent for the approximately 8 MB offline package; keep production unmodified. Next development may resume on lab branch, with separate local data and Files export/backups treated as essential.
+
 ## 17 November 2026: cold-start audio recovery hardening and trusted POWER gesture
 
 - The source revealed an independent failure path: `requestServerBoot` could leave RUN disabled indefinitely if no success/failure marker arrived; a second POWER tap would silently do nothing.
