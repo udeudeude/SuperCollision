@@ -350,7 +350,12 @@ try{
   page.on('request', req=>{
     if(req.method()==='HEAD') offlineHeadRequests.push(req.url());
   });
+  await page.locator('#engine').evaluate(el=>{
+    el.addEventListener('click',event=>{window.__labPowerTrusted=event.isTrusted},{once:true});
+  });
   await page.locator('#engine').click();
+  assert.equal(await page.evaluate(()=>window.__labPowerTrusted),true,
+    'Offline POWER was replayed synthetically, losing the real user gesture');
   await page.waitForFunction(()=>{
     const value=document.querySelector('#engine-status')?.textContent||'';
     return /Initializing language and audio server|AUDIO SERVER READY|Runtime unavailable|Audio server failed/.test(value);
@@ -473,7 +478,14 @@ try{
     await reopened.goto(origin,{waitUntil:'domcontentloaded',timeout:20000});
     assert(await reopened.locator('#code').isVisible(),
       'Standalone cold offline restart failed after setup');
+    await reopened.waitForFunction(()=>document.querySelector('#lab-offline-status')?.textContent?.includes('Offline copy installed'),
+      null,{timeout:10000});
+    await reopened.locator('#engine').evaluate(el=>{
+      el.addEventListener('click',event=>{window.__homePowerTrusted=event.isTrusted},{once:true});
+    });
     await reopened.locator('#engine').click();
+    assert.equal(await reopened.evaluate(()=>window.__homePowerTrusted),true,
+      'Cold Home Screen POWER lost its original trusted user tap');
     await reopened.waitForFunction(()=>{
       const label=document.querySelector('#engine-status')?.textContent||'';
       return /AUDIO SERVER READY|AUDIO START STALLED|AUDIO START DELAYED|Audio server failed/.test(label);
