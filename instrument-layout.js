@@ -324,11 +324,11 @@
     // Leaving CODE also leaves its keyboard-safe error repair dock.
     if(next!=='code'&&window.SCRepair?.active)window.SCRepair.close();
     mode = next;
-    refreshDivider();
     body.classList.toggle('view-console', next === 'console');
     body.classList.toggle('view-perform', next === 'perform');
     body.classList.toggle('view-learn', next === 'learn');
     body.classList.toggle('view-design', next === 'design');
+    refreshDivider();
     consolePanel.open = next === 'console';
     for (const [view, button] of Object.entries(viewButtons)) {
       button.setAttribute('aria-pressed', String(view === next));
