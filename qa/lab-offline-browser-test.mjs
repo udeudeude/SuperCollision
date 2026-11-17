@@ -423,7 +423,8 @@ try{
     home.on('dialog',dialog=>dialog.accept());
     await home.goto(origin,{waitUntil:'load'});
     await home.waitForSelector('#lab-home-screen-setup:not([hidden])',{timeout:12000});
-    assert(await home.locator('#lab-home-screen-storage').isVisible(),
+    assert(await home.locator('#lab-home-screen-storage').evaluate(el=>
+      !el.hidden && el.textContent.includes('separately from Safari')),
       'Standalone copy missing separate-storage notice');
     assert.equal(homeRequests.some(url=>url.startsWith('/runtime/')),false,
       'Standalone first launch downloaded large audio assets without consent');
