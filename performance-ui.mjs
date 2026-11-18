@@ -316,6 +316,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     const t=journal.timelineNow();
     const stopped=journal.stoppedAt!==null;
     updateLanes(rows);
+    rowsEl.style.setProperty('--perform-scroll-x',scroller.scrollLeft+'px');
     const timespan=Math.max(32,Math.ceil((t-journal.zero)/1000)+6);
     const graphWidth=Math.min(24000,Math.max(500,Math.ceil(timespan*SCALE)));
     rowsEl.style.setProperty('--track-width',graphWidth+'px');
@@ -470,6 +471,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     }
   },{passive:true});
   scroller.addEventListener('scroll',()=>{
+    rowsEl.style.setProperty('--perform-scroll-x',scroller.scrollLeft+'px');
     // Vertical scrolling and automatic follow movement do not pause live.
     checkManualRewind();
   },{passive:true});
