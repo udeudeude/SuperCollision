@@ -282,7 +282,6 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
   <details class="file-submenu">
     <summary>TOOLS</summary>
     <div class="file-submenu-items">
-      <button id="restart-composition" class="secondary" type="button">Restart composition from beginning</button>
       <button id="wake-toggle" class="secondary">Screen awake: on</button>
       <button id="live-activity-debug" class="secondary">Activity diagnostics</button>
       <details id="audio-panel" class="file-speaker-test"><summary>Phone speaker test</summary>
@@ -827,15 +826,6 @@ function submitCode(source,start,end){if(!lang)return;try{diagnosticTail='';expl
 // RUN evaluates the composition. RESTART explicitly stops existing routines,
 // clears scheduled server events, then evaluates from the beginning.
 run.onclick=()=>submitCode(code.value,1,code.value.split('\n').length);
-const restartButton=document.querySelector('#restart-composition');
-restartButton.onclick=()=>{
-  if(!lang)return;
-  panic.click();
-  setTimeout(()=>{
-    if(!lang)return;
-    submitCode(code.value,1,code.value.split('\\n').length);
-  },120);
-};
 document.querySelector('#run-region').onclick=()=>{const a=code.selectionStart,b=code.selectionEnd,text=code.value;let from=a,to=b;if(a===b){from=text.lastIndexOf('\n',Math.max(0,a-1))+1;to=text.indexOf('\n',a);if(to<0)to=text.length}const source=text.slice(from,to);if(!source.trim())return;const start=text.slice(0,from).split('\n').length,end=start+source.split('\n').length-1;submitCode(source,start,end)};
 panic.onclick=()=>{if(!lang)return;try{
   lang.runCode('CmdPeriod.run;');
