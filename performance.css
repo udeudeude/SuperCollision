@@ -689,3 +689,39 @@ body[data-theme] .performance-panel:not(.perform-has-selection) .perform-header{
  height:96px!important;min-height:96px!important;max-height:96px!important;
  flex:0 0 96px!important;
 }
+
+/* Unified 72px Mix toolbar: no wasted vertical centering, no selection jump. */
+body .performance-panel .perform-header,
+body[data-theme] .performance-panel .perform-header,
+body .performance-panel.perform-has-selection .perform-header,
+body[data-theme] .performance-panel.perform-has-selection .perform-header,
+body .performance-panel:not(.perform-has-selection) .perform-header,
+body[data-theme] .performance-panel:not(.perform-has-selection) .perform-header{
+ height:72px!important;min-height:72px!important;max-height:72px!important;
+ flex:0 0 72px!important;box-sizing:border-box!important;
+}
+body .performance-panel:not(.perform-has-selection) .perform-header,
+body[data-theme] .performance-panel:not(.perform-has-selection) .perform-header{
+ display:grid!important;grid-template-columns:minmax(0,1fr) auto auto auto auto!important;
+ grid-template-rows:18px 34px!important;align-content:start!important;
+ gap:3px 5px!important;padding:6px 7px!important;
+}
+body .performance-panel:not(.perform-has-selection) .perform-header strong{
+ grid-column:1!important;grid-row:1!important;align-self:center!important;
+}
+body .performance-panel:not(.perform-has-selection) .perform-header #perform-summary{
+ grid-column:2/6!important;grid-row:1!important;max-width:none!important;
+ text-align:right!important;font-size:10px!important;
+}
+body .performance-panel:not(.perform-has-selection) .perform-header #perform-show{grid-column:2!important;grid-row:2!important}
+body .performance-panel:not(.perform-has-selection) .perform-header #perform-follow{grid-column:3!important;grid-row:2!important}
+body .performance-panel:not(.perform-has-selection) .perform-header #perform-reset{grid-column:4!important;grid-row:2!important}
+body .performance-panel:not(.perform-has-selection) .perform-header #perform-help{grid-column:5!important;grid-row:2!important}
+body .performance-panel .perform-detail,body[data-theme] .performance-panel .perform-detail{
+ height:72px!important;min-height:72px!important;max-height:72px!important;
+ grid-template-rows:20px 21px 20px!important;gap:2px 4px!important;padding:3px 6px!important;
+}
+body .performance-panel .perform-detail button{min-height:20px!important;height:20px!important}
+body .performance-panel .perform-detail #perform-dialog-gain{min-height:21px!important;height:21px!important}
+body .performance-panel .perform-detail .perform-dialog-step-actions button{min-height:21px!important;height:21px!important}
+body .performance-panel .perform-detail #perform-dialog-neutral{min-height:20px!important;height:20px!important}
