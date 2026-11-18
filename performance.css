@@ -595,3 +595,13 @@ body .perform-detail .perform-dialog-step-actions{gap:2px!important}
 body .perform-detail .perform-dialog-step-actions button{
   min-width:32px!important;padding:2px!important;
 }
+
+/* Keep instrument labels attached to the scrolling viewport in the browser's
+   own compositor. JS-driven absolute left offsets caused horizontal jitter. */
+body .perform-lane .perform-controls,
+body .perform-lane.perform-idle .perform-controls{
+  position:sticky!important;left:0!important;top:auto!important;
+  bottom:auto!important;height:24px!important;
+  transform:none!important;will-change:auto!important;
+}
+body .perform-lane .perform-track{margin-left:0!important}
