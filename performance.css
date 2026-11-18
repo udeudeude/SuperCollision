@@ -417,3 +417,18 @@ body .perform-lane.perform-selected .perform-controls{
   body .perform-lane .perform-name{font-size:10px}
   body .perform-lane .perform-voices{font-size:8px}
 }
+
+/* Safari: anchor labels to the visible viewport rather than relying on
+   sticky descendants of a max-content timeline. */
+body .perform-lane{position:relative}
+body .perform-lane .perform-controls,body .perform-lane.perform-idle .perform-controls{
+  position:absolute!important;left:var(--perform-scroll-x,0px)!important;
+  top:0;bottom:0;height:24px;z-index:8;
+  border-right:1px solid var(--perform-border);
+}
+body .perform-lane .perform-track{margin-left:var(--perform-left)}
+body .perform-lane .perform-voices{display:none}
+body .perform-lane .perform-name,body .perform-lane.perform-idle .perform-name{
+  flex:1 1 auto!important;max-width:100%!important;
+  padding:0 4px!important;line-height:22px!important;
+}
