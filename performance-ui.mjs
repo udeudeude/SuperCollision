@@ -44,6 +44,10 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     <div class="perform-dialog-gain-line">
       <label for="perform-dialog-gain">Level <output id="perform-dialog-gain-value">100%</output></label>
       <input id="perform-dialog-gain" type="range" min="0" max="2" step=".01" value="1">
+      <div class="perform-dialog-step-actions">
+        <button type="button" id="perform-dialog-minus">−5%</button>
+        <button type="button" id="perform-dialog-plus">+5%</button>
+      </div>
     </div>
     <section id="perform-dialog-parameters">
       <h3>Sound parameters</h3>
@@ -79,11 +83,17 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   function updateDialog(){
     if(!selectedInstrument)return;
     const st=journal.stateFor(selectedInstrument);
+    const compatible=journal.compatible(selectedInstrument);
+    gainControl.disabled=!compatible;
+    muteControl.disabled=!compatible;
+    soloControl.disabled=!compatible||!journal.safeSolo();
+    mixDialog.querySelector('#perform-dialog-neutral').disabled=!compatible;
+    for(const id of ['#perform-dialog-minus','#perform-dialog-plus'])
+      mixDialog.querySelector(id).disabled=!compatible;
     gainControl.value=String(st.gain);
     gainOutput.textContent=Math.round(st.gain*100)+'%';
     muteControl.setAttribute('aria-pressed',String(st.muted));
     muteControl.textContent=st.muted?'Unmute':'Mute';
-    soloControl.disabled=!journal.safeSolo();
     soloControl.setAttribute('aria-pressed',String(st.solo));
     soloControl.textContent=st.solo?'Unsolo':'Solo';
   }
@@ -91,7 +101,9 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     selectedInstrument=name;
     mixDialog.querySelector('#perform-dialog-title').textContent=name;
     mixDialog.querySelector('#perform-dialog-info').textContent=
-      'Level 100% preserves the instrument’s original amplitude. Mute silences it; Solo silences other controllable instruments.';
+      journal.compatible(name)?
+        '100% preserves the original level. Mute silences this instrument; Solo silences other controllable instruments.':
+        'This instrument does not expose a numeric amplitude control; sound parameters may still be adjustable.';
     const params=journal.defs.get(name)?.params||{};
     const keys=Object.keys(params).filter(k=>k!=='amp'&&Number.isFinite(params[k]));
     paramSection.hidden=!keys.length;
@@ -107,6 +119,14 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     journal.gain(selectedInstrument,Number(gainControl.value));
     updateDialog();schedule();
   });
+  for(const [id,direction] of [['#perform-dialog-minus',-1],['#perform-dialog-plus',1]]){
+    mixDialog.querySelector(id).addEventListener('click',()=>{
+      if(!selectedInstrument)return;
+      const original=journal.stateFor(selectedInstrument).gain;
+      journal.gain(selectedInstrument,Math.round((original+direction*.05)*100)/100);
+      updateDialog();schedule();
+    });
+  }
   muteControl.addEventListener('click',()=>{
     if(!selectedInstrument)return;
     journal.mute(selectedInstrument,!journal.stateFor(selectedInstrument).muted);
@@ -208,11 +228,13 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       dom.solo.disabled=!row.compatible||!journal.safeSolo();
       dom.solo.setAttribute('aria-pressed',String(row.solo));
       dom.solo.classList.toggle('selected',row.solo);
-      dom.level.disabled=!row.compatible;
-      dom.level.textContent=Math.round(row.gain*100)+'%';
+      const tunable=Object.entries(row.params).some(([key,val])=>
+        key!=='amp'&&Number.isFinite(val));
+      dom.level.disabled=!row.compatible&&!tunable;
+      dom.level.textContent=row.compatible?Math.round(row.gain*100)+'%':'TUNE';
       dom.level.title=row.compatible?
-        'Open full-size level and sound controls for '+row.name:
-        'No exposed numeric amp control in this instrument';
+        'Open large level and sound controls for '+row.name:
+        'Edit available sound parameters for '+row.name;
       if(mixDialog.open&&selectedInstrument===row.name)updateDialog();
     }
     // Preserve the existing nodes and controls. Reorder only when the user
