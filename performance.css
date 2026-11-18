@@ -293,3 +293,6 @@ body .perform-help-dialog p{font-size:13px;margin:9px 0}
 @media(prefers-reduced-motion:reduce){
   body .perform-lane{transition:none}
 }
+
+body .perform-dialog-step-actions{display:flex;gap:8px;margin-bottom:12px}
+body .perform-dialog-step-actions button{flex:1;min-height:46px}
