@@ -7,7 +7,7 @@ Production: https://supercollision.pages.dev/ (Cloudflare Pages project `superco
 - GitHub source: `main`.
 - Compiled deployment: `pages-build`, configured as the Cloudflare production branch.
 - The WebAssembly runtime is committed to `pages-build`. Small frontend releases **must preserve it**.
-- The historical `lab-build` preview was used to develop and test offline functionality. It is a branch preview of the same Cloudflare Pages project, not a second project.
+- The historical `lab-build` preview was used to develop and test offline functionality. Its GitHub branch and the experimental source branch were retired after the user confirmed data migration. There was never a separate Cloudflare Pages project; any previously deployed preview alias is obsolete.
 
 ## Tested routine updates
 
@@ -42,13 +42,8 @@ Use the existing Git-connected **Pages** project, not a new Worker.
 
 ## iPhone acceptance and data preservation
 
-The main address and the former lab preview are **different origins with separate browser storage**. Safari and installed Home Screen web apps may also have separate storage.
+The user confirmed the unified production app works on iPhone and that wanted Lab compositions/recordings were backed up or transferred before experimental GitHub branches were retired.
 
-Before deleting a lab icon, branch, or preview deployment:
+Safari and installed Home Screen applications can use separate browser storage. Preserve the app's explicit user-initiated Files backups and Wi-Fi-first, consent-required download policy for large resources. Never clear website data merely to update the application.
 
-1. In each lab installation holding irreplaceable work, export **FILE → STORAGE → Backup all compositions** and any recordings to the iPhone Files app.
-2. Open the main website, install its approximately 8 MB offline pack only with explicit consent on Wi-Fi, and test POWER, RUN, STOP, offline reload, and Home Screen cold reopening.
-3. Restore laboratory compositions into the appropriate main installation from the Files backup; verify the contents.
-4. Retire old lab deployments only after the user confirms main-site success and the required exports.
-
-Do not clear website data as an update mechanism. The main application's existing origin and installed Home Screen identity should remain stable.
+Historical Lab previews may still exist as immutable Cloudflare deployments or aliases; they are no longer a development or production target. Do not delete or reconfigure the existing `supercollision` Cloudflare Pages production project.
