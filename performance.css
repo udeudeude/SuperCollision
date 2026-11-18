@@ -500,3 +500,45 @@ body .perform-detail .perform-dialog-actions button[aria-pressed=true]{
 body .perform-detail button{font-size:11px;min-height:30px;height:30px;padding:3px 6px}
 body .perform-detail .perform-dialog-gain-line{grid-column:1/3}
 body .perform-detail .perform-dialog-step-actions{grid-column:3/5}
+
+/* Inspector final alignment, including all essential touch controls. */
+body .perform-detail,body[data-theme] .perform-detail{
+  grid-template-columns:minmax(0,1fr) auto auto auto auto;
+}
+body .perform-detail h2{grid-column:1;grid-row:1}
+body .perform-detail #perform-dialog-mute{
+  display:block;grid-column:2;grid-row:1;min-width:45px
+}
+body .perform-detail #perform-dialog-solo{
+  display:block;grid-column:3;grid-row:1;min-width:42px
+}
+body .perform-detail #perform-dialog-parameters-toggle:not([hidden]){
+  grid-column:4;grid-row:1;min-width:45px
+}
+body .perform-detail #perform-dialog-close{
+  grid-column:5;grid-row:1;min-width:45px
+}
+body .perform-detail .perform-dialog-gain-line{
+  grid-column:1/4;grid-row:2;min-width:0
+}
+body .perform-detail .perform-dialog-step-actions{
+  grid-column:4/6;grid-row:2
+}
+body .perform-detail #perform-dialog-parameters{
+  grid-column:1/6;grid-row:2;display:flex;align-items:center;gap:6px
+}
+body .perform-detail #perform-dialog-parameters .perform-dialog-param-line{
+  flex:0 0 auto;min-width:95px
+}
+body .perform-detail #perform-dialog-parameters #perform-dialog-param-range{
+  flex:1;min-width:50px;margin:0
+}
+@media(max-width:420px){
+  body .perform-detail,body[data-theme] .perform-detail{gap:3px;padding:5px}
+  body .perform-detail h2{font-size:11px}
+  body .perform-detail button{font-size:9px;padding:2px 4px}
+  body .perform-detail #perform-dialog-mute,
+  body .perform-detail #perform-dialog-solo,
+  body .perform-detail #perform-dialog-close{min-width:38px}
+  body .perform-detail .perform-dialog-gain-line label{font-size:10px}
+}
