@@ -362,3 +362,58 @@ body .perform-lane.perform-selected .perform-controls{
   background:color-mix(in srgb,var(--voice-color) 16%,var(--perform-bg))
 }
 body .perform-lane.perform-selected .perform-name{text-decoration:underline;text-underline-offset:3px}
+
+/* Mix polish: a calm two-tier toolbar and permanently readable lane labels. */
+body .perform-header,body[data-theme] .perform-header{
+  display:grid;grid-template-columns:minmax(0,1fr) auto auto auto auto;
+  grid-template-rows:18px 34px;align-items:center;gap:4px 6px;
+  height:auto;min-height:0;flex:0 0 auto;padding:7px 8px 8px;
+}
+body .perform-header strong,body[data-theme] .perform-header strong{
+  display:block;grid-column:1;grid-row:1;font:800 11px/1 ui-monospace,monospace;
+}
+body .perform-header #perform-summary,body[data-theme] .perform-header #perform-summary{
+  grid-column:2/-1;grid-row:1;text-align:right;max-width:100%;
+  font:10px/1.2 ui-monospace,monospace;white-space:nowrap;
+}
+body .perform-header #perform-show{grid-column:2;grid-row:2}
+body .perform-header #perform-follow{grid-column:3;grid-row:2}
+body .perform-header #perform-reset{grid-column:4;grid-row:2}
+body .perform-header #perform-help{grid-column:5;grid-row:2}
+body .perform-header button,body[data-theme] .perform-header button{
+  height:34px;min-height:34px;min-width:34px;padding:3px 8px;
+  border-radius:5px;font-size:10px;letter-spacing:0;
+}
+body .perform-header #perform-follow{height:34px;min-height:34px;min-width:78px}
+body .perform-header #perform-reset{min-width:72px}
+body .perform-header #perform-help{min-width:34px}
+body .perform-axis-label{font-size:9px;letter-spacing:.02em}
+body .perform-lane,body .perform-lane.perform-resting,
+body .perform-lane.perform-idle{min-width:calc(var(--perform-left) + var(--track-width,500px))}
+body .perform-lane .perform-controls,body .perform-lane.perform-idle .perform-controls{
+  display:flex!important;position:sticky!important;left:0;z-index:5;
+  flex:0 0 var(--perform-left)!important;width:var(--perform-left)!important;
+  min-width:var(--perform-left)!important;max-width:var(--perform-left);
+  align-items:center;justify-content:flex-start;visibility:visible!important;
+  background:var(--perform-bg);box-sizing:border-box;overflow:hidden;
+}
+body .perform-lane .perform-name,body .perform-lane.perform-idle .perform-name{
+  display:block!important;visibility:visible!important;opacity:1!important;
+  position:relative;z-index:1;flex:1 1 auto;min-width:0;
+  height:22px;line-height:22px;color:var(--voice-color);
+  font-size:11px;font-weight:800;text-align:left;
+}
+body .perform-lane .perform-voices{font-size:9px;white-space:nowrap}
+body .perform-lane.perform-selected .perform-controls{
+  background:color-mix(in srgb,var(--voice-color) 14%,var(--perform-bg))
+}
+@media(max-width:420px){
+  body{--perform-left:116px}
+  body .perform-header,body[data-theme] .perform-header{gap:4px;padding:6px}
+  body .perform-header #perform-summary{font-size:9px}
+  body .perform-header button,body[data-theme] .perform-header button{padding:2px 5px}
+  body .perform-header #perform-follow{min-width:74px}
+  body .perform-header #perform-reset{min-width:64px}
+  body .perform-lane .perform-name{font-size:10px}
+  body .perform-lane .perform-voices{font-size:8px}
+}

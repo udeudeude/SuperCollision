@@ -402,9 +402,8 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       if(existing.length!==bars.length||existing.some((el,i)=>el!==bars[i]))
         dom.track.replaceChildren(...bars);
     }
-    summary.textContent=rows.length+(showAll?' instruments':' sounding')+
-      ' · '+events.length+' notes · '+formatTime((t-journal.zero)/1000)+
-      (stopped?' · STOPPED':'');
+    summary.textContent=rows.length+' instruments · '+events.length+' notes'+
+      (stopped?' · Stopped':'');
     panel.classList.toggle('perform-stopped',stopped);
     const right=Math.max(0,scroller.scrollWidth-scroller.clientWidth);
     if(follow&&(!pointerStart||!pointerStart.horizontal)){
