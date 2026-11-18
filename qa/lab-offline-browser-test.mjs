@@ -280,6 +280,14 @@ try{
   const noteLevel=await lane.locator('.perform-event').first().evaluate(
     el=>el.style.getPropertyValue('--note-level'));
   assert.equal(noteLevel,'40%','Declared amplitude is not represented correctly');
+  await lane.locator('.perform-event').first().click();
+  assert(await page.locator('.perform-note-dialog').isVisible(),
+    'Tapping an event should reveal its actual known parameters');
+  assert.equal(await page.locator('#perform-note-frequency').textContent(),'240 Hz');
+  assert.equal(await page.locator('#perform-note-amplitude').textContent(),'0.16');
+  assert((await page.locator('.perform-note-dialog').textContent()).includes('not a measured waveform'),
+    'Note details must identify that coded amplitude is not captured audio');
+  await page.locator('#perform-note-close').click();
   await lane.locator('.perform-level').click();
   assert(await page.locator('.perform-mix-dialog:not(.perform-help-dialog)').isVisible(),
     'Wide gain and parameter dialog did not open');
