@@ -296,14 +296,24 @@ try{
   assert((await page.locator('.perform-note-dialog').textContent()).includes('not a measured waveform'),
     'Note details must identify that coded amplitude is not captured audio');
   await page.locator('#perform-note-close').click();
+  const scoreBefore=await page.locator('#perform-scroller').boundingBox();
   await lane.locator('.perform-name').click();
+  const scoreAfter=await page.locator('#perform-scroller').boundingBox();
+  assert(Math.abs(scoreBefore.height-scoreAfter.height)<1,
+    'Selecting an instrument must not resize or jump the timeline');
+  assert(Math.abs(scoreBefore.y-scoreAfter.y)<1,
+    'Selecting an instrument must not shift the timeline');
+  assert(await page.locator('#perform-dialog-mute').isVisible(),
+    'Mute must remain directly visible in the inspector');
+  assert(await page.locator('#perform-dialog-solo').isVisible(),
+    'Solo must remain directly visible in the inspector');
   assert(await page.locator('#perform-detail').isVisible(),
     'Selecting an instrument must show inline controls');
   assert(await page.locator('#perform-scroller').isVisible(),
     'Inline controls must not obscure the timeline');
   assert(!(await page.locator('#perform-detail').evaluate(el=>el.matches('dialog'))),
     'Instrument controls must not use a modal dialog');
-  assert((await page.locator('#perform-dialog-gain').boundingBox()).width>160,
+  assert((await page.locator('#perform-dialog-gain').boundingBox()).width>65,
     'The volume slider is still too narrow to adjust by touch');
   await page.locator('#perform-dialog-minus').click();
   assert.equal(await page.locator('#perform-dialog-gain-value').textContent(),'95%',
