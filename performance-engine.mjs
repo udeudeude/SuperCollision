@@ -34,14 +34,18 @@ export class PerformanceJournal{
     this.now=now;this.onChange=onChange;this.send=send;
     this.nodes=new Map();this.events=[];this.defs=new Map();this.states=new Map();
     this.zero=now();this.composition=null;this.source='';this.enabled=true;
+    this.stoppedAt=null;
     this._unknown=0;this._replies=0;
   }
   changed(){this.onChange(this)}
+  // Stop freezes the timeline independently of the browser's wall clock.
+  timelineNow(){return this.stoppedAt??this.now()}
   setSource(name,source){
     this.composition=name;this.source=source;
     this.changed();
   }
   evaluation(name,whole,submitted,start=1){
+    this.stoppedAt=null;
     this.setSource(name,whole);
     const index=indexSource(whole),end=start+sourceLine(submitted)-1;
     for(const [key,site] of index.defs){
@@ -75,7 +79,8 @@ export class PerformanceJournal{
     for(const e of this.events){
       if(e.composition!==this.composition)continue;
       if(!map.has(e.name))map.set(e.name,{name:e.name,count:0,last:0,slot:e.slot,firstSeen:map.size});
-      const row=map.get(e.name);row.count++;row.last=Math.max(row.last,e.start||e.request);
+      const row=map.get(e.name);row.count++;
+      row.last=Math.max(row.last,e.end??e.start??e.request);
     }
     for(const n of this.nodes.values()){
       if(n.composition!==this.composition||n.ended)continue;
@@ -96,7 +101,10 @@ export class PerformanceJournal{
       return a.firstSeen-b.firstSeen;
     }).map(row=>{
       const st=this.stateFor(row.name),nodes=this.active(row.name).filter(n=>n.composition===this.composition);
-      return {...row,active:nodes.length,compatible:this.compatible(row.name),
+      return {...row,active:nodes.length,
+        // Remain expanded for a grace interval after the last sounding note.
+        restingFor:nodes.length?0:Math.max(0,this.timelineNow()-row.last),
+        compatible:this.compatible(row.name),
         params:this.defs.get(row.name)?.params||{},gain:st.gain,muted:st.muted,solo:st.solo,
         currentControls:st.controls};
     });
@@ -114,6 +122,7 @@ export class PerformanceJournal{
     for(let i=4;i+1<args.length;i+=2){
       if(typeof args[i]==='string'&&finite(args[i+1]))params[args[i]]=args[i+1];
     }
+    this.stoppedAt=null;
     const t=this.now(),owner=def?.site?.composition||this.composition||'unmapped';
     const site=def?.site||null;
     const prior=this.nodes.get(id);if(prior&&!prior.ended)this._end(id,t);
@@ -225,14 +234,18 @@ export class PerformanceJournal{
       if(this.compatible(n.name)&&finite(n.originalAmp)&&this.effectiveGain(n.name)!==1)
         this.send(encodeOsc('/n_set',[n.id,'amp',n.originalAmp]));
     }
-    for(const st of this.states.values()){st.gain=1;st.muted=false;st.solo=false;st.controls={}}
+    // Sound parameter edits are not gain/mute/solo changes. Do not claim to
+    // revert them when RESET MIX is pressed.
+    for(const st of this.states.values()){st.gain=1;st.muted=false;st.solo=false}
     this.changed();
   }
   observe(on){
     if(!on)this.reset();this.enabled=!!on;this.changed();
   }
   stop(){
-    for(const id of this.nodes.keys())this._end(id,this.now());
+    const time=this.now();
+    this.stoppedAt=time;
+    for(const id of this.nodes.keys())this._end(id,time);
     this.reset();
   }
   eventsForCurrent(){return this.events.filter(e=>e.composition===this.composition&&e.start!==null)}
