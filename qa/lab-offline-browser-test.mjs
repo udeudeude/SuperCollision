@@ -263,7 +263,7 @@ try{
   await page.evaluate(async()=>{
     const {encodeOsc}=await import('./performance-engine.mjs');
     const timeline=window.SCTimeline, journal=timeline.journal;
-    const source=String.raw`SynthDef(\\uxMeter, { |out=0, freq=240, amp=0.16, cutoff=900|
+    const source=String.raw`SynthDef(\uxMeter, { |out=0, freq=240, amp=0.16, cutoff=900|
       Out.ar(out, SinOsc.ar(freq, 0, amp) ! 2);
     }).add;`;
     timeline.evaluation(journal.composition||'Default',source,source,1);
