@@ -672,3 +672,12 @@ body[data-theme] .performance-panel:not(.perform-has-selection) .perform-header{
  display:flex!important;align-items:center!important;gap:5px!important;
  height:44px!important;min-height:44px!important;max-height:44px!important;flex:0 0 44px!important;
 }
+
+/* Selection must not move the timeline: keep the Mix toolbar geometry fixed. */
+body .performance-panel .perform-header,
+body[data-theme] .performance-panel .perform-header,
+body .performance-panel.perform-has-selection .perform-header,
+body[data-theme] .performance-panel.perform-has-selection .perform-header{
+ height:96px!important;min-height:96px!important;max-height:96px!important;
+ flex:0 0 96px!important;
+}
