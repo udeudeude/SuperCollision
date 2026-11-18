@@ -227,6 +227,28 @@ export class PerformanceJournal{
     for(const n of this.active(name))this.send(encodeOsc('/n_set',[n.id,control,value]));
     this.changed();return true;
   }
+  resetInstrument(name){
+    const st=this.stateFor(name);
+    const before=new Map(this.active().filter(n=>this.compatible(n.name)&&finite(n.originalAmp))
+      .map(n=>[n.id,{name:n.name,amp:n.originalAmp,factor:this.effectiveGain(n.name)}]));
+    st.gain=1;st.muted=false;st.solo=false;
+    const def=this.defs.get(name);
+    const controls={...st.controls};st.controls={};
+    for(const n of this.active(name)){
+      for(const key of Object.keys(controls)){
+        const original=def?.params?.[key];
+        if(finite(original))this.send(encodeOsc('/n_set',[n.id,key,original]));
+      }
+    }
+    for(const n of this.active()){
+      const old=before.get(n.id);
+      const previous=old?.factor??this.effectiveGain(n.name);
+      const next=this.effectiveGain(n.name);
+      if(finite(n.originalAmp)&&this.compatible(n.name)&&previous!==next)
+        this.send(encodeOsc('/n_set',[n.id,'amp',n.originalAmp*next]));
+    }
+    this.changed();return true;
+  }
   reset(){
     // Restore only notes whose gain was actually changed by a user mix control.
     // In the neutral state, RESET MIX and collapsing LIVE must be pure observers:

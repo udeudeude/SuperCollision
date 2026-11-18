@@ -42,7 +42,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     <div class="perform-dialog-actions">
       <button type="button" id="perform-dialog-mute">Mute</button>
       <button type="button" id="perform-dialog-solo">Solo</button>
-      <button type="button" id="perform-dialog-neutral">Original level</button>
+      <button type="button" id="perform-dialog-neutral">Reset instrument</button>
     </div>
     <div class="perform-dialog-gain-line">
       <label for="perform-dialog-gain">Level <output id="perform-dialog-gain-value">100%</output></label>
@@ -92,7 +92,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     gainControl.disabled=!compatible;
     muteControl.disabled=!compatible;
     soloControl.disabled=!compatible||!journal.safeSolo();
-    mixDialog.querySelector('#perform-dialog-neutral').disabled=!compatible;
+    mixDialog.querySelector('#perform-dialog-neutral').disabled=false;
     for(const id of ['#perform-dialog-minus','#perform-dialog-plus'])
       mixDialog.querySelector(id).disabled=!compatible;
     gainControl.value=String(st.gain);
@@ -150,7 +150,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     updateDialog();schedule();
   });
   mixDialog.querySelector('#perform-dialog-neutral').addEventListener('click',()=>{
-    if(selectedInstrument)journal.gain(selectedInstrument,1);
+    if(selectedInstrument){journal.resetInstrument(selectedInstrument);if(paramSelect.value)controlRange(selectedInstrument,paramSelect.value)}
     updateDialog();schedule();
   });
   paramSelect.addEventListener('change',()=>{
