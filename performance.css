@@ -581,3 +581,17 @@ body .perform-lane.perform-idle .perform-track{opacity:.65}
 @media (prefers-reduced-motion:reduce){
   body .perform-lane,body .perform-event{transition:none!important}
 }
+
+/* Ensure the inline level control remains finger-operable at 320px. */
+body .perform-detail .perform-dialog-gain-line{min-width:0!important}
+body .perform-detail .perform-dialog-gain-line label{
+  flex:0 0 70px!important;min-width:0;overflow:hidden;
+  font-size:10px!important;gap:3px!important;
+}
+body .perform-detail #perform-dialog-gain{
+  flex:1 1 90px!important;min-width:70px!important;width:auto!important;
+}
+body .perform-detail .perform-dialog-step-actions{gap:2px!important}
+body .perform-detail .perform-dialog-step-actions button{
+  min-width:32px!important;padding:2px!important;
+}
