@@ -1,0 +1,38 @@
+name: Retire obsolete SuperCollision Lab branches (one time)
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/retire-lab-once.yml'
+permissions:
+  contents: write
+jobs:
+  retire-lab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Validate production and retire old laboratory Git branches
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner,repo}=context.repo;
+            const production='da72799a2cb78ad12dfe510216dde32e85c9608c';
+            const targets=[
+              ['lab-build','bd466d97f512764d0061f21d9ecb681650601e33'],
+              ['feature/offline-safe-foundation','35a42faf0e587dc9d39a02aac3dcc78638f3a3cd']
+            ];
+            const published=await github.rest.git.getRef({owner,repo,ref:'heads/pages-build'});
+            if(published.data.object.sha!==production)
+              throw Error('Production build changed; refusing to delete any laboratory branch.');
+            for(const [name,expectedSha] of targets){
+              const ref='heads/'+name;
+              const current=await github.rest.git.getRef({owner,repo,ref});
+              if(current.data.object.sha!==expectedSha)
+                throw Error('Lab branch '+name+' changed; refusing deletion.');
+            }
+            for(const [name] of targets){
+              await github.rest.git.deleteRef({owner,repo,ref:'heads/'+name});
+              core.info('Retired obsolete lab branch: '+name);
+            }
+            core.info('Preserved main, pages-build and the merged PR history.');
