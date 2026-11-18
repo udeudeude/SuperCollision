@@ -195,7 +195,7 @@
     learn:document.getElementById('learning-host'),
     design:document.getElementById('sound-host')
   };
-  const paneDefaults={console:.46,perform:.52,learn:.48,design:.62};
+  const paneDefaults={console:.46,perform:.42,learn:.48,design:.62};
   const paneProperties={
     console:'--console-pane-size',
     perform:'--perform-pane-size',
