@@ -274,9 +274,9 @@ try{
   });
   await page.waitForSelector('.perform-lane[data-name="uxMeter"]');
   const lane=page.locator('.perform-lane[data-name="uxMeter"]');
-  assert((await lane.boundingBox()).height<70,'Mix lane is still excessively tall');
-  assert.equal(await lane.locator('.perform-mute').textContent(),'MUTE');
-  assert.equal(await lane.locator('.perform-solo').textContent(),'SOLO');
+  assert((await lane.boundingBox()).height<=25,'Compact Mix lane must fit within 24 pixels');
+  assert(!(await lane.locator('.perform-actions').isVisible()),
+    'Repeated mixer buttons must not crowd the score');
   assert(await lane.locator('.perform-event-level').count()>0,
     'Notes do not show nominal code amplitude');
   const noteLevel=await lane.locator('.perform-event').first().evaluate(
@@ -290,9 +290,13 @@ try{
   assert((await page.locator('.perform-note-dialog').textContent()).includes('not a measured waveform'),
     'Note details must identify that coded amplitude is not captured audio');
   await page.locator('#perform-note-close').click();
-  await lane.locator('.perform-level').click();
-  assert(await page.locator('dialog:has(#perform-dialog-gain)').isVisible(),
-    'Wide gain and parameter dialog did not open');
+  await lane.locator('.perform-name').click();
+  assert(await page.locator('#perform-detail').isVisible(),
+    'Selecting an instrument must show inline controls');
+  assert(await page.locator('#perform-scroller').isVisible(),
+    'Inline controls must not obscure the timeline');
+  assert(!(await page.locator('#perform-detail').evaluate(el=>el.matches('dialog'))),
+    'Instrument controls must not use a modal dialog');
   assert((await page.locator('#perform-dialog-gain').boundingBox()).width>160,
     'The volume slider is still too narrow to adjust by touch');
   await page.locator('#perform-dialog-minus').click();
@@ -302,7 +306,9 @@ try{
     'Sound controls should expose named synth parameters');
   await page.locator('#perform-dialog-close').click();
   await page.waitForTimeout(100);
-  assert.equal(await lane.locator('.perform-level').textContent(),'95%');
+  await lane.locator('.perform-name').click();
+  assert.equal(await page.locator('#perform-dialog-gain-value').textContent(),'95%');
+  await page.locator('#perform-dialog-close').click();
   assert.equal(await page.locator('#perform-follow').getAttribute('aria-pressed'),'true');
   const verticalStayedFollowing=await page.locator('#perform-scroller').evaluate(sc=>{
     const e=(type,x,y)=>sc.dispatchEvent(new PointerEvent(type,{
@@ -341,7 +347,7 @@ try{
   await page.waitForFunction(()=>
     document.querySelector('.perform-lane[data-name="uxMeter"]')?.classList.contains('perform-idle'),
     null,{timeout:3000});
-  await page.waitForTimeout(380); // Allow the intentional 280ms idle-height transition.
+  await page.waitForTimeout(100); // All score lanes remain compact.
   assert((await lane.boundingBox()).height<38,
     'A long-resting instrument row failed to shrink');
   const frozen=await page.evaluate(()=>{
