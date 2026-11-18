@@ -1,5 +1,22 @@
 # SuperCollision: canonical development handoff
 
+## Mix timeline and instrument-control redesign — 17 November 2026
+
+The user supplied a real iPhone screenshot of the MIX tab and requested ten linked usability improvements before beginning sampler work: reduce space, make Follow easy, don't disable Follow when scrolling vertically, clarify Reset/M/S/Parameters, improve touch controls, add informative event graphics, shrink idle rows, and freeze the moving timeline after STOP.
+
+Implemented on `main` (source files `performance-ui.mjs`, `performance-engine.mjs`, `performance.css`, `index.html`, `instrument-layout.js`):
+
+1. MIX defaults to 42% of available vertical space for new installations, while respecting existing user-saved divider sizes (double-tap the divider for the new default). Active rows are approximately 61 pixels tall; rows shrink smoothly to 28 pixels after nine seconds with no sounding notes. Inactivity uses real elapsed time even after STOP.
+2. Replaced cryptic M/S buttons with MUTE/SOLO and the tiny gain sliders with a level-percentage button opening a full-width touch slider, dedicated ±5% adjustment buttons, Mute/Solo buttons and accessible numeric sound-parameter controls. A help button explains all controls and the distinction between resetting mixer levels and altering instrument parameters.
+3. The FOLLOWING button is a much larger touch target. It becomes ↪ LIVE when a user deliberately rewinds horizontally more than 15 seconds. Vertical scrolling, automatic scrolling, and small accidental horizontal movements do not turn Follow off. Clicking ↪ LIVE returns immediately to the latest notes.
+4. STOP now freezes the journal’s visible playhead (`PerformanceJournal.timelineNow()`), including timeline width, event durations and time display. A new evaluation resumes forward time. Note ended events retain true timestamps.
+5. Colored event bars carry a height-fill indicator proportional to the note's **declared `amp` value** (not a measured waveform, signal peak or sound pressure). Longer bars label frequency. Tapping one opens a note detail dialog showing start, duration, frequency, and rounded code amplitude, with a separate link to the original source.
+6. Long compositions avoid costly per-frame rebuilding of immutable finished note bars and axis ticks.
+7. Updated `qa/performance-test.mjs` to verify stop freeze vs real-time idle aging, resume, safe Mute/Solo/parameter reset behavior and stable score ordering. Updated `qa/lab-offline-browser-test.mjs` to exercise accessible Mix dialogs, amplitude, Follow, and idle collapse at phone dimensions. Updated `qa/layout-check.mjs` to test the current Live resize grip and focused File menus instead of obsolete controls.
+8. A changed production release must pass offline audio-browser tests and the cellular download-policy guard in `.github/workflows/publish-ui.yml` before it can update `pages-build`. Several intermediate runs were deliberately blocked by newly added test assertions; the latest corrected build and responsive-layout check require final status verification. Never claim release success until the workflow, production branch and Cloudflare Pages checks pass.
+
+**Still needed:** confirm the new Mix screen on the actual iPhone, especially Follow swipes, 42-pixel Follow target, modal gain slider, idle rows and STOP behavior. Preserve existing composition storage, WebAssembly engine, and Wi-Fi-first opt-in policy. If the production publishing workflow fails, inspect its browser job log and correct the precise assertion or application issue before redeploying.
+
 ## Unified production application confirmed — 17 November 2026
 
 - **Single canonical website:** https://supercollision.pages.dev/. The user tested the promoted offline instrument and interface on iPhone and reported **"Worked great."** The user subsequently confirmed that important Lab compositions and recordings have been backed up or transferred.
