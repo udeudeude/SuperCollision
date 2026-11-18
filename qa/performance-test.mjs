@@ -82,19 +82,6 @@ assert.equal(journal.events[0].status,'ended');
 assert.equal(journal.getInstrumentRows().find(x=>x.name==='haze').active,0);
 assert.equal(journal.eventsForCurrent()[0].start,1100);
 assert.equal(journal.eventsForCurrent()[0].end,4800);
-// Stop must freeze the visible timeline even as performance.now advances.
-tick=5000;
-journal.stop();
-const frozenAt=journal.timelineNow();
-tick=21000;
-assert.equal(journal.timelineNow(),frozenAt,'Stop should freeze the timeline clock');
-assert.equal(journal.stoppedAt,5000);
-assert.equal(journal.getInstrumentRows().find(row=>row.name==='bell').restingFor,0,
-  'Stop should not instantly collapse all score rows');
-journal.evaluation('Test',program,program,1);
-assert.equal(journal.stoppedAt,null,'Submitting a new composition should resume timeline time');
-assert.equal(journal.timelineNow(),tick);
-
 // Reset Mix restores gain/mute/solo but does not claim to undo parameter
 // changes that have already been sent to the running synthesizer.
 assert.equal(journal.stateFor('haze').controls.brightness,.8);
@@ -109,6 +96,19 @@ assert.equal(journal.stateFor('haze').muted,false);
 const afterReset=sent.length;
 journal.reset();
 assert.equal(sent.length,afterReset,'RESET MIX at neutral must not overwrite unmodified server amplitude');
+// Stop must freeze the visible timeline even as performance.now advances.
+tick=5000;
+journal.stop();
+const frozenAt=journal.timelineNow();
+tick=21000;
+assert.equal(journal.timelineNow(),frozenAt,'Stop should freeze the timeline clock');
+assert.equal(journal.stoppedAt,5000);
+assert.equal(journal.getInstrumentRows().find(row=>row.name==='bell').restingFor,0,
+  'Stop should not instantly collapse all score rows');
+journal.evaluation('Test',program,program,1);
+assert.equal(journal.stoppedAt,null,'Submitting a new composition should resume timeline time');
+assert.equal(journal.timelineNow(),tick);
+
 journal.observe(false);
 assert.equal(sent.length,afterReset,'Collapsing LIVE at neutral must send no extra amplitude commands');
 const nBefore=journal.events.length;
