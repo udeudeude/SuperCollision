@@ -462,7 +462,8 @@ fileGroups.forEach(group=>{
   // A summary click changes the focused view synchronously. The native
   // details toggle event may be delivered later than the next browser test
   // or the next touch frame, leaving the Back control temporarily hidden.
-  group.querySelector('summary')?.addEventListener('click',()=>{
+  group.querySelector('summary')?.addEventListener('click',event=>{
+    event.preventDefault();
     const willOpen=!group.open;
     if(willOpen){
       for(const other of fileGroups)if(other!==group)other.open=false;
