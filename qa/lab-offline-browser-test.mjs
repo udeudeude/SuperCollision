@@ -139,6 +139,7 @@ try{
   const longStatus='EVALUATED L1–758 • execution succeeded • composition saved';
   await page.locator('#engine-status').evaluate((el,text)=>{el.textContent=text},longStatus);
   await page.locator('#engine-status-open').click();
+  console.log('Engine dialog diagnostic',await page.locator('#engine-status-dialog').evaluate(el=>({open:el.open,display:getComputedStyle(el).display,visibility:getComputedStyle(el).visibility,rect:el.getBoundingClientRect().toJSON(),button:document.querySelector('#engine-status-open').outerHTML})));
   await page.locator('#engine-status-dialog').waitFor({state:'visible',timeout:5000});
   assert(await page.locator('#engine-status-dialog').evaluate(el=>el.open),
     'The full engine status dialog did not open');
