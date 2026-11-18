@@ -542,3 +542,42 @@ body .perform-detail #perform-dialog-parameters #perform-dialog-param-range{
   body .perform-detail #perform-dialog-close{min-width:38px}
   body .perform-detail .perform-dialog-gain-line label{font-size:10px}
 }
+
+/* Live workbench: quieter hierarchy, compact instrument-grade control strip.
+   Keep the editor visible and avoid changing timeline/event semantics. */
+body .perform-header,body[data-theme] .perform-header{
+  height:66px!important;min-height:66px!important;max-height:66px!important;
+  flex:0 0 66px!important;padding:5px 8px!important;
+  grid-template-rows:15px 32px!important;row-gap:3px!important;
+  border-bottom-color:color-mix(in srgb,var(--perform-border) 60%,transparent);
+}
+body .perform-header strong{font-size:10px!important;letter-spacing:.1em!important}
+body .perform-header #perform-summary{font-size:9px!important;opacity:.72}
+body .perform-header button,body[data-theme] .perform-header button{
+  height:32px!important;min-height:32px!important;
+  border-radius:4px!important;font-weight:700!important;
+  border-color:color-mix(in srgb,var(--perform-border) 65%,transparent)!important;
+}
+body .perform-header #perform-follow[aria-pressed=false]{
+  outline:1px solid var(--perform-fg);outline-offset:-3px;
+}
+body .perform-header button:focus-visible,
+body .perform-name:focus-visible,
+body .perform-event:focus-visible{
+  outline:2px solid var(--perform-fg)!important;outline-offset:-2px;
+}
+body .perform-detail,body[data-theme] .perform-detail{
+  height:66px!important;min-height:66px!important;max-height:66px!important;
+  grid-template-rows:26px 30px!important;padding:3px 8px!important;
+}
+body .perform-detail button{min-height:26px!important;height:26px!important}
+body .perform-detail #perform-dialog-gain{height:30px!important;min-height:30px!important}
+body .perform-detail .perform-dialog-step-actions button{min-height:30px!important;height:30px!important}
+body .perform-detail #perform-dialog-info{display:none}
+body .perform-axis{border-bottom-color:color-mix(in srgb,var(--perform-border) 55%,transparent)}
+body .perform-lane{border-bottom-color:color-mix(in srgb,var(--perform-border) 35%,transparent)}
+body .perform-lane .perform-controls{border-right-color:color-mix(in srgb,var(--perform-border) 45%,transparent)}
+body .perform-lane.perform-idle .perform-track{opacity:.65}
+@media (prefers-reduced-motion:reduce){
+  body .perform-lane,body .perform-event{transition:none!important}
+}
