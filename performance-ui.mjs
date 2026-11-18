@@ -156,7 +156,8 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   helpDialog.innerHTML=`<h2>Using Mix</h2>
     <p><b>M</b> means Mute. <b>S</b> means Solo. Both require the instrument to expose a numeric amplitude control in its code.</p>
     <p>Tap the <b>100%</b> level button to adjust volume with a full-width slider, or change a sound parameter such as frequency or filter cutoff. These controls affect currently playing notes.</p>
-    <p><b>Reset levels</b> restores the original mixer volumes and clears Mute and Solo. It does not stop playback or undo sound-parameter edits.</p>
+    <p><b>All / Active</b> shows either every instrument ever played in the current composition or only instruments currently sounding.</p>
+    <p><b>↺ Levels</b> restores the original mixer volumes and clears Mute and Solo. It does not stop playback or undo sound-parameter edits.</p>
     <p><b>Following</b> keeps the newest events in view. Vertical scrolling leaves it on. Swipe backward over roughly 15 seconds of the timeline to pause following. Tap <b>↪ Live</b> to return.</p>
     <p>Each colored bar represents a synthesizer note. Its filled strip estimates the note’s declared amplitude from code, <b>not measured loudness or a waveform</b>. Tap a bar for its timing, frequency and code amplitude, plus a link to the instrument code.</p>
     <p>Quiet rows become compact after nine seconds. <b>Stop</b> freezes the musical timeline.</p>
@@ -363,7 +364,11 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       if(Math.abs(scroller.scrollLeft-right)>1)scroller.scrollLeft=right;
     }
     clearTimeout(timer);
-    if(panel.offsetParent!==null&&journal.enabled&&!stopped)timer=setTimeout(schedule,350);
+    // Once STOP freezes the playhead, keep repainting only until the last
+    // resting lane has smoothly compacted. This never advances note time.
+    const pendingIdle=rows.some(row=>row.active===0&&row.restingFor<IDLE_AFTER_MS);
+    if(panel.offsetParent!==null&&journal.enabled&&(!stopped||pendingIdle))
+      timer=setTimeout(schedule,stopped?550:350);
   }
   function schedule(){
     if(frame)return;frame=requestAnimationFrame(draw);
