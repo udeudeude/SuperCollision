@@ -296,3 +296,20 @@ body .perform-help-dialog p{font-size:13px;margin:9px 0}
 
 body .perform-dialog-step-actions{display:flex;gap:8px;margin-bottom:12px}
 body .perform-dialog-step-actions button{flex:1;min-height:46px}
+
+body .perform-event-label{
+  pointer-events:none;position:absolute;left:4px;right:2px;top:50%;
+  transform:translateY(-50%);z-index:1;
+  font:750 9px/1 ui-monospace,monospace;
+  white-space:nowrap;overflow:hidden;text-overflow:clip;
+  color:var(--perform-fg);text-shadow:0 1px 3px #000,0 -1px 3px #000
+}
+body .perform-note-dialog dl{
+  display:grid;grid-template-columns:minmax(105px,1fr) 1.4fr;
+  gap:8px 12px;margin:13px 0;font-size:13px;
+}
+body .perform-note-dialog dt{font-weight:750;opacity:.8}
+body .perform-note-dialog dd{margin:0;min-width:0;overflow-wrap:anywhere}
+body .perform-note-dialog .perform-dialog-step-actions button{
+  flex:1;min-width:120px
+}
