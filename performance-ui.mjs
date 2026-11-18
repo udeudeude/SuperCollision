@@ -199,7 +199,8 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     noteDialog.querySelector('#perform-note-frequency').textContent=
       Number.isFinite(event.params?.freq)?Math.round(event.params.freq)+' Hz':'Not available';
     noteDialog.querySelector('#perform-note-amplitude').textContent=
-      Number.isFinite(event.params?.amp)?String(event.params.amp):'Not available';
+      Number.isFinite(event.params?.amp)?
+        String(Number(event.params.amp.toPrecision(3))):'Not available';
     noteDialog.querySelector('#perform-note-code').disabled=!noteSource;
     if(!noteDialog.open)noteDialog.showModal();
   };
