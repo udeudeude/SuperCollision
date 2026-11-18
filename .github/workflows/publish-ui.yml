@@ -82,7 +82,11 @@ jobs:
           node --check source/lab-composition-vault.mjs
           node --check source/instrument-layout.js
           node --check source/live-activity.mjs
+          node --check source/performance-engine.mjs
+          node --check source/performance-ui.mjs
+          node --check source/qa/lab-offline-browser-test.mjs
           node source/qa/offline-policy-test.mjs
+          node source/qa/performance-test.mjs
           python3 - <<'PY'
           from pathlib import Path
           import json
