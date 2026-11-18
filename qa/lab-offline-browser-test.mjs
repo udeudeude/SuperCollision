@@ -275,6 +275,8 @@ try{
   await page.waitForSelector('.perform-lane[data-name="uxMeter"]');
   const lane=page.locator('.perform-lane[data-name="uxMeter"]');
   assert((await lane.boundingBox()).height<70,'Mix lane is still excessively tall');
+  assert.equal(await lane.locator('.perform-mute').textContent(),'MUTE');
+  assert.equal(await lane.locator('.perform-solo').textContent(),'SOLO');
   assert(await lane.locator('.perform-event-level').count()>0,
     'Notes do not show nominal code amplitude');
   const noteLevel=await lane.locator('.perform-event').first().evaluate(
