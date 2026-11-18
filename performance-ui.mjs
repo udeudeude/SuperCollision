@@ -32,8 +32,11 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     if(typeof amp!=='number'||!Number.isFinite(amp))return null;
     return Math.round(Math.min(100,Math.max(0,Math.sqrt(Math.abs(amp))*100)));
   };
-  const mixDialog=document.createElement('dialog');
-  mixDialog.className='perform-mix-dialog';
+  const mixDialog=document.createElement('section');
+  mixDialog.className='perform-mix-dialog perform-detail';
+  mixDialog.id='perform-detail';
+  mixDialog.hidden=true;
+  mixDialog.setAttribute('aria-label','Selected instrument controls');
   mixDialog.innerHTML=`<h2 id="perform-dialog-title">Instrument level</h2>
     <p id="perform-dialog-info"></p>
     <div class="perform-dialog-actions">
@@ -59,7 +62,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       <input id="perform-dialog-param-range" type="range" aria-label="Sound parameter value">
     </section>
     <button type="button" id="perform-dialog-close">Done</button>`;
-  document.body.append(mixDialog);
+  panel.append(mixDialog);
   const gainControl=mixDialog.querySelector('#perform-dialog-gain');
   const gainOutput=mixDialog.querySelector('#perform-dialog-gain-value');
   const muteControl=mixDialog.querySelector('#perform-dialog-mute');
@@ -112,7 +115,9 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     }));
     if(keys.length)controlRange(name,keys[0]);
     updateDialog();
-    if(!mixDialog.open)mixDialog.showModal();
+    mixDialog.hidden=false;
+    panel.classList.add('perform-has-selection');
+    for(const [key,dom] of lastRows)dom.lane.classList.toggle('perform-selected',key===name);
   };
   gainControl.addEventListener('input',()=>{
     if(!selectedInstrument)return;
@@ -150,17 +155,21 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     paramOutput.textContent=Number(paramRange.value).toFixed(/freq|cutoff|hz/i.test(paramSelect.value)?0:2);
     schedule();
   });
-  mixDialog.querySelector('#perform-dialog-close').addEventListener('click',()=>mixDialog.close());
-  mixDialog.addEventListener('close',()=>{selectedInstrument=null});
+  mixDialog.querySelector('#perform-dialog-close').textContent='Close controls';
+  mixDialog.querySelector('#perform-dialog-close').addEventListener('click',()=>{
+    selectedInstrument=null;mixDialog.hidden=true;
+    panel.classList.remove('perform-has-selection');
+    for(const dom of lastRows.values())dom.lane.classList.remove('perform-selected');
+  });
   const helpDialog=document.createElement('dialog');helpDialog.className='perform-mix-dialog perform-help-dialog';
   helpDialog.innerHTML=`<h2>Using Mix</h2>
     <p><b>Mute</b> silences an instrument. <b>Solo</b> silences other instruments so you can hear this one. Both require numeric amplitude controls in the instrument code.</p>
-    <p>Tap the <b>100%</b> level button to adjust volume with a full-width slider, or change a sound parameter such as frequency or filter cutoff. These controls affect currently playing notes.</p>
+    <p>Tap an instrument name to open its controls below the timeline. Adjust its level, Mute, Solo or sound parameters while the tracks remain visible.</p>
     <p><b>All / Active</b> shows either every instrument ever played in the current composition or only instruments currently sounding.</p>
     <p><b>↺ Levels</b> restores the original mixer volumes and clears Mute and Solo. It does not stop playback or undo sound-parameter edits.</p>
     <p><b>Following</b> keeps the newest events in view. Vertical scrolling leaves it on. Swipe backward over roughly 15 seconds of the timeline to pause following. Tap <b>↪ Live</b> to return.</p>
     <p>Each colored bar represents a synthesizer note. Its filled strip estimates the note’s declared amplitude from code, <b>not measured loudness or a waveform</b>. Tap a bar for its timing, frequency and code amplitude, plus a link to the instrument code.</p>
-    <p>Quiet rows become compact after nine seconds. <b>Stop</b> freezes the musical timeline.</p>
+    <p>All rows remain compact. <b>Stop</b> freezes the musical timeline.</p>
     <button type="button" id="perform-help-close">Close</button>`;
   document.body.append(helpDialog);
   helpDialog.querySelector('#perform-help-close').addEventListener('click',()=>helpDialog.close());
@@ -244,6 +253,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     level.setAttribute('aria-haspopup','dialog');
     // Compact overview: select an instrument to reveal its controls.
     title.title='Select '+r.name+' to adjust its sound';
+    title.setAttribute('aria-label','Select '+r.name+' controls');
     title.addEventListener('click',()=>openMix(r.name));
     actions.append(mute,solo,level);
     controls.append(title,info,actions);
@@ -253,6 +263,10 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   };
   function updateLanes(rows){
     const names=new Set(rows.map(r=>r.name));
+    if(selectedInstrument&&!names.has(selectedInstrument)){
+      selectedInstrument=null;mixDialog.hidden=true;
+      panel.classList.remove('perform-has-selection');
+    }
     for(const [name,dom] of lastRows){
       if(!names.has(name)){dom.lane.remove();lastRows.delete(name)}
     }
@@ -265,6 +279,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       dom.lane.classList.toggle('perform-resting',row.active===0);
       dom.lane.classList.toggle('perform-idle',row.active===0&&row.restingFor>=IDLE_AFTER_MS);
       dom.lane.classList.toggle('perform-muted',row.muted);
+      dom.lane.classList.toggle('perform-selected',row.name===selectedInstrument);
       dom.mute.disabled=!row.compatible;
       dom.mute.setAttribute('aria-pressed',String(row.muted));
       dom.mute.classList.toggle('selected',row.muted);
@@ -278,7 +293,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       dom.level.title=row.compatible?
         'Open large level and sound controls for '+row.name:
         'Edit available sound parameters for '+row.name;
-      if(mixDialog.open&&selectedInstrument===row.name)updateDialog();
+      if(!mixDialog.hidden&&selectedInstrument===row.name)updateDialog();
     }
     // Preserve the existing nodes and controls. Reorder only when the user
     // changes the filter or the underlying composition actually changes.
