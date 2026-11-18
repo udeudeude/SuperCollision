@@ -139,16 +139,14 @@ try{
   await page.locator('#file-menu > summary').click();
 
 
-  // The compact engine status supports sideways swiping plus a full
-  // readable dialog, rather than permanently hiding execution details.
+  // Engine status is directly scrollable; no modal or click target.
   const longStatus='EVALUATED L1–758 • execution succeeded • composition saved';
   await page.locator('#engine-status').evaluate((el,text)=>{el.textContent=text},longStatus);
-  await page.locator('#engine-status-open').click();
-  await page.locator('#engine-status-dialog').waitFor({state:'visible',timeout:5000});
-  assert(await page.locator('#engine-status-dialog').evaluate(el=>el.open),
-    'The full engine status dialog did not open');
-  assert.equal(await page.locator('#engine-status-full').textContent(),longStatus);
-  await page.locator('#engine-status-close').click();
+  assert.equal(await page.locator('#engine-status').textContent(),longStatus);
+  assert.equal(await page.locator('#engine-status-open').evaluate(el=>el.tagName),'DIV');
+  assert.equal(await page.locator('#engine-status-dialog').count(),0);
+  assert(await page.locator('#engine-status').evaluate(el=>getComputedStyle(el).overflowX==='auto'),
+    'Engine status must scroll horizontally');
 
   // Resize the editor and Console with the same pointer path as an iPhone
   // touch gesture, then check the persisted proportion after a reload.
