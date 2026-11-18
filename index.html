@@ -223,6 +223,7 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 <div class="projectbar"><div class="composition-picker"><button id="project-toggle" type="button" class="secondary" aria-expanded="false" aria-controls="project-list">Composition ▾</button><div id="project-list" class="project-list" hidden role="listbox" aria-label="Saved compositions"></div></div><select id="projects" aria-label="Saved compositions" hidden></select><details class="menu" id="file-menu">
 <summary aria-label="Composition actions">FILE ▾</summary>
 <div class="menu-items" id="file-menu-items" role="group" aria-label="File commands">
+  <button id="file-menu-back" class="secondary" type="button" hidden>‹ All FILE sections</button>
   <button id="new-project" class="secondary">New composition</button>
   <button id="save-as-project" class="secondary" type="button" title="Create a separate named copy in this browser without replacing your current composition">Save as...</button>
   <button id="rename-project" class="secondary">Rename composition</button>
@@ -260,6 +261,14 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
       <button id="backup-projects" class="secondary">Backup all compositions</button>
       <button id="restore-projects" class="secondary">Restore backup</button>
       <button id="storage-info" class="secondary">Storage / cleanup</button>
+      <button id="lab-offline-download" class="secondary" type="button">Make available offline</button>
+      <button id="lab-offline-diagnostics" class="secondary" type="button" aria-controls="lab-offline-report" aria-expanded="false">Check offline readiness</button>
+      <section id="lab-offline-report" role="status" aria-live="polite" hidden></section>
+      <span id="lab-offline-status" class="muted" role="status">Offline copy not installed</span>
+      <p id="lab-home-screen-storage" class="muted" hidden>Home Screen apps store offline files and compositions separately from Safari. Prepare offline here while on Wi-Fi. Transfer compositions using Backup all compositions and Restore backup in Files.</p>
+      <span id="lab-vault-status" class="muted" role="status">Checking extra local copy...</span>
+      <button id="lab-vault-recover" class="secondary" type="button" hidden>Recover extra local copy</button>
+      <button id="lab-vault-keep" class="secondary" type="button" hidden>Keep current compositions</button>
     </div>
   </details>
   <details class="file-submenu">
@@ -287,7 +296,10 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 
 <div class="editor-frame"><div id="line-gutter" aria-hidden="true"><div id="line-inner"></div></div><div class="code-stack"><div id="activity-overlay" aria-hidden="true"></div><pre id="highlight-layer" aria-hidden="true"></pre><textarea id="code" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="SuperCollider code editor"></textarea></div><div id="code-zoom-indicator" class="code-zoom-indicator" hidden aria-live="off">CODE 100%</div>
 <aside id="live-panel" class="live-panel" aria-label="Live musical activity">
-  <div class="live-panel-head"><button id="live-panel-toggle" type="button" aria-expanded="true"><span class="live-panel-label">LIVE</span><span id="activity-status" aria-live="off">●0 ✦0</span><svg class="live-panel-icon" viewBox="0 0 14 14" aria-hidden="true"><path d="m3 9 4-4 4 4" stroke="currentColor" fill="none" stroke-width="1.6"/></svg></button><button id="live-panel-expand" type="button" aria-pressed="false" aria-label="Show more Live activity" title="Show more Live activity">MORE ↑</button></div>
+  <div id="live-panel-resizer" role="separator" tabindex="0" aria-orientation="horizontal"
+       aria-label="Drag to resize Live activity height" aria-valuemin="64" aria-valuemax="400"
+       aria-valuenow="82" title="Drag up to enlarge Live; double-tap to reset"><span aria-hidden="true"></span></div>
+  <div class="live-panel-head"><button id="live-panel-toggle" type="button" aria-expanded="true"><span class="live-panel-label">LIVE</span><span id="activity-status" aria-live="off">●0 ✦0</span><svg class="live-panel-icon" viewBox="0 0 14 14" aria-hidden="true"><path d="m3 9 4-4 4 4" stroke="currentColor" fill="none" stroke-width="1.6"/></svg></button></div>
   <div id="live-panel-content" class="live-panel-content"><div id="live-instruments" class="live-instruments"></div><div id="live-routines" class="live-routines" hidden></div></div>
 </aside></div>
 <div class="toolbar"><button id="evaluate" disabled><svg class="transport-icon" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 1.2L10.5 6L2.5 10.8Z" fill="currentColor"/></svg>RUN</button><button id="run-region" class="secondary" disabled title="Run highlighted code or the current line" aria-label="Run selected code, or the current line if nothing is selected">SELECTED</button><button id="panic" class="secondary" disabled>■ STOP</button><button id="engine" class="secondary">POWER</button><button id="record" class="secondary" disabled>● REC</button><button id="record-stop" class="secondary" disabled><svg class="transport-icon" viewBox="0 0 14 14" width="14" height="14" aria-hidden="true"><path d="M7 1.5v7m-3-3 3 3 3-3M2 10.5v2h10v-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg>SAVE</button><span id="save-status" class="muted" role="status">Saved</span></div>
@@ -295,8 +307,13 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 <input id="file-input" type="file" hidden><input id="backup-input" type="file" hidden>
 <pre id="syntax-preview" hidden></pre>
 </div>
-<div class="panel console-shell"><div class="console-bar"><div class="inspector-modes" role="group" aria-label="Lower panel"><button type="button" id="inspector-code" aria-pressed="true">CODE</button><button type="button" id="inspector-console" aria-pressed="false">CONSOLE</button><button type="button" id="inspector-perform" aria-pressed="false" title="Instrument mixer and event timeline">MIX</button><button type="button" id="inspector-learn" aria-pressed="false">LEARN</button><button type="button" id="inspector-design" aria-pressed="false" title="Generate SuperCollider sounds from descriptions">GENERATE</button></div><p id="engine-status" role="status">Engine off · Press POWER</p></div>
+<div id="workspace-divider" role="separator" tabindex="0" aria-orientation="horizontal"
+ aria-label="Resize code editor and console" aria-valuemin="20" aria-valuemax="75" aria-valuenow="46"
+ title="Drag to resize editor and console; double-tap to reset"><span aria-hidden="true"></span></div>
+<div class="panel console-shell"><div class="console-bar"><div class="inspector-modes" role="group" aria-label="Lower panel"><button type="button" id="inspector-code" aria-pressed="true">CODE</button><button type="button" id="inspector-console" aria-pressed="false">CONSOLE</button><button type="button" id="inspector-perform" aria-pressed="false" title="Instrument mixer and event timeline">MIX</button><button type="button" id="inspector-learn" aria-pressed="false">LEARN</button><button type="button" id="inspector-design" aria-pressed="false" title="Generate SuperCollider sounds from descriptions">GENERATE</button></div><button id="engine-status-open" type="button" aria-label="Read full engine status" aria-haspopup="dialog" title="Swipe sideways, or tap to read full status"><span id="engine-status" role="status" aria-live="polite">Engine off · Press POWER</span></button></div>
+<button id="console-follow" type="button" hidden aria-label="Jump to latest console output">↓ Latest output</button>
 <details id="console-panel"><summary>SuperCollider console</summary><div class="actions"><button id="clear-console" class="secondary">Clear console</button></div><section id="console-guidance" hidden aria-label="Explanation of the latest error"><div class="console-guidance-head"><strong id="console-guidance-title"></strong><button type="button" id="console-guidance-dismiss" aria-label="Dismiss error explanation">×</button></div><p id="console-guidance-text"></p><div class="console-guidance-actions"><button type="button" id="console-guidance-jump" hidden>GO TO CODE</button><button type="button" id="console-guidance-copy" hidden>COPY CORRECTION</button></div></section><pre id="console" aria-live="off"></pre></details></div>
+<dialog id="engine-status-dialog" aria-labelledby="engine-status-dialog-title"><h2 id="engine-status-dialog-title">Engine status</h2><p id="engine-status-full"></p><button type="button" id="engine-status-close">Close</button></dialog>
 <section class="panel learning-host" id="learning-host" aria-label="SuperCollider learning panel"></section>
 <section class="panel sound-host" id="sound-host" aria-label="SuperCollider sound designer"></section>
 <section class="panel performance-panel" id="perform-panel" aria-label="Live performance controls and musical event timeline">
@@ -327,7 +344,28 @@ const intermediateLivingDemo="(\ns.waitForBoot {\n    Routine({\n        SynthDe
 const fixedLivingDemo="(\ns.waitForBoot({\n    Routine({\n        SynthDef(\\scDrone, { |freq=110|\n            var tone = SinOsc.ar(freq, 0, 0.07);\n            Out.ar(0, tone ! 2);\n        }).add;\n        SynthDef(\\scBell, { |freq=660|\n            var env = EnvGen.kr(Env.perc(0.01, 0.55), doneAction: 2);\n            Out.ar(0, (SinOsc.ar(freq, 0, 0.19) * env) ! 2);\n        }).add;\n        s.sync;\n        ~scDrone = Synth(\\scDrone);\n        16.do {\n            Synth(\\scBell, [\\freq, [440, 550, 660, 880].choose]);\n            0.6.wait;\n        };\n    }).play(SystemClock);\n}, clock: SystemClock);\n)";
 for(const name of Object.keys(projects)){if(/^(?:Living Code Demo|Living Code Demonstration)(?: [0-9]+)?$/.test(name)&&(projects[name]===legacyLivingDemo||projects[name]===intermediateLivingDemo))projects[name]=fixedLivingDemo;}
 if(!Object.hasOwn(projects,active))active=Object.keys(projects)[0];
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(projects));localStorage.setItem(ACTIVE,active);saveStatus.textContent='SAVED'}catch(e){saveStatus.textContent='SAVE ERROR'}}
+function persist(){
+ try{
+  localStorage.setItem(KEY,JSON.stringify(projects));
+  localStorage.setItem(ACTIVE,active);
+  saveStatus.textContent='SAVED';
+  // An additional local mirror listens for this only after its initial
+  // comparison. The existing synchronous saving behavior remains unchanged.
+  window.dispatchEvent(new CustomEvent('supercollision:compositions-saved',{
+   detail:{format:'supercollision-lab-vault-v1',projects:structuredClone(projects),active}
+  }));
+ }catch(e){saveStatus.textContent='SAVE ERROR'}
+}
+window.SCCompositionSnapshot=()=>({format:'supercollision-lab-vault-v1',projects:structuredClone(projects),active});
+window.SCCompositionRecover=record=>{
+ if(!record||!record.projects||typeof record.projects!=='object'||Array.isArray(record.projects))throw Error('Invalid recovery record');
+ const entries=Object.entries(record.projects);
+ if(entries.length>1000||entries.some(([name,text])=>!name||name==='__proto__'||name.length>80||typeof text!=='string'||text.length>2000000))throw Error('Invalid recovery contents');
+ flush();
+ for(const [name,text] of entries)projects[uniqueName(name)]=text;
+ renderProjects();
+ report('Recovered '+entries.length+' compositions without overwriting existing ones');
+};
 function renderProjects(){window.SCRepair?.clear();projectsEl.replaceChildren();for(const name of Object.keys(projects)){const option=document.createElement('option');option.value=name;option.textContent=name;projectsEl.append(option)}projectsEl.value=active;code.value=projects[active]||'';code.scrollTop=0;code.scrollLeft=0;updatePreview();persist();renderPicker();window.SCActivity?.document(active,code.value);window.SCTimeline?.document(active,code.value);window.SCLanguageTools?.refresh()}
 function commit(){projects[active]=code.value;persist()}
 const toggle=document.querySelector('#project-toggle'),list=document.querySelector('#project-list');
@@ -399,28 +437,63 @@ document.querySelector('#import-file').onclick=()=>document.querySelector('#file
 document.querySelector('#file-input').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>2000000)throw Error('File exceeds 2 MB');if(!/\.(scd|sc|txt)$/i.test(file.name))throw Error('Choose a .scd, .sc, or .txt file');flush();active=uniqueName(file.name.replace(/\.(scd|sc|txt)$/i,'').slice(0,80)||'Imported');projects[active]=await file.text();renderProjects();report('Imported '+file.name)}catch(err){report('Import failed: '+err.message)}e.target.value=''};
 document.querySelector('#export-file').onclick=()=>{flush();const blob=new Blob([code.value],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=active.replace(/[^a-z0-9_-]/gi,'_')+'.scd';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000)};
 document.querySelector('#clear').onclick=()=>{if(code.value&&!confirm('Replace current composition with the example?'))return;code.value=example;code.dispatchEvent(new Event('input'))};
-// Compact FILE drawer: only one submenu expands at a time.
+// File sections use a focused view so opening STORAGE, EDITOR, etc.
+// shows the actual commands instead of hiding them below a long scroll.
 const fileMenu=document.querySelector('#file-menu');
 const fileItems=document.querySelector('#file-menu-items');
+const fileBack=document.querySelector('#file-menu-back');
 const fileGroups=[...fileItems.querySelectorAll('.file-submenu')];
+function fitFileMenu(){
+  if(!fileMenu.open)return;
+  const bounds=fileItems.getBoundingClientRect();
+  const viewport=window.visualViewport;
+  const bottom=(viewport?viewport.offsetTop+viewport.height:window.innerHeight)-10;
+  fileItems.style.maxHeight=Math.max(150,Math.floor(bottom-bounds.top))+'px';
+}
+function focusFileSection(group){
+  const active=Boolean(group&&group.open);
+  fileMenu.classList.toggle('file-section-focused',active);
+  fileBack.hidden=!active;
+  fileItems.scrollTop=0;
+  requestAnimationFrame(()=>{fitFileMenu();fileItems.scrollTop=0});
+}
 fileGroups.forEach(group=>{
-  // Close siblings before the browser toggles this summary, so two sections
-  // cannot briefly remain open during a quick sequence of taps on iOS.
-  group.querySelector('summary').addEventListener('click',()=>{
-    for(const other of fileGroups)if(other!==group)other.open=false;
-  });
   group.addEventListener('toggle',()=>{
-    if(group.open)for(const other of fileGroups)if(other!==group)other.open=false;
+    if(!fileMenu.open)return;
+    if(group.open){
+      for(const other of fileGroups)if(other!==group)other.open=false;
+      focusFileSection(group);
+    }else if(!fileGroups.some(other=>other.open)){
+      focusFileSection(null);
+    }
   });
+});
+fileBack.addEventListener('click',()=>{
+  for(const group of fileGroups)group.open=false;
+  focusFileSection(null);
 });
 fileMenu.addEventListener('toggle',()=>{
-  if(!fileMenu.open){fileGroups.forEach(group=>group.open=false);if(osc)stop()}
+  if(!fileMenu.open){
+    for(const group of fileGroups)group.open=false;
+    focusFileSection(null);
+    fileItems.style.maxHeight='';
+    if(osc)stop();
+  }else{
+    requestAnimationFrame(fitFileMenu);
+  }
 });
+window.addEventListener('resize',fitFileMenu);
+window.visualViewport?.addEventListener('resize',fitFileMenu);
 fileItems.addEventListener('click',event=>{
+  const summary=event.target.closest('#audio-panel > summary');
+  if(summary)requestAnimationFrame(()=>summary.scrollIntoView({block:'nearest'}));
   const button=event.target.closest('button');
   if(!button||button.disabled)return;
-  // Keep the editor size tools and screen-awake control readily repeatable.
-  if(!['code-size-smaller','code-size-larger','wake-toggle','play','stop'].includes(button.id))
+  // Keep diagnostic output and progress visible. Other one-shot actions
+  // continue to dismiss FILE as they did before.
+  if(!['file-menu-back','lab-offline-diagnostics','lab-offline-download',
+        'lab-vault-recover','lab-vault-keep','code-size-smaller',
+        'code-size-larger','wake-toggle','play','stop'].includes(button.id))
     fileMenu.open=false;
 });
 document.addEventListener('pointerdown',event=>{
@@ -461,6 +534,54 @@ function refreshCompletionToggle(){completionToggle.textContent='Code suggestion
 completionToggle.onclick=()=>{languageTools.setEnabled(!languageTools.enabled);refreshCompletionToggle()};
 refreshCompletionToggle();
 const state=document.querySelector('#engine-status'),log=document.querySelector('#console'),run=document.querySelector('#evaluate'),panic=document.querySelector('#panic');
+const statusDialog=document.querySelector('#engine-status-dialog');
+const completeStatus=document.querySelector('#engine-status-full');
+document.querySelector('#engine-status-open').addEventListener('click',()=>{
+ completeStatus.textContent=state.textContent;
+ if(!statusDialog.open)statusDialog.showModal();
+});
+document.querySelector('#engine-status-close').addEventListener('click',()=>statusDialog.close());
+statusDialog.addEventListener('click',event=>{if(event.target===statusDialog)statusDialog.close()});
+new MutationObserver(()=>{if(statusDialog.open)completeStatus.textContent=state.textContent})
+ .observe(state,{childList:true,characterData:true,subtree:true});
+const consoleScroll=document.querySelector('#console-panel');
+const consoleFollowButton=document.querySelector('#console-follow');
+let consoleFollowing=true,unreadConsoleLines=0,userScrollingConsole=false,autoScrollingConsole=false,consoleIntentReset=0;
+function nearConsoleEnd(){return consoleScroll.scrollHeight-consoleScroll.scrollTop-consoleScroll.clientHeight<=20}
+function updateConsoleFollowButton(){
+ consoleFollowButton.hidden=consoleFollowing;
+ consoleFollowButton.textContent=unreadConsoleLines
+  ? '↓ Latest output ('+Math.min(999,unreadConsoleLines)+(unreadConsoleLines>999?'+':'')+')'
+  : '↓ Latest output';
+}
+function jumpToConsoleEnd(){
+ if(!document.body.classList.contains('view-console'))return;
+ autoScrollingConsole=true;
+ consoleScroll.scrollTop=consoleScroll.scrollHeight;
+ requestAnimationFrame(()=>{autoScrollingConsole=false});
+}
+function resumeConsoleFollow(){
+ consoleFollowing=true;unreadConsoleLines=0;
+ updateConsoleFollowButton();jumpToConsoleEnd();
+}
+consoleFollowButton.addEventListener('click',resumeConsoleFollow);
+function markConsoleInteraction(){
+ userScrollingConsole=true;clearTimeout(consoleIntentReset);
+ consoleIntentReset=setTimeout(()=>{userScrollingConsole=false},900);
+}
+for(const type of ['touchstart','pointerdown','wheel'])
+ consoleScroll.addEventListener(type,markConsoleInteraction,{passive:true});
+consoleScroll.addEventListener('scroll',()=>{
+ if(autoScrollingConsole||!userScrollingConsole)return;
+ consoleFollowing=nearConsoleEnd();
+ if(consoleFollowing)unreadConsoleLines=0;
+ updateConsoleFollowButton();
+},{passive:true});
+window.SCConsoleOnShow=()=>{
+ if(consoleFollowing)jumpToConsoleEnd();
+ else updateConsoleFollowButton();
+};
+
 const soundDesigner=createSoundDesigner({
  host:document.querySelector('#sound-host'),editor:code,
  saveComposition:spec=>window.SCDesignerSaveComposition(spec),
@@ -489,10 +610,12 @@ function flushPrintQueue(){
  if(!printQueue.length)return;
  const chunk=printQueue.join('\n')+'\n';
  printQueue=[];
+ const previousScroll=consoleScroll.scrollTop;
  let text=log.textContent+chunk;
  if(text.length>120000)text=text.slice(-80000);
  log.textContent=text;
- log.scrollTop=log.scrollHeight;
+ if(consoleFollowing){jumpToConsoleEnd()}
+ else{consoleScroll.scrollTop=previousScroll;unreadConsoleLines+=chunk.split('\n').length-1;updateConsoleFollowButton()}
  const markers=['ERROR:','FAILURE IN SERVER','FAILURE:'];
  const lastFailure=Math.max(...markers.map(marker=>chunk.lastIndexOf(marker)));
  if(lastFailure>=0)diagnosticTail=chunk.slice(lastFailure);
@@ -537,18 +660,43 @@ function print(t){
    requestAnimationFrame(flushPrintQueue);
  }
 }
-document.querySelector('#clear-console').onclick=()=>{printQueue=[];log.textContent='';diagnosticTail='';explanation.hidden=true;shownErrorKey='';repair.clear()};
+document.querySelector('#clear-console').onclick=()=>{printQueue=[];log.textContent='';diagnosticTail='';explanation.hidden=true;shownErrorKey='';repair.clear();resumeConsoleFollow()};
 let booting=false;
+let synthBootPending=false;
+let synthBootStage='not requested';
+let serverBootWatchdog=null;
+const SERVER_BOOT_WATCHDOG_MS=45000;
+function clearServerBootWatchdog(){
+ if(serverBootWatchdog!==null)clearTimeout(serverBootWatchdog);
+ serverBootWatchdog=null;
+}
 function requestServerBoot(){
- if(!lang||!languageReady||serverReady||serverBootRequested)return;
+ if(!lang||!languageReady||serverReady||serverBootRequested||synthBootPending)return;
  serverBootRequested=true;
  run.disabled=true;document.querySelector('#run-region').disabled=true;
  document.querySelector('#record').disabled=true;
  message('STARTING AUDIO SERVER · RUN unlocks when ready');
+ clearServerBootWatchdog();
+ // On iPhone, audio initialization can stall after language boot. Never
+ // automatically start duplicate servers; report the phase and safe retry.
+ serverBootWatchdog=setTimeout(()=>{
+  serverBootWatchdog=null;
+  if(serverReady||!serverBootRequested)return;
+  serverBootRequested=false;
+  let contextState='unavailable';
+  try{contextState=synth?.getAudioContext?.()?.state||'not created'}catch{}
+  print('Audio startup delayed after '+(SERVER_BOOT_WATCHDOG_MS/1000)+
+    ' seconds. Stage: '+synthBootStage+'; audio context: '+contextState+
+    '. No automatic retry was attempted.');
+  message(synthBootPending
+    ? 'AUDIO START STALLED · CLOSE AND REOPEN TO RETRY'
+    : 'AUDIO START DELAYED · TAP POWER TO RETRY');
+ },SERVER_BOOT_WATCHDOG_MS);
  try{
   // Application startup only. Never wrap or modify the composition.
   lang.runCode('s.waitForBoot({ "'+SERVER_READY_MARKER+'".postln; }, onFailure: { "'+SERVER_FAILED_MARKER+'".postln; }, clock: SystemClock);');
  }catch(e){
+  clearServerBootWatchdog();
   serverBootRequested=false;
   message('Audio server start failed · Press POWER to retry');
   print('Audio server start failed: '+e.message);
@@ -556,18 +704,26 @@ function requestServerBoot(){
 }
 document.querySelector('#engine').onclick=async()=>{
  if(lang){
-   if(!serverReady){requestServerBoot();return}
+   if(!serverReady){
+     if(synthBootPending){
+       message('AUDIO START STILL PENDING · CLOSE AND REOPEN TO RETRY');return
+     }
+     if(serverBootRequested){
+       message('AUDIO SERVER STARTING · RUN unlocks when ready');return
+     }
+     requestServerBoot();return
+   }
    message('Audio server already running · RUN is ready');return
  }
  if(booting)return;
  booting=true;document.querySelector('#engine').disabled=true;
- message('Checking runtime assets...');
+ message('Loading SuperCollider engine...');
  try{
   const base=new URL('./runtime/',location.href);
-  for(const name of ['sclang/sclang.js','scsynth/scsynth.js']){
-   const res=await fetch(new URL(name,base),{method:'HEAD',cache:'no-store'});
-   if(!res.ok)throw Error(name+' missing (HTTP '+res.status+')');
-  }
+  // Do not issue network-only HEAD probes here: they bypass the offline pack
+  // and abort POWER in Airplane Mode even when both runtime modules are cached.
+  // Module imports below provide the actual availability check and resolve
+  // directly from the service worker cache when offline.
   if(!crossOriginIsolated)throw Error('Cross-origin isolation is unavailable. SuperCollider WebAssembly threading requires COOP/COEP headers; ordinary GitHub Pages does not supply them.');
   message('Loading real SuperCollider modules...');
   const [{default:ScLang},{default:ScSynth}]=await Promise.all([import('./runtime/sclang/sclang.js'),import('./runtime/scsynth/scsynth.js')]);
@@ -583,12 +739,14 @@ document.querySelector('#engine').onclick=async()=>{
     }
     if(output.includes(SERVER_READY_MARKER)){
       serverReady=true;serverBootRequested=false;bootRetryCount=0;
+      clearServerBootWatchdog();
       run.disabled=false;document.querySelector('#run-region').disabled=false;
       document.querySelector('#record').disabled=false;
       state.classList.remove('error');message('AUDIO SERVER READY · RUN to play');
     }
     if(output.includes('sclang client not running!')&&!serverReady){
       serverBootRequested=false;
+      clearServerBootWatchdog();
       if(bootRetryCount<5){
         const retryDelay=500*(++bootRetryCount);
         message('LANGUAGE STARTING · Retrying audio boot');
@@ -597,6 +755,7 @@ document.querySelector('#engine').onclick=async()=>{
     }
     if(output.includes(SERVER_FAILED_MARKER)){
       serverReady=false;serverBootRequested=false;
+      clearServerBootWatchdog();
       message('Audio server failed · Press POWER to retry');
       print('SuperCollider audio server failed to boot. Press POWER to retry.');
     }
@@ -618,7 +777,30 @@ document.querySelector('#engine').onclick=async()=>{
   lang.onOsc=oscBridge.fromLanguage;
   synth.onOscReply=oscBridge.fromSynth;
   // The synthesis hook must exist before interpreter boot callbacks can use it.
-  window.bootServer=options=>{if(options.numOutputBusChannels)setTimeout(async()=>{try{await synth.boot(options)}catch(e){serverBootRequested=false;print('Server boot: '+e.message);message('Audio server failed · Press POWER to retry')}},100)};
+  window.bootServer=options=>{
+    if(!options.numOutputBusChannels)return;
+    if(synthBootPending){
+      print('Audio server boot already pending; ignoring duplicate initialization request.');
+      return;
+    }
+    synthBootPending=true;
+    synthBootStage='synth.boot scheduled';
+    setTimeout(async()=>{
+      synthBootStage='synth.boot pending';
+      try{
+        await synth.boot(options);
+        synthBootStage='synth.boot resolved';
+      }catch(e){
+        synthBootStage='synth.boot failed';
+        serverBootRequested=false;
+        clearServerBootWatchdog();
+        print('Server boot: '+e.message);
+        message('Audio server failed · Press POWER to retry');
+      }finally{
+        synthBootPending=false;
+      }
+    },100);
+  };
   lang.bootInterpreter();
   panic.disabled=false;
   message('Initializing language and audio server.');
@@ -691,4 +873,4 @@ document.addEventListener('click', function(e) {
   const label=(control.id+' '+(control.getAttribute('aria-label')||'')+' '+(control.textContent||'').slice(0,60)).toLowerCase();
   if (/run|play|evaluate|record/i.test(label)) umami.track('app-use',{project:'supercollision',action:'interaction'});
 },true);
-</script></html>
+</script><script type="module" src="./lab-offline.mjs"></script><script type="module" src="./lab-composition-vault.mjs"></script></html>

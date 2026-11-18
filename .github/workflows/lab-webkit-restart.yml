@@ -1,0 +1,39 @@
+name: WebKit offline restart diagnostics
+on:
+  push:
+    branches:
+      - feature/offline-safe-foundation
+    paths:
+      - 'qa/lab-webkit-restart-test.mjs'
+      - '.github/workflows/lab-webkit-restart.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  webkit-offline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout laboratory source
+        uses: actions/checkout@v4
+        with:
+          ref: feature/offline-safe-foundation
+          path: source
+      - name: Checkout compiled laboratory preview
+        uses: actions/checkout@v4
+        with:
+          ref: lab-build
+          path: site
+      - name: Overlay latest experimental frontend for diagnostics
+        run: |
+          cp source/lab-sw.js site/lab-sw.js
+          cp source/lab-offline.mjs site/lab-offline.mjs
+          cp source/lab-composition-vault.mjs site/lab-composition-vault.mjs
+          cp source/index.html site/index.html
+      - name: Install WebKit test browser
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps webkit
+      - name: Test WebKit offline install and browser restart
+        run: |
+          node source/qa/lab-webkit-restart-test.mjs

@@ -3,31 +3,19 @@ on:
   push:
     branches: [main]
     paths:
-      - 'index.html'
-      - 'osc-priority-bridge.mjs'
-      - 'instrument-layout.css'
-      - 'instrument-layout.js'
-      - 'live-activity.mjs'
-      - 'routine-trace.mjs'
-      - 'performance-engine.mjs'
-      - 'performance-ui.mjs'
-      - 'performance.css'
-      - 'learning.mjs'
-      - 'learning.css'
-      - 'catalog-core.mjs'
-      - 'editor-assist.mjs'
-      - 'error-guide.mjs'
-      - 'repair-ui.mjs'
-      - 'repair-ui.css'
-      - 'catalog-assist.css'
-      - 'sound-designer.mjs'
-      - 'sound-designer-core.mjs'
-      - 'sound-designer.css'
-      - 'scripts/build_language_catalog.py'
-      - 'app-icon.svg'
-      - 'manifest.webmanifest'
-      - 'scripts/render_icons.py'
+      - '*.html'
+      - '*.css'
+      - '*.js'
+      - '*.mjs'
+      - '*.json'
+      - '*.webmanifest'
+      - '*.svg'
       - '_headers'
+      - 'scripts/build_language_catalog.py'
+      - 'scripts/build_offline_manifest.py'
+      - 'scripts/render_icons.py'
+      - 'qa/lab-offline-browser-test.mjs'
+      - 'qa/offline-policy-test.mjs'
       - '.github/workflows/publish-ui.yml'
   workflow_dispatch:
 permissions:
@@ -37,9 +25,10 @@ concurrency:
   cancel-in-progress: false
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
-      - name: Checkout production branch with compiled WASM runtime
+      - name: Checkout production branch with compiled WebAssembly engine
         uses: actions/checkout@v4
         with:
           ref: pages-build
@@ -58,33 +47,76 @@ jobs:
           path: upstream-help
           persist-credentials: false
           sparse-checkout: HelpSource/Classes
-      - name: Update frontend without rebuilding or deleting WASM
+      - name: Assemble production frontend without rebuilding or deleting audio engine
         run: |
           set -euo pipefail
-          test -f site/runtime/sclang/sclang.js
-          test -f site/runtime/scsynth/scsynth.js
-          cp source/index.html site/index.html
-          cp source/instrument-layout.css site/instrument-layout.css
-          cp source/instrument-layout.js site/instrument-layout.js
-          cp source/live-activity.mjs site/live-activity.mjs
-          cp source/routine-trace.mjs site/routine-trace.mjs
-          cp source/performance-engine.mjs site/performance-engine.mjs
-          cp source/performance-ui.mjs site/performance-ui.mjs
-          cp source/performance.css site/performance.css
-          cp source/learning.mjs source/learning.css source/catalog-core.mjs source/editor-assist.mjs source/error-guide.mjs source/repair-ui.mjs source/repair-ui.css source/catalog-assist.css source/osc-priority-bridge.mjs source/sound-designer.mjs source/sound-designer-core.mjs source/sound-designer.css site/
+          python3 source/scripts/verify_runtime.py site/runtime
+          python3 - <<'PY'
+          from pathlib import Path
+          from shutil import copy2
+          source, target = Path("source"), Path("site")
+          names = [
+              "index.html", "_headers",
+              "instrument-layout.css", "instrument-layout.js", "live-activity.mjs",
+              "routine-trace.mjs", "performance-engine.mjs", "performance-ui.mjs",
+              "performance.css", "learning.mjs", "learning.css", "catalog-core.mjs",
+              "editor-assist.mjs", "error-guide.mjs", "repair-ui.mjs", "repair-ui.css",
+              "catalog-assist.css", "osc-priority-bridge.mjs",
+              "sound-designer.mjs", "sound-designer-core.mjs", "sound-designer.css",
+              "lab-offline.mjs", "lab-sw.js", "lab-composition-vault.mjs",
+              "offline-cache-policy.mjs", "manifest.webmanifest", "app-icon.svg",
+          ]
+          for name in names:
+              copy2(source / name, target / name)
+          PY
           python3 source/scripts/build_language_catalog.py upstream-help/HelpSource/Classes site/language-catalog.json
-          cp source/app-icon.svg source/manifest.webmanifest site/
           python3 -m pip install --quiet --break-system-packages cairosvg
           python3 source/scripts/render_icons.py
           cp source/apple-touch-icon.png source/app-icon-192.png source/app-icon-512.png site/
-          cp source/_headers site/_headers
+          python3 source/scripts/build_offline_manifest.py site
+      - name: Verify production content and explicit download policy
+        run: |
+          set -euo pipefail
+          node --check source/lab-sw.js
+          node --check source/lab-offline.mjs
+          node --check source/lab-composition-vault.mjs
+          node --check source/instrument-layout.js
+          node --check source/live-activity.mjs
+          node source/qa/offline-policy-test.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          site = Path("site")
+          manifest = json.loads((site / "lab-offline-assets.json").read_text())
+          paths = {f["path"] for f in manifest["files"]}
+          assert manifest["format"] == "supercollision-offline-v1"
+          assert "/index.html" in paths and "/lab-sw.js" in paths
+          assert "/runtime/sclang/sclang.wasm" in paths
+          assert "/runtime/scsynth/scsynth.wasm" in paths
+          for item in manifest["files"]:
+              p = site / item["path"].lstrip("/")
+              assert p.is_file() and p.stat().st_size == item["bytes"]
+          page = (site / "index.html").read_text()
+          assert "<title>SuperCollision |" in page
+          assert 'id="workspace-divider"' in page
+          assert 'id="live-panel-resizer"' in page
+          assert 'src="./lab-offline.mjs"' in page
+          assert json.loads((site / "manifest.webmanifest").read_text())["name"] == "SuperCollision"
+          PY
+      - name: Browser-test complete production site before publishing
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+          node source/qa/lab-offline-browser-test.mjs
+      - name: Commit tested production site to Pages branch
+        run: |
           cd site
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html _headers instrument-layout.css instrument-layout.js live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs performance.css learning.mjs learning.css catalog-core.mjs editor-assist.mjs error-guide.mjs repair-ui.mjs repair-ui.css catalog-assist.css osc-priority-bridge.mjs sound-designer.mjs sound-designer-core.mjs sound-designer.css language-catalog.json app-icon.svg manifest.webmanifest apple-touch-icon.png app-icon-192.png app-icon-512.png
+          git add index.html _headers instrument-layout.css instrument-layout.js live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs performance.css learning.mjs learning.css catalog-core.mjs editor-assist.mjs error-guide.mjs repair-ui.mjs repair-ui.css catalog-assist.css osc-priority-bridge.mjs sound-designer.mjs sound-designer-core.mjs sound-designer.css lab-offline.mjs lab-sw.js lab-composition-vault.mjs offline-cache-policy.mjs language-catalog.json manifest.webmanifest app-icon.svg apple-touch-icon.png app-icon-192.png app-icon-512.png lab-offline-assets.json
           if git diff --cached --quiet; then
-            echo "Already current"
+            echo "Production site is already current"
           else
-            git commit -m "Publish latest SuperCollision frontend"
+            git commit -m "Publish tested offline SuperCollision frontend"
             git push origin HEAD:pages-build
           fi
