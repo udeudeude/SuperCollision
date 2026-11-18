@@ -364,7 +364,21 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       byName.get(ev.name).push(ev);
     }
     for(const row of rows){
-      const dom=lastRows.get(row.name),selected=byName.get(row.name)||[];
+      const dom=lastRows.get(row.name);
+      // Only materialize notes near the visible timeline. Long compositions
+      // may contain thousands of notes, but only a few fit on a phone screen.
+      // Determine the intended end-of-score window before automatic FOLLOW
+      // moves scrollLeft at the end of this paint.
+      const viewWidth=Math.max(250,scroller.clientWidth);
+      const viewLeft=follow&&(!pointerStart||!pointerStart.horizontal)
+        ?Math.max(0,graphWidth-scroller.clientWidth):scroller.scrollLeft;
+      const minX=Math.max(0,viewLeft-viewWidth);
+      const maxX=viewLeft+viewWidth*2;
+      const selected=(byName.get(row.name)||[]).filter(e=>{
+        const start=(e.start-journal.zero)/1000*SCALE;
+        const end=((e.end??t)-journal.zero)/1000*SCALE;
+        return end>=minX && start<=maxX;
+      });
       const bars=[],used=new Set();
       for(const e of selected){
         used.add(e);
@@ -413,7 +427,9 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
         }
         bars.push(bar);
       }
-      for(const ev of dom.bars.keys())if(!used.has(ev))dom.bars.delete(ev);
+      for(const [ev,bar] of dom.bars)if(!used.has(ev)){
+        bar.remove();dom.bars.delete(ev);
+      }
       const existing=[...dom.track.children];
       if(existing.length!==bars.length||existing.some((el,i)=>el!==bars[i]))
         dom.track.replaceChildren(...bars);

@@ -33,7 +33,9 @@ export function createRepairUI({editor}){
  const trigger=document.createElement('button');
  trigger.id='repair-open-button';trigger.type='button';trigger.hidden=true;
  trigger.textContent='FIX ERROR';trigger.title='Edit with the error explanation visible above the code';
- document.querySelector('#engine-status').insertAdjacentElement('afterend',trigger);
+ // Insert beside the entire status button, not inside it. A nested button
+ // also activates the status dialog, stealing the editor's keyboard focus.
+ document.querySelector('#engine-status-open').insertAdjacentElement('afterend',trigger);
  // Prevent panel buttons from dismissing the iPhone keyboard or moving the caret.
  panel.addEventListener('pointerdown',event=>{
    if(event.target.closest('button'))event.preventDefault();
