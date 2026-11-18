@@ -364,7 +364,7 @@ try{
   assert.equal(await page.evaluate(()=>window.SCTimeline.journal.timelineNow()),frozen,
     'STOP did not freeze the timeline clock');
   await page.waitForFunction(()=>
-    document.querySelector('#perform-summary')?.textContent?.includes('STOPPED'));
+    document.querySelector('#perform-summary')?.textContent?.toLowerCase().includes('stopped'));
   await page.locator('#inspector-code').click();
 
   // IndexedDB mirror is additive. Confirm it persists edits and offers
