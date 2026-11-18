@@ -12,7 +12,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   let showAll=true;
   const SCALE=16,IDLE_AFTER_MS=9000,FOLLOW_BACK_SECONDS=15;
   let follow=true,frame=0,timer=null,lastRows=new Map();
-  let horizontalIntentUntil=0,pointerStart=null,wasStopped=false;
+  let horizontalIntentUntil=0,pointerStart=null,lastTickSpan=-1;
   const setFollow=(enabled)=>{
     follow=Boolean(enabled);
     followBtn.setAttribute('aria-pressed',String(follow));
@@ -307,7 +307,10 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       tick.style.left=seconds*SCALE+'px';tick.textContent=formatTime(seconds);ticks.push(tick);
     }
     tickEl.style.width=graphWidth+'px';
-    tickEl.replaceChildren(...ticks);
+    if(timespan!==lastTickSpan){
+      tickEl.replaceChildren(...ticks);
+      lastTickSpan=timespan;
+    }
     const events=journal.eventsForCurrent(),byName=new Map();
     for(const ev of events){
       if(!byName.has(ev.name))byName.set(ev.name,[]);
@@ -333,21 +336,27 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
           bar.addEventListener('click',()=>showNote(row.name,e,journal.timelineNow()));
           dom.bars.set(e,bar);
         }
-        bar.classList.toggle('perform-running',e.end===null&&!stopped);
-        bar.style.left=Math.max(0,start*SCALE)+'px';
-        bar.style.width=width+'px';
-        bar.querySelector('.perform-event-label').textContent=width>=72 &&
-          Number.isFinite(e.params?.freq)?Math.round(e.params.freq)+' Hz':'';
-        bar.style.setProperty('--voice-color','var(--voice-'+row.slot+')');
-        const level=ampHeight(e.params?.amp);
-        bar.classList.toggle('perform-level-unknown',level===null);
-        bar.style.setProperty('--note-level',level===null?'0%':level+'%');
-        const when=formatTime(start),duration=(Math.max(0,stop-start)).toFixed(2);
-        const hz=Number.isFinite(e.params?.freq)?' · '+Math.round(e.params.freq)+' Hz':'';
-        const amp=Number.isFinite(e.params?.amp)?' · coded amplitude '+e.params.amp:
-          ' · coded amplitude unknown';
-        bar.title=row.name+' · '+when+' · '+duration+' seconds'+hz+amp;
-        bar.setAttribute('aria-label',bar.title);
+        // Finished notes are immutable. Avoid rebuilding thousands of
+        // historic bar styles and labels every 350ms during long pieces.
+        const endSignature=String(e.end);
+        if(e.end===null||bar.dataset.renderedEnd!==endSignature){
+          bar.dataset.renderedEnd=endSignature;
+          bar.classList.toggle('perform-running',e.end===null&&!stopped);
+          bar.style.left=Math.max(0,start*SCALE)+'px';
+          bar.style.width=width+'px';
+          bar.querySelector('.perform-event-label').textContent=width>=72 &&
+            Number.isFinite(e.params?.freq)?Math.round(e.params.freq)+' Hz':'';
+          bar.style.setProperty('--voice-color','var(--voice-'+row.slot+')');
+          const level=ampHeight(e.params?.amp);
+          bar.classList.toggle('perform-level-unknown',level===null);
+          bar.style.setProperty('--note-level',level===null?'0%':level+'%');
+          const when=formatTime(start),duration=(Math.max(0,stop-start)).toFixed(2);
+          const hz=Number.isFinite(e.params?.freq)?' · '+Math.round(e.params.freq)+' Hz':'';
+          const amp=Number.isFinite(e.params?.amp)?' · coded amplitude '+e.params.amp:
+            ' · coded amplitude unknown';
+          bar.title=row.name+' · '+when+' · '+duration+' seconds'+hz+amp;
+          bar.setAttribute('aria-label',bar.title);
+        }
         bars.push(bar);
       }
       for(const ev of dom.bars.keys())if(!used.has(ev))dom.bars.delete(ev);
