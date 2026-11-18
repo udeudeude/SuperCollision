@@ -605,3 +605,19 @@ body .perform-lane.perform-idle .perform-controls{
   transform:none!important;will-change:auto!important;
 }
 body .perform-lane .perform-track{margin-left:0!important}
+
+/* Keep sticky instrument labels visible: the previous lane overflow:hidden
+   clipped sticky descendants when horizontally scrolling on iOS Safari. */
+body .perform-lane,body .perform-lane.perform-idle{
+  overflow:visible!important;
+}
+body .perform-lane .perform-controls,
+body .perform-lane.perform-idle .perform-controls{
+  position:sticky!important;left:0!important;z-index:9!important;
+  align-self:flex-start!important;flex-shrink:0!important;
+  width:var(--perform-left)!important;min-width:var(--perform-left)!important;
+  background:var(--perform-bg)!important;visibility:visible!important;
+}
+body .perform-lane .perform-name,body .perform-lane.perform-idle .perform-name{
+  display:block!important;opacity:1!important;visibility:visible!important;
+}
