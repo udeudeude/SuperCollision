@@ -302,7 +302,7 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
   <div class="live-panel-head"><button id="live-panel-toggle" type="button" aria-expanded="true"><span class="live-panel-label">LIVE</span><span id="activity-status" aria-live="off">●0 ✦0</span><svg class="live-panel-icon" viewBox="0 0 14 14" aria-hidden="true"><path d="m3 9 4-4 4 4" stroke="currentColor" fill="none" stroke-width="1.6"/></svg></button></div>
   <div id="live-panel-content" class="live-panel-content"><div id="live-instruments" class="live-instruments"></div><div id="live-routines" class="live-routines" hidden></div></div>
 </aside></div>
-<div class="toolbar"><button id="evaluate" disabled><svg class="transport-icon" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 1.2L10.5 6L2.5 10.8Z" fill="currentColor"/></svg>RUN</button><button id="run-region" class="secondary" disabled title="Run highlighted code or the current line" aria-label="Run selected code, or the current line if nothing is selected">SELECTED</button><button id="panic" class="secondary" disabled>■ STOP</button><button id="engine" class="secondary">POWER</button><button id="record" class="secondary" disabled>● REC</button><button id="record-stop" class="secondary" disabled><svg class="transport-icon" viewBox="0 0 14 14" width="14" height="14" aria-hidden="true"><path d="M7 1.5v7m-3-3 3 3 3-3M2 10.5v2h10v-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg>SAVE</button><span id="save-status" class="muted" role="status">Saved</span></div>
+<div class="toolbar"><button id="evaluate" disabled><svg class="transport-icon" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 1.2L10.5 6L2.5 10.8Z" fill="currentColor"/></svg>RUN</button><button id="restart-composition" class="secondary" disabled title="Stop and start the composition from its beginning">RESTART</button><button id="run-region" class="secondary" disabled title="Run highlighted code or the current line" aria-label="Run selected code, or the current line if nothing is selected">SELECTED</button><button id="panic" class="secondary" disabled>■ STOP</button><button id="engine" class="secondary">POWER</button><button id="record" class="secondary" disabled>● REC</button><button id="record-stop" class="secondary" disabled><svg class="transport-icon" viewBox="0 0 14 14" width="14" height="14" aria-hidden="true"><path d="M7 1.5v7m-3-3 3 3 3-3M2 10.5v2h10v-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg>SAVE</button><span id="save-status" class="muted" role="status">Saved</span></div>
 
 <input id="file-input" type="file" hidden><input id="backup-input" type="file" hidden>
 <pre id="syntax-preview" hidden></pre>
@@ -823,7 +823,18 @@ document.querySelector('#engine').onclick=async()=>{
  }catch(e){message('Runtime unavailable: '+e.message);print(e.stack||e.message)}finally{booting=false;document.querySelector('#engine').disabled=false}
 };
 function submitCode(source,start,end){if(!lang)return;try{diagnosticTail='';explanation.hidden=true;shownErrorKey='';repair.clear();flush();activeRegion=null;updateLines();state.classList.remove('error');liveCode.evaluation(active,code.value,source,start);performanceUI.evaluation(active,code.value,source,start);lang.runCode(source);window.scPlaybackRequested=true;requestWake();message('EVALUATED L'+start+'–'+end+' · execution submitted')}catch(e){message('Evaluation failed: '+e.message)}}
-run.onclick=()=>submitCode(code.value,1,code.value.split('\n').length);
+// RUN evaluates the composition. RESTART explicitly stops existing routines,
+// clears scheduled server events, then evaluates from the beginning.
+run.onclick=()=>submitCode(code.value,1,code.value.split('\\n').length);
+const restartButton=document.querySelector('#restart-composition');
+restartButton.onclick=()=>{
+  if(!lang)return;
+  panic.click();
+  setTimeout(()=>{
+    if(!lang)return;
+    submitCode(code.value,1,code.value.split('\\n').length);
+  },120);
+};
 document.querySelector('#run-region').onclick=()=>{const a=code.selectionStart,b=code.selectionEnd,text=code.value;let from=a,to=b;if(a===b){from=text.lastIndexOf('\n',Math.max(0,a-1))+1;to=text.indexOf('\n',a);if(to<0)to=text.length}const source=text.slice(from,to);if(!source.trim())return;const start=text.slice(0,from).split('\n').length,end=start+source.split('\n').length-1;submitCode(source,start,end)};
 panic.onclick=()=>{if(!lang)return;try{
   lang.runCode('CmdPeriod.run;');
