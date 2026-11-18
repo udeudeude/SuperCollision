@@ -763,3 +763,7 @@ body #lab-home-screen-setup button{
 body #lab-home-screen-setup #lab-home-setup-now{
  background:var(--file-border,#c5a06b);color:#201c17
 }
+
+/* Live chevron indicates the action: down collapses, up expands. */
+body .live-panel:not(.live-collapsed) .live-panel-icon{transform:rotate(180deg)}
+body .live-panel.live-collapsed .live-panel-icon{transform:none}
