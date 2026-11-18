@@ -690,110 +690,101 @@ body[data-theme] .performance-panel:not(.perform-has-selection) .perform-header{
  flex:0 0 96px!important;
 }
 
-/* Unified 72px Mix toolbar: no wasted vertical centering, no selection jump. */
+/* Mix toolbar: one disciplined height in both modes; no layout jump.
+   Overview is one row. Selected instrument has two compact control rows. */
 body .performance-panel .perform-header,
 body[data-theme] .performance-panel .perform-header,
 body .performance-panel.perform-has-selection .perform-header,
 body[data-theme] .performance-panel.perform-has-selection .perform-header,
 body .performance-panel:not(.perform-has-selection) .perform-header,
 body[data-theme] .performance-panel:not(.perform-has-selection) .perform-header{
- height:72px!important;min-height:72px!important;max-height:72px!important;
- flex:0 0 72px!important;box-sizing:border-box!important;
-}
-body .performance-panel:not(.perform-has-selection) .perform-header,
-body[data-theme] .performance-panel:not(.perform-has-selection) .perform-header{
- display:grid!important;grid-template-columns:minmax(0,1fr) auto auto auto auto!important;
- grid-template-rows:18px 34px!important;align-content:start!important;
- gap:3px 5px!important;padding:6px 7px!important;
+  display:flex!important;align-items:center!important;justify-content:flex-start!important;
+  height:64px!important;min-height:64px!important;max-height:64px!important;
+  flex:0 0 64px!important;box-sizing:border-box!important;
+  padding:5px 7px!important;gap:5px!important;
 }
 body .performance-panel:not(.perform-has-selection) .perform-header strong{
- grid-column:1!important;grid-row:1!important;align-self:center!important;
+  flex:0 0 auto!important;grid-column:auto!important;grid-row:auto!important;
 }
 body .performance-panel:not(.perform-has-selection) .perform-header #perform-summary{
- grid-column:2/6!important;grid-row:1!important;max-width:none!important;
- text-align:right!important;font-size:10px!important;
-}
-body .performance-panel:not(.perform-has-selection) .perform-header #perform-show{grid-column:2!important;grid-row:2!important}
-body .performance-panel:not(.perform-has-selection) .perform-header #perform-follow{grid-column:3!important;grid-row:2!important}
-body .performance-panel:not(.perform-has-selection) .perform-header #perform-reset{grid-column:4!important;grid-row:2!important}
-body .performance-panel:not(.perform-has-selection) .perform-header #perform-help{grid-column:5!important;grid-row:2!important}
-body .performance-panel .perform-detail,body[data-theme] .performance-panel .perform-detail{
- height:72px!important;min-height:72px!important;max-height:72px!important;
- grid-template-rows:20px 21px 20px!important;gap:2px 4px!important;padding:3px 6px!important;
-}
-body .performance-panel .perform-detail button{min-height:20px!important;height:20px!important}
-body .performance-panel .perform-detail #perform-dialog-gain{min-height:21px!important;height:21px!important}
-body .performance-panel .perform-detail .perform-dialog-step-actions button{min-height:21px!important;height:21px!important}
-body .performance-panel .perform-detail #perform-dialog-neutral{min-height:20px!important;height:20px!important}
-
-/* One-row Mix toolbar. Identical outer geometry with or without selection. */
-body .performance-panel .perform-header,
-body[data-theme] .performance-panel .perform-header,
-body .performance-panel.perform-has-selection .perform-header,
-body[data-theme] .performance-panel.perform-has-selection .perform-header,
-body .performance-panel:not(.perform-has-selection) .perform-header,
-body[data-theme] .performance-panel:not(.perform-has-selection) .perform-header{
- display:flex!important;align-items:center!important;align-content:center!important;
- height:58px!important;min-height:58px!important;max-height:58px!important;
- flex:0 0 58px!important;box-sizing:border-box!important;
- padding:5px 7px!important;gap:5px!important;
-}
-body .performance-panel:not(.perform-has-selection) .perform-header strong{
- flex:0 0 auto!important;grid-column:auto!important;grid-row:auto!important;
-}
-body .performance-panel:not(.perform-has-selection) .perform-header #perform-summary{
- flex:1 1 auto!important;grid-column:auto!important;grid-row:auto!important;
- min-width:0!important;max-width:none!important;text-align:left!important;
- overflow:hidden!important;text-overflow:ellipsis!important;
+  flex:1 1 auto!important;grid-column:auto!important;grid-row:auto!important;
+  min-width:0!important;max-width:none!important;text-align:left!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;
 }
 body .performance-panel:not(.perform-has-selection) .perform-header #perform-show,
 body .performance-panel:not(.perform-has-selection) .perform-header #perform-follow,
 body .performance-panel:not(.perform-has-selection) .perform-header #perform-reset,
 body .performance-panel:not(.perform-has-selection) .perform-header #perform-help{
- grid-column:auto!important;grid-row:auto!important;flex:0 0 auto!important;
+  grid-column:auto!important;grid-row:auto!important;flex:0 0 auto!important;
 }
-body .performance-panel .perform-detail,body[data-theme] .performance-panel .perform-detail{
- height:58px!important;min-height:58px!important;max-height:58px!important;
- grid-template-rows:23px 23px!important;gap:2px 4px!important;
- padding:4px 6px!important;
+body .performance-panel .perform-detail,
+body[data-theme] .performance-panel .perform-detail{
+  display:grid!important;position:absolute!important;inset:0!important;
+  box-sizing:border-box!important;
+  height:64px!important;min-height:64px!important;max-height:64px!important;
+  grid-template-columns:minmax(0,1fr) repeat(4,auto)!important;
+  grid-template-rows:25px 27px!important;
+  align-items:center!important;gap:3px 4px!important;
+  padding:4px 6px!important;
 }
-body .performance-panel .perform-detail #perform-dialog-neutral{
- grid-column:4/6!important;grid-row:2!important;
- min-width:0!important;height:23px!important;min-height:23px!important;
+body .performance-panel .perform-detail h2{grid-column:1!important;grid-row:1!important}
+body .performance-panel .perform-detail .perform-dialog-actions{display:contents!important}
+body .performance-panel .perform-detail #perform-dialog-mute{
+  grid-column:2!important;grid-row:1!important;display:block!important
+}
+body .performance-panel .perform-detail #perform-dialog-solo{
+  grid-column:3!important;grid-row:1!important;display:block!important
+}
+body .performance-panel .perform-detail #perform-dialog-parameters-toggle:not([hidden]){
+  grid-column:4!important;grid-row:1!important;display:block!important
+}
+body .performance-panel .perform-detail #perform-dialog-close{
+  grid-column:5!important;grid-row:1!important
 }
 body .performance-panel .perform-detail .perform-dialog-gain-line{
- grid-column:1/4!important;grid-row:2!important;
+  grid-column:1/3!important;grid-row:2!important;
+  display:flex!important;min-width:0!important;gap:4px!important;
+}
+body .performance-panel .perform-detail .perform-dialog-gain-line label{
+  flex:0 0 auto!important;min-width:0!important;font-size:10px!important;
+}
+body .performance-panel .perform-detail #perform-dialog-gain{
+  flex:1 1 auto!important;min-width:70px!important;width:100%!important;
+  height:27px!important;min-height:27px!important;margin:0!important;
 }
 body .performance-panel .perform-detail .perform-dialog-step-actions{
- display:flex!important;grid-column:3/6!important;grid-row:2!important;
- gap:3px!important;min-width:0!important;
+  display:flex!important;grid-column:3/5!important;grid-row:2!important;
+  gap:3px!important;min-width:0!important;margin:0!important;
 }
 body .performance-panel .perform-detail .perform-dialog-step-actions button{
- display:block!important;min-width:32px!important;padding:1px 3px!important;
+  display:block!important;min-width:35px!important;padding:2px 3px!important;
 }
 body .performance-panel .perform-detail #perform-dialog-neutral{
- grid-column:1/3!important;grid-row:3!important;
+  display:block!important;grid-column:5!important;grid-row:2!important;
+  min-width:50px!important;width:auto!important;
+  font-size:10px!important;
 }
-body .performance-panel .perform-detail,body[data-theme] .performance-panel .perform-detail{
- grid-template-rows:23px 23px 23px!important;
+body .performance-panel .perform-detail button{
+  height:27px!important;min-height:27px!important;padding:3px 5px!important;
 }
-body .performance-panel .perform-header,body[data-theme] .performance-panel .perform-header,
-body .performance-panel.perform-has-selection .perform-header,
-body[data-theme] .performance-panel.perform-has-selection .perform-header,
-body .performance-panel:not(.perform-has-selection) .perform-header,
-body[data-theme] .performance-panel:not(.perform-has-selection) .perform-header{
- height:80px!important;min-height:80px!important;max-height:80px!important;flex:0 0 80px!important;
+body .performance-panel .perform-detail #perform-dialog-parameters{
+  grid-column:1/6!important;grid-row:2!important;
 }
-body .performance-panel .perform-detail,body[data-theme] .performance-panel .perform-detail{
- height:80px!important;min-height:80px!important;max-height:80px!important;
+body .performance-panel .perform-detail.perform-sound-mode .perform-dialog-step-actions,
+body .performance-panel .perform-detail.perform-sound-mode #perform-dialog-neutral{
+  display:none!important;
 }
-body .performance-panel .perform-detail button{height:23px!important;min-height:23px!important}
-body .performance-panel .perform-detail #perform-dialog-gain{height:23px!important;min-height:23px!important}
 @media(max-width:420px){
  body .performance-panel:not(.perform-has-selection) .perform-header #perform-summary{
-   font-size:8px!important;
+  font-size:8px!important;
  }
- body .performance-panel:not(.perform-has-selection) .perform-header #perform-follow{
-   min-width:58px!important;
- }
+ body .performance-panel .perform-detail{gap:2px 3px!important;padding:4px!important}
+ body .performance-panel .perform-detail button{font-size:9px!important;padding:2px 3px!important}
+ body .performance-panel .perform-detail #perform-dialog-neutral{min-width:45px!important}
+}
+
+/* A hidden inspector must never intercept the ordinary Mix controls. */
+body .performance-panel .perform-detail[hidden],
+body[data-theme] .performance-panel .perform-detail[hidden]{
+ display:none!important;visibility:hidden!important;pointer-events:none!important;
 }

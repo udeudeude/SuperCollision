@@ -202,7 +202,7 @@ body[data-theme=terminal] .projectbar button,body[data-theme=terminal] .menu>sum
 body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 @media(max-width:390px){body[data-theme=patch] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 78px}body[data-theme=scope] .toolbar button{font-size:9px}body[data-theme=score] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 65px}}
 </style>
-<link rel="stylesheet" href="./instrument-layout.css?v=25"><link rel="stylesheet" href="./performance.css?v=31"><link rel="stylesheet" href="./learning.css?v=5"><link rel="stylesheet" href="./catalog-assist.css?v=3"><link rel="stylesheet" href="./repair-ui.css?v=2"><link rel="stylesheet" href="./sound-designer.css?v=3">
+<link rel="stylesheet" href="./instrument-layout.css?v=26"><link rel="stylesheet" href="./performance.css?v=33"><link rel="stylesheet" href="./learning.css?v=5"><link rel="stylesheet" href="./catalog-assist.css?v=3"><link rel="stylesheet" href="./repair-ui.css?v=2"><link rel="stylesheet" href="./sound-designer.css?v=3">
 <header><svg class="identity-art" viewBox="0 0 48 40" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
 <g class="art art-bauhaus"><rect x="1" y="3" width="18" height="18" fill="#1f4b8f"/><circle cx="30" cy="13" r="11" fill="#bf4337"/><path d="M3 37L21 23L39 37Z" fill="#e8ae40"/></g>
 <g class="art art-blackmountain" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 4V36M14 4V36M24 4V36M34 4V36M44 4V36"/><path d="M2 11H46M2 21H46M2 31H46" stroke="#b7774f" stroke-width="4"/><path d="M4 11H14M24 21H34M14 31H24" stroke="#e9e1cf" stroke-width="5"/></g>
@@ -310,10 +310,10 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 <div id="workspace-divider" role="separator" tabindex="0" aria-orientation="horizontal"
  aria-label="Resize code editor and console" aria-valuemin="20" aria-valuemax="75" aria-valuenow="46"
  title="Drag to resize editor and console; double-tap to reset"><span aria-hidden="true"></span></div>
-<div class="panel console-shell"><div class="console-bar"><div class="inspector-modes" role="group" aria-label="Lower panel"><button type="button" id="inspector-code" aria-pressed="true">CODE</button><button type="button" id="inspector-console" aria-pressed="false">CONSOLE</button><button type="button" id="inspector-perform" aria-pressed="false" title="Instrument mixer and event timeline">MIX</button><button type="button" id="inspector-learn" aria-pressed="false">LEARN</button><button type="button" id="inspector-design" aria-pressed="false" title="Generate SuperCollider sounds from descriptions">GENERATE</button></div><button id="engine-status-open" type="button" aria-label="Read full engine status" aria-haspopup="dialog" title="Swipe sideways, or tap to read full status"><span id="engine-status" role="status" aria-live="polite">Engine off · Press POWER</span></button></div>
+<div class="panel console-shell"><div class="console-bar"><div class="inspector-modes" role="group" aria-label="Lower panel"><button type="button" id="inspector-code" aria-pressed="true">CODE</button><button type="button" id="inspector-console" aria-pressed="false">CONSOLE</button><button type="button" id="inspector-perform" aria-pressed="false" title="Instrument mixer and event timeline">MIX</button><button type="button" id="inspector-learn" aria-pressed="false">LEARN</button><button type="button" id="inspector-design" aria-pressed="false" title="Generate SuperCollider sounds from descriptions">GENERATE</button></div><div id="engine-status-open" aria-label="Engine status; swipe horizontally to read"><span id="engine-status" role="status" aria-live="polite">Engine off · Press POWER</span></div></div>
 <button id="console-follow" type="button" hidden aria-label="Jump to latest console output">↓ Latest output</button>
 <details id="console-panel"><summary>SuperCollider console</summary><div class="actions"><button id="clear-console" class="secondary">Clear console</button></div><section id="console-guidance" hidden aria-label="Explanation of the latest error"><div class="console-guidance-head"><strong id="console-guidance-title"></strong><button type="button" id="console-guidance-dismiss" aria-label="Dismiss error explanation">×</button></div><p id="console-guidance-text"></p><div class="console-guidance-actions"><button type="button" id="console-guidance-jump" hidden>GO TO CODE</button><button type="button" id="console-guidance-copy" hidden>COPY CORRECTION</button></div></section><pre id="console" aria-live="off"></pre></details></div>
-<dialog id="engine-status-dialog" aria-labelledby="engine-status-dialog-title"><h2 id="engine-status-dialog-title">Engine status</h2><p id="engine-status-full"></p><button type="button" id="engine-status-close">Close</button></dialog>
+
 <section class="panel learning-host" id="learning-host" aria-label="SuperCollider learning panel"></section>
 <section class="panel sound-host" id="sound-host" aria-label="SuperCollider sound designer"></section>
 <section class="panel performance-panel" id="perform-panel" aria-label="Live performance controls and musical event timeline">
@@ -523,7 +523,7 @@ renderProjects();document.addEventListener('visibilitychange',()=>{if(document.v
 </script>
 <script type="module">
 import {createLiveActivityUI} from "./live-activity.mjs?v=24";
-import {createPerformanceUI} from "./performance-ui.mjs?v=27";
+import {createPerformanceUI} from "./performance-ui.mjs?v=28";
 import {encodeOsc} from "./performance-engine.mjs?v=25";
 import {createPriorityOscBridge} from "./osc-priority-bridge.mjs?v=1";
 import {createLearning} from "./learning.mjs?v=5";
@@ -550,16 +550,6 @@ function refreshCompletionToggle(){completionToggle.textContent='Code suggestion
 completionToggle.onclick=()=>{languageTools.setEnabled(!languageTools.enabled);refreshCompletionToggle()};
 refreshCompletionToggle();
 const state=document.querySelector('#engine-status'),log=document.querySelector('#console'),run=document.querySelector('#evaluate'),panic=document.querySelector('#panic');
-const statusDialog=document.querySelector('#engine-status-dialog');
-const completeStatus=document.querySelector('#engine-status-full');
-document.querySelector('#engine-status-open').addEventListener('click',()=>{
- completeStatus.textContent=state.textContent;
- if(!statusDialog.open)statusDialog.showModal();
-});
-document.querySelector('#engine-status-close').addEventListener('click',()=>statusDialog.close());
-statusDialog.addEventListener('click',event=>{if(event.target===statusDialog)statusDialog.close()});
-new MutationObserver(()=>{if(statusDialog.open)completeStatus.textContent=state.textContent})
- .observe(state,{childList:true,characterData:true,subtree:true});
 const consoleScroll=document.querySelector('#console-panel');
 const consoleFollowButton=document.querySelector('#console-follow');
 let consoleFollowing=true,unreadConsoleLines=0,userScrollingConsole=false,autoScrollingConsole=false,consoleIntentReset=0;

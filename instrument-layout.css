@@ -767,3 +767,13 @@ body #lab-home-screen-setup #lab-home-setup-now{
 /* Live chevron indicates the action: down collapses, up expands. */
 body .live-panel:not(.live-collapsed) .live-panel-icon{transform:rotate(180deg)}
 body .live-panel.live-collapsed .live-panel-icon{transform:none}
+
+/* Engine status is text, not a button: swipe horizontally to read it. */
+body .console-bar #engine-status-open,body[data-theme] .console-bar #engine-status-open{
+ cursor:default!important;overflow:hidden!important;
+}
+body .console-bar #engine-status,body[data-theme] .console-bar #engine-status{
+ overflow-x:auto!important;overflow-y:hidden!important;
+ white-space:nowrap!important;text-overflow:clip!important;
+ touch-action:pan-x!important;overscroll-behavior-x:contain;
+}
