@@ -22,7 +22,7 @@ permissions:
   contents: write
 concurrency:
   group: supercollision-pages-publish
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   publish:
     runs-on: ubuntu-24.04
