@@ -42,7 +42,10 @@ export function createLanguageTools({editor,host,getLearningMode=()=> 'guided',o
  const filters=element('div','catalog-controls');filters.append(sorts,categories);
  const list=element('div','catalog-list');
  const detail=element('div','catalog-detail');detail.hidden=true;
- panel.append(heading,count,search,filters,list,detail);
+ const fullCatalogButton=element('button','catalog-download','Load complete catalog (1.5 MB)');
+ fullCatalogButton.type='button';
+ fullCatalogButton.title='Optional large download. The built-in reference works without it.';
+ panel.append(heading,count,fullCatalogButton,search,filters,list,detail);
  host.append(panel);
  const frame=editor.closest('.editor-frame');
  const tray=element('div','completion-tray');tray.id='completion-tray';tray.hidden=true;
@@ -366,21 +369,30 @@ export function createLanguageTools({editor,host,getLearningMode=()=> 'guided',o
    if(mode==='off')panel.hidden=true;
    refresh();
  }
- // Keep catalog selection stable across app startup and composition swaps.
- (async()=>{
+ // The complete language catalog is ~1.5 MB. Never fetch it automatically,
+ // because iOS cannot reliably distinguish Wi-Fi from cellular.
+ // Common-language completions remain available from the built-in catalog.
+ fullCatalogButton.onclick=async()=>{
+   if(catalog.full)return;
+   if(!window.confirm('The complete SuperCollider command catalog is about 1.5 MB. iPhone browsers cannot reliably detect Wi-Fi. Continue only if you are on Wi-Fi or explicitly authorize this download over cellular.'))return;
+   fullCatalogButton.disabled=true;
+   fullCatalogButton.textContent='Loading catalog...';
    try{
      const response=await fetch('./language-catalog.json',{cache:'force-cache'});
      if(!response.ok)throw Error('catalog unavailable');
      const payload=await response.json();
      if(!Array.isArray(payload.classes)||payload.classes.length<800)throw Error('incomplete catalog');
      catalog=buildCatalog(payload);
+     fullCatalogButton.hidden=true;
+     if(!panel.hidden){buildCategories();renderList()}
+     refresh();
    }catch(error){
-     // On local development, the official catalog is produced by deployment.
-     catalog=buildCatalog();
+     fullCatalogButton.textContent='Retry complete catalog download';
+     count.textContent='Complete catalog unavailable. Built-in reference remains available.';
+   }finally{
+     fullCatalogButton.disabled=false;
    }
-   if(!panel.hidden){buildCategories();renderList()}
-   refresh();
- })();
+ };
  function suspend(next){
    suspended=Boolean(next);
    if(suspended)closeTray();else refresh();
