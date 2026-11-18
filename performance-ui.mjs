@@ -301,13 +301,14 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     const graphWidth=Math.min(24000,Math.max(500,Math.ceil(timespan*SCALE)));
     rowsEl.style.setProperty('--track-width',graphWidth+'px');
     const tickEl=panel.querySelector('#perform-axis-ticks');
-    const ticks=[];
-    for(let seconds=0;seconds<=timespan&&seconds<1500;seconds+=10){
-      const tick=document.createElement('span');tick.className='perform-axis-tick';
-      tick.style.left=seconds*SCALE+'px';tick.textContent=formatTime(seconds);ticks.push(tick);
-    }
-    tickEl.style.width=graphWidth+'px';
     if(timespan!==lastTickSpan){
+      const ticks=[];
+      for(let seconds=0;seconds<=timespan&&seconds<1500;seconds+=10){
+        const tick=document.createElement('span');tick.className='perform-axis-tick';
+        tick.style.left=seconds*SCALE+'px';tick.textContent=formatTime(seconds);
+        ticks.push(tick);
+      }
+      tickEl.style.width=graphWidth+'px';
       tickEl.replaceChildren(...ticks);
       lastTickSpan=timespan;
     }
