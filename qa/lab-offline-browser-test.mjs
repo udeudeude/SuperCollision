@@ -341,6 +341,7 @@ try{
   await page.waitForFunction(()=>
     document.querySelector('.perform-lane[data-name="uxMeter"]')?.classList.contains('perform-idle'),
     null,{timeout:3000});
+  await page.waitForTimeout(380); // Allow the intentional 280ms idle-height transition.
   assert((await lane.boundingBox()).height<38,
     'A long-resting instrument row failed to shrink');
   const frozen=await page.evaluate(()=>{
