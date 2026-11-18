@@ -318,8 +318,9 @@ try{
   await page.locator('#perform-dialog-minus').click();
   assert.equal(await page.locator('#perform-dialog-gain-value').textContent(),'95%',
     'Precise five-percent volume adjustment failed');
-  assert.equal(await page.locator('#perform-dialog-param-name').inputValue(),'out',
-    'Sound controls should expose named synth parameters');
+  await page.locator('#perform-dialog-parameters-toggle').click();
+  assert.equal(await page.locator('#perform-dialog-param-name').inputValue(),'freq',
+    'Sound controls should start with a musical parameter, not output routing');
   await page.locator('#perform-dialog-close').click();
   await page.waitForTimeout(100);
   await lane.locator('.perform-name').click();
