@@ -175,8 +175,8 @@ body .perform-voices{
 }
 body .perform-actions{display:flex;flex:1;align-items:center;gap:3px;min-height:0;height:30px}
 body .perform-actions button,body[data-theme] .perform-actions button{
-  flex:0 0 30px;width:30px;height:30px;min-height:30px;min-width:30px;
-  font:800 12px/1 ui-monospace,monospace;border-radius:2px;
+  flex:0 0 36px;width:36px;height:30px;min-height:30px;min-width:36px;
+  font:800 9px/1 ui-monospace,monospace;border-radius:2px;
   touch-action:manipulation
 }
 body .perform-actions button.perform-level{
