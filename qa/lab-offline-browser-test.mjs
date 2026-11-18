@@ -80,6 +80,8 @@ try{
   assert(legacyRedirected,'Redirect fixture did not simulate Cloudflare');
   await page.waitForTimeout(1000);
   assert.equal(await page.locator('#code').isVisible(),true,'Editor did not load');
+  assert(!browserErrors.some(error=>error.includes('SyntaxError')||error.includes('ReferenceError')),
+    'Application JavaScript failed to initialize: '+browserErrors.join(' | '));
   assert.equal(requests.some(x=>x.includes('language-catalog.json')),false,
     'The large language catalog downloaded without permission');
   assert.equal(requests.some(x=>x.startsWith('/runtime/')),false,
@@ -142,8 +144,6 @@ try{
   const longStatus='EVALUATED L1–758 • execution succeeded • composition saved';
   await page.locator('#engine-status').evaluate((el,text)=>{el.textContent=text},longStatus);
   await page.locator('#engine-status-open').click();
-  console.log('Browser errors before dialog',browserErrors);
-  console.log('Engine dialog diagnostic',await page.locator('#engine-status-dialog').evaluate(el=>({open:el.open,display:getComputedStyle(el).display,visibility:getComputedStyle(el).visibility,rect:el.getBoundingClientRect().toJSON(),button:document.querySelector('#engine-status-open').outerHTML,errors:window.__qaBrowserErrors||[]})));
   await page.locator('#engine-status-dialog').waitFor({state:'visible',timeout:5000});
   assert(await page.locator('#engine-status-dialog').evaluate(el=>el.open),
     'The full engine status dialog did not open');
