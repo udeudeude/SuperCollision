@@ -764,7 +764,29 @@ body .performance-panel .perform-detail #perform-dialog-neutral{
 body .performance-panel .perform-detail .perform-dialog-gain-line{
  grid-column:1/4!important;grid-row:2!important;
 }
-body .performance-panel .perform-detail .perform-dialog-step-actions{display:none!important}
+body .performance-panel .perform-detail .perform-dialog-step-actions{
+ display:flex!important;grid-column:3/6!important;grid-row:2!important;
+ gap:3px!important;min-width:0!important;
+}
+body .performance-panel .perform-detail .perform-dialog-step-actions button{
+ display:block!important;min-width:32px!important;padding:1px 3px!important;
+}
+body .performance-panel .perform-detail #perform-dialog-neutral{
+ grid-column:1/3!important;grid-row:3!important;
+}
+body .performance-panel .perform-detail,body[data-theme] .performance-panel .perform-detail{
+ grid-template-rows:23px 23px 23px!important;
+}
+body .performance-panel .perform-header,body[data-theme] .performance-panel .perform-header,
+body .performance-panel.perform-has-selection .perform-header,
+body[data-theme] .performance-panel.perform-has-selection .perform-header,
+body .performance-panel:not(.perform-has-selection) .perform-header,
+body[data-theme] .performance-panel:not(.perform-has-selection) .perform-header{
+ height:80px!important;min-height:80px!important;max-height:80px!important;flex:0 0 80px!important;
+}
+body .performance-panel .perform-detail,body[data-theme] .performance-panel .perform-detail{
+ height:80px!important;min-height:80px!important;max-height:80px!important;
+}
 body .performance-panel .perform-detail button{height:23px!important;min-height:23px!important}
 body .performance-panel .perform-detail #perform-dialog-gain{height:23px!important;min-height:23px!important}
 @media(max-width:420px){
