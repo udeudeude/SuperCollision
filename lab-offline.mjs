@@ -55,10 +55,10 @@ async function existingPack() {
 async function downloadPack() {
   if (!navigator.onLine) throw Error('Connect to the internet to prepare the offline copy.');
   const manifestResponse = await fetch('./lab-offline-assets.json', {cache: 'no-store'});
-  if (!manifestResponse.ok) throw Error('The experimental download manifest is unavailable');
+  if (!manifestResponse.ok) throw Error('The offline download manifest is unavailable');
   const manifest = await manifestResponse.json();
   if (!Array.isArray(manifest.files) || typeof manifest.version !== 'string')
-    throw Error('The experimental download manifest is invalid');
+    throw Error('The offline download manifest is invalid');
   const bytes = manifest.files.reduce((total, item) => total + (item.bytes || 0), 0);
   const current = await existingPack();
   if (current?.version === manifest.version) {
@@ -70,7 +70,7 @@ async function downloadPack() {
   // This confirmation is deliberately required regardless of browser connection hints:
   // on iPhone, even a reported "fast" connection does not prove it is Wi-Fi.
   if (!window.confirm(
-    'SuperCollision Lab will download about ' + displaySize(bytes) +
+    'SuperCollision will download about ' + displaySize(bytes) +
     ' of application, synthesizer and catalog files. iOS cannot reliably identify Wi-Fi. ' +
     'Tap OK only if you are on Wi-Fi, or if you explicitly authorize this download on cellular.'
   )) return;
