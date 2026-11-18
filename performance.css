@@ -124,3 +124,172 @@ body .perform-header #perform-show{min-width:31px}
  body .perform-header{gap:3px;padding-left:4px;padding-right:4px}
  body .perform-header button{padding-left:3px;padding-right:3px;letter-spacing:0}
 }
+
+
+/* Mix workbench redesign. Compact lanes preserve source order and make full
+ * touch controls available in a modal rather than a cramped 30px slider. */
+body{--perform-left:clamp(144px,39vw,174px)}
+body .perform-header,body[data-theme] .perform-header{
+  gap:4px;flex:0 0 44px;height:44px;min-height:44px;
+  padding:3px 5px;font:700 10px/1.15 ui-monospace,monospace;
+}
+body .perform-header strong{font-size:11px;letter-spacing:.05em}
+body .perform-header #perform-summary{
+  font:10px/1.2 ui-monospace,monospace;min-width:0;flex:1;opacity:.8;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+body .perform-header button,body[data-theme] .perform-header button{
+  height:35px;min-height:35px;padding:2px 6px;min-width:36px;
+  font:800 10px/1 ui-monospace,monospace;border-radius:3px;
+  touch-action:manipulation
+}
+body .perform-header #perform-follow{
+  min-width:76px;white-space:nowrap
+}
+body .perform-header #perform-follow[aria-pressed=false]{
+  color:var(--perform-bg);background:var(--perform-fg);
+  border-color:var(--perform-fg)
+}
+body .perform-header #perform-help{min-width:34px;font-size:16px}
+body .perform-header #perform-reset{min-width:48px}
+body .perform-lane,body .perform-lane.perform-resting{
+  flex:0 0 auto;height:61px;min-height:0!important;
+  overflow:hidden;transition:height .28s ease
+}
+body .perform-lane.perform-idle,body .perform-lane.perform-idle.perform-resting{
+  height:28px;min-height:0!important
+}
+body .perform-controls{
+  display:flex;flex:0 0 var(--perform-left);width:var(--perform-left);
+  padding:3px 5px;gap:1px;min-height:0;overflow:hidden
+}
+body .perform-name{
+  flex:0 0 15px;height:15px;min-height:0;
+  font:800 11px/15px ui-monospace,monospace;
+  touch-action:manipulation
+}
+body .perform-voices{
+  flex:0 0 11px;height:11px;
+  font:9px/11px ui-monospace,monospace;opacity:.78
+}
+body .perform-actions{display:flex;flex:1;align-items:center;gap:3px;min-height:0;height:30px}
+body .perform-actions button,body[data-theme] .perform-actions button{
+  flex:0 0 30px;width:30px;height:30px;min-height:30px;min-width:30px;
+  font:800 12px/1 ui-monospace,monospace;border-radius:2px;
+  touch-action:manipulation
+}
+body .perform-actions button.perform-level{
+  flex:1 1 auto;min-width:42px;width:auto;
+  color:var(--perform-fg);font-size:11px;white-space:nowrap;
+  border-color:var(--voice-color)
+}
+body .perform-actions button.selected{color:var(--perform-bg)}
+body .perform-track{
+  min-height:0!important;height:100%;box-sizing:border-box;
+  background-size:auto
+}
+body .perform-event,body[data-theme] .perform-event{
+  top:calc(50% - 10px);height:20px;min-height:0!important;
+  max-height:20px;overflow:hidden;
+  border:1px solid var(--voice-color);border-radius:2px;
+  background:color-mix(in srgb,var(--voice-color) 18%,var(--perform-bg));
+  padding:0;box-shadow:none
+}
+body .perform-event.perform-running{
+  border-bottom-width:2px;
+  background:color-mix(in srgb,var(--voice-color) 26%,var(--perform-bg))
+}
+body .perform-event-level{
+  display:block;position:absolute;left:0;right:0;bottom:0;
+  height:var(--note-level,0%);max-height:100%;
+  pointer-events:none;opacity:.7;background:var(--voice-color);
+  border-radius:1px 1px 0 0
+}
+body .perform-event.perform-level-unknown{
+  background:repeating-linear-gradient(135deg,
+    color-mix(in srgb,var(--voice-color) 30%,var(--perform-bg)) 0 4px,
+    var(--perform-bg) 4px 8px)
+}
+body .perform-lane.perform-idle .perform-actions{display:none}
+body .perform-lane.perform-idle .perform-voices{
+  position:absolute;right:5px;top:7px;opacity:.55;font-size:8px;
+}
+body .perform-lane.perform-idle .perform-name{max-width:68%;line-height:20px;flex-basis:20px}
+body .perform-lane.perform-idle .perform-controls{position:sticky}
+body .perform-lane.perform-idle .perform-event{height:9px;min-height:0;max-height:9px;top:calc(50% - 4px)}
+body .perform-lane.perform-idle .perform-event-level{opacity:.5}
+body .perform-lane.perform-muted .perform-track{opacity:.66}
+body .perform-lane.perform-resting .perform-track{opacity:.85}
+body .perform-axis{min-height:22px;height:22px}
+body .perform-axis-ticks{height:22px}
+body .perform-axis-tick{font-size:9px}
+body .perform-scroller{scrollbar-gutter:stable}
+body .perform-mix-dialog{
+  box-sizing:border-box;
+  width:min(450px,calc(100vw - 26px));max-width:none;
+  max-height:min(85dvh,690px);overflow-y:auto;
+  background:var(--perform-bg,#211e19);color:var(--perform-fg,#e9dac0);
+  border:2px solid var(--perform-border,#917758);border-radius:8px;
+  padding:16px;box-shadow:0 12px 36px #0009;
+  font:13px/1.4 system-ui,sans-serif;
+}
+body .perform-mix-dialog::backdrop{background:#000a}
+body .perform-mix-dialog h2{font:750 18px/1.3 system-ui,sans-serif;margin:0 0 8px}
+body .perform-mix-dialog h3{font:700 13px/1.3 system-ui,sans-serif;margin:13px 0 5px}
+body .perform-mix-dialog p{font:12px/1.5 system-ui,sans-serif;margin:5px 0 10px}
+body .perform-mix-dialog button{
+  border:1px solid var(--perform-border);border-radius:4px;
+  min-height:44px;height:auto;padding:8px 11px;
+  background:transparent;color:var(--perform-fg);
+  font:700 12px/1.2 system-ui,sans-serif;
+}
+body .perform-dialog-actions{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}
+body .perform-dialog-actions button{flex:1 1 85px}
+body .perform-dialog-actions button[aria-pressed=true]{
+  background:var(--perform-border);color:var(--perform-bg)
+}
+body .perform-dialog-gain-line label{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:14px;margin:0 0 6px
+}
+body .perform-mix-dialog input[type=range]{
+  display:block;width:100%;height:40px;min-height:40px;
+  padding:0;margin:3px 0 10px;
+  accent-color:var(--perform-border);
+  touch-action:pan-x
+}
+body .perform-mix-dialog input[type=range]::-webkit-slider-thumb{
+  min-width:26px;min-height:26px
+}
+body .perform-dialog-param-line{display:flex;gap:8px;align-items:center}
+body .perform-dialog-param-line select{
+  flex:1;min-width:0;min-height:44px;font-size:14px;
+  background:var(--perform-bg);color:var(--perform-fg);border-color:var(--perform-border)
+}
+body .perform-dialog-param-line output{min-width:44px;text-align:right}
+body .perform-mix-dialog section[hidden]{display:none!important}
+body .perform-mix-dialog #perform-dialog-close,
+body .perform-mix-dialog #perform-help-close{
+  display:block;width:100%;margin-top:8px;
+  background:var(--perform-border);color:var(--perform-bg)
+}
+body .perform-help-dialog p{font-size:13px;margin:9px 0}
+@media(max-width:420px){
+  body{--perform-left:clamp(144px,39vw,166px)}
+  body .perform-header strong{font-size:10px}
+  body .perform-header #perform-summary{font-size:9px}
+  body .perform-header button{font-size:9px;padding:2px 5px}
+  body .perform-header #perform-follow{min-width:72px}
+  body .perform-header #perform-reset{min-width:44px}
+  body .perform-controls{padding:3px}
+  body .perform-name{font-size:10px}
+  body .perform-voices{font-size:9px}
+}
+@media(max-width:355px){
+  body .perform-header strong{display:none}
+  body .perform-header #perform-summary{font-size:8px}
+  body .perform-header #perform-follow{min-width:65px;font-size:8px}
+}
+@media(prefers-reduced-motion:reduce){
+  body .perform-lane{transition:none}
+}
