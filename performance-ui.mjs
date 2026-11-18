@@ -225,7 +225,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     const controls=document.createElement('div');controls.className='perform-controls';
     const title=document.createElement('button');title.type='button';title.className='perform-name';
     title.textContent=r.name;title.title='Jump to instrument definition in code';
-    title.addEventListener('click',()=>jumpTo(journal.defs.get(r.name)?.site));
+
     const info=document.createElement('span');info.className='perform-voices';
     const actions=document.createElement('div');actions.className='perform-actions';
     const mute=button('MUTE','Mute '+r.name,()=>{
@@ -244,7 +244,6 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     level.setAttribute('aria-haspopup','dialog');
     // Compact overview: select an instrument to reveal its controls.
     title.title='Select '+r.name+' to adjust its sound';
-    title.replaceWith(title);
     title.addEventListener('click',()=>openMix(r.name));
     actions.append(mute,solo,level);
     controls.append(title,info,actions);
@@ -356,7 +355,9 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
         // Finished notes are immutable. Avoid rebuilding thousands of
         // historic bar styles and labels every 350ms during long pieces.
         const endSignature=String(e.end);
-        if(e.end===null||bar.dataset.renderedEnd!==endSignature){
+        const boundsKey=JSON.stringify(pitchBounds.get(row.name)||null);
+        if(e.end===null||bar.dataset.renderedEnd!==endSignature||bar.dataset.pitchBounds!==boundsKey){
+          bar.dataset.pitchBounds=boundsKey;
           bar.dataset.renderedEnd=endSignature;
           bar.classList.toggle('perform-running',e.end===null&&!stopped);
           bar.style.left=Math.max(0,start*SCALE)+'px';
