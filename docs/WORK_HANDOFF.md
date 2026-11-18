@@ -1,22 +1,18 @@
-# SuperCollision: current development and handoff record
+# SuperCollision: canonical development handoff
 
-## Main production accepted on iPhone — 17 November 2026
+## Unified production application confirmed — 17 November 2026
 
-- After publishing the unified offline application at https://supercollision.pages.dev/, the user reported **"Worked great"** following the requested main-site on-device acceptance test. Record this as user-confirmed successful main-app use, including the newly promoted offline features. Do not infer that all separate Lab-origin compositions or recordings have been exported or restored; that has not been explicitly confirmed.
-- Production deployment remains the canonical application; continue new development on `main` and publish via the browser-gated `publish-ui.yml` workflow to `pages-build`.
-- User previously requested retirement of the experimental Lab. **Do not erase the Lab-origin storage or remove its Home Screen icon until the user confirms any important compositions and recordings were exported to Files or transferred.** The `lab-build` preview and experimental source branch remain a temporary rollback/migration route, not the development target. Once data is safe, retire old Lab workflow/preview/branch if supported, without touching the production site or caches.
+- **Single canonical website:** https://supercollision.pages.dev/. The user tested the promoted offline instrument and interface on iPhone and reported **"Worked great."** The user subsequently confirmed that important Lab compositions and recordings have been backed up or transferred.
+- **Source branch:** `main`. **Compiled Cloudflare Pages production branch:** `pages-build`. The production publish workflow `.github/workflows/publish-ui.yml` assembles and browser-tests the frontend before updating `pages-build` while preserving the compiled SuperCollider audio engine.
+- **Lab retired in GitHub:** after user confirmation, deleted both old branches `feature/offline-safe-foundation` and `lab-build`, verified only `main` and `pages-build` remain. Removed old `publish-lab.yml` and `lab-webkit-restart.yml` workflows from `main`. Guarded one-time retirement run https://github.com/udeudeude/SuperCollision/actions/runs/44217405701 succeeded. Historical commits and merged pull request #1 remain available.
+- **Production last verified deployment:** `pages-build` commit `da72799a2cb78ad12dfe510216dde32e85c9608c`, successfully published to Cloudflare Pages. Full browser-gated production publishing: https://github.com/udeudeude/SuperCollision/actions/runs/44213045539.
+- The former Lab preview URL was a **branch alias**, not a separately configured Pages project. Deleting Git branches does not necessarily remove previously deployed immutable Cloudflare assets/aliases; any still accessible preview is obsolete and must not be used for further development. No Cloudflare production project should be deleted.
+- **Offline policy:** large optional resources (approximately 8 MB for the complete instrument) require explicit user consent, preferably over Wi-Fi; never silently download them over cellular. Safari and Home Screen local storage can be distinct. Keep local composition recovery and Files export/restore functionality.
+- Future work, including the planned sampler and recording library, should start from `main` and current production. Internal `lab-*` filenames refer to the tested **production offline machinery**, not to a separate active Lab app.
 
-## Production consolidated — 17 November 2026 (read this before historical entries)
+**Historical notes below are archival only.** They document the experimental path and contain superseded branch names, cautions, and test statuses. Do not treat them as current instructions.
 
-- The user authorized promotion of the tested offline laboratory app to the **single production site** at https://supercollision.pages.dev/. The code was merged into `main` with GitHub PR #1 (merge `8bdc7bcc5494a384bedb49f2e66f415688eaddac`).
-- **Production source:** `main`. **Production compiled site:** `pages-build`. GitHub workflow `.github/workflows/publish-ui.yml` now assembles the complete offline frontend and tests it before committing to `pages-build`, preserving the existing WebAssembly runtime.
-- The former `lab-build` preview at https://lab-build.supercollision.pages.dev/ must be retained *temporarily* for rollback and Files backup transfer. Never delete or clear the laboratory origin, Home Screen icon, or browser website data before the user confirms all compositions/recordings needed have been exported and restored to the main origin.
-- **Production release succeeded:** source merge PR #1, automated production browser suite https://github.com/udeudeude/SuperCollision/actions/runs/44213045539 (SUCCESS), published `pages-build` commit `da72799a2cb78ad12dfe510216dde32e85c9608c` with 37-file ~8.09 MB offline pack, normal SuperCollision branding, and adjustable panels. Cloudflare Pages check for that exact commit reported **SUCCESS**. **Real-device acceptance on the main origin remains unverified**; ask the user to test online boot, then explicit Wi-Fi-only offline pack installation and standalone Airplane Mode restart.
-- Large offline resources (~8 MB) must remain user-initiated with explicit Wi-Fi/cellular consent. No automatic large cellular downloads. Safari and standalone Home Screen data may be isolated.
-- This file retains chronological laboratory history for engineering reference, but **new work belongs on main**, not the experimental branch. For current deployment mechanics, see `DEPLOYMENT.md`.
-
-**Interruption-safe workflow:** Commit coherent tested milestones and record the status here. Assume a Work session can end unexpectedly. Avoid redundant plans, credentials, or browser actions.
-
+**Interruption-safe development:** make coherent tested commits, record handoffs here, and leave source/publishing recoverable without depending on a Work session staying open.
 ---
 
 ## Known-good separation (14 November 2026)
