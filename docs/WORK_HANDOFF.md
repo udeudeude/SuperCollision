@@ -1,6 +1,17 @@
-# SuperCollision Lab: live handoff record
+# SuperCollision: current development and handoff record
 
-**Checkpoint by completed operation, not elapsed minutes. Work credits may expire exceptionally quickly.** Start with browser-only tasks, beginning with creation of the separate Cloudflare Pages lab project. After each consequential browser-only action (especially an external setting or deployment), record the confirmed result and any required next action in this handoff and push once. For code-only work, commit coherent milestones rather than every edit. Never defer the first useful commit or status record until the end. Avoid repetitive administration that wastes Work usage. Never write credentials into this file; mark unverified items UNVERIFIED.
+## Current direction — 17 November 2026 (read this before historical entries)
+
+- The user authorized promotion of the tested offline laboratory app to the **single production site** at https://supercollision.pages.dev/. The code was merged into `main` with GitHub PR #1 (merge `8bdc7bcc5494a384bedb49f2e66f415688eaddac`).
+- **Production source:** `main`. **Production compiled site:** `pages-build`. GitHub workflow `.github/workflows/publish-ui.yml` now assembles the complete offline frontend and tests it before committing to `pages-build`, preserving the existing WebAssembly runtime.
+- The former `lab-build` preview at https://lab-build.supercollision.pages.dev/ must be retained *temporarily* for rollback and Files backup transfer. Never delete or clear the laboratory origin, Home Screen icon, or browser website data before the user confirms all compositions/recordings needed have been exported and restored to the main origin.
+- The production build and iPhone acceptance are **PENDING VERIFICATION** at the time this checkpoint was written. Check the GitHub production publisher and Cloudflare deployment, then ask the user to confirm offline POWER/RUN/STOP after a standalone restart on the main address. Do not claim fully completed promotion until verified.
+- Large offline resources (~8 MB) must remain user-initiated with explicit Wi-Fi/cellular consent. No automatic large cellular downloads. Safari and standalone Home Screen data may be isolated.
+- This file retains chronological laboratory history for engineering reference, but **new work belongs on main**, not the experimental branch. For current deployment mechanics, see `DEPLOYMENT.md`.
+
+**Interruption-safe workflow:** Commit coherent tested milestones and record the status here. Assume a Work session can end unexpectedly. Avoid redundant plans, credentials, or browser actions.
+
+---
 
 ## Known-good separation (14 November 2026)
 
