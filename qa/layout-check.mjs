@@ -442,12 +442,15 @@ try {
         const menus=await page.locator('#file-menu .file-submenu > summary').allTextContents();
         assert(menus.map(x=>x.trim()).join('|')==='IMPORT / EXPORT|EXAMPLES|EDITOR|STORAGE|LEARNING|TOOLS',
           'FILE submenus unexpected: '+menus.join('|'));
-        assert(await page.locator('#file-menu .menu-items > button').count()===5,
+        assert((await page.locator('#file-menu .menu-items > button:not(#file-menu-back)').count())===5,
           'New, Save as, Rename, Delete and Undo should remain direct FILE actions');
         await page.locator('#file-menu > summary').click();
         await page.locator('#file-menu .file-submenu > summary').filter({hasText:'IMPORT / EXPORT'}).click();
         const openBefore=await page.evaluate(()=>[...document.querySelectorAll('#file-menu .file-submenu')].filter(el=>el.open).length);
         assert(openBefore===1,'FILE must open just one submenu');
+        assert(await page.locator('#file-menu-back').isVisible(),
+          'Focused FILE section must expose a way back to the section chooser');
+        await page.locator('#file-menu-back').click();
         await page.locator('#file-menu .file-submenu > summary').filter({hasText:'STORAGE'}).click();
         const nested=await page.evaluate(()=>{
           const groups=[...document.querySelectorAll('#file-menu .file-submenu')];
