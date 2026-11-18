@@ -158,12 +158,50 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     <p>Tap the <b>100%</b> level button to adjust volume with a full-width slider, or change a sound parameter such as frequency or filter cutoff. These controls affect currently playing notes.</p>
     <p><b>Reset levels</b> restores the original mixer volumes and clears Mute and Solo. It does not stop playback or undo sound-parameter edits.</p>
     <p><b>Following</b> keeps the newest events in view. Vertical scrolling leaves it on. Swipe backward over roughly 15 seconds of the timeline to pause following. Tap <b>↪ Live</b> to return.</p>
-    <p>Each colored bar represents a synthesizer note. Its filled strip estimates the note’s declared amplitude from code, <b>not measured loudness or a waveform</b>. Tap the bar to jump to its source.</p>
+    <p>Each colored bar represents a synthesizer note. Its filled strip estimates the note’s declared amplitude from code, <b>not measured loudness or a waveform</b>. Tap a bar for its timing, frequency and code amplitude, plus a link to the instrument code.</p>
     <p>Quiet rows become compact after nine seconds. <b>Stop</b> freezes the musical timeline.</p>
     <button type="button" id="perform-help-close">Close</button>`;
   document.body.append(helpDialog);
   helpDialog.querySelector('#perform-help-close').addEventListener('click',()=>helpDialog.close());
   panel.querySelector('#perform-help')?.addEventListener('click',()=>{if(!helpDialog.open)helpDialog.showModal()});
+  // A note detail dialog is deliberately distinct from a waveform viewer:
+  // only parameters and event timings observed from the synth stream appear.
+  const noteDialog=document.createElement('dialog');
+  noteDialog.className='perform-mix-dialog perform-note-dialog';
+  noteDialog.innerHTML=`<h2 id="perform-note-title">Note</h2>
+    <dl>
+      <dt>Started</dt><dd id="perform-note-start"></dd>
+      <dt>Duration</dt><dd id="perform-note-duration"></dd>
+      <dt>Frequency</dt><dd id="perform-note-frequency"></dd>
+      <dt>Code amplitude</dt><dd id="perform-note-amplitude"></dd>
+    </dl>
+    <p>Amplitude is the value supplied in the code when this note began. It is not a measured waveform or sound-pressure level.</p>
+    <div class="perform-dialog-step-actions">
+      <button id="perform-note-code" type="button">Go to instrument code</button>
+      <button id="perform-note-close" type="button">Close</button>
+    </div>`;
+  document.body.append(noteDialog);
+  let noteSource=null;
+  noteDialog.querySelector('#perform-note-code').addEventListener('click',()=>{
+    noteDialog.close();
+    jumpTo(noteSource);
+  });
+  noteDialog.querySelector('#perform-note-close').addEventListener('click',()=>noteDialog.close());
+  const showNote=(name,event,stamp)=>{
+    noteSource=event.site;
+    noteDialog.querySelector('#perform-note-title').textContent=name;
+    noteDialog.querySelector('#perform-note-start').textContent=
+      formatTime((event.start-journal.zero)/1000);
+    noteDialog.querySelector('#perform-note-duration').textContent=
+      (event.end===null?'Playing · ':'Ended · ')+
+      ((Math.max(0,(event.end??stamp)-event.start))/1000).toFixed(2)+' seconds';
+    noteDialog.querySelector('#perform-note-frequency').textContent=
+      Number.isFinite(event.params?.freq)?Math.round(event.params.freq)+' Hz':'Not available';
+    noteDialog.querySelector('#perform-note-amplitude').textContent=
+      Number.isFinite(event.params?.amp)?String(event.params.amp):'Not available';
+    noteDialog.querySelector('#perform-note-code').disabled=!noteSource;
+    if(!noteDialog.open)noteDialog.showModal();
+  };
   const formatTime=seconds=>{
     if(seconds<0)seconds=0;
     return Math.floor(seconds/60)+':'+String(Math.floor(seconds%60)).padStart(2,'0');
@@ -288,13 +326,17 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
           bar.className='perform-event';
           const level=document.createElement('span');level.className='perform-event-level';
           level.setAttribute('aria-hidden','true');
-          bar.append(level);
-          bar.addEventListener('click',()=>jumpTo(e.site));
+          const caption=document.createElement('span');caption.className='perform-event-label';
+          caption.setAttribute('aria-hidden','true');
+          bar.append(level,caption);
+          bar.addEventListener('click',()=>showNote(row.name,e,journal.timelineNow()));
           dom.bars.set(e,bar);
         }
         bar.classList.toggle('perform-running',e.end===null&&!stopped);
         bar.style.left=Math.max(0,start*SCALE)+'px';
         bar.style.width=width+'px';
+        bar.querySelector('.perform-event-label').textContent=width>=72 &&
+          Number.isFinite(e.params?.freq)?Math.round(e.params.freq)+' Hz':'';
         bar.style.setProperty('--voice-color','var(--voice-'+row.slot+')');
         const level=ampHeight(e.params?.amp);
         bar.classList.toggle('perform-level-unknown',level===null);
