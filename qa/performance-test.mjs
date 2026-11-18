@@ -82,8 +82,26 @@ assert.equal(journal.events[0].status,'ended');
 assert.equal(journal.getInstrumentRows().find(x=>x.name==='haze').active,0);
 assert.equal(journal.eventsForCurrent()[0].start,1100);
 assert.equal(journal.eventsForCurrent()[0].end,4800);
+// Stop must freeze the visible timeline even as performance.now advances.
+tick=5000;
+journal.stop();
+const frozenAt=journal.timelineNow();
+tick=21000;
+assert.equal(journal.timelineNow(),frozenAt,'Stop should freeze the timeline clock');
+assert.equal(journal.stoppedAt,5000);
+assert.equal(journal.getInstrumentRows().find(row=>row.name==='bell').restingFor,0,
+  'Stop should not instantly collapse all score rows');
+journal.evaluation('Test',program,program,1);
+assert.equal(journal.stoppedAt,null,'Submitting a new composition should resume timeline time');
+assert.equal(journal.timelineNow(),tick);
+
+// Reset Mix restores gain/mute/solo but does not claim to undo parameter
+// changes that have already been sent to the running synthesizer.
+assert.equal(journal.stateFor('haze').controls.brightness,.8);
 const beforeReset=sent.length;
 journal.reset();
+assert.equal(journal.stateFor('haze').controls.brightness,.8,
+  'Reset Mix must not silently erase a sound parameter adjustment');
 assert.ok(sent.length>beforeReset,'RESET MIX must restore amplitudes modified by the mixer');
 assert.equal(journal.stateFor('haze').gain,1);
 assert.equal(journal.stateFor('haze').solo,false);
@@ -136,5 +154,23 @@ ordered.outgoing(encodeOsc('/s_new',['unknownOne',4106,0,1]));
 assert.deepEqual(ordered.getInstrumentRows().map(row=>row.name),
  ['haze','bell','unknownOne','unknownTwo'],
  'Repeated unmapped notes do not reshuffle lane order');
+
+// Inactivity threshold uses the actual last note end, not a global timer.
+let agingTime=1000;
+const aging=new PerformanceJournal({now:()=>agingTime});
+aging.evaluation('Aging',program,program,1);
+aging.outgoing(encodeOsc('/s_new',['haze',555,0,1,'amp',0.1]));
+agingTime=1200;
+aging.incoming(encodeOsc('/n_go',[555,1,-1,-1,0]));
+agingTime=2000;
+aging.incoming(encodeOsc('/n_end',[555,1,-1,-1,0]));
+agingTime=7900;
+assert.equal(aging.getInstrumentRows().find(row=>row.name==='haze').restingFor,5900);
+agingTime=12500;
+assert.equal(aging.getInstrumentRows().find(row=>row.name==='haze').restingFor,10500);
+aging.outgoing(encodeOsc('/s_new',['haze',556,0,1,'amp',0.1]));
+aging.incoming(encodeOsc('/n_go',[556,1,-1,-1,0]));
+assert.equal(aging.getInstrumentRows().find(row=>row.name==='haze').restingFor,0,
+  'Fresh activity must immediately reopen an idle lane');
 
 console.log('Performance journal: exact source, immutable OSC observation, confirmed timelines, amp, mute, solo, parameters, compatibility checks passed.');
