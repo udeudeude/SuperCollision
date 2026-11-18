@@ -681,3 +681,11 @@ body[data-theme] .performance-panel.perform-has-selection .perform-header{
  height:96px!important;min-height:96px!important;max-height:96px!important;
  flex:0 0 96px!important;
 }
+
+/* Match the exact specificity of the compact nonselected rule, preserving
+   identical timeline geometry when instrument selection changes. */
+body .performance-panel:not(.perform-has-selection) .perform-header,
+body[data-theme] .performance-panel:not(.perform-has-selection) .perform-header{
+ height:96px!important;min-height:96px!important;max-height:96px!important;
+ flex:0 0 96px!important;
+}
