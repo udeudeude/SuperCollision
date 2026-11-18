@@ -103,8 +103,8 @@ const frozenAt=journal.timelineNow();
 tick=21000;
 assert.equal(journal.timelineNow(),frozenAt,'Stop should freeze the timeline clock');
 assert.equal(journal.stoppedAt,5000);
-assert.equal(journal.getInstrumentRows().find(row=>row.name==='bell').restingFor,0,
-  'Stop should not instantly collapse all score rows');
+assert.equal(journal.getInstrumentRows().find(row=>row.name==='bell').restingFor,16000,
+  'Rows can age in real time after Stop while the timeline clock is frozen');
 journal.evaluation('Test',program,program,1);
 assert.equal(journal.stoppedAt,null,'Submitting a new composition should resume timeline time');
 assert.equal(journal.timelineNow(),tick);
