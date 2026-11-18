@@ -1,11 +1,11 @@
 # SuperCollision: current development and handoff record
 
-## Current direction — 17 November 2026 (read this before historical entries)
+## Production consolidated — 17 November 2026 (read this before historical entries)
 
 - The user authorized promotion of the tested offline laboratory app to the **single production site** at https://supercollision.pages.dev/. The code was merged into `main` with GitHub PR #1 (merge `8bdc7bcc5494a384bedb49f2e66f415688eaddac`).
 - **Production source:** `main`. **Production compiled site:** `pages-build`. GitHub workflow `.github/workflows/publish-ui.yml` now assembles the complete offline frontend and tests it before committing to `pages-build`, preserving the existing WebAssembly runtime.
 - The former `lab-build` preview at https://lab-build.supercollision.pages.dev/ must be retained *temporarily* for rollback and Files backup transfer. Never delete or clear the laboratory origin, Home Screen icon, or browser website data before the user confirms all compositions/recordings needed have been exported and restored to the main origin.
-- The production build and iPhone acceptance are **PENDING VERIFICATION** at the time this checkpoint was written. Check the GitHub production publisher and Cloudflare deployment, then ask the user to confirm offline POWER/RUN/STOP after a standalone restart on the main address. Do not claim fully completed promotion until verified.
+- **Production release succeeded:** source merge PR #1, automated production browser suite https://github.com/udeudeude/SuperCollision/actions/runs/44213045539 (SUCCESS), published `pages-build` commit `da72799a2cb78ad12dfe510216dde32e85c9608c` with 37-file ~8.09 MB offline pack, normal SuperCollision branding, and adjustable panels. Cloudflare Pages check for that exact commit reported **SUCCESS**. **Real-device acceptance on the main origin remains unverified**; ask the user to test online boot, then explicit Wi-Fi-only offline pack installation and standalone Airplane Mode restart.
 - Large offline resources (~8 MB) must remain user-initiated with explicit Wi-Fi/cellular consent. No automatic large cellular downloads. Safari and standalone Home Screen data may be isolated.
 - This file retains chronological laboratory history for engineering reference, but **new work belongs on main**, not the experimental branch. For current deployment mechanics, see `DEPLOYMENT.md`.
 
