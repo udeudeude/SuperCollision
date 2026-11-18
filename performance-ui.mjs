@@ -42,7 +42,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     <div class="perform-dialog-actions">
       <button type="button" id="perform-dialog-mute">Mute</button>
       <button type="button" id="perform-dialog-solo">Solo</button>
-      <button type="button" id="perform-dialog-neutral">Reset instrument</button>
+      <button type="button" id="perform-dialog-neutral" title="Restore this instrument’s original level, mute, solo, and sound parameters" aria-label="Reset selected instrument to defaults">Reset</button>
     </div>
     <div class="perform-dialog-gain-line">
       <label for="perform-dialog-gain">Level <output id="perform-dialog-gain-value">100%</output></label>
