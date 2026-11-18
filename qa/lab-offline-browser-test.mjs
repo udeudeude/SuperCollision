@@ -55,6 +55,9 @@ try{
   context=await chromium.launchPersistentContext(profileDir,browserOptions);
   const page=context.pages()[0]||await context.newPage();
   const requests=[];
+  const browserErrors=[];
+  page.on('pageerror',error=>browserErrors.push(String(error)));
+  page.on('console',message=>{if(message.type()==='error')browserErrors.push(message.text())});
   let enginePrompts=0;
   page.on('request',request=>requests.push(new URL(request.url()).pathname));
   page.on('dialog',async dialog=>{
@@ -139,7 +142,8 @@ try{
   const longStatus='EVALUATED L1–758 • execution succeeded • composition saved';
   await page.locator('#engine-status').evaluate((el,text)=>{el.textContent=text},longStatus);
   await page.locator('#engine-status-open').click();
-  console.log('Engine dialog diagnostic',await page.locator('#engine-status-dialog').evaluate(el=>({open:el.open,display:getComputedStyle(el).display,visibility:getComputedStyle(el).visibility,rect:el.getBoundingClientRect().toJSON(),button:document.querySelector('#engine-status-open').outerHTML})));
+  console.log('Browser errors before dialog',browserErrors);
+  console.log('Engine dialog diagnostic',await page.locator('#engine-status-dialog').evaluate(el=>({open:el.open,display:getComputedStyle(el).display,visibility:getComputedStyle(el).visibility,rect:el.getBoundingClientRect().toJSON(),button:document.querySelector('#engine-status-open').outerHTML,errors:window.__qaBrowserErrors||[]})));
   await page.locator('#engine-status-dialog').waitFor({state:'visible',timeout:5000});
   assert(await page.locator('#engine-status-dialog').evaluate(el=>el.open),
     'The full engine status dialog did not open');
