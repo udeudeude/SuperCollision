@@ -103,7 +103,8 @@ export class PerformanceJournal{
       const st=this.stateFor(row.name),nodes=this.active(row.name).filter(n=>n.composition===this.composition);
       return {...row,active:nodes.length,
         // Remain expanded for a grace interval after the last sounding note.
-        restingFor:nodes.length?0:Math.max(0,this.timelineNow()-row.last),
+        // Inactivity uses real elapsed time even while STOP freezes the timeline.
+        restingFor:nodes.length?0:Math.max(0,this.now()-row.last),
         compatible:this.compatible(row.name),
         params:this.defs.get(row.name)?.params||{},gain:st.gain,muted:st.muted,solo:st.solo,
         currentControls:st.controls};
