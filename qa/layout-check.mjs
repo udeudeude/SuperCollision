@@ -328,7 +328,7 @@ try {
         // The former MORE/LESS control was replaced with a draggable
         // vertical handle; increasing height must never obscure more code
         // horizontally. Double-tap restores the compact default.
-        assert.equal(await page.locator('#live-panel-expand').count(),0,
+        assert((await page.locator('#live-panel-expand').count())===0,
           'Obsolete LIVE MORE/LESS button returned');
         const compactLive=await page.locator('#live-panel').boundingBox();
         const liveGrip=page.locator('#live-panel-resizer');
