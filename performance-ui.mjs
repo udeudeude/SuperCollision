@@ -154,7 +154,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   mixDialog.addEventListener('close',()=>{selectedInstrument=null});
   const helpDialog=document.createElement('dialog');helpDialog.className='perform-mix-dialog perform-help-dialog';
   helpDialog.innerHTML=`<h2>Using Mix</h2>
-    <p><b>M</b> means Mute. <b>S</b> means Solo. Both require the instrument to expose a numeric amplitude control in its code.</p>
+    <p><b>Mute</b> silences an instrument. <b>Solo</b> silences other instruments so you can hear this one. Both require numeric amplitude controls in the instrument code.</p>
     <p>Tap the <b>100%</b> level button to adjust volume with a full-width slider, or change a sound parameter such as frequency or filter cutoff. These controls affect currently playing notes.</p>
     <p><b>All / Active</b> shows either every instrument ever played in the current composition or only instruments currently sounding.</p>
     <p><b>↺ Levels</b> restores the original mixer volumes and clears Mute and Solo. It does not stop playback or undo sound-parameter edits.</p>
@@ -227,12 +227,12 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     title.addEventListener('click',()=>jumpTo(journal.defs.get(r.name)?.site));
     const info=document.createElement('span');info.className='perform-voices';
     const actions=document.createElement('div');actions.className='perform-actions';
-    const mute=button('M','Mute '+r.name,()=>{
+    const mute=button('MUTE','Mute '+r.name,()=>{
       journal.mute(r.name,!journal.stateFor(r.name).muted);schedule();
     });
     mute.className='perform-mute';
     mute.setAttribute('aria-label','Mute '+r.name);
-    const solo=button('S','Solo '+r.name,()=>{
+    const solo=button('SOLO','Solo '+r.name,()=>{
       journal.solo(r.name,!journal.stateFor(r.name).solo);schedule();
     });
     solo.className='perform-solo';
