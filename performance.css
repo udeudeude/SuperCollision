@@ -649,3 +649,15 @@ body .perform-detail .perform-dialog-gain-line{grid-column:1/4}
     font-size:8px!important;max-width:85px;
   }
 }
+
+/* Selected instrument: third compact row avoids overlapping touch targets. */
+body .perform-header.perform-has-selection,body[data-theme] .perform-header.perform-has-selection{
+ height:96px!important;min-height:96px!important;max-height:96px!important;flex:0 0 96px!important;
+}
+body .perform-detail,body[data-theme] .perform-detail{
+ height:96px!important;min-height:96px!important;max-height:96px!important;
+ grid-template-rows:26px 30px 26px!important;
+}
+body .perform-detail #perform-dialog-neutral{
+ grid-column:1/6!important;grid-row:3!important;min-height:25px!important;height:25px!important;
+}
