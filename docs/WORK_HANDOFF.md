@@ -1,5 +1,11 @@
 # SuperCollision: current development and handoff record
 
+## Main production accepted on iPhone — 17 November 2026
+
+- After publishing the unified offline application at https://supercollision.pages.dev/, the user reported **"Worked great"** following the requested main-site on-device acceptance test. Record this as user-confirmed successful main-app use, including the newly promoted offline features. Do not infer that all separate Lab-origin compositions or recordings have been exported or restored; that has not been explicitly confirmed.
+- Production deployment remains the canonical application; continue new development on `main` and publish via the browser-gated `publish-ui.yml` workflow to `pages-build`.
+- User previously requested retirement of the experimental Lab. **Do not erase the Lab-origin storage or remove its Home Screen icon until the user confirms any important compositions and recordings were exported to Files or transferred.** The `lab-build` preview and experimental source branch remain a temporary rollback/migration route, not the development target. Once data is safe, retire old Lab workflow/preview/branch if supported, without touching the production site or caches.
+
 ## Production consolidated — 17 November 2026 (read this before historical entries)
 
 - The user authorized promotion of the tested offline laboratory app to the **single production site** at https://supercollision.pages.dev/. The code was merged into `main` with GitHub PR #1 (merge `8bdc7bcc5494a384bedb49f2e66f415688eaddac`).
