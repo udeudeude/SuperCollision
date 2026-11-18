@@ -661,3 +661,14 @@ body .perform-detail,body[data-theme] .perform-detail{
 body .perform-detail #perform-dialog-neutral{
  grid-column:1/6!important;grid-row:3!important;min-height:25px!important;height:25px!important;
 }
+
+/* The selection class lives on the panel, not the header. */
+body .performance-panel.perform-has-selection .perform-header,
+body[data-theme] .performance-panel.perform-has-selection .perform-header{
+ height:96px!important;min-height:96px!important;max-height:96px!important;flex:0 0 96px!important;
+}
+body .performance-panel:not(.perform-has-selection) .perform-header,
+body[data-theme] .performance-panel:not(.perform-has-selection) .perform-header{
+ display:flex!important;align-items:center!important;gap:5px!important;
+ height:44px!important;min-height:44px!important;max-height:44px!important;flex:0 0 44px!important;
+}
