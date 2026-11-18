@@ -130,7 +130,7 @@ body .perform-header #perform-show{min-width:31px}
  * touch controls available in a modal rather than a cramped 30px slider. */
 body{--perform-left:clamp(144px,39vw,174px)}
 body .perform-header,body[data-theme] .perform-header{
-  gap:4px;flex:0 0 44px;height:44px;min-height:44px;
+  gap:4px;flex:0 0 46px;height:46px;min-height:46px;
   padding:3px 5px;font:700 10px/1.15 ui-monospace,monospace;
 }
 body .perform-header strong{font-size:11px;letter-spacing:.05em}
@@ -144,7 +144,8 @@ body .perform-header button,body[data-theme] .perform-header button{
   touch-action:manipulation
 }
 body .perform-header #perform-follow{
-  min-width:76px;white-space:nowrap
+  min-width:80px;height:42px;min-height:42px;
+  white-space:nowrap;font-size:10px
 }
 body .perform-header #perform-follow[aria-pressed=false]{
   color:var(--perform-bg);background:var(--perform-fg);
@@ -279,7 +280,7 @@ body .perform-help-dialog p{font-size:13px;margin:9px 0}
   body .perform-header strong{font-size:10px}
   body .perform-header #perform-summary{font-size:9px}
   body .perform-header button{font-size:9px;padding:2px 5px}
-  body .perform-header #perform-follow{min-width:72px}
+  body .perform-header #perform-follow{min-width:80px}
   body .perform-header #perform-reset{min-width:44px}
   body .perform-controls{padding:3px}
   body .perform-name{font-size:10px}
@@ -288,7 +289,7 @@ body .perform-help-dialog p{font-size:13px;margin:9px 0}
 @media(max-width:355px){
   body .perform-header strong{display:none}
   body .perform-header #perform-summary{font-size:8px}
-  body .perform-header #perform-follow{min-width:65px;font-size:8px}
+  body .perform-header #perform-follow{min-width:74px;font-size:8px}
 }
 @media(prefers-reduced-motion:reduce){
   body .perform-lane{transition:none}
