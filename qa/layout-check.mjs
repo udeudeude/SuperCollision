@@ -325,20 +325,31 @@ try {
             unchanged:mon.evaluation('Default',text,text,1)===text};
         });
         assert(on.enabled&&on.observing&&on.unchanged,'Expanded LIVE must restore observation but not instrumentation');
-        const compactLive=await page.locator('#live-panel').evaluate(el=>el.getBoundingClientRect().toJSON());
-        await page.locator('#live-panel-expand').click();
-        const expandedLive=await page.evaluate(()=>({
-          pressed:document.querySelector('#live-panel-expand').getAttribute('aria-pressed'),
-          expanded:document.querySelector('#live-panel').classList.contains('live-expanded'),
-          width:document.querySelector('#live-panel').getBoundingClientRect().width,
-          height:document.querySelector('#live-panel').getBoundingClientRect().height
-        }));
-        assert(expandedLive.pressed==='true'&&expandedLive.expanded&&
-          Math.abs(expandedLive.width-compactLive.width)<2&&expandedLive.height>compactLive.height,
-          'LIVE MORE should increase height but never width: '+JSON.stringify({compactLive,expandedLive}));
-        await page.locator('#live-panel-expand').click();
-        assert(await page.locator('#live-panel-expand').getAttribute('aria-pressed')==='false',
-          'LIVE LESS must restore compact size without turning tracking off');
+        // The former MORE/LESS control was replaced with a draggable
+        // vertical handle; increasing height must never obscure more code
+        // horizontally. Double-tap restores the compact default.
+        assert.equal(await page.locator('#live-panel-expand').count(),0,
+          'Obsolete LIVE MORE/LESS button returned');
+        const compactLive=await page.locator('#live-panel').boundingBox();
+        const liveGrip=page.locator('#live-panel-resizer');
+        assert(await liveGrip.isVisible(),'LIVE resize handle missing');
+        const handle=await liveGrip.boundingBox();
+        await page.mouse.move(handle.x+handle.width/2,handle.y+handle.height/2);
+        await page.mouse.down();
+        await page.mouse.move(handle.x+handle.width/2,handle.y+handle.height/2-58,{steps:6});
+        await page.mouse.up();
+        const expandedLive=await page.locator('#live-panel').boundingBox();
+        assert(Math.abs(expandedLive.width-compactLive.width)<2&&
+          expandedLive.height>compactLive.height+20,
+          'LIVE drag should increase height without increasing width: '+
+            JSON.stringify({compactLive,expandedLive}));
+        await liveGrip.dblclick();
+        const restoredLive=await page.locator('#live-panel').boundingBox();
+        assert(Math.abs(restoredLive.height-compactLive.height)<15,
+          'LIVE double-click should restore the compact default: '+
+            JSON.stringify({compactLive,restoredLive}));
+        assert(await page.locator('#live-panel-toggle').getAttribute('aria-expanded')==='true',
+          'Resizing LIVE should not change its observation state');
         await page.locator('#inspector-perform').click();
         await page.waitForTimeout(100);
         const performance=await page.evaluate(()=>{
@@ -358,7 +369,7 @@ try {
           'MIX must allow optional active-only view without changing default ordering');
         await page.locator('#perform-show').click();
         assert(await page.locator('#perform-show').innerText()==='ALL',
-          'MIX ALL must restore full-height historical lanes');
+          'MIX ALL must restore all historical lanes in stable score order');
         const headerWithin=await page.locator('.perform-header').evaluate(h=>{
           const right=h.getBoundingClientRect().right;
           return [...h.querySelectorAll('button')].every(b=>b.getBoundingClientRect().right<=right+2);
