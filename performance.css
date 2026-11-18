@@ -621,3 +621,31 @@ body .perform-lane.perform-idle .perform-controls{
 body .perform-lane .perform-name,body .perform-lane.perform-idle .perform-name{
   display:block!important;opacity:1!important;visibility:visible!important;
 }
+
+/* Compact the Mix toolbar into one deliberate horizontal line. */
+body .perform-header:not(.perform-has-selection),body[data-theme] .perform-header:not(.perform-has-selection){
+  display:flex!important;align-items:center!important;gap:5px!important;
+  height:44px!important;min-height:44px!important;max-height:44px!important;
+  flex:0 0 44px!important;padding:4px 6px!important;
+}
+body .perform-header:not(.perform-has-selection) strong{flex:0 0 auto!important}
+body .perform-header:not(.perform-has-selection) #perform-summary{
+  flex:1 1 auto!important;min-width:0!important;text-align:left!important;
+  font-size:9px!important;
+}
+body .perform-header:not(.perform-has-selection) button{
+  flex:0 0 auto!important;min-width:30px!important;
+  padding:2px 5px!important;font-size:10px!important;
+}
+body .perform-header:not(.perform-has-selection) #perform-follow{min-width:62px!important}
+body .perform-header:not(.perform-has-selection) #perform-reset{min-width:66px!important}
+body .perform-detail #perform-dialog-neutral{
+  display:block!important;grid-column:1/3;grid-row:2;
+  font-size:9px!important;min-width:90px;
+}
+body .perform-detail .perform-dialog-gain-line{grid-column:1/4}
+@media(max-width:420px){
+  body .perform-header:not(.perform-has-selection) #perform-summary{
+    font-size:8px!important;max-width:85px;
+  }
+}
