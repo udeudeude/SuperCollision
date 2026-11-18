@@ -32,8 +32,11 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     if(typeof amp!=='number'||!Number.isFinite(amp))return null;
     return Math.round(Math.min(100,Math.max(0,Math.sqrt(Math.abs(amp))*100)));
   };
-  const mixDialog=document.createElement('dialog');
-  mixDialog.className='perform-mix-dialog';
+  const mixDialog=document.createElement('section');
+  mixDialog.className='perform-mix-dialog perform-detail';
+  mixDialog.id='perform-detail';
+  mixDialog.hidden=true;
+  mixDialog.setAttribute('aria-label','Selected instrument controls');
   mixDialog.innerHTML=`<h2 id="perform-dialog-title">Instrument level</h2>
     <p id="perform-dialog-info"></p>
     <div class="perform-dialog-actions">
@@ -59,7 +62,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       <input id="perform-dialog-param-range" type="range" aria-label="Sound parameter value">
     </section>
     <button type="button" id="perform-dialog-close">Done</button>`;
-  document.body.append(mixDialog);
+  panel.append(mixDialog);
   const gainControl=mixDialog.querySelector('#perform-dialog-gain');
   const gainOutput=mixDialog.querySelector('#perform-dialog-gain-value');
   const muteControl=mixDialog.querySelector('#perform-dialog-mute');
@@ -112,7 +115,9 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     }));
     if(keys.length)controlRange(name,keys[0]);
     updateDialog();
-    if(!mixDialog.open)mixDialog.showModal();
+    mixDialog.hidden=false;
+    panel.classList.add('perform-has-selection');
+    for(const [key,dom] of lastRows)dom.lane.classList.toggle('perform-selected',key===name);
   };
   gainControl.addEventListener('input',()=>{
     if(!selectedInstrument)return;
@@ -150,17 +155,21 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     paramOutput.textContent=Number(paramRange.value).toFixed(/freq|cutoff|hz/i.test(paramSelect.value)?0:2);
     schedule();
   });
-  mixDialog.querySelector('#perform-dialog-close').addEventListener('click',()=>mixDialog.close());
-  mixDialog.addEventListener('close',()=>{selectedInstrument=null});
+  mixDialog.querySelector('#perform-dialog-close').textContent='Close controls';
+  mixDialog.querySelector('#perform-dialog-close').addEventListener('click',()=>{
+    selectedInstrument=null;mixDialog.hidden=true;
+    panel.classList.remove('perform-has-selection');
+    for(const dom of lastRows.values())dom.lane.classList.remove('perform-selected');
+  });
   const helpDialog=document.createElement('dialog');helpDialog.className='perform-mix-dialog perform-help-dialog';
   helpDialog.innerHTML=`<h2>Using Mix</h2>
     <p><b>Mute</b> silences an instrument. <b>Solo</b> silences other instruments so you can hear this one. Both require numeric amplitude controls in the instrument code.</p>
-    <p>Tap the <b>100%</b> level button to adjust volume with a full-width slider, or change a sound parameter such as frequency or filter cutoff. These controls affect currently playing notes.</p>
+    <p>Tap an instrument name to open its controls below the timeline. Adjust its level, Mute, Solo or sound parameters while the tracks remain visible.</p>
     <p><b>All / Active</b> shows either every instrument ever played in the current composition or only instruments currently sounding.</p>
     <p><b>↺ Levels</b> restores the original mixer volumes and clears Mute and Solo. It does not stop playback or undo sound-parameter edits.</p>
     <p><b>Following</b> keeps the newest events in view. Vertical scrolling leaves it on. Swipe backward over roughly 15 seconds of the timeline to pause following. Tap <b>↪ Live</b> to return.</p>
     <p>Each colored bar represents a synthesizer note. Its filled strip estimates the note’s declared amplitude from code, <b>not measured loudness or a waveform</b>. Tap a bar for its timing, frequency and code amplitude, plus a link to the instrument code.</p>
-    <p>Quiet rows become compact after nine seconds. <b>Stop</b> freezes the musical timeline.</p>
+    <p>All rows remain compact. <b>Stop</b> freezes the musical timeline.</p>
     <button type="button" id="perform-help-close">Close</button>`;
   document.body.append(helpDialog);
   helpDialog.querySelector('#perform-help-close').addEventListener('click',()=>helpDialog.close());
@@ -225,7 +234,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     const controls=document.createElement('div');controls.className='perform-controls';
     const title=document.createElement('button');title.type='button';title.className='perform-name';
     title.textContent=r.name;title.title='Jump to instrument definition in code';
-    title.addEventListener('click',()=>jumpTo(journal.defs.get(r.name)?.site));
+
     const info=document.createElement('span');info.className='perform-voices';
     const actions=document.createElement('div');actions.className='perform-actions';
     const mute=button('MUTE','Mute '+r.name,()=>{
@@ -242,6 +251,10 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     level.className='perform-level';
     level.setAttribute('aria-label','Adjust level and sound parameters for '+r.name);
     level.setAttribute('aria-haspopup','dialog');
+    // Compact overview: select an instrument to reveal its controls.
+    title.title='Select '+r.name+' to adjust its sound';
+    title.setAttribute('aria-label','Select '+r.name+' controls');
+    title.addEventListener('click',()=>openMix(r.name));
     actions.append(mute,solo,level);
     controls.append(title,info,actions);
     const track=document.createElement('div');track.className='perform-track';
@@ -250,6 +263,10 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   };
   function updateLanes(rows){
     const names=new Set(rows.map(r=>r.name));
+    if(selectedInstrument&&!names.has(selectedInstrument)){
+      selectedInstrument=null;mixDialog.hidden=true;
+      panel.classList.remove('perform-has-selection');
+    }
     for(const [name,dom] of lastRows){
       if(!names.has(name)){dom.lane.remove();lastRows.delete(name)}
     }
@@ -262,6 +279,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       dom.lane.classList.toggle('perform-resting',row.active===0);
       dom.lane.classList.toggle('perform-idle',row.active===0&&row.restingFor>=IDLE_AFTER_MS);
       dom.lane.classList.toggle('perform-muted',row.muted);
+      dom.lane.classList.toggle('perform-selected',row.name===selectedInstrument);
       dom.mute.disabled=!row.compatible;
       dom.mute.setAttribute('aria-pressed',String(row.muted));
       dom.mute.classList.toggle('selected',row.muted);
@@ -275,7 +293,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       dom.level.title=row.compatible?
         'Open large level and sound controls for '+row.name:
         'Edit available sound parameters for '+row.name;
-      if(mixDialog.open&&selectedInstrument===row.name)updateDialog();
+      if(!mixDialog.hidden&&selectedInstrument===row.name)updateDialog();
     }
     // Preserve the existing nodes and controls. Reorder only when the user
     // changes the filter or the underlying composition actually changes.
@@ -314,6 +332,17 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       lastTickSpan=timespan;
     }
     const events=journal.eventsForCurrent(),byName=new Map();
+    // A common logarithmic pitch range per instrument preserves intervals.
+    // Unknown pitches remain centered, never represented as measured audio.
+    const pitchBounds=new Map();
+    for(const ev of events){
+      const hz=ev.params?.freq;
+      if(!(Number.isFinite(hz)&&hz>0))continue;
+      const p=Math.log2(hz);
+      const b=pitchBounds.get(ev.name)||{lo:p,hi:p};
+      b.lo=Math.min(b.lo,p);b.hi=Math.max(b.hi,p);
+      pitchBounds.set(ev.name,b);
+    }
     for(const ev of events){
       if(!byName.has(ev.name))byName.set(ev.name,[]);
       byName.get(ev.name).push(ev);
@@ -341,11 +370,18 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
         // Finished notes are immutable. Avoid rebuilding thousands of
         // historic bar styles and labels every 350ms during long pieces.
         const endSignature=String(e.end);
-        if(e.end===null||bar.dataset.renderedEnd!==endSignature){
+        const boundsKey=JSON.stringify(pitchBounds.get(row.name)||null);
+        if(e.end===null||bar.dataset.renderedEnd!==endSignature||bar.dataset.pitchBounds!==boundsKey){
+          bar.dataset.pitchBounds=boundsKey;
           bar.dataset.renderedEnd=endSignature;
           bar.classList.toggle('perform-running',e.end===null&&!stopped);
           bar.style.left=Math.max(0,start*SCALE)+'px';
           bar.style.width=width+'px';
+          const pitchHz=e.params?.freq,bounds=pitchBounds.get(row.name);
+          const pitch=Number.isFinite(pitchHz)&&pitchHz>0&&bounds?
+            (Math.log2(pitchHz)-bounds.lo)/Math.max(1,bounds.hi-bounds.lo):.5;
+          bar.style.top=(2+Math.round((1-pitch)*11))+'px';
+          bar.classList.toggle('perform-pitch-known',Number.isFinite(pitchHz)&&pitchHz>0);
           bar.querySelector('.perform-event-label').textContent=width>=72 &&
             Number.isFinite(e.params?.freq)?Math.round(e.params.freq)+' Hz':'';
           bar.style.setProperty('--voice-color','var(--voice-'+row.slot+')');

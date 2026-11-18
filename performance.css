@@ -314,3 +314,51 @@ body .perform-note-dialog dd{margin:0;min-width:0;overflow-wrap:anywhere}
 body .perform-note-dialog .perform-dialog-step-actions button{
   flex:1;min-width:120px
 }
+
+/* Dense musical score: controls are selected, not repeated on every lane. */
+body .perform-lane,body .perform-lane.perform-resting,
+body .perform-lane.perform-idle,body .perform-lane.perform-idle.perform-resting{
+  height:24px;min-height:24px!important;transition:none;
+}
+body .perform-controls{flex-direction:row;align-items:center;gap:4px;padding:1px 5px;overflow:hidden}
+body .perform-name{flex:1 1 auto;height:21px;line-height:21px;min-width:0;font-size:10px}
+body .perform-voices{flex:0 0 auto;height:auto;line-height:1;font-size:8px}
+body .perform-actions,body .perform-lane.perform-idle .perform-actions{display:none}
+body .perform-lane.perform-idle .perform-voices{position:static;opacity:.65}
+body .perform-lane.perform-idle .perform-name{max-width:none;line-height:21px;flex-basis:auto}
+body .perform-track{height:24px;min-height:24px!important}
+body .perform-event,body[data-theme] .perform-event,
+body .perform-lane.perform-idle .perform-event{
+  height:8px;min-height:8px!important;max-height:8px;
+  border-radius:1px;top:8px;overflow:visible
+}
+body .perform-event-level{opacity:.85}
+body .perform-event-label{display:none}
+body .perform-lane.perform-muted .perform-name{text-decoration:line-through}
+body .perform-name:focus-visible{outline:2px solid var(--voice-color);outline-offset:-2px}
+
+/* Selected instrument controls stay inside Mix, below the scrolling score. */
+body .perform-detail,body[data-theme] .perform-detail{
+  display:flex;flex-direction:column;flex:0 0 auto;gap:4px;
+  max-height:min(48%,220px);overflow-y:auto;
+  margin:0;padding:7px 10px;border:0;border-top:2px solid var(--perform-border);
+  border-radius:0;box-shadow:none;width:100%;min-width:0;
+  background:var(--perform-bg);color:var(--perform-fg);
+  font:12px/1.3 system-ui,sans-serif;
+}
+body .perform-detail[hidden],body[data-theme] .perform-detail[hidden]{display:none!important}
+body .perform-detail h2{font-size:13px;margin:0}
+body .perform-detail h3{margin:4px 0}
+body .perform-detail p{display:none}
+body .perform-detail .perform-dialog-actions{margin:2px 0;gap:5px}
+body .perform-detail button{min-height:38px;padding:5px 8px}
+body .perform-detail .perform-dialog-gain-line{display:grid;grid-template-columns:1fr;gap:2px}
+body .perform-detail .perform-dialog-gain-line label{margin:0;font-size:12px}
+body .perform-detail input[type=range]{height:34px;min-height:34px;margin:0;touch-action:pan-x}
+body .perform-detail .perform-dialog-step-actions{margin:0;gap:5px}
+body .perform-detail .perform-dialog-step-actions button{min-height:34px}
+body .perform-detail #perform-dialog-close{min-height:34px;margin:3px 0 0}
+body .perform-lane.perform-selected .perform-controls{
+  background:color-mix(in srgb,var(--voice-color) 16%,var(--perform-bg))
+}
+body .perform-lane.perform-selected .perform-name{text-decoration:underline;text-underline-offset:3px}
