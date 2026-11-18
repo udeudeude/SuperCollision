@@ -377,11 +377,11 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
           bar.classList.toggle('perform-running',e.end===null&&!stopped);
           bar.style.left=Math.max(0,start*SCALE)+'px';
           bar.style.width=width+'px';
-          const hz=e.params?.freq,bounds=pitchBounds.get(row.name);
-          const pitch=Number.isFinite(hz)&&hz>0&&bounds?
-            (Math.log2(hz)-bounds.lo)/Math.max(1,bounds.hi-bounds.lo):.5;
+          const pitchHz=e.params?.freq,bounds=pitchBounds.get(row.name);
+          const pitch=Number.isFinite(pitchHz)&&pitchHz>0&&bounds?
+            (Math.log2(pitchHz)-bounds.lo)/Math.max(1,bounds.hi-bounds.lo):.5;
           bar.style.top=(2+Math.round((1-pitch)*11))+'px';
-          bar.classList.toggle('perform-pitch-known',Number.isFinite(hz)&&hz>0);
+          bar.classList.toggle('perform-pitch-known',Number.isFinite(pitchHz)&&pitchHz>0);
           bar.querySelector('.perform-event-label').textContent=width>=72 &&
             Number.isFinite(e.params?.freq)?Math.round(e.params.freq)+' Hz':'';
           bar.style.setProperty('--voice-color','var(--voice-'+row.slot+')');
