@@ -291,7 +291,7 @@ try{
     'Note details must identify that coded amplitude is not captured audio');
   await page.locator('#perform-note-close').click();
   await lane.locator('.perform-level').click();
-  assert(await page.locator('.perform-mix-dialog:not(.perform-help-dialog)').isVisible(),
+  assert(await page.locator('dialog:has(#perform-dialog-gain)').isVisible(),
     'Wide gain and parameter dialog did not open');
   assert((await page.locator('#perform-dialog-gain').boundingBox()).width>160,
     'The volume slider is still too narrow to adjust by touch');
