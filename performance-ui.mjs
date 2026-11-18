@@ -52,7 +52,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
         <button type="button" id="perform-dialog-plus">+5%</button>
       </div>
     </div>
-    <section id="perform-dialog-parameters">
+    <section id="perform-dialog-parameters" hidden>
       <h3>Sound parameters</h3>
       <p>Adjust numeric settings exposed by the instrument code. These affect playing notes; they do not rewrite the composition.</p>
       <div class="perform-dialog-param-line">
@@ -61,8 +61,9 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       </div>
       <input id="perform-dialog-param-range" type="range" aria-label="Sound parameter value">
     </section>
-    <button type="button" id="perform-dialog-close">Done</button>`;
-  panel.append(mixDialog);
+    <button type="button" id="perform-dialog-parameters-toggle" aria-expanded="false">Sound</button>
+    <button type="button" id="perform-dialog-close">Close</button>`;
+  panel.querySelector('.perform-header').append(mixDialog);
   const gainControl=mixDialog.querySelector('#perform-dialog-gain');
   const gainOutput=mixDialog.querySelector('#perform-dialog-gain-value');
   const muteControl=mixDialog.querySelector('#perform-dialog-mute');
@@ -72,6 +73,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   const paramRange=mixDialog.querySelector('#perform-dialog-param-range');
   const paramOutput=mixDialog.querySelector('#perform-dialog-param-value');
   let selectedInstrument=null;
+  let showSoundParameters=false;
   const controlRange=(name,key)=>{
     const original=journal.defs.get(name)?.params?.[key],saved=journal.stateFor(name).controls[key];
     const current=saved??original;
@@ -108,11 +110,16 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
         '100% preserves the original level. Mute silences this instrument; Solo silences other controllable instruments.':
         'This instrument does not expose a numeric amplitude control; sound parameters may still be adjustable.';
     const params=journal.defs.get(name)?.params||{};
-    const keys=Object.keys(params).filter(k=>k!=='amp'&&Number.isFinite(params[k]));
-    paramSection.hidden=!keys.length;
+    const keys=Object.keys(params).filter(k=>k!=='amp'&&!/^(out|bus|gate|doneaction|id|nodeid|group|bufnum|buffer)$/i.test(k)&&Number.isFinite(params[k]));
+    const soundToggle=mixDialog.querySelector('#perform-dialog-parameters-toggle');
+    soundToggle.hidden=!keys.length;
+    showSoundParameters=false;
+    paramSection.hidden=true;
+    soundToggle.setAttribute('aria-expanded','false');
     paramSelect.replaceChildren(...keys.map(key=>{
       const opt=document.createElement('option');opt.value=key;opt.textContent=key;return opt;
     }));
+    mixDialog.classList.remove('perform-sound-mode');
     if(keys.length)controlRange(name,keys[0]);
     updateDialog();
     mixDialog.hidden=false;
@@ -155,9 +162,16 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     paramOutput.textContent=Number(paramRange.value).toFixed(/freq|cutoff|hz/i.test(paramSelect.value)?0:2);
     schedule();
   });
-  mixDialog.querySelector('#perform-dialog-close').textContent='Close controls';
+  mixDialog.querySelector('#perform-dialog-parameters-toggle').addEventListener('click',()=>{
+    showSoundParameters=!showSoundParameters;
+    paramSection.hidden=!showSoundParameters;
+    mixDialog.classList.toggle('perform-sound-mode',showSoundParameters);
+    mixDialog.querySelector('#perform-dialog-parameters-toggle').setAttribute('aria-expanded',String(showSoundParameters));
+  });
+  mixDialog.querySelector('#perform-dialog-close').textContent='Back to Mix';
   mixDialog.querySelector('#perform-dialog-close').addEventListener('click',()=>{
     selectedInstrument=null;mixDialog.hidden=true;
+    mixDialog.classList.remove('perform-sound-mode');
     panel.classList.remove('perform-has-selection');
     for(const dom of lastRows.values())dom.lane.classList.remove('perform-selected');
   });
@@ -265,6 +279,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     const names=new Set(rows.map(r=>r.name));
     if(selectedInstrument&&!names.has(selectedInstrument)){
       selectedInstrument=null;mixDialog.hidden=true;
+      mixDialog.classList.remove('perform-sound-mode');
       panel.classList.remove('perform-has-selection');
     }
     for(const [name,dom] of lastRows){
