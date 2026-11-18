@@ -10,12 +10,140 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   const summary=panel.querySelector('#perform-summary');
   const filterBtn=panel.querySelector('#perform-show');
   let showAll=true;
-  const SCALE=16,LANE_HEIGHT=61,LEFT=162;
-  let follow=true,frame=0,timer=null,lastNodesKey='',lastRows=new Map(),userDragging=false;
+  const SCALE=16,IDLE_AFTER_MS=9000,FOLLOW_BACK_SECONDS=15;
+  let follow=true,frame=0,timer=null,lastRows=new Map();
+  let horizontalIntentUntil=0,pointerStart=null,wasStopped=false;
+  const setFollow=(enabled)=>{
+    follow=Boolean(enabled);
+    followBtn.setAttribute('aria-pressed',String(follow));
+    followBtn.textContent=follow?'FOLLOWING':'↪ LIVE';
+    followBtn.title=follow?'Following the newest musical events':'Return to the live playhead';
+    followBtn.setAttribute('aria-label',follow?'Following live playhead':'Return to live playhead');
+    panel.classList.toggle('perform-follow-paused',!follow);
+  };
+  setFollow(true);
   const journal=new PerformanceJournal({now:()=>performance.now(),onChange:schedule,send:bytes=>{
     if(sendOsc(bytes))return;
     // Revert performance controls if the server is no longer available.
   }});
+  // The amplitude bar uses the known SynthDef 'amp' value. It is NOT an
+  // audio waveform, measured level, or peak meter.
+  const ampHeight=amp=>{
+    if(typeof amp!=='number'||!Number.isFinite(amp))return null;
+    return Math.round(Math.min(100,Math.max(0,Math.sqrt(Math.abs(amp))*100)));
+  };
+  const mixDialog=document.createElement('dialog');
+  mixDialog.className='perform-mix-dialog';
+  mixDialog.innerHTML=`<h2 id="perform-dialog-title">Instrument level</h2>
+    <p id="perform-dialog-info"></p>
+    <div class="perform-dialog-actions">
+      <button type="button" id="perform-dialog-mute">Mute</button>
+      <button type="button" id="perform-dialog-solo">Solo</button>
+      <button type="button" id="perform-dialog-neutral">Original level</button>
+    </div>
+    <div class="perform-dialog-gain-line">
+      <label for="perform-dialog-gain">Level <output id="perform-dialog-gain-value">100%</output></label>
+      <input id="perform-dialog-gain" type="range" min="0" max="2" step=".01" value="1">
+    </div>
+    <section id="perform-dialog-parameters">
+      <h3>Sound parameters</h3>
+      <p>Adjust numeric settings exposed by the instrument code. These affect playing notes; they do not rewrite the composition.</p>
+      <div class="perform-dialog-param-line">
+        <select id="perform-dialog-param-name" aria-label="Sound parameter"></select>
+        <output id="perform-dialog-param-value"></output>
+      </div>
+      <input id="perform-dialog-param-range" type="range" aria-label="Sound parameter value">
+    </section>
+    <button type="button" id="perform-dialog-close">Done</button>`;
+  document.body.append(mixDialog);
+  const gainControl=mixDialog.querySelector('#perform-dialog-gain');
+  const gainOutput=mixDialog.querySelector('#perform-dialog-gain-value');
+  const muteControl=mixDialog.querySelector('#perform-dialog-mute');
+  const soloControl=mixDialog.querySelector('#perform-dialog-solo');
+  const paramSection=mixDialog.querySelector('#perform-dialog-parameters');
+  const paramSelect=mixDialog.querySelector('#perform-dialog-param-name');
+  const paramRange=mixDialog.querySelector('#perform-dialog-param-range');
+  const paramOutput=mixDialog.querySelector('#perform-dialog-param-value');
+  let selectedInstrument=null;
+  const controlRange=(name,key)=>{
+    const original=journal.defs.get(name)?.params?.[key],saved=journal.stateFor(name).controls[key];
+    const current=saved??original;
+    const isPan=/pan/i.test(key),isFreq=/freq|cutoff|hz/i.test(key);
+    const lo=isPan?-1:isFreq?Math.max(1,Math.min(original/8,30)):Math.min(0,original);
+    const hi=isPan?1:isFreq?Math.max(original*4,1000):original>0?Math.max(1,original*3):Math.max(1,Math.abs(original)*3);
+    paramRange.min=String(lo);paramRange.max=String(hi);
+    paramRange.step=String(isFreq?1:Math.max((hi-lo)/200,.001));
+    paramRange.value=String(Math.max(lo,Math.min(hi,current)));
+    paramOutput.textContent=Number(paramRange.value).toFixed(isFreq?0:2);
+  };
+  function updateDialog(){
+    if(!selectedInstrument)return;
+    const st=journal.stateFor(selectedInstrument);
+    gainControl.value=String(st.gain);
+    gainOutput.textContent=Math.round(st.gain*100)+'%';
+    muteControl.setAttribute('aria-pressed',String(st.muted));
+    muteControl.textContent=st.muted?'Unmute':'Mute';
+    soloControl.disabled=!journal.safeSolo();
+    soloControl.setAttribute('aria-pressed',String(st.solo));
+    soloControl.textContent=st.solo?'Unsolo':'Solo';
+  }
+  const openMix=name=>{
+    selectedInstrument=name;
+    mixDialog.querySelector('#perform-dialog-title').textContent=name;
+    mixDialog.querySelector('#perform-dialog-info').textContent=
+      'Level 100% preserves the instrument’s original amplitude. Mute silences it; Solo silences other controllable instruments.';
+    const params=journal.defs.get(name)?.params||{};
+    const keys=Object.keys(params).filter(k=>k!=='amp'&&Number.isFinite(params[k]));
+    paramSection.hidden=!keys.length;
+    paramSelect.replaceChildren(...keys.map(key=>{
+      const opt=document.createElement('option');opt.value=key;opt.textContent=key;return opt;
+    }));
+    if(keys.length)controlRange(name,keys[0]);
+    updateDialog();
+    if(!mixDialog.open)mixDialog.showModal();
+  };
+  gainControl.addEventListener('input',()=>{
+    if(!selectedInstrument)return;
+    journal.gain(selectedInstrument,Number(gainControl.value));
+    updateDialog();schedule();
+  });
+  muteControl.addEventListener('click',()=>{
+    if(!selectedInstrument)return;
+    journal.mute(selectedInstrument,!journal.stateFor(selectedInstrument).muted);
+    updateDialog();schedule();
+  });
+  soloControl.addEventListener('click',()=>{
+    if(!selectedInstrument)return;
+    journal.solo(selectedInstrument,!journal.stateFor(selectedInstrument).solo);
+    updateDialog();schedule();
+  });
+  mixDialog.querySelector('#perform-dialog-neutral').addEventListener('click',()=>{
+    if(selectedInstrument)journal.gain(selectedInstrument,1);
+    updateDialog();schedule();
+  });
+  paramSelect.addEventListener('change',()=>{
+    if(selectedInstrument)controlRange(selectedInstrument,paramSelect.value);
+  });
+  paramRange.addEventListener('input',()=>{
+    if(!selectedInstrument)return;
+    journal.parameter(selectedInstrument,paramSelect.value,Number(paramRange.value));
+    paramOutput.textContent=Number(paramRange.value).toFixed(/freq|cutoff|hz/i.test(paramSelect.value)?0:2);
+    schedule();
+  });
+  mixDialog.querySelector('#perform-dialog-close').addEventListener('click',()=>mixDialog.close());
+  mixDialog.addEventListener('close',()=>{selectedInstrument=null});
+  const helpDialog=document.createElement('dialog');helpDialog.className='perform-mix-dialog perform-help-dialog';
+  helpDialog.innerHTML=`<h2>Using Mix</h2>
+    <p><b>M</b> means Mute. <b>S</b> means Solo. Both require the instrument to expose a numeric amplitude control in its code.</p>
+    <p>Tap the <b>100%</b> level button to adjust volume with a full-width slider, or change a sound parameter such as frequency or filter cutoff. These controls affect currently playing notes.</p>
+    <p><b>Reset levels</b> restores the original mixer volumes and clears Mute and Solo. It does not stop playback or undo sound-parameter edits.</p>
+    <p><b>Following</b> keeps the newest events in view. Vertical scrolling leaves it on. Swipe backward over roughly 15 seconds of the timeline to pause following. Tap <b>↪ Live</b> to return.</p>
+    <p>Each colored bar represents a synthesizer note. Its filled strip estimates the note’s declared amplitude from code, <b>not measured loudness or a waveform</b>. Tap the bar to jump to its source.</p>
+    <p>Quiet rows become compact after nine seconds. <b>Stop</b> freezes the musical timeline.</p>
+    <button type="button" id="perform-help-close">Close</button>`;
+  document.body.append(helpDialog);
+  helpDialog.querySelector('#perform-help-close').addEventListener('click',()=>helpDialog.close());
+  panel.querySelector('#perform-help')?.addEventListener('click',()=>{if(!helpDialog.open)helpDialog.showModal()});
   const formatTime=seconds=>{
     if(seconds<0)seconds=0;
     return Math.floor(seconds/60)+':'+String(Math.floor(seconds%60)).padStart(2,'0');
@@ -36,58 +164,29 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     lane.style.setProperty('--voice-color','var(--voice-'+r.slot+')');
     const controls=document.createElement('div');controls.className='perform-controls';
     const title=document.createElement('button');title.type='button';title.className='perform-name';
-    title.textContent=r.name;title.title='Jump to instrument definition';
+    title.textContent=r.name;title.title='Jump to instrument definition in code';
     title.addEventListener('click',()=>jumpTo(journal.defs.get(r.name)?.site));
     const info=document.createElement('span');info.className='perform-voices';
     const actions=document.createElement('div');actions.className='perform-actions';
-    const mute=button('M','Mute by setting the exposed amp control to zero',()=>{
+    const mute=button('M','Mute '+r.name,()=>{
       journal.mute(r.name,!journal.stateFor(r.name).muted);schedule();
     });
     mute.className='perform-mute';
-    const solo=button('S','Solo instruments with controllable amp',()=>{
+    mute.setAttribute('aria-label','Mute '+r.name);
+    const solo=button('S','Solo '+r.name,()=>{
       journal.solo(r.name,!journal.stateFor(r.name).solo);schedule();
     });
     solo.className='perform-solo';
-    const gain=document.createElement('input');gain.type='range';gain.min='0';gain.max='2';
-    gain.step='.05';gain.className='perform-gain';gain.title='Amplitude multiplier, 1 = original';
-    gain.setAttribute('aria-label','Amplitude '+r.name);
-    gain.addEventListener('input',()=>{
-      journal.gain(r.name,Number(gain.value));
-      gain.title='Amplitude '+r.name+': '+Math.round(Number(gain.value)*100)+'% of original';
-      schedule();
-    });
-    actions.append(mute,solo,gain);
-    const params=document.createElement('details');params.className='perform-params';
-    const paramSummary=document.createElement('summary');paramSummary.textContent='PARAMETERS';
-    const controlRow=document.createElement('div');controlRow.className='perform-param-fields';
-    const paramSelect=document.createElement('select');paramSelect.setAttribute('aria-label','Parameter '+r.name);
-    const paramSlider=document.createElement('input');paramSlider.type='range';paramSlider.step='any';paramSlider.setAttribute('aria-label','Parameter value '+r.name);
-    const value=document.createElement('output');value.className='perform-param-value';
-    const paramDefs=Object.entries(r.params).filter(([k,v])=>k!=='amp'&&typeof v==='number'&&Number.isFinite(v));
-    for(const [key] of paramDefs){const option=document.createElement('option');option.value=key;option.textContent=key;paramSelect.append(option)}
-    const rangeFor=(key)=>{
-      const original=r.params[key],current=journal.stateFor(r.name).controls[key]??original;
-      const isPan=/pan/i.test(key),isFreq=/freq|cutoff|hz/i.test(key);
-      const low=isPan?-1:isFreq?Math.max(1,Math.min(original/8,30)):Math.min(0,original);
-      const high=isPan?1:isFreq?Math.max(original*4,1000):original>0?Math.max(1,original*3):Math.max(1,Math.abs(original)*3);
-      paramSlider.min=String(low);paramSlider.max=String(high);paramSlider.step=String(isFreq?1:Math.max((high-low)/120,.001));
-      paramSlider.value=String(Math.max(low,Math.min(high,current)));
-      value.value=Number(paramSlider.value).toFixed(isFreq?0:2);
-    };
-    paramSelect.addEventListener('change',()=>rangeFor(paramSelect.value));
-    paramSlider.addEventListener('input',()=>{
-      const n=Number(paramSlider.value);
-      journal.parameter(r.name,paramSelect.value,n);
-      value.value=n.toFixed(/freq|cutoff|hz/i.test(paramSelect.value)?0:2);
-    });
-    controlRow.append(paramSelect,paramSlider,value);
-    params.append(paramSummary,controlRow);
-    if(!paramDefs.length)params.hidden=true;else rangeFor(paramSelect.value);
-    controls.append(title,info,actions,params);
+    solo.setAttribute('aria-label','Solo '+r.name);
+    const level=button('100%','Adjust instrument volume and sound parameters',()=>openMix(r.name));
+    level.className='perform-level';
+    level.setAttribute('aria-label','Adjust level and sound parameters for '+r.name);
+    level.setAttribute('aria-haspopup','dialog');
+    actions.append(mute,solo,level);
+    controls.append(title,info,actions);
     const track=document.createElement('div');track.className='perform-track';
-    lane.append(controls,track);
-    rowsEl.append(lane);
-    return {lane,controls,info,mute,solo,gain,track,params,parameterControl:paramSelect};
+    lane.append(controls,track);rowsEl.append(lane);
+    return {lane,controls,info,mute,solo,level,track,bars:new Map()};
   };
   function updateLanes(rows){
     const names=new Set(rows.map(r=>r.name));
@@ -98,20 +197,23 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       let dom=lastRows.get(row.name);
       if(!dom){dom=createLane(row);lastRows.set(row.name,dom)}
       dom.info.textContent=row.active?
-        row.active+' playing · '+row.count+' total':
+        row.active+' sounding · '+row.count+' total':
         'Resting · '+row.count+' total';
       dom.lane.classList.toggle('perform-resting',row.active===0);
+      dom.lane.classList.toggle('perform-idle',row.active===0&&row.restingFor>=IDLE_AFTER_MS);
+      dom.lane.classList.toggle('perform-muted',row.muted);
       dom.mute.disabled=!row.compatible;
       dom.mute.setAttribute('aria-pressed',String(row.muted));
       dom.mute.classList.toggle('selected',row.muted);
       dom.solo.disabled=!row.compatible||!journal.safeSolo();
       dom.solo.setAttribute('aria-pressed',String(row.solo));
       dom.solo.classList.toggle('selected',row.solo);
-      dom.gain.disabled=!row.compatible;
-      if(!userDragging&&document.activeElement!==dom.gain)dom.gain.value=String(row.gain);
-      dom.gain.title=row.compatible?'Amplitude '+Math.round(row.gain*100)+'% of original':'No exposed numeric amp control in this SynthDef';
-      const n=Object.entries(row.params).filter(([k,v])=>k!=='amp'&&Number.isFinite(v)).length;
-      dom.params.hidden=n===0;
+      dom.level.disabled=!row.compatible;
+      dom.level.textContent=Math.round(row.gain*100)+'%';
+      dom.level.title=row.compatible?
+        'Open full-size level and sound controls for '+row.name:
+        'No exposed numeric amp control in this instrument';
+      if(mixDialog.open&&selectedInstrument===row.name)updateDialog();
     }
     // Preserve the existing nodes and controls. Reorder only when the user
     // changes the filter or the underlying composition actually changes.
@@ -131,7 +233,8 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     if(document.hidden)return;
     const allRows=journal.getInstrumentRows();
     const rows=showAll?allRows:allRows.filter(row=>row.active>0);
-    const t=journal.now();
+    const t=journal.timelineNow();
+    const stopped=journal.stoppedAt!==null;
     updateLanes(rows);
     const timespan=Math.max(32,Math.ceil((t-journal.zero)/1000)+6);
     const graphWidth=Math.min(24000,Math.max(500,Math.ceil(timespan*SCALE)));
@@ -144,36 +247,59 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     }
     tickEl.style.width=graphWidth+'px';
     tickEl.replaceChildren(...ticks);
-    let number=0;
-    const events=journal.eventsForCurrent();
+    const events=journal.eventsForCurrent(),byName=new Map();
+    for(const ev of events){
+      if(!byName.has(ev.name))byName.set(ev.name,[]);
+      byName.get(ev.name).push(ev);
+    }
     for(const row of rows){
-      const dom=lastRows.get(row.name),bars=[];
-      for(const e of events){
-        if(e.name!==row.name)continue;
-        number++;
+      const dom=lastRows.get(row.name),selected=byName.get(row.name)||[];
+      const bars=[],used=new Set();
+      for(const e of selected){
+        used.add(e);
         const start=(e.start-journal.zero)/1000;
         const stop=((e.end??t)-journal.zero)/1000;
-        const bar=document.createElement('button');bar.type='button';
-        bar.className='perform-event'+(e.end===null?' perform-running':'');
+        const width=Math.max(3,(stop-start)*SCALE);
+        let bar=dom.bars.get(e);
+        if(!bar){
+          bar=document.createElement('button');bar.type='button';
+          bar.className='perform-event';
+          const level=document.createElement('span');level.className='perform-event-level';
+          level.setAttribute('aria-hidden','true');
+          bar.append(level);
+          bar.addEventListener('click',()=>jumpTo(e.site));
+          dom.bars.set(e,bar);
+        }
+        bar.classList.toggle('perform-running',e.end===null&&!stopped);
         bar.style.left=Math.max(0,start*SCALE)+'px';
-        bar.style.width=Math.max(3,(stop-start)*SCALE)+'px';
+        bar.style.width=width+'px';
         bar.style.setProperty('--voice-color','var(--voice-'+row.slot+')');
+        const level=ampHeight(e.params?.amp);
+        bar.classList.toggle('perform-level-unknown',level===null);
+        bar.style.setProperty('--note-level',level===null?'0%':level+'%');
         const when=formatTime(start),duration=(Math.max(0,stop-start)).toFixed(2);
         const hz=Number.isFinite(e.params?.freq)?' · '+Math.round(e.params.freq)+' Hz':'';
-        bar.title=row.name+' · '+when+' · '+duration+' s'+hz;
+        const amp=Number.isFinite(e.params?.amp)?' · coded amplitude '+e.params.amp:
+          ' · coded amplitude unknown';
+        bar.title=row.name+' · '+when+' · '+duration+' seconds'+hz+amp;
         bar.setAttribute('aria-label',bar.title);
-        bar.addEventListener('click',()=>jumpTo(e.site));
         bars.push(bar);
       }
-      dom.track.replaceChildren(...bars);
+      for(const ev of dom.bars.keys())if(!used.has(ev))dom.bars.delete(ev);
+      const existing=[...dom.track.children];
+      if(existing.length!==bars.length||existing.some((el,i)=>el!==bars[i]))
+        dom.track.replaceChildren(...bars);
     }
-    summary.textContent=rows.length+(showAll?' instruments':' playing')+
-      ' · '+number+' events · '+formatTime((t-journal.zero)/1000);
-    if(follow){
-      scroller.scrollLeft=Math.max(0,scroller.scrollWidth-scroller.clientWidth);
+    summary.textContent=rows.length+(showAll?' instruments':' sounding')+
+      ' · '+events.length+' notes · '+formatTime((t-journal.zero)/1000)+
+      (stopped?' · STOPPED':'');
+    panel.classList.toggle('perform-stopped',stopped);
+    const right=Math.max(0,scroller.scrollWidth-scroller.clientWidth);
+    if(follow&&(!pointerStart||!pointerStart.horizontal)){
+      if(Math.abs(scroller.scrollLeft-right)>1)scroller.scrollLeft=right;
     }
     clearTimeout(timer);
-    if(panel.offsetParent!==null&&journal.enabled)timer=setTimeout(schedule,350);
+    if(panel.offsetParent!==null&&journal.enabled&&!stopped)timer=setTimeout(schedule,350);
   }
   function schedule(){
     if(frame)return;frame=requestAnimationFrame(draw);
@@ -186,11 +312,52 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       'Showing only instruments playing right now';
     schedule();
   });
-  followBtn.addEventListener('click',()=>{follow=!follow;followBtn.setAttribute('aria-pressed',String(follow));followBtn.textContent=follow?'FOLLOW ●':'FOLLOW ○';schedule()});
+  followBtn.addEventListener('click',()=>{
+    // Returning to live is a direct, persistent choice, not a toggle.
+    setFollow(true);
+    pointerStart=null;
+    scroller.scrollLeft=Math.max(0,scroller.scrollWidth-scroller.clientWidth);
+    schedule();
+  });
   resetBtn.addEventListener('click',()=>{journal.reset();schedule()});
-  scroller.addEventListener('pointerdown',()=>{userDragging=true},{passive:true});
-  window.addEventListener('pointerup',()=>{userDragging=false},{passive:true});
-  scroller.addEventListener('scroll',()=>{if(userDragging&&follow){follow=false;followBtn.setAttribute('aria-pressed','false');followBtn.textContent='FOLLOW ○'}},{passive:true});
+  const checkManualRewind=()=>{
+    if(!follow||performance.now()>horizontalIntentUntil)return;
+    const right=Math.max(0,scroller.scrollWidth-scroller.clientWidth);
+    if(right-scroller.scrollLeft>=FOLLOW_BACK_SECONDS*SCALE){
+      setFollow(false);
+      schedule();
+    }
+  };
+  scroller.addEventListener('pointerdown',event=>{
+    if(!event.isPrimary)return;
+    pointerStart={id:event.pointerId,x:event.clientX,y:event.clientY,horizontal:false};
+  },{passive:true});
+  scroller.addEventListener('pointermove',event=>{
+    if(!pointerStart||event.pointerId!==pointerStart.id)return;
+    const dx=event.clientX-pointerStart.x,dy=event.clientY-pointerStart.y;
+    if(Math.abs(dx)>18&&Math.abs(dx)>Math.abs(dy)*1.3){
+      pointerStart.horizontal=true;
+      horizontalIntentUntil=performance.now()+1300;
+      checkManualRewind();
+    }
+  },{passive:true});
+  const finishGesture=event=>{
+    if(pointerStart&&event.pointerId===pointerStart.id){
+      pointerStart=null;
+      schedule();
+    }
+  };
+  scroller.addEventListener('pointerup',finishGesture,{passive:true});
+  scroller.addEventListener('pointercancel',finishGesture,{passive:true});
+  scroller.addEventListener('wheel',event=>{
+    if(Math.abs(event.deltaX)>20&&Math.abs(event.deltaX)>Math.abs(event.deltaY)){
+      horizontalIntentUntil=performance.now()+700;
+    }
+  },{passive:true});
+  scroller.addEventListener('scroll',()=>{
+    // Vertical scrolling and automatic follow movement do not pause live.
+    checkManualRewind();
+  },{passive:true});
   const api={
     journal,
     evaluation:(name,whole,submitted,start)=>journal.evaluation(name,whole,submitted,start),
