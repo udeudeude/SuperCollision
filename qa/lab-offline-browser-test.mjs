@@ -250,6 +250,100 @@ try{
   }
   await page.locator('#inspector-code').click();
 
+  // Phone-sized Mix: explanatory controls, accessible full-width level
+  // adjustment, truthful amplitude display, intentional rewind-only Follow,
+  // and freezing the display when STOP ends performance observation.
+  await page.locator('#inspector-perform').click();
+  await page.locator('#perform-help').click();
+  assert(await page.locator('.perform-help-dialog').isVisible(),
+    'Mix help does not explain its buttons');
+  assert((await page.locator('.perform-help-dialog').textContent()).includes('not measured loudness'),
+    'Note level legend must not imply real audio waveform measurement');
+  await page.locator('#perform-help-close').click();
+  await page.evaluate(async()=>{
+    const {encodeOsc}=await import('./performance-engine.mjs');
+    const timeline=window.SCTimeline, journal=timeline.journal;
+    const source=String.raw`SynthDef(\\uxMeter, { |out=0, freq=240, amp=0.16, cutoff=900|
+      Out.ar(out, SinOsc.ar(freq, 0, amp) ! 2);
+    }).add;`;
+    timeline.evaluation(journal.composition||'Default',source,source,1);
+    journal.zero=performance.now()-65000;
+    journal.outgoing(encodeOsc('/s_new',['uxMeter',90119,0,1,'freq',240,'amp',0.16]));
+    journal.incoming(encodeOsc('/n_go',[90119,1,-1,-1,0]));
+    timeline.render();
+  });
+  await page.waitForSelector('.perform-lane[data-name="uxMeter"]');
+  const lane=page.locator('.perform-lane[data-name="uxMeter"]');
+  assert((await lane.boundingBox()).height<70,'Mix lane is still excessively tall');
+  assert(await lane.locator('.perform-event-level').count()>0,
+    'Notes do not show nominal code amplitude');
+  const noteLevel=await lane.locator('.perform-event').first().evaluate(
+    el=>el.style.getPropertyValue('--note-level'));
+  assert.equal(noteLevel,'40%','Declared amplitude is not represented correctly');
+  await lane.locator('.perform-level').click();
+  assert(await page.locator('.perform-mix-dialog:not(.perform-help-dialog)').isVisible(),
+    'Wide gain and parameter dialog did not open');
+  assert((await page.locator('#perform-dialog-gain').boundingBox()).width>160,
+    'The volume slider is still too narrow to adjust by touch');
+  await page.locator('#perform-dialog-minus').click();
+  assert.equal(await page.locator('#perform-dialog-gain-value').textContent(),'95%',
+    'Precise five-percent volume adjustment failed');
+  assert.equal(await page.locator('#perform-dialog-param-name').inputValue(),'out',
+    'Sound controls should expose named synth parameters');
+  await page.locator('#perform-dialog-close').click();
+  await page.waitForTimeout(100);
+  assert.equal(await lane.locator('.perform-level').textContent(),'95%');
+  assert.equal(await page.locator('#perform-follow').getAttribute('aria-pressed'),'true');
+  const verticalStayedFollowing=await page.locator('#perform-scroller').evaluate(sc=>{
+    const e=(type,x,y)=>sc.dispatchEvent(new PointerEvent(type,{
+      bubbles:true,pointerId:7,isPrimary:true,clientX:x,clientY:y
+    }));
+    e('pointerdown',200,180);e('pointermove',198,60);
+    sc.scrollTop=40;sc.dispatchEvent(new Event('scroll'));
+    e('pointerup',198,60);
+    return document.querySelector('#perform-follow').getAttribute('aria-pressed');
+  });
+  assert.equal(verticalStayedFollowing,'true','Vertical scrolling disabled timeline Follow');
+  await page.locator('#perform-scroller').evaluate(sc=>{
+    const right=Math.max(0,sc.scrollWidth-sc.clientWidth);
+    sc.scrollLeft=right;
+    const e=(type,x,y)=>sc.dispatchEvent(new PointerEvent(type,{
+      bubbles:true,pointerId:8,isPrimary:true,clientX:x,clientY:y
+    }));
+    e('pointerdown',300,180);
+    sc.scrollLeft=right-300;
+    e('pointermove',90,170);
+    sc.dispatchEvent(new Event('scroll'));
+    e('pointerup',90,170);
+  });
+  assert.equal(await page.locator('#perform-follow').getAttribute('aria-pressed'),'false',
+    'Intentional rewind over 15 seconds did not pause Follow');
+  await page.locator('#perform-follow').click();
+  assert.equal(await page.locator('#perform-follow').getAttribute('aria-pressed'),'true',
+    'Tap FOLLOW did not resume live timeline');
+  await page.evaluate(async()=>{
+    const {encodeOsc}=await import('./performance-engine.mjs');
+    const j=window.SCTimeline.journal;
+    j.incoming(encodeOsc('/n_end',[90119,1,-1,-1,0]));
+    j.now=()=>performance.now()+11000;
+    window.SCTimeline.render();
+  });
+  await page.waitForFunction(()=>
+    document.querySelector('.perform-lane[data-name="uxMeter"]')?.classList.contains('perform-idle'),
+    null,{timeout:3000});
+  assert((await lane.boundingBox()).height<38,
+    'A long-resting instrument row failed to shrink');
+  const frozen=await page.evaluate(()=>{
+    const j=window.SCTimeline.journal;
+    j.stop();return j.timelineNow();
+  });
+  await page.waitForTimeout(130);
+  assert.equal(await page.evaluate(()=>window.SCTimeline.journal.timelineNow()),frozen,
+    'STOP did not freeze the timeline clock');
+  await page.waitForFunction(()=>
+    document.querySelector('#perform-summary')?.textContent?.includes('STOPPED'));
+  await page.locator('#inspector-code').click();
+
   // IndexedDB mirror is additive. Confirm it persists edits and offers
   // non-destructive recovery if browser localStorage later differs.
   await page.waitForFunction(() =>
