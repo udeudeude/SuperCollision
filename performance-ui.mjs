@@ -365,6 +365,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     }
     for(const row of rows){
       const dom=lastRows.get(row.name),selected=byName.get(row.name)||[];
+      const varWidth=Math.max(250,scroller.clientWidth);
       const bars=[],used=new Set();
       for(const e of selected){
         used.add(e);
@@ -413,7 +414,9 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
         }
         bars.push(bar);
       }
-      for(const ev of dom.bars.keys())if(!used.has(ev))dom.bars.delete(ev);
+      for(const [ev,bar] of dom.bars)if(!used.has(ev)){
+        bar.remove();dom.bars.delete(ev);
+      }
       const existing=[...dom.track.children];
       if(existing.length!==bars.length||existing.some((el,i)=>el!==bars[i]))
         dom.track.replaceChildren(...bars);
