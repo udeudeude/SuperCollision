@@ -314,3 +314,25 @@ body .perform-note-dialog dd{margin:0;min-width:0;overflow-wrap:anywhere}
 body .perform-note-dialog .perform-dialog-step-actions button{
   flex:1;min-width:120px
 }
+
+/* Dense musical score: controls are selected, not repeated on every lane. */
+body .perform-lane,body .perform-lane.perform-resting,
+body .perform-lane.perform-idle,body .perform-lane.perform-idle.perform-resting{
+  height:24px;min-height:24px!important;transition:none;
+}
+body .perform-controls{flex-direction:row;align-items:center;gap:4px;padding:1px 5px;overflow:hidden}
+body .perform-name{flex:1 1 auto;height:21px;line-height:21px;min-width:0;font-size:10px}
+body .perform-voices{flex:0 0 auto;height:auto;line-height:1;font-size:8px}
+body .perform-actions,body .perform-lane.perform-idle .perform-actions{display:none}
+body .perform-lane.perform-idle .perform-voices{position:static;opacity:.65}
+body .perform-lane.perform-idle .perform-name{max-width:none;line-height:21px;flex-basis:auto}
+body .perform-track{height:24px;min-height:24px!important}
+body .perform-event,body[data-theme] .perform-event,
+body .perform-lane.perform-idle .perform-event{
+  height:8px;min-height:8px!important;max-height:8px;
+  border-radius:1px;top:8px;overflow:visible
+}
+body .perform-event-level{opacity:.85}
+body .perform-event-label{display:none}
+body .perform-lane.perform-muted .perform-name{text-decoration:line-through}
+body .perform-name:focus-visible{outline:2px solid var(--voice-color);outline-offset:-2px}
