@@ -242,6 +242,10 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     level.className='perform-level';
     level.setAttribute('aria-label','Adjust level and sound parameters for '+r.name);
     level.setAttribute('aria-haspopup','dialog');
+    // Compact overview: select an instrument to reveal its controls.
+    title.title='Select '+r.name+' to adjust its sound';
+    title.replaceWith(title);
+    title.addEventListener('click',()=>openMix(r.name));
     actions.append(mute,solo,level);
     controls.append(title,info,actions);
     const track=document.createElement('div');track.className='perform-track';
@@ -314,6 +318,17 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       lastTickSpan=timespan;
     }
     const events=journal.eventsForCurrent(),byName=new Map();
+    // A common logarithmic pitch range per instrument preserves intervals.
+    // Unknown pitches remain centered, never represented as measured audio.
+    const pitchBounds=new Map();
+    for(const ev of events){
+      const hz=ev.params?.freq;
+      if(!(Number.isFinite(hz)&&hz>0))continue;
+      const p=Math.log2(hz);
+      const b=pitchBounds.get(ev.name)||{lo:p,hi:p};
+      b.lo=Math.min(b.lo,p);b.hi=Math.max(b.hi,p);
+      pitchBounds.set(ev.name,b);
+    }
     for(const ev of events){
       if(!byName.has(ev.name))byName.set(ev.name,[]);
       byName.get(ev.name).push(ev);
@@ -346,6 +361,11 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
           bar.classList.toggle('perform-running',e.end===null&&!stopped);
           bar.style.left=Math.max(0,start*SCALE)+'px';
           bar.style.width=width+'px';
+          const hz=e.params?.freq,bounds=pitchBounds.get(row.name);
+          const pitch=Number.isFinite(hz)&&hz>0&&bounds?
+            (Math.log2(hz)-bounds.lo)/Math.max(1,bounds.hi-bounds.lo):.5;
+          bar.style.top=(2+Math.round((1-pitch)*11))+'px';
+          bar.classList.toggle('perform-pitch-known',Number.isFinite(hz)&&hz>0);
           bar.querySelector('.perform-event-label').textContent=width>=72 &&
             Number.isFinite(e.params?.freq)?Math.round(e.params.freq)+' Hz':'';
           bar.style.setProperty('--voice-color','var(--voice-'+row.slot+')');
