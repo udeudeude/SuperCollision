@@ -12,7 +12,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   let showAll=true;
   const SCALE=16,IDLE_AFTER_MS=9000,FOLLOW_BACK_SECONDS=15;
   let follow=true,frame=0,timer=null,lastRows=new Map();
-  let horizontalIntentUntil=0,pointerStart=null,wasStopped=false;
+  let horizontalIntentUntil=0,pointerStart=null,lastTickSpan=-1;
   const setFollow=(enabled)=>{
     follow=Boolean(enabled);
     followBtn.setAttribute('aria-pressed',String(follow));
@@ -44,6 +44,10 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     <div class="perform-dialog-gain-line">
       <label for="perform-dialog-gain">Level <output id="perform-dialog-gain-value">100%</output></label>
       <input id="perform-dialog-gain" type="range" min="0" max="2" step=".01" value="1">
+      <div class="perform-dialog-step-actions">
+        <button type="button" id="perform-dialog-minus">−5%</button>
+        <button type="button" id="perform-dialog-plus">+5%</button>
+      </div>
     </div>
     <section id="perform-dialog-parameters">
       <h3>Sound parameters</h3>
@@ -79,11 +83,17 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   function updateDialog(){
     if(!selectedInstrument)return;
     const st=journal.stateFor(selectedInstrument);
+    const compatible=journal.compatible(selectedInstrument);
+    gainControl.disabled=!compatible;
+    muteControl.disabled=!compatible;
+    soloControl.disabled=!compatible||!journal.safeSolo();
+    mixDialog.querySelector('#perform-dialog-neutral').disabled=!compatible;
+    for(const id of ['#perform-dialog-minus','#perform-dialog-plus'])
+      mixDialog.querySelector(id).disabled=!compatible;
     gainControl.value=String(st.gain);
     gainOutput.textContent=Math.round(st.gain*100)+'%';
     muteControl.setAttribute('aria-pressed',String(st.muted));
     muteControl.textContent=st.muted?'Unmute':'Mute';
-    soloControl.disabled=!journal.safeSolo();
     soloControl.setAttribute('aria-pressed',String(st.solo));
     soloControl.textContent=st.solo?'Unsolo':'Solo';
   }
@@ -91,7 +101,9 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     selectedInstrument=name;
     mixDialog.querySelector('#perform-dialog-title').textContent=name;
     mixDialog.querySelector('#perform-dialog-info').textContent=
-      'Level 100% preserves the instrument’s original amplitude. Mute silences it; Solo silences other controllable instruments.';
+      journal.compatible(name)?
+        '100% preserves the original level. Mute silences this instrument; Solo silences other controllable instruments.':
+        'This instrument does not expose a numeric amplitude control; sound parameters may still be adjustable.';
     const params=journal.defs.get(name)?.params||{};
     const keys=Object.keys(params).filter(k=>k!=='amp'&&Number.isFinite(params[k]));
     paramSection.hidden=!keys.length;
@@ -107,6 +119,14 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     journal.gain(selectedInstrument,Number(gainControl.value));
     updateDialog();schedule();
   });
+  for(const [id,direction] of [['#perform-dialog-minus',-1],['#perform-dialog-plus',1]]){
+    mixDialog.querySelector(id).addEventListener('click',()=>{
+      if(!selectedInstrument)return;
+      const original=journal.stateFor(selectedInstrument).gain;
+      journal.gain(selectedInstrument,Math.round((original+direction*.05)*100)/100);
+      updateDialog();schedule();
+    });
+  }
   muteControl.addEventListener('click',()=>{
     if(!selectedInstrument)return;
     journal.mute(selectedInstrument,!journal.stateFor(selectedInstrument).muted);
@@ -134,16 +154,56 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   mixDialog.addEventListener('close',()=>{selectedInstrument=null});
   const helpDialog=document.createElement('dialog');helpDialog.className='perform-mix-dialog perform-help-dialog';
   helpDialog.innerHTML=`<h2>Using Mix</h2>
-    <p><b>M</b> means Mute. <b>S</b> means Solo. Both require the instrument to expose a numeric amplitude control in its code.</p>
+    <p><b>Mute</b> silences an instrument. <b>Solo</b> silences other instruments so you can hear this one. Both require numeric amplitude controls in the instrument code.</p>
     <p>Tap the <b>100%</b> level button to adjust volume with a full-width slider, or change a sound parameter such as frequency or filter cutoff. These controls affect currently playing notes.</p>
-    <p><b>Reset levels</b> restores the original mixer volumes and clears Mute and Solo. It does not stop playback or undo sound-parameter edits.</p>
+    <p><b>All / Active</b> shows either every instrument ever played in the current composition or only instruments currently sounding.</p>
+    <p><b>↺ Levels</b> restores the original mixer volumes and clears Mute and Solo. It does not stop playback or undo sound-parameter edits.</p>
     <p><b>Following</b> keeps the newest events in view. Vertical scrolling leaves it on. Swipe backward over roughly 15 seconds of the timeline to pause following. Tap <b>↪ Live</b> to return.</p>
-    <p>Each colored bar represents a synthesizer note. Its filled strip estimates the note’s declared amplitude from code, <b>not measured loudness or a waveform</b>. Tap the bar to jump to its source.</p>
+    <p>Each colored bar represents a synthesizer note. Its filled strip estimates the note’s declared amplitude from code, <b>not measured loudness or a waveform</b>. Tap a bar for its timing, frequency and code amplitude, plus a link to the instrument code.</p>
     <p>Quiet rows become compact after nine seconds. <b>Stop</b> freezes the musical timeline.</p>
     <button type="button" id="perform-help-close">Close</button>`;
   document.body.append(helpDialog);
   helpDialog.querySelector('#perform-help-close').addEventListener('click',()=>helpDialog.close());
   panel.querySelector('#perform-help')?.addEventListener('click',()=>{if(!helpDialog.open)helpDialog.showModal()});
+  // A note detail dialog is deliberately distinct from a waveform viewer:
+  // only parameters and event timings observed from the synth stream appear.
+  const noteDialog=document.createElement('dialog');
+  noteDialog.className='perform-mix-dialog perform-note-dialog';
+  noteDialog.innerHTML=`<h2 id="perform-note-title">Note</h2>
+    <dl>
+      <dt>Started</dt><dd id="perform-note-start"></dd>
+      <dt>Duration</dt><dd id="perform-note-duration"></dd>
+      <dt>Frequency</dt><dd id="perform-note-frequency"></dd>
+      <dt>Code amplitude</dt><dd id="perform-note-amplitude"></dd>
+    </dl>
+    <p>Amplitude is the value supplied in the code when this note began. It is not a measured waveform or sound-pressure level.</p>
+    <div class="perform-dialog-step-actions">
+      <button id="perform-note-code" type="button">Go to instrument code</button>
+      <button id="perform-note-close" type="button">Close</button>
+    </div>`;
+  document.body.append(noteDialog);
+  let noteSource=null;
+  noteDialog.querySelector('#perform-note-code').addEventListener('click',()=>{
+    noteDialog.close();
+    jumpTo(noteSource);
+  });
+  noteDialog.querySelector('#perform-note-close').addEventListener('click',()=>noteDialog.close());
+  const showNote=(name,event,stamp)=>{
+    noteSource=event.site;
+    noteDialog.querySelector('#perform-note-title').textContent=name;
+    noteDialog.querySelector('#perform-note-start').textContent=
+      formatTime((event.start-journal.zero)/1000);
+    noteDialog.querySelector('#perform-note-duration').textContent=
+      (event.end===null?'Playing · ':'Ended · ')+
+      ((Math.max(0,(event.end??stamp)-event.start))/1000).toFixed(2)+' seconds';
+    noteDialog.querySelector('#perform-note-frequency').textContent=
+      Number.isFinite(event.params?.freq)?Math.round(event.params.freq)+' Hz':'Not available';
+    noteDialog.querySelector('#perform-note-amplitude').textContent=
+      Number.isFinite(event.params?.amp)?
+        String(Number(event.params.amp.toPrecision(3))):'Not available';
+    noteDialog.querySelector('#perform-note-code').disabled=!noteSource;
+    if(!noteDialog.open)noteDialog.showModal();
+  };
   const formatTime=seconds=>{
     if(seconds<0)seconds=0;
     return Math.floor(seconds/60)+':'+String(Math.floor(seconds%60)).padStart(2,'0');
@@ -168,12 +228,12 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     title.addEventListener('click',()=>jumpTo(journal.defs.get(r.name)?.site));
     const info=document.createElement('span');info.className='perform-voices';
     const actions=document.createElement('div');actions.className='perform-actions';
-    const mute=button('M','Mute '+r.name,()=>{
+    const mute=button('MUTE','Mute '+r.name,()=>{
       journal.mute(r.name,!journal.stateFor(r.name).muted);schedule();
     });
     mute.className='perform-mute';
     mute.setAttribute('aria-label','Mute '+r.name);
-    const solo=button('S','Solo '+r.name,()=>{
+    const solo=button('SOLO','Solo '+r.name,()=>{
       journal.solo(r.name,!journal.stateFor(r.name).solo);schedule();
     });
     solo.className='perform-solo';
@@ -208,11 +268,13 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       dom.solo.disabled=!row.compatible||!journal.safeSolo();
       dom.solo.setAttribute('aria-pressed',String(row.solo));
       dom.solo.classList.toggle('selected',row.solo);
-      dom.level.disabled=!row.compatible;
-      dom.level.textContent=Math.round(row.gain*100)+'%';
+      const tunable=Object.entries(row.params).some(([key,val])=>
+        key!=='amp'&&Number.isFinite(val));
+      dom.level.disabled=!row.compatible&&!tunable;
+      dom.level.textContent=row.compatible?Math.round(row.gain*100)+'%':'TUNE';
       dom.level.title=row.compatible?
-        'Open full-size level and sound controls for '+row.name:
-        'No exposed numeric amp control in this instrument';
+        'Open large level and sound controls for '+row.name:
+        'Edit available sound parameters for '+row.name;
       if(mixDialog.open&&selectedInstrument===row.name)updateDialog();
     }
     // Preserve the existing nodes and controls. Reorder only when the user
@@ -240,13 +302,17 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     const graphWidth=Math.min(24000,Math.max(500,Math.ceil(timespan*SCALE)));
     rowsEl.style.setProperty('--track-width',graphWidth+'px');
     const tickEl=panel.querySelector('#perform-axis-ticks');
-    const ticks=[];
-    for(let seconds=0;seconds<=timespan&&seconds<1500;seconds+=10){
-      const tick=document.createElement('span');tick.className='perform-axis-tick';
-      tick.style.left=seconds*SCALE+'px';tick.textContent=formatTime(seconds);ticks.push(tick);
+    if(timespan!==lastTickSpan){
+      const ticks=[];
+      for(let seconds=0;seconds<=timespan&&seconds<1500;seconds+=10){
+        const tick=document.createElement('span');tick.className='perform-axis-tick';
+        tick.style.left=seconds*SCALE+'px';tick.textContent=formatTime(seconds);
+        ticks.push(tick);
+      }
+      tickEl.style.width=graphWidth+'px';
+      tickEl.replaceChildren(...ticks);
+      lastTickSpan=timespan;
     }
-    tickEl.style.width=graphWidth+'px';
-    tickEl.replaceChildren(...ticks);
     const events=journal.eventsForCurrent(),byName=new Map();
     for(const ev of events){
       if(!byName.has(ev.name))byName.set(ev.name,[]);
@@ -266,23 +332,33 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
           bar.className='perform-event';
           const level=document.createElement('span');level.className='perform-event-level';
           level.setAttribute('aria-hidden','true');
-          bar.append(level);
-          bar.addEventListener('click',()=>jumpTo(e.site));
+          const caption=document.createElement('span');caption.className='perform-event-label';
+          caption.setAttribute('aria-hidden','true');
+          bar.append(level,caption);
+          bar.addEventListener('click',()=>showNote(row.name,e,journal.timelineNow()));
           dom.bars.set(e,bar);
         }
-        bar.classList.toggle('perform-running',e.end===null&&!stopped);
-        bar.style.left=Math.max(0,start*SCALE)+'px';
-        bar.style.width=width+'px';
-        bar.style.setProperty('--voice-color','var(--voice-'+row.slot+')');
-        const level=ampHeight(e.params?.amp);
-        bar.classList.toggle('perform-level-unknown',level===null);
-        bar.style.setProperty('--note-level',level===null?'0%':level+'%');
-        const when=formatTime(start),duration=(Math.max(0,stop-start)).toFixed(2);
-        const hz=Number.isFinite(e.params?.freq)?' · '+Math.round(e.params.freq)+' Hz':'';
-        const amp=Number.isFinite(e.params?.amp)?' · coded amplitude '+e.params.amp:
-          ' · coded amplitude unknown';
-        bar.title=row.name+' · '+when+' · '+duration+' seconds'+hz+amp;
-        bar.setAttribute('aria-label',bar.title);
+        // Finished notes are immutable. Avoid rebuilding thousands of
+        // historic bar styles and labels every 350ms during long pieces.
+        const endSignature=String(e.end);
+        if(e.end===null||bar.dataset.renderedEnd!==endSignature){
+          bar.dataset.renderedEnd=endSignature;
+          bar.classList.toggle('perform-running',e.end===null&&!stopped);
+          bar.style.left=Math.max(0,start*SCALE)+'px';
+          bar.style.width=width+'px';
+          bar.querySelector('.perform-event-label').textContent=width>=72 &&
+            Number.isFinite(e.params?.freq)?Math.round(e.params.freq)+' Hz':'';
+          bar.style.setProperty('--voice-color','var(--voice-'+row.slot+')');
+          const level=ampHeight(e.params?.amp);
+          bar.classList.toggle('perform-level-unknown',level===null);
+          bar.style.setProperty('--note-level',level===null?'0%':level+'%');
+          const when=formatTime(start),duration=(Math.max(0,stop-start)).toFixed(2);
+          const hz=Number.isFinite(e.params?.freq)?' · '+Math.round(e.params.freq)+' Hz':'';
+          const amp=Number.isFinite(e.params?.amp)?' · coded amplitude '+e.params.amp:
+            ' · coded amplitude unknown';
+          bar.title=row.name+' · '+when+' · '+duration+' seconds'+hz+amp;
+          bar.setAttribute('aria-label',bar.title);
+        }
         bars.push(bar);
       }
       for(const ev of dom.bars.keys())if(!used.has(ev))dom.bars.delete(ev);
@@ -299,7 +375,11 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       if(Math.abs(scroller.scrollLeft-right)>1)scroller.scrollLeft=right;
     }
     clearTimeout(timer);
-    if(panel.offsetParent!==null&&journal.enabled&&!stopped)timer=setTimeout(schedule,350);
+    // Once STOP freezes the playhead, keep repainting only until the last
+    // resting lane has smoothly compacted. This never advances note time.
+    const pendingIdle=rows.some(row=>row.active===0&&row.restingFor<IDLE_AFTER_MS);
+    if(panel.offsetParent!==null&&journal.enabled&&(!stopped||pendingIdle))
+      timer=setTimeout(schedule,stopped?550:350);
   }
   function schedule(){
     if(frame)return;frame=requestAnimationFrame(draw);
