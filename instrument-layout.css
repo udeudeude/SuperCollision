@@ -1524,3 +1524,306 @@ body:is([data-theme=score],[data-theme=patch],[data-theme=terminal])>header .the
  font:700 10px/1.15 ui-monospace,SFMono-Regular,monospace!important;
  text-align:right!important;
 }
+
+
+/* THIRD CURATORIAL PASS / 2026-11-19
+   Open Form, Signal Atlas and Control Room are three ways to READ sound:
+   score -> route -> monitor. These details deliberately occupy the chrome,
+   menus, console and inset, NEVER the editable source text.
+   Artwork and typography must remain legible at 320 CSS pixels. */
+
+/* 01 OPEN FORM: Earle Brown's discontinuous vertical and horizontal masses
+   inform the composition, not counterfeit traditional musical notation.
+   Coral is a performing/marking gesture; navy is the printed structural ink. */
+body[data-theme=score]{
+ --world-paper:#f5f0e5;
+ --world-ink:#233b46;
+ --world-action:#d45138;
+ --world-accent:#f0bf68;
+}
+body[data-theme=score]>header{
+ border-bottom:4px double var(--world-action)!important;
+}
+body[data-theme=score]>header .identity-art{
+ border-left:0!important;
+ padding-left:0!important;
+}
+body[data-theme=score]>header h1{
+ font-family:Georgia,Times,serif!important;
+ font-style:italic!important;
+ font-weight:600!important;
+ letter-spacing:-.06em!important;
+}
+body[data-theme=score] .projectbar{
+ border-bottom:1px solid #607679!important;
+ background-image:linear-gradient(90deg,transparent 0 57%,#d45138 57% 57.5%,transparent 57.5%)!important;
+}
+body[data-theme=score] .projectbar .composition-picker>button{
+ border:1px solid #607679!important;
+ border-left:5px solid var(--world-action)!important;
+ box-shadow:inset 0 -2px 0 #d9d7ca!important;
+}
+body[data-theme=score] .projectbar .menu>summary{
+ border:1px solid #233b46!important;
+ box-shadow:inset 0 -3px 0 var(--world-action)!important;
+}
+body[data-theme=score] .menu-items,
+body[data-theme=score] .project-list{
+ border-top:3px double var(--world-action)!important;
+ box-shadow:3px 5px 0 #233b4630!important;
+}
+body[data-theme=score] .menu-items .file-submenu>summary{
+ color:#233b46!important;
+ border-left:3px solid #d45138!important;
+}
+body[data-theme=score] .menu-items button:active{
+ background:#f0bf68!important;color:#233b46!important;
+}
+body[data-theme=score] .editor-frame{
+ border-left:5px solid #d45138!important;
+}
+body[data-theme=score] .toolbar{
+ border-top:4px double #f0bf68!important;
+}
+body[data-theme=score] .toolbar #evaluate{
+ background:#bd422c!important;color:#fff9ec!important;
+ border:1px solid #bd422c!important;
+}
+body[data-theme=score] .toolbar #run-region{
+ border-bottom:3px solid #d45138!important;
+}
+body[data-theme=score] .toolbar #panic{
+ background:#233b46!important;color:#f5f0e5!important;
+ border:1px solid #f0bf68!important;
+}
+body[data-theme=score] .console-bar{
+ border-bottom:3px double #d45138!important;
+}
+body[data-theme=score] .console-bar .inspector-modes button{
+ color:#f5f0e5!important;
+}
+body[data-theme=score] .console-bar .inspector-modes button[aria-pressed=true]{
+ background:#f5f0e5!important;color:#233b46!important;
+ border:1px solid #f5f0e5!important;
+ box-shadow:inset 0 -3px 0 #d45138!important;
+}
+body[data-theme=score] .live-panel-head{
+ border-bottom:3px double #d45138!important;
+}
+body[data-theme=score] .learning-header strong,
+body[data-theme=score] .sound-head strong{
+ font:italic 700 14px/1.25 Georgia,Times,serif!important;
+ letter-spacing:-.02em!important;
+}
+body[data-theme=score] .learning-panel,
+body[data-theme=score] .sound-designer{
+ background:#f5f0e5!important;color:#1d3038!important;
+}
+body[data-theme=score] .sound-designer .sound-primary{
+ background:#bd422c!important;color:#fff9ec!important;border-color:#bd422c!important;
+}
+body[data-theme=score] .sound-code,
+body[data-theme=score] .learning-experiment-code{
+ background:#ebe5d7!important;color:#1d3038!important;
+}
+body[data-theme=score] .learning-suggestion{
+ border-left:3px solid #d45138!important;border-radius:0!important;
+}
+
+/* 02 SIGNAL ATLAS: matrix crosspoints and routed signals, not simulated
+   cable connectors. Citron marks a selected node; peach marks an action. */
+body[data-theme=patch]{
+ --world-grid:#9fc9bd;
+ --world-route:#e2e980;
+ --world-action:#f59b69;
+ --world-field:#143640;
+}
+body[data-theme=patch]>header{
+ border-bottom:3px solid var(--world-action)!important;
+ background-image:repeating-linear-gradient(90deg,transparent 0 13px,#9fc9bd4d 13px 14px,transparent 14px 26px)!important;
+ background-position:0 2px!important;background-size:100% 2px!important;
+ background-repeat:no-repeat!important;
+}
+body[data-theme=patch] .projectbar{
+ background-color:#1e4750!important;
+ background-image:radial-gradient(circle,#9fc9bd70 .75px,transparent 1px)!important;
+ background-size:12px 12px!important;
+ border-bottom:2px solid var(--world-route)!important;
+}
+body[data-theme=patch] .projectbar .composition-picker>button{
+ border:1px solid var(--world-grid)!important;
+ border-left:4px solid var(--world-action)!important;
+}
+body[data-theme=patch] .projectbar .menu>summary{
+ background:#143640!important;
+ border:1px solid var(--world-grid)!important;
+ box-shadow:inset 0 -3px 0 var(--world-route)!important;
+}
+body[data-theme=patch] .menu-items,
+body[data-theme=patch] .project-list{
+ border:1px solid var(--world-grid)!important;
+ border-top:3px solid var(--world-route)!important;
+}
+body[data-theme=patch] .menu-items .file-submenu>summary{
+ color:#edf0db!important;
+ border-left:3px solid var(--world-action)!important;
+}
+body[data-theme=patch] .menu-items button:active{
+ background:var(--world-route)!important;color:#102a32!important;
+}
+body[data-theme=patch] #line-gutter{
+ border-right:2px dashed var(--world-route)!important;
+}
+body[data-theme=patch] .toolbar{
+ border-top:3px solid var(--world-route)!important;
+}
+body[data-theme=patch] .toolbar #evaluate{
+ background:var(--world-action)!important;color:#102a32!important;
+}
+body[data-theme=patch] .toolbar #run-region{
+ border-bottom:3px solid var(--world-route)!important;
+}
+body[data-theme=patch] .toolbar #panic{
+ background:var(--world-route)!important;color:#102a32!important;
+}
+body[data-theme=patch] .console-bar{
+ border-bottom:2px solid var(--world-route)!important;
+}
+body[data-theme=patch] .console-bar .inspector-modes button[aria-pressed=true]{
+ background:var(--world-route)!important;color:#102a32!important;
+ border-color:var(--world-route)!important;
+ box-shadow:inset 0 -3px 0 var(--world-action)!important;
+}
+body[data-theme=patch] .live-panel-head{
+ border-bottom:2px solid var(--world-route)!important;
+}
+body[data-theme=patch] .learning-header strong,
+body[data-theme=patch] .sound-head strong{
+ font:800 12px/1.25 ui-monospace,monospace!important;
+ letter-spacing:.085em!important;text-transform:uppercase!important;
+}
+body[data-theme=patch] .learning-panel,
+body[data-theme=patch] .sound-designer{
+ background:#0d242c!important;color:#edf0db!important;
+}
+body[data-theme=patch] .sound-designer .sound-primary{
+ background:var(--world-action)!important;color:#102a32!important;
+ border-color:var(--world-action)!important;
+}
+body[data-theme=patch] .sound-code,
+body[data-theme=patch] .learning-experiment-code{
+ background:#143640!important;color:#edf0db!important;
+}
+body[data-theme=patch] .learning-suggestion{
+ border:1px dashed var(--world-grid)!important;
+ border-left:4px solid var(--world-route)!important;
+ border-radius:3px!important;
+}
+
+/* 03 CONTROL ROOM: a legible telemetry instrument, not glowing green
+   novelty terminal text. Amber carries decisions; gray-green recedes. */
+body[data-theme=terminal]{
+ --world-dark:#101b16;
+ --world-face:#1b2921;
+ --world-text:#e0eccd;
+ --world-amber:#ffbd61;
+ --world-graticule:#91b19a;
+ font-variant-numeric:tabular-nums;
+}
+body[data-theme=terminal]>header{
+ border:1px solid #91b19a!important;border-bottom:3px solid var(--world-amber)!important;
+ background-image:repeating-linear-gradient(90deg,transparent 0 21px,#91b19a70 21px 22px,transparent 22px 43px)!important;
+ background-size:100% 3px!important;background-position:0 2px!important;
+ background-repeat:no-repeat!important;
+}
+body[data-theme=terminal] header h1{
+ letter-spacing:.055em!important;
+}
+body[data-theme=terminal] .projectbar{
+ border-bottom:1px solid var(--world-graticule)!important;
+}
+body[data-theme=terminal] .projectbar .composition-picker>button{
+ border:1px solid var(--world-graticule)!important;
+ border-left:3px solid var(--world-amber)!important;
+}
+body[data-theme=terminal] .projectbar .menu>summary{
+ border:1px solid var(--world-graticule)!important;
+ box-shadow:inset 0 -2px 0 var(--world-amber)!important;
+}
+body[data-theme=terminal] .menu-items,
+body[data-theme=terminal] .project-list{
+ border:1px solid var(--world-graticule)!important;
+ border-top:3px solid var(--world-amber)!important;
+ box-shadow:5px 5px 0 #0009!important;
+}
+body[data-theme=terminal] .menu-items .file-submenu>summary{
+ color:var(--world-text)!important;
+ border-left:2px solid var(--world-amber)!important;
+}
+body[data-theme=terminal] .menu-items button:active{
+ background:var(--world-amber)!important;color:#101b16!important;
+}
+body[data-theme=terminal] #line-gutter{
+ border-right:1px solid var(--world-amber)!important;
+}
+body[data-theme=terminal] .toolbar{
+ border-top:3px solid var(--world-amber)!important;
+}
+body[data-theme=terminal] .toolbar button{
+ font-family:ui-monospace,SFMono-Regular,Menlo,monospace!important;
+ letter-spacing:.025em!important;
+}
+body[data-theme=terminal] .toolbar #evaluate{
+ background:var(--world-amber)!important;color:var(--world-dark)!important;
+}
+body[data-theme=terminal] .toolbar #run-region{
+ border-bottom:2px solid var(--world-amber)!important;
+}
+body[data-theme=terminal] .toolbar #panic{
+ background:var(--world-face)!important;color:var(--world-amber)!important;
+ border:1px solid var(--world-amber)!important;
+}
+body[data-theme=terminal] .console-bar{
+ border-bottom:2px solid var(--world-amber)!important;
+}
+body[data-theme=terminal] .console-bar .inspector-modes button[aria-pressed=true]{
+ background:var(--world-amber)!important;color:var(--world-dark)!important;
+ border-color:var(--world-amber)!important;
+}
+body[data-theme=terminal] #engine-status{
+ font-variant-numeric:tabular-nums;
+ letter-spacing:.015em!important;color:var(--world-text)!important;
+}
+body[data-theme=terminal] .live-panel-head{
+ border-bottom:1px solid var(--world-amber)!important;
+}
+body[data-theme=terminal] .learning-header strong,
+body[data-theme=terminal] .sound-head strong{
+ font:800 12px/1.25 ui-monospace,monospace!important;
+ letter-spacing:.07em!important;
+}
+body[data-theme=terminal] .learning-panel,
+body[data-theme=terminal] .sound-designer{
+ background:var(--world-dark)!important;color:var(--world-text)!important;
+}
+body[data-theme=terminal] .sound-designer .sound-primary{
+ background:var(--world-amber)!important;color:var(--world-dark)!important;
+ border-color:var(--world-amber)!important;
+}
+body[data-theme=terminal] .sound-code,
+body[data-theme=terminal] .learning-experiment-code{
+ background:var(--world-face)!important;color:var(--world-text)!important;
+}
+body[data-theme=terminal] .learning-suggestion{
+ border-left:3px solid var(--world-amber)!important;
+ border-radius:0!important;
+}
+/* Shared keyboard behavior for the three expressive instrument panels.
+   The focus ring must remain visible without inflating any control. */
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) :is(
+ .projectbar button,.projectbar summary,.toolbar button,
+ .inspector-modes button,.menu-items button,.learning-panel button,
+ .sound-designer button):focus-visible{
+ outline:2px solid var(--focus)!important;
+ outline-offset:-2px!important;
+}
