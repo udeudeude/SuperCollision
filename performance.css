@@ -998,3 +998,8 @@ body[data-theme=makenoise]{
  --perform-bg:#0c0c0d;--perform-fg:#eeeae0;
  --perform-border:#b9b4a9;--perform-grid:#b9b4a92c;
 }
+
+/* New three-world Mix palette bridge after legacy shared light surfaces. */
+body[data-theme=score]{--perform-bg:#f0e8d8;--perform-fg:#202d39;--perform-border:#50667a;--perform-grid:#50667a30}
+body[data-theme=patch]{--perform-bg:#102b32;--perform-fg:#e8dfc6;--perform-border:#9ec4aa;--perform-grid:#9ec4aa30}
+body[data-theme=terminal]{--perform-bg:#111814;--perform-fg:#f2e5ca;--perform-border:#899c82;--perform-grid:#899c8230}
