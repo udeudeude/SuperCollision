@@ -80,6 +80,7 @@ try{
  assert.equal(downloadCount,1);
  await page.locator('#discover-cc0').check();
  await page.getByRole('button',{name:'Search sounds'}).click();
+ await page.getByText('Free CC0').waitFor();
  assert.equal(await page.locator('.discovered-sound').count(),1,'CC0 preset must be enforced');
  await page.getByRole('tab',{name:'Library'}).click();
  assert.equal(await page.locator('.managed-item').count(),3);
