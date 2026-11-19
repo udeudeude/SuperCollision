@@ -1104,3 +1104,90 @@ body[data-theme=makenoise] .performance-panel .perform-axis-ticks{
 body[data-theme=makenoise] :is(button,select,summary):focus-visible{
  outline:2px solid var(--mn-gold)!important;outline-offset:2px!important;
 }
+
+/* BAUHAUS / CHROMATIC ARCHITECTURE
+   Blue carries structural navigation; red denotes performance actions;
+   yellow marks selection. Warm paper remains for the code itself. */
+body[data-theme=bauhaus]{
+ --theme-header:#28527b;--theme-panel:#d7dfdf;--theme-ink:#1c3040;
+ --theme-rule:#28527b;--theme-accent:#bd4336;--theme-secondary:#d4a536;
+ --theme-editor:#f5f0e5;--theme-editor-ink:#203541;
+ --theme-menu:#e8e5d9;--theme-menu-ink:#203541;
+ --file-bg:#e8e5d9;--file-fg:#203541;--file-border:#28527b;
+}
+body[data-theme=bauhaus]>header{
+ background:#28527b!important;color:#fff6df!important;
+ border-bottom:4px solid #d4a536!important;
+ background-image:none!important;
+}
+body[data-theme=bauhaus] header h1,
+body[data-theme=bauhaus] header .theme-strip select{color:#fff6df!important}
+body[data-theme=bauhaus] .projectbar{
+ background:#d7dfdf!important;color:#203541!important;
+ border-bottom:3px solid #28527b!important;
+}
+body[data-theme=bauhaus] .projectbar .composition-picker>button{
+ background:#e9e5d8!important;color:#203541!important;
+ border:2px solid #28527b!important;
+}
+body[data-theme=bauhaus] .projectbar .menu>summary{
+ background:#28527b!important;color:#fff6df!important;
+ border:2px solid #28527b!important;
+}
+body[data-theme=bauhaus] #line-gutter{
+ background:#d7dfdf!important;color:#28527b!important;
+ border-right:3px solid #bd4336!important;
+}
+body[data-theme=bauhaus] .toolbar{
+ background:#28527b!important;border:0!important;
+ border-top:3px solid #d4a536!important;
+}
+body[data-theme=bauhaus] .toolbar button{
+ background:#e9e5d8!important;color:#203541!important;
+ border:2px solid #203541!important;
+}
+body[data-theme=bauhaus] .toolbar #evaluate{
+ background:#bd4336!important;color:#fff8e9!important;
+ border-color:#bd4336!important;
+}
+body[data-theme=bauhaus] .toolbar #panic{
+ background:#d4a536!important;color:#203541!important;
+ border-color:#d4a536!important;
+}
+body[data-theme=bauhaus] .console-bar{
+ background:#28527b!important;color:#fff6df!important;
+ border-bottom:3px solid #d4a536!important;
+}
+body[data-theme=bauhaus] .console-bar button{
+ background:#28527b!important;color:#fff6df!important;
+ border:1px solid #fff6df!important;
+}
+body[data-theme=bauhaus] .console-bar button[aria-pressed=true]{
+ background:#d4a536!important;color:#203541!important;
+ border-color:#d4a536!important;
+}
+body[data-theme=bauhaus] .performance-panel .perform-header{
+ background:#28527b!important;color:#fff6df!important;
+ border-bottom:3px solid #d4a536!important;
+}
+body[data-theme=bauhaus] .performance-panel .perform-header button{
+ background:#e9e5d8!important;color:#203541!important;
+ border:2px solid #203541!important;
+}
+body[data-theme=bauhaus] .performance-panel .perform-header #perform-follow[aria-pressed=true]{
+ background:#d4a536!important;color:#203541!important;
+}
+body[data-theme=bauhaus] .performance-panel .perform-detail{
+ background:#e8e5d9!important;color:#203541!important;
+}
+body[data-theme=bauhaus] .performance-panel .perform-detail button{
+ background:#e9e5d8!important;color:#203541!important;
+ border:2px solid #28527b!important;
+}
+body[data-theme=bauhaus] .performance-panel .perform-detail #perform-dialog-neutral{
+ border-color:#bd4336!important;
+}
+body[data-theme=bauhaus] .live-panel-head{
+ background:#28527b!important;color:#fff6df!important;
+}
+body[data-theme=bauhaus] .live-panel-head button{color:#fff6df!important}
