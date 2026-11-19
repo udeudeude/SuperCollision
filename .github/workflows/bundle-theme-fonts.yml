@@ -50,6 +50,21 @@ jobs:
               (dest/(slug+'-OFL.txt')).write_bytes(license_data)
               print(f'{family}: {len(data)} bytes, licensed')
           PY
+          # Experimental angular display face: original OFL Newell typeface.
+          python3 - <<'PY'
+          import pathlib, urllib.request
+          base='https://raw.githubusercontent.com/JordanNewell/newell-typeface/master/'
+          dest=pathlib.Path('assets/fonts')
+          for filename,target in [('releases/Newell-Regular.woff2','newell.woff2'),('OFL.txt','newell-OFL.txt')]:
+              try:
+                  data=urllib.request.urlopen(base+filename,timeout=25).read()
+              except Exception as error:
+                  print('Newell optional fetch unavailable:',error)
+                  break
+              if filename.endswith('.woff2') and not data.startswith(b'wOF2'):
+                  raise RuntimeError('Invalid Newell font')
+              (dest/target).write_bytes(data)
+          PY
       - name: Commit offline fonts
         run: |
           git config user.name 'github-actions[bot]'
