@@ -1926,3 +1926,113 @@ body[data-theme=blackmountain] .console-shell{
 body[data-theme=blackmountain] .toolbar button{
  border-radius:0!important;box-shadow:none!important;
 }
+
+/* EXPRESSIVE TYPOGRAPHY / second pass.
+   Moog stays restrained. These themes deliberately depart from conventional
+   application chrome, while preserving the editor's functional code font. */
+body[data-theme=makenoise] header h1{
+ font-family:"SC Oxanium",sans-serif!important;
+ font-size:clamp(17px,4.5vw,23px)!important;
+ font-weight:800!important;letter-spacing:-.085em!important;
+ font-style:italic!important;
+ transform:skewX(-8deg);transform-origin:left center;
+ text-shadow:2px 0 #b99a56!important;
+}
+body[data-theme=makenoise] header .identity-art{
+ width:43px!important;min-width:43px!important;
+ filter:drop-shadow(1px 1px 0 #b99a56);
+}
+body[data-theme=makenoise] .projectbar{
+ background-image:repeating-linear-gradient(135deg,transparent 0 9px,#d8d9d312 9px 10px,transparent 10px 18px)!important;
+}
+body[data-theme=makenoise] .projectbar .composition-picker>button{
+ background:#111214!important;color:#f1f0e9!important;
+ border:1px solid #eeeae0!important;
+ clip-path:polygon(0 0,calc(100% - 11px) 0,100% 11px,100% 100%,0 100%)!important;
+}
+body[data-theme=makenoise] .toolbar{
+ background-image:repeating-linear-gradient(90deg,transparent 0 19px,#d8d9d322 19px 20px)!important;
+}
+body[data-theme=makenoise] .toolbar button{
+ font-family:"SC Oxanium",sans-serif!important;
+ font-size:clamp(9px,2.7vw,12px)!important;
+ letter-spacing:-.04em!important;font-style:italic!important;
+ text-transform:uppercase!important;
+ clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,6px 100%,0 calc(100% - 6px))!important;
+}
+body[data-theme=makenoise] .toolbar #evaluate{
+ clip-path:polygon(0 0,calc(100% - 9px) 0,100% 9px,100% 100%,0 100%)!important;
+}
+body[data-theme=makenoise] .console-bar .inspector-modes button,
+body[data-theme=makenoise] .performance-panel .perform-header button{
+ font-family:"SC Oxanium",sans-serif!important;
+ letter-spacing:-.035em!important;font-style:italic!important;
+}
+body[data-theme=makenoise] .console-bar{
+ background-image:repeating-linear-gradient(135deg,transparent 0 11px,#d8d9d31a 11px 12px,transparent 12px 24px)!important;
+}
+body[data-theme=makenoise] .live-panel-head{
+ border-bottom:2px solid #b99a56!important;
+ background-image:repeating-linear-gradient(90deg,transparent 0 15px,#e8e8e018 15px 16px)!important;
+}
+body[data-theme=makenoise] .live-panel-label{
+ font-style:italic!important;letter-spacing:.02em!important;
+}
+body[data-theme=makenoise] .perform-axis-label{
+ font-family:"SC Oxanium",sans-serif!important;
+ letter-spacing:.09em!important;
+}
+/* Bauhaus: geometry becomes the typography's stage. */
+body[data-theme=bauhaus] header h1{
+ font-family:"SC Josefin",sans-serif!important;
+ font-size:clamp(18px,4.7vw,24px)!important;
+ font-weight:700!important;letter-spacing:-.065em!important;
+ text-transform:uppercase!important;
+}
+body[data-theme=bauhaus] .toolbar button{
+ font-family:"SC Josefin",sans-serif!important;
+ font-size:clamp(9px,2.7vw,12px)!important;
+ font-weight:700!important;letter-spacing:-.025em!important;
+ text-transform:uppercase!important;
+}
+body[data-theme=bauhaus] .projectbar{
+ background-image:linear-gradient(90deg,#c34236 0 5px,transparent 5px)!important;
+}
+body[data-theme=bauhaus] .console-bar .inspector-modes button{
+ font-family:"SC Josefin",sans-serif!important;
+ font-weight:700!important;letter-spacing:.04em!important;
+}
+body[data-theme=bauhaus] .live-panel-label{
+ font-family:"SC Josefin",sans-serif!important;
+ font-size:12px!important;letter-spacing:.16em!important;
+}
+/* Black Mountain: an exhibition catalogue, not a generic beige interface. */
+body[data-theme=blackmountain] header h1{
+ font-family:"SC Franklin",sans-serif!important;
+ font-size:clamp(17px,4.3vw,22px)!important;
+ font-weight:400!important;letter-spacing:-.06em!important;
+ text-transform:none!important;
+}
+body[data-theme=blackmountain] .projectbar{
+ background-image:repeating-linear-gradient(90deg,transparent 0 23px,#81776124 23px 24px)!important;
+}
+body[data-theme=blackmountain] .toolbar button{
+ font-family:"SC Franklin",sans-serif!important;
+ font-size:clamp(9px,2.6vw,12px)!important;
+ font-weight:500!important;letter-spacing:-.035em!important;
+ text-transform:lowercase!important;
+}
+body[data-theme=blackmountain] .toolbar #evaluate{
+ font-weight:700!important;text-transform:uppercase!important;
+}
+body[data-theme=blackmountain] .console-bar .inspector-modes button{
+ font-family:"SC Franklin",sans-serif!important;
+ font-weight:500!important;letter-spacing:-.015em!important;
+}
+body[data-theme=blackmountain] .live-panel-label{
+ font-family:"SC Franklin",sans-serif!important;
+ font-weight:400!important;letter-spacing:.2em!important;
+}
+@media(prefers-reduced-motion:reduce){
+ body[data-theme=makenoise] header h1{transition:none!important}
+}
