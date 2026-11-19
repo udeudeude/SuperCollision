@@ -25,7 +25,7 @@ jobs:
               url=f'https://fonts.googleapis.com/css2?family={query}:wght@400..800&display=swap'
               req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 Chrome/120.0.0.0 Safari/537.36'})
               css=urllib.request.urlopen(req,timeout=25).read().decode()
-              blocks=re.findall(r'/\*\s*latin\s*\*/\s*@font-face\s*\{([^}]+)\}',css,re.S)
+              blocks=re.findall(r'@font-face\s*\{([^}]+)\}',css,re.S)
               if not blocks: raise RuntimeError('Missing Latin font face: '+family)
               urls=re.findall(r'url\((https://[^)]+)\)',blocks[-1])
               if not urls: raise RuntimeError('Missing font URL: '+family)
