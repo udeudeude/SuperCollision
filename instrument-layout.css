@@ -2051,3 +2051,43 @@ body[data-theme=makenoise] .perform-header strong{
  font-style:normal!important;letter-spacing:.065em!important;
  text-shadow:none!important;transform:none!important;
 }
+
+/* Curated licensed type pairing: Megrim / Outpost Mono and Plaster / Josefin.
+   Distinctive lettering belongs in headings; source code is unchanged. */
+@font-face{font-family:"SC Megrim";src:url("./assets/fonts/megrim.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"SC Plaster";src:url("./assets/fonts/plaster.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"SC Outpost";src:url("./assets/fonts/outpost-mono.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+body[data-theme=makenoise]{
+ --world-display:"SC Megrim","SC Newell",sans-serif;
+ --world-label:"SC Outpost","SC Oxanium",monospace;
+}
+body[data-theme=makenoise] :is(header h1,.live-panel-label,.perform-header strong,.learning-header strong,.sound-head strong){
+ font-family:var(--world-display)!important;font-style:normal!important;
+ font-weight:400!important;letter-spacing:.025em!important;
+ text-shadow:none!important;transform:none!important;
+}
+body[data-theme=makenoise] header h1{
+ font-size:clamp(18px,5vw,25px)!important;letter-spacing:-.035em!important;
+}
+body[data-theme=makenoise] :is(.toolbar button,.console-bar button,.perform-header button,.perform-detail button,.projectbar button,.projectbar summary){
+ font-family:var(--world-label)!important;font-style:normal!important;
+ font-weight:400!important;letter-spacing:-.035em!important;
+}
+body[data-theme=makenoise] .perform-header strong{
+ font-size:13px!important;letter-spacing:.055em!important;
+}
+body[data-theme=bauhaus]{
+ --world-display:"SC Plaster","SC Josefin",sans-serif;
+ --world-label:"SC Josefin",sans-serif;
+}
+body[data-theme=bauhaus] :is(header h1,.live-panel-label,.perform-header strong,.learning-header strong,.sound-head strong){
+ font-family:var(--world-display)!important;font-weight:400!important;
+ letter-spacing:.015em!important;
+}
+body[data-theme=bauhaus] header h1{
+ font-size:clamp(17px,4.5vw,23px)!important;
+ letter-spacing:-.035em!important;
+}
+body[data-theme=bauhaus] :is(.toolbar button,.console-bar button,.perform-header button,.perform-detail button){
+ font-family:var(--world-label)!important;font-weight:700!important;
+}
