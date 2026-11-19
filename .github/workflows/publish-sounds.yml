@@ -11,7 +11,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: supercollision-pages-publish
+  group: supercollision-sounds-publish
   cancel-in-progress: false
 jobs:
   sounds:
