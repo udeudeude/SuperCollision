@@ -983,3 +983,18 @@ body .performance-panel .perform-detail #perform-dialog-title{
   width:53px!important;min-width:53px!important;max-width:53px!important;
  }
 }
+
+/* Final theme palette bridge: these are deliberately later than legacy
+   shared light-theme declarations, so each design remains distinct. */
+body[data-theme=bauhaus]{
+ --perform-bg:#f2eddf;--perform-fg:#1d303b;
+ --perform-border:#355776;--perform-grid:#3557762a;
+}
+body[data-theme=blackmountain]{
+ --perform-bg:#e7dfcc;--perform-fg:#3d3932;
+ --perform-border:#817761;--perform-grid:#81776130;
+}
+body[data-theme=makenoise]{
+ --perform-bg:#0c0c0d;--perform-fg:#eeeae0;
+ --perform-border:#b9b4a9;--perform-grid:#b9b4a92c;
+}
