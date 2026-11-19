@@ -794,3 +794,24 @@ body[data-theme=moog] .menu-items,body[data-theme=bauhaus] .menu-items,
 body[data-theme=blackmountain] .menu-items,body[data-theme=makenoise] .menu-items{
  border-radius:var(--control-corner)!important;
 }
+
+/* Shared control geometry across every design, not just the Mix panel.
+   These are shape tokens, independent of each theme's existing palette. */
+body[data-theme=moog]{--control-corner:2px;--control-stroke:1px}
+body[data-theme=bauhaus]{--control-corner:0px;--control-stroke:2px}
+body[data-theme=blackmountain]{--control-corner:0px;--control-stroke:1px}
+body[data-theme=makenoise]{--control-corner:0px;--control-stroke:1px}
+body[data-theme=score]{--control-corner:0px;--control-stroke:1px}
+body[data-theme=scope]{--control-corner:3px;--control-stroke:1px}
+body[data-theme=patch]{--control-corner:999px;--control-stroke:2px}
+body[data-theme=terminal]{--control-corner:0px;--control-stroke:1px}
+body[data-theme] button:not(.perform-event):not(.perform-name),
+body[data-theme] select,
+body[data-theme] .composition-picker > button,
+body[data-theme] .file-submenu > summary{
+ border-radius:var(--control-corner,2px)!important;
+}
+body[data-theme] .performance-panel .perform-detail button,
+body[data-theme] .performance-panel .perform-header button{
+ border-radius:var(--control-corner,2px)!important;
+}
