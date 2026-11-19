@@ -30,8 +30,12 @@ jobs:
               urls=re.findall(r'url\((https://[^)]+)\)',blocks[-1])
               if not urls: raise RuntimeError('Missing font URL: '+family)
               data=urllib.request.urlopen(urls[-1],timeout=25).read()
-              if not data.startswith(b'wOF2'):raise RuntimeError('Not WOFF2: '+family)
-              (dest/(slug+'.woff2')).write_bytes(data)
+              if data.startswith(b'wOF2'):
+                  ext='woff2'
+              elif data.startswith((b'\x00\x01\x00\x00',b'OTTO')):
+                  ext='ttf'
+              else: raise RuntimeError('Unrecognized font format: '+family+' '+repr(data[:8]))
+              (dest/(slug+'.'+ext)).write_bytes(data)
               license_url='https://raw.githubusercontent.com/google/fonts/main/ofl/'+slug.replace('-','')+'/OFL.txt'
               license_data=urllib.request.urlopen(license_url,timeout=25).read()
               if b'SIL OPEN FONT LICENSE' not in license_data.upper():raise RuntimeError('Invalid license '+family)
