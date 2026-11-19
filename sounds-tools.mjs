@@ -70,7 +70,7 @@ async function refresh(){
    actions.append(action('Edit source',()=>{
     editing=item.id;title.value=item.name;code.value=item.code;
     saveButton.textContent='Save changes';cancelButton.hidden=false;
-    document.getElementById('sounds-create').scrollIntoView({behavior:'smooth',block:'start'});
+    document.querySelector('#sounds-tabs [data-view="create"]').click();
     code.focus();
    }));
    actions.append(action('Copy code',async()=>{
