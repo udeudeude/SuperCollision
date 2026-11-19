@@ -15,6 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Fetch licensed Latin fonts and verify formats
         run: |
+          python3 -m pip install --quiet fonttools brotli
           python3 - <<'PY'
           import pathlib, re, urllib.request
           families=[('Oxanium','oxanium'),('Josefin Sans','josefin-sans'),('Libre Franklin','libre-franklin')]
@@ -31,11 +32,18 @@ jobs:
               if not urls: raise RuntimeError('Missing font URL: '+family)
               data=urllib.request.urlopen(urls[-1],timeout=25).read()
               if data.startswith(b'wOF2'):
-                  ext='woff2'
+                  converted=data
               elif data.startswith((b'\x00\x01\x00\x00',b'OTTO')):
-                  ext='ttf'
+                  from fontTools.ttLib import TTFont
+                  import io
+                  font=TTFont(io.BytesIO(data))
+                  font.flavor='woff2'
+                  buffer=io.BytesIO()
+                  font.save(buffer)
+                  converted=buffer.getvalue()
               else: raise RuntimeError('Unrecognized font format: '+family+' '+repr(data[:8]))
-              (dest/(slug+'.'+ext)).write_bytes(data)
+              if not converted.startswith(b'wOF2'):raise RuntimeError('WOFF2 conversion failed: '+family)
+              (dest/(slug+'.woff2')).write_bytes(converted)
               license_url='https://raw.githubusercontent.com/google/fonts/main/ofl/'+slug.replace('-','')+'/OFL.txt'
               license_data=urllib.request.urlopen(license_url,timeout=25).read()
               if b'SIL OPEN FONT LICENSE' not in license_data.upper():raise RuntimeError('Invalid license '+family)
