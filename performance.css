@@ -861,3 +861,30 @@ body .performance-panel .perform-detail #perform-dialog-solo[aria-pressed=true]{
 body .performance-panel .perform-detail #perform-dialog-neutral{
  border-color:color-mix(in srgb,var(--voice-color,var(--perform-border)) 55%,var(--perform-border))!important;
 }
+
+/* Design-system shape tokens. Controls inherit the selected visual language
+   rather than accumulating unrelated rounding from individual components. */
+body[data-theme=moog]{--mix-control-radius:2px;--mix-control-border:1px solid #887459;--mix-control-shadow:inset 0 1px 0 #ffffff14}
+body[data-theme=bauhaus]{--mix-control-radius:0px;--mix-control-border:2px solid #293640;--mix-control-shadow:none}
+body[data-theme=blackmountain]{--mix-control-radius:0px;--mix-control-border:1px solid #8a816f;--mix-control-shadow:none}
+body[data-theme=makenoise]{--mix-control-radius:0px;--mix-control-border:1px solid #f2f2ed;--mix-control-shadow:none}
+body[data-theme=score]{--mix-control-radius:0px;--mix-control-border:1px solid var(--perform-border);--mix-control-shadow:none}
+body[data-theme=scope]{--mix-control-radius:3px;--mix-control-border:1px solid var(--perform-border);--mix-control-shadow:none}
+body[data-theme=patch]{--mix-control-radius:999px;--mix-control-border:2px solid var(--perform-border);--mix-control-shadow:none}
+body[data-theme=terminal]{--mix-control-radius:0px;--mix-control-border:1px solid var(--perform-border);--mix-control-shadow:none}
+body .performance-panel .perform-header button,
+body[data-theme] .performance-panel .perform-header button,
+body .performance-panel .perform-detail button,
+body[data-theme] .performance-panel .perform-detail button{
+  border-radius:var(--mix-control-radius,2px)!important;
+  border:var(--mix-control-border,1px solid var(--perform-border))!important;
+  box-shadow:var(--mix-control-shadow,none)!important;
+}
+body .performance-panel .perform-detail #perform-dialog-mute[aria-pressed=true],
+body .performance-panel .perform-detail #perform-dialog-solo[aria-pressed=true]{
+  border-color:var(--voice-color,var(--perform-border))!important;
+  box-shadow:inset 0 -2px var(--voice-color,var(--perform-border))!important;
+}
+body .performance-panel .perform-detail #perform-dialog-neutral{
+  border-color:color-mix(in srgb,var(--voice-color,var(--perform-border)) 55%,var(--perform-border))!important;
+}
