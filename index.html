@@ -671,6 +671,7 @@ let booting=false;
 let synthBootPending=false;
 let synthBootStage='not requested';
 let serverBootWatchdog=null;
+let startupRecoveryAttempts=0;
 const SERVER_BOOT_WATCHDOG_MS=45000;
 function clearServerBootWatchdog(){
  if(serverBootWatchdog!==null)clearTimeout(serverBootWatchdog);
@@ -694,9 +695,24 @@ function requestServerBoot(){
   print('Audio startup delayed after '+(SERVER_BOOT_WATCHDOG_MS/1000)+
     ' seconds. Stage: '+synthBootStage+'; audio context: '+contextState+
     '. No automatic retry was attempted.');
-  message(synthBootPending
-    ? 'AUDIO START STALLED · CLOSE AND REOPEN TO RETRY'
-    : 'AUDIO START DELAYED · TAP POWER TO RETRY');
+  if(!synthBootPending&&synthBootStage==='synth.boot resolved'&&startupRecoveryAttempts<1){
+    startupRecoveryAttempts++;
+    message('AUDIO START DELAYED · RECOVERING SERVER');
+    print('Audio startup: attempting one controlled server reboot.');
+    try{
+      // The language can complete initialization while its server is
+      // unresponsive. Reboot its server rather than reloading the webpage.
+      lang.runCode('s.reboot;');
+      setTimeout(requestServerBoot,1500);
+    }catch(error){
+      print('Audio recovery failed: '+error.message);
+      message('AUDIO START DELAYED · TAP POWER TO RETRY');
+    }
+  }else{
+    message(synthBootPending
+      ? 'AUDIO START STALLED · TAP POWER TO CHECK'
+      : 'AUDIO START DELAYED · TAP POWER TO RETRY');
+  }
  },SERVER_BOOT_WATCHDOG_MS);
  try{
   // Application startup only. Never wrap or modify the composition.
@@ -744,7 +760,7 @@ document.querySelector('#engine').onclick=async()=>{
       setTimeout(requestServerBoot,1000);
     }
     if(output.includes(SERVER_READY_MARKER)){
-      serverReady=true;serverBootRequested=false;bootRetryCount=0;
+      serverReady=true;serverBootRequested=false;bootRetryCount=0;startupRecoveryAttempts=0;
       clearServerBootWatchdog();
       run.disabled=false;document.querySelector('#run-region').disabled=false;
       document.querySelector('#record').disabled=false;
