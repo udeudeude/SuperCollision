@@ -1064,3 +1064,73 @@ body[data-theme=terminal] .performance-panel .perform-axis,
 body[data-theme=terminal] .performance-panel .perform-controls{
  background:#101b16!important;color:#e0eccd!important;
 }
+
+
+/* Third curatorial pass: each Mix is a different reading instrument.
+   Keep time ticks and musical-event geometry intact; color only their
+   non-semantic backplates, scale markings and action affordances. */
+body[data-theme=score] .performance-panel .perform-header strong{
+ font:italic 700 13px/1 Georgia,Times,serif!important;
+ letter-spacing:-.035em!important;
+}
+body[data-theme=score] .performance-panel .perform-axis-label{
+ background:#233b46!important;color:#f5f0e5!important;
+ border-right:3px solid #d45138!important;
+ font:italic 700 11px/22px Georgia,Times,serif!important;
+}
+body[data-theme=score] .performance-panel .perform-axis-ticks{
+ background-image:repeating-linear-gradient(to right,transparent 0 79px,#60767932 79px 80px)!important;
+ border-bottom:2px solid #d45138!important;
+}
+body[data-theme=score] .performance-panel .perform-lane{
+ border-bottom:1px solid #607679!important;
+}
+body[data-theme=score] .performance-panel .perform-detail{
+ border-top:3px double #d45138!important;
+}
+body[data-theme=score] .performance-panel .perform-detail #perform-dialog-title{
+ font-family:Georgia,Times,serif!important;font-style:italic!important;
+}
+body[data-theme=patch] .performance-panel .perform-header strong{
+ font:800 12px/1 ui-monospace,monospace!important;
+ letter-spacing:.1em!important;
+}
+body[data-theme=patch] .performance-panel .perform-axis-label{
+ background:#143640!important;color:#e2e980!important;
+ border-right:2px dashed #9fc9bd!important;
+ font:800 10px/22px ui-monospace,monospace!important;
+ letter-spacing:.06em!important;
+}
+body[data-theme=patch] .performance-panel .perform-axis-ticks{
+ background-image:
+ repeating-linear-gradient(to right,transparent 0 79px,#9fc9bd42 79px 80px),
+ linear-gradient(to bottom,transparent 0 19px,#e2e980 19px 21px,transparent 21px)!important;
+}
+body[data-theme=patch] .performance-panel .perform-lane{
+ border-bottom:1px dashed #9fc9bd85!important;
+}
+body[data-theme=patch] .performance-panel .perform-detail{
+ border-top:2px solid #e2e980!important;
+}
+body[data-theme=terminal] .performance-panel .perform-header strong{
+ font:800 12px/1 ui-monospace,monospace!important;
+ letter-spacing:.09em!important;
+}
+body[data-theme=terminal] .performance-panel .perform-axis-label{
+ background:#1b2921!important;color:#ffbd61!important;
+ border-right:1px solid #ffbd61!important;
+ font:800 10px/22px ui-monospace,monospace!important;
+ letter-spacing:.025em!important;
+}
+body[data-theme=terminal] .performance-panel .perform-axis-ticks{
+ background-image:
+ repeating-linear-gradient(to right,transparent 0 19px,#91b19a26 19px 20px),
+ repeating-linear-gradient(to right,transparent 0 159px,#ffbd6165 159px 160px)!important;
+ border-bottom:1px solid #91b19a!important;
+}
+body[data-theme=terminal] .performance-panel .perform-lane{
+ border-bottom:1px solid #537260!important;
+}
+body[data-theme=terminal] .performance-panel .perform-detail{
+ border-top:2px solid #ffbd61!important;
+}
