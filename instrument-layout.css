@@ -1586,8 +1586,8 @@ body[data-theme=score] .toolbar{
  border-top:4px double #f0bf68!important;
 }
 body[data-theme=score] .toolbar #evaluate{
- background:#d45138!important;color:#fff9ec!important;
- border:1px solid #d45138!important;
+ background:#bd422c!important;color:#fff9ec!important;
+ border:1px solid #bd422c!important;
 }
 body[data-theme=score] .toolbar #run-region{
  border-bottom:3px solid #d45138!important;
@@ -1620,7 +1620,7 @@ body[data-theme=score] .sound-designer{
  background:#f5f0e5!important;color:#1d3038!important;
 }
 body[data-theme=score] .sound-designer .sound-primary{
- background:#d45138!important;color:#fff9ec!important;border-color:#d45138!important;
+ background:#bd422c!important;color:#fff9ec!important;border-color:#bd422c!important;
 }
 body[data-theme=score] .sound-code,
 body[data-theme=score] .learning-experiment-code{
