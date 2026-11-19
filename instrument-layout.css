@@ -2091,3 +2091,88 @@ body[data-theme=bauhaus] header h1{
 body[data-theme=bauhaus] :is(.toolbar button,.console-bar button,.perform-header button,.perform-detail button){
  font-family:var(--world-label)!important;font-weight:700!important;
 }
+
+/* COMPLETE THEME TYPOGRAPHY COVERAGE / 2026-11
+   One role-based system for navigation, overlays, tool panels and mixer.
+   Preserve source code, console output, numerical measurements and editable
+   text in readable fixed-width faces. */
+body[data-theme=makenoise]{
+ --sc-display:"SC Megrim","SC Newell",sans-serif;
+ --sc-control:"SC Outpost","SC Oxanium",monospace;
+}
+body[data-theme=bauhaus]{
+ --sc-display:"SC Plaster","SC Josefin",sans-serif;
+ --sc-control:"SC Josefin",sans-serif;
+}
+body[data-theme=blackmountain]{
+ --sc-display:"SC Franklin",sans-serif;
+ --sc-control:"SC Franklin",sans-serif;
+}
+body:is([data-theme=makenoise],[data-theme=bauhaus],[data-theme=blackmountain])
+ :is(header h1,.live-panel-label,.perform-header strong,.perform-dialog-title,
+ .learning-header strong,.sound-head strong,.learning-panel h2,.sound-designer h2,
+ .menu-items h2,.project-list h2,.perform-axis-label,.perform-detail h2,
+ .file-submenu>summary,.modal h2,dialog h2,.repair-title){
+ font-family:var(--sc-display)!important;
+ font-weight:400!important;
+ font-style:normal!important;
+ text-transform:uppercase!important;
+ letter-spacing:.035em!important;
+}
+body:is([data-theme=makenoise],[data-theme=bauhaus],[data-theme=blackmountain])
+ :is(.projectbar button,.projectbar summary,.toolbar button,.console-bar button,
+ .console-bar select,.menu-items button,.menu-items summary,.project-list button,
+ .live-panel button,.live-panel-head,.performance-panel button:not(.perform-event):not(.perform-name),
+ .learning-panel button,.learning-panel select,.sound-designer button,
+ .sound-designer select,.repair-ui button,dialog button,
+ .learning-suggestion,.sound-primary,.theme-strip select){
+ font-family:var(--sc-control)!important;
+ font-style:normal!important;
+}
+body[data-theme=makenoise] :is(.menu-items button,.menu-items summary,.project-list button,
+ .learning-panel button,.sound-designer button,.live-panel button,
+ .performance-panel .perform-detail button,.performance-panel .perform-header button){
+ font-family:var(--sc-control)!important;
+ font-weight:400!important;letter-spacing:-.025em!important;
+ text-transform:uppercase!important;
+}
+body[data-theme=bauhaus] :is(.menu-items button,.menu-items summary,.project-list button,
+ .learning-panel button,.sound-designer button,.live-panel button,
+ .performance-panel .perform-detail button,.performance-panel .perform-header button){
+ font-family:var(--sc-control)!important;
+ font-weight:700!important;letter-spacing:-.015em!important;
+}
+body[data-theme=blackmountain] :is(.menu-items button,.menu-items summary,.project-list button,
+ .learning-panel button,.sound-designer button,.live-panel button,
+ .performance-panel .perform-detail button,.performance-panel .perform-header button){
+ font-family:var(--sc-control)!important;
+ font-weight:500!important;letter-spacing:-.01em!important;
+ text-transform:none!important;
+}
+/* Theme-specific component language extends into previously generic drawers. */
+body[data-theme=makenoise] :is(.learning-panel,.sound-designer,.menu-items,.project-list,dialog){
+ border-radius:0!important;
+ border-color:#e8e8e0!important;
+}
+body[data-theme=makenoise] :is(.learning-panel button,.sound-designer button,.menu-items button,dialog button){
+ border-radius:0!important;
+}
+body[data-theme=bauhaus] :is(.learning-panel,.sound-designer,.menu-items,.project-list,dialog){
+ border-radius:0!important;border-color:#28527b!important;
+}
+body[data-theme=bauhaus] :is(.learning-panel button,.sound-designer button,.menu-items button,dialog button){
+ border-radius:0!important;
+}
+body[data-theme=blackmountain] :is(.learning-panel,.sound-designer,.menu-items,.project-list,dialog){
+ border-radius:0!important;border-color:#817761!important;
+}
+body[data-theme=blackmountain] :is(.learning-panel button,.sound-designer button,.menu-items button,dialog button){
+ border-radius:0!important;
+}
+/* Accessible fallbacks: no display fonts in the source, output or small data. */
+body:is([data-theme=makenoise],[data-theme=bauhaus],[data-theme=blackmountain])
+ :is(#code,#highlight-layer,#console-output,.sound-code,.learning-experiment-code,
+ .perform-axis-tick,.perform-voices,.perform-event-label,textarea,pre,code){
+ font-family:ui-monospace,SFMono-Regular,Menlo,monospace!important;
+ text-transform:none!important;letter-spacing:normal!important;
+}
