@@ -1191,3 +1191,109 @@ body[data-theme=bauhaus] .live-panel-head{
  background:#28527b!important;color:#fff6df!important;
 }
 body[data-theme=bauhaus] .live-panel-head button{color:#fff6df!important}
+
+/* THREE NEW WORLDS / editorial redesign
+   SCORE = contemporary engraved music folio.
+   PATCH = experimental laboratory signal cartography.
+   TERMINAL = high-contrast 1970s computer-room telemetry.
+   All three are original design languages, not vendor imitations. */
+body[data-theme=score]{
+ --score-ink:#202d39;--score-paper:#f0e8d8;--score-plate:#d9d0be;--score-coral:#ba5344;
+ --cursor:#ba5344;--control-corner:0px;--control-stroke:1px;
+ --perform-bg:#f0e8d8;--perform-fg:#202d39;--perform-border:#50667a;--perform-grid:#50667a30;
+ --file-bg:#f0e8d8;--file-fg:#202d39;--file-border:#50667a;
+ background:var(--score-paper)!important;color:var(--score-ink)!important;
+}
+body[data-theme=score]>header{
+ background:var(--score-ink)!important;color:var(--score-paper)!important;
+ border:0!important;border-bottom:4px double var(--score-coral)!important;
+}
+body[data-theme=score] header h1{
+ font:italic 600 20px Georgia,serif!important;letter-spacing:-.035em!important;
+ text-transform:none!important;
+}
+body[data-theme=score] .projectbar{background:var(--score-plate)!important;border-bottom:1px solid #50667a!important}
+body[data-theme=score] .editor-frame{border:1px solid #50667a!important;border-left:5px solid var(--score-coral)!important}
+body[data-theme=score] .code-stack{background:var(--score-paper)!important}
+body[data-theme=score] #line-gutter{background:var(--score-plate)!important;border-right:1px solid #50667a!important}
+body[data-theme=score] .toolbar{background:var(--score-ink)!important;border:0!important}
+body[data-theme=score] .toolbar button{
+ background:var(--score-paper)!important;color:var(--score-ink)!important;
+ border:1px solid #50667a!important;border-radius:0!important;
+}
+body[data-theme=score] .toolbar #evaluate{background:var(--score-coral)!important;color:#fff8ec!important}
+body[data-theme=score] .console-shell{background:var(--score-paper)!important;border-top:4px double #50667a!important}
+body[data-theme=score] .console-bar{background:var(--score-ink)!important;color:var(--score-paper)!important}
+body[data-theme=score] .console-bar button{color:var(--score-paper)!important;border-right:1px solid #50667a!important}
+body[data-theme=score] .performance-panel .perform-header{background:var(--score-ink)!important;color:var(--score-paper)!important}
+body[data-theme=score] .performance-panel .perform-header button{color:var(--score-paper)!important;border-color:#9babb6!important}
+body[data-theme=score] .performance-panel .perform-header #perform-follow[aria-pressed=true]{background:var(--score-coral)!important;color:#fff8ec!important}
+body[data-theme=score] .live-panel-head{background:var(--score-ink)!important;color:var(--score-paper)!important}
+
+/* PATCH: signal-cartography laboratory, not fake patch-cable buttons. */
+body[data-theme=patch]{
+ --patch-night:#102b32;--patch-blue:#1d4751;--patch-cream:#e8dfc6;
+ --patch-orange:#e57b4c;--patch-mint:#9ec4aa;
+ --cursor:var(--patch-orange);--control-corner:3px;--control-stroke:1px;
+ --perform-bg:#102b32;--perform-fg:#e8dfc6;--perform-border:#9ec4aa;--perform-grid:#9ec4aa30;
+ --file-bg:#173840;--file-fg:#e8dfc6;--file-border:#9ec4aa;
+ background:var(--patch-night)!important;color:var(--patch-cream)!important;
+}
+body[data-theme=patch]>header{
+ background:var(--patch-night)!important;color:var(--patch-cream)!important;
+ border:1px solid var(--patch-mint)!important;border-bottom:3px solid var(--patch-orange)!important;
+}
+body[data-theme=patch] header h1{font:800 17px/1.1 ui-monospace,monospace!important;letter-spacing:-.035em!important}
+body[data-theme=patch] .projectbar{background:var(--patch-blue)!important;color:var(--patch-cream)!important}
+body[data-theme=patch] .editor-frame{border:1px solid var(--patch-mint)!important;background:var(--patch-night)!important}
+body[data-theme=patch] .code-stack,body[data-theme=patch] #line-gutter{background:var(--patch-night)!important}
+body[data-theme=patch] #code{color:var(--patch-cream)!important;caret-color:var(--patch-orange)!important}
+body[data-theme=patch] #line-gutter{color:var(--patch-mint)!important;border-right:2px dashed var(--patch-mint)!important}
+body[data-theme=patch] .toolbar{background:var(--patch-blue)!important;border:1px solid var(--patch-mint)!important}
+body[data-theme=patch] .toolbar button{
+ background:var(--patch-night)!important;color:var(--patch-cream)!important;
+ border:1px solid var(--patch-mint)!important;border-radius:3px!important;
+}
+body[data-theme=patch] .toolbar #evaluate{background:var(--patch-orange)!important;color:var(--patch-night)!important}
+body[data-theme=patch] .console-shell{background:var(--patch-night)!important;border-top:2px dashed var(--patch-mint)!important}
+body[data-theme=patch] .console-bar{background:var(--patch-blue)!important;color:var(--patch-cream)!important}
+body[data-theme=patch] .console-bar button{background:var(--patch-night)!important;color:var(--patch-cream)!important;border:1px solid var(--patch-mint)!important}
+body[data-theme=patch] .performance-panel .perform-header{background:var(--patch-blue)!important;color:var(--patch-cream)!important}
+body[data-theme=patch] .performance-panel .perform-header #perform-follow[aria-pressed=true]{background:var(--patch-orange)!important;color:var(--patch-night)!important}
+body[data-theme=patch] .live-panel-head{background:var(--patch-blue)!important;color:var(--patch-cream)!important}
+
+/* TERMINAL: archival amber phosphor and disciplined tabular typography. */
+body[data-theme=terminal]{
+ --term-black:#111814;--term-panel:#19251d;--term-amber:#f2b55d;--term-cream:#f2e5ca;
+ --term-dim:#899c82;--cursor:var(--term-amber);
+ --control-corner:0px;--control-stroke:1px;
+ --perform-bg:#111814;--perform-fg:#f2e5ca;--perform-border:#899c82;--perform-grid:#899c8230;
+ --file-bg:#19251d;--file-fg:#f2e5ca;--file-border:#899c82;
+ background:var(--term-black)!important;color:var(--term-cream)!important;
+}
+body[data-theme=terminal]>header{
+ background:var(--term-black)!important;color:var(--term-amber)!important;
+ border:1px solid var(--term-dim)!important;border-bottom:3px solid var(--term-amber)!important;
+}
+body[data-theme=terminal] header h1{
+ font:900 17px/1 ui-monospace,monospace!important;letter-spacing:.07em!important;
+}
+body[data-theme=terminal] .projectbar{background:var(--term-panel)!important;color:var(--term-cream)!important}
+body[data-theme=terminal] .editor-frame{border:1px solid var(--term-dim)!important}
+body[data-theme=terminal] .code-stack,body[data-theme=terminal] #line-gutter{background:var(--term-black)!important}
+body[data-theme=terminal] #code{color:var(--term-cream)!important;caret-color:var(--term-amber)!important}
+body[data-theme=terminal] #line-gutter{color:var(--term-dim)!important;border-right:1px solid var(--term-amber)!important}
+body[data-theme=terminal] .toolbar{background:var(--term-panel)!important;border:1px solid var(--term-dim)!important;gap:3px!important}
+body[data-theme=terminal] .toolbar button{
+ background:var(--term-black)!important;color:var(--term-cream)!important;
+ border:1px solid var(--term-dim)!important;border-radius:0!important;
+ font-family:ui-monospace,monospace!important;
+}
+body[data-theme=terminal] .toolbar #evaluate{background:var(--term-amber)!important;color:var(--term-black)!important}
+body[data-theme=terminal] .console-shell{background:var(--term-black)!important;border-top:2px solid var(--term-amber)!important}
+body[data-theme=terminal] .console-bar{background:var(--term-panel)!important;color:var(--term-cream)!important}
+body[data-theme=terminal] .console-bar button{background:transparent!important;color:var(--term-cream)!important;border:1px solid var(--term-dim)!important}
+body[data-theme=terminal] .console-bar button[aria-pressed=true]{background:var(--term-amber)!important;color:var(--term-black)!important}
+body[data-theme=terminal] .performance-panel .perform-header{background:var(--term-panel)!important;color:var(--term-cream)!important}
+body[data-theme=terminal] .performance-panel .perform-header #perform-follow[aria-pressed=true]{background:var(--term-amber)!important;color:var(--term-black)!important}
+body[data-theme=terminal] .live-panel-head{background:var(--term-panel)!important;color:var(--term-cream)!important}
