@@ -57,7 +57,12 @@ jobs:
           if git diff --cached --quiet; then
             echo "Sounds workspace already published"
           else
-            git diff --cached --name-only | grep -Ev '^sounds(-[^/]+\\.mjs|\\.html)$' && { echo "Unexpected staged path"; exit 1; } || true
+            while IFS= read -r staged; do
+              case "$staged" in
+                sounds.html|sounds-*.mjs) ;;
+                *) echo "Unexpected staged path: $staged"; exit 1 ;;
+              esac
+            done < <(git diff --cached --name-only)
             git commit -m "Publish tested standalone SuperCollision Sounds"
             git push origin HEAD:pages-build
           fi
