@@ -13,7 +13,7 @@ const result=$('sounds-ai-result'),preview=$('sounds-ai-code'),warnings=$('sound
 const save=$('sounds-ai-save'),copy=$('sounds-ai-copy'),puterConnect=$('sounds-puter-connect');
 let current=null,busy=false,puterLoading=null;
 function say(value){status.textContent=value}
-function syncProvider(){const isPuter=provider.value==='puter';keyBox.hidden=isPuter;puterConnect.hidden=!isPuter;model.parentElement.hidden=isPuter}
+function syncProvider(){const isPuter=provider.value==='puter';keyBox.hidden=isPuter;puterConnect.hidden=!isPuter;model.hidden=isPuter;document.querySelector('label[for="sounds-ai-model"]').hidden=isPuter}
 provider.addEventListener('change',syncProvider);syncProvider();
 for(const [id,text] of [
  [PREFERRED_OPENROUTER_CODE_MODEL,'Recommended free coding model'],
