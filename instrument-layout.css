@@ -885,3 +885,85 @@ body[data-theme=makenoise] header .identity-art{border-left:2px solid #c5a04d;pa
 @media(prefers-reduced-motion:reduce){
  body[data-theme] header .identity-art{transition:none!important}
 }
+
+/* Curatorial pass: three design philosophies, one predictable control system.
+   Decoration stays in header framing; working surfaces remain quiet. */
+body[data-theme=bauhaus]{
+ --theme-header:#e9e1d0;--theme-editor:#f5f0e5;--theme-editor-ink:#213441;
+ --theme-menu:#f3ecdc;--theme-menu-ink:#213441;
+}
+body[data-theme=blackmountain]{
+ --theme-header:#dcd1b9;--theme-editor:#f2ecde;--theme-editor-ink:#403c35;
+ --theme-menu:#eee6d6;--theme-menu-ink:#403c35;
+}
+body[data-theme=makenoise]{
+ --theme-header:#0a0a0b;--theme-editor:#101011;--theme-editor-ink:#eeeae0;
+ --theme-menu:#161617;--theme-menu-ink:#eeeae0;
+}
+body[data-theme=bauhaus]>header,
+body[data-theme=blackmountain]>header,
+body[data-theme=makenoise]>header{
+ background:var(--theme-header)!important;color:var(--theme-ink)!important;
+}
+body[data-theme=bauhaus] .code-stack,
+body[data-theme=blackmountain] .code-stack,
+body[data-theme=makenoise] .code-stack{
+ background:var(--theme-editor)!important;
+}
+body[data-theme=bauhaus] #code,
+body[data-theme=blackmountain] #code,
+body[data-theme=makenoise] #code{
+ background:transparent!important;color:var(--theme-editor-ink)!important;
+ caret-color:var(--theme-accent)!important;
+}
+body[data-theme=bauhaus] #line-gutter,
+body[data-theme=blackmountain] #line-gutter,
+body[data-theme=makenoise] #line-gutter{
+ background:var(--theme-panel)!important;color:var(--theme-ink)!important;
+ border-right:1px solid var(--theme-rule)!important;
+}
+body[data-theme=bauhaus] .projectbar,
+body[data-theme=blackmountain] .projectbar,
+body[data-theme=makenoise] .projectbar{
+ background:var(--theme-header)!important;color:var(--theme-ink)!important;
+}
+body[data-theme=bauhaus] .menu-items,
+body[data-theme=blackmountain] .menu-items,
+body[data-theme=makenoise] .menu-items,
+body[data-theme=bauhaus] .project-list,
+body[data-theme=blackmountain] .project-list,
+body[data-theme=makenoise] .project-list{
+ background:var(--theme-menu)!important;color:var(--theme-menu-ink)!important;
+ border-color:var(--theme-rule)!important;
+}
+body[data-theme=bauhaus] .menu-items button,
+body[data-theme=blackmountain] .menu-items button,
+body[data-theme=makenoise] .menu-items button{
+ color:var(--theme-menu-ink)!important;
+}
+body[data-theme=bauhaus] .projectbar button,
+body[data-theme=blackmountain] .projectbar button,
+body[data-theme=makenoise] .projectbar button{
+ border-color:var(--theme-rule)!important;
+}
+body[data-theme=bauhaus] :is(button,select,summary):focus-visible,
+body[data-theme=blackmountain] :is(button,select,summary):focus-visible,
+body[data-theme=makenoise] :is(button,select,summary):focus-visible{
+ outline:2px solid var(--theme-accent)!important;outline-offset:2px!important;
+}
+/* Geometric rules read as instrument-panel engraving, not wallpaper. */
+body[data-theme=bauhaus]>header{
+ background-image:linear-gradient(90deg,#c34236 0 5%,#d5a638 5% 10%,#355776 10% 15%,transparent 15%)!important;
+ background-repeat:no-repeat!important;background-size:100% 3px!important;
+ background-position:left bottom!important;
+}
+body[data-theme=blackmountain]>header{
+ background-image:repeating-linear-gradient(90deg,transparent 0 22px,#81776155 22px 23px)!important;
+ background-repeat:no-repeat!important;background-size:100% 2px!important;
+ background-position:left bottom!important;
+}
+body[data-theme=makenoise]>header{
+ background-image:repeating-linear-gradient(90deg,#c5a04d 0 9px,transparent 9px 15px)!important;
+ background-repeat:no-repeat!important;background-size:100% 2px!important;
+ background-position:left bottom!important;
+}
