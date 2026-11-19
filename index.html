@@ -947,11 +947,11 @@ document.addEventListener('click', function(e) {
  link.setAttribute('aria-label','Open sound library and microphone recorder');
  link.style.cssText='display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 12px;border:1px solid #77796f;color:inherit;text-decoration:none;font:700 11px ui-monospace,monospace;letter-spacing:.06em;margin-left:8px';
  const header=document.querySelector('header');if(header)header.append(link);
- const version=document.createElement('span');version.id='development-version';version.textContent='BUILD 2026.11.19.5';version.style.cssText='position:fixed;right:8px;top:calc(env(safe-area-inset-top) + 4px);z-index:11000;background:#d8ae5b;color:#171917;padding:3px 6px;font:700 10px ui-monospace,monospace;letter-spacing:.02em;pointer-events:none';document.body.append(version);
+ const version=document.createElement('span');version.id='development-version';version.textContent='BUILD 2026.11.19.6';version.style.cssText='position:fixed;right:8px;top:calc(env(safe-area-inset-top) + 4px);z-index:11000;background:#d8ae5b;color:#171917;padding:3px 6px;font:700 10px ui-monospace,monospace;letter-spacing:.02em;pointer-events:none';document.body.append(version);
  const panel=document.createElement('section');panel.id='sounds-overlay';panel.hidden=true;
  panel.setAttribute('aria-label','Sounds library');
  panel.className='sounds-workspace';
- panel.innerHTML=`<div class="sounds-shell"><header class="sounds-header"><button type="button" id="sounds-back" class="secondary">← CODE</button><strong>SOUNDS <span class="sounds-divider">/</span> LIBRARY</strong><span class="sounds-build">2026.11.19.5</span></header><section class="sounds-section"><div class="sounds-eyebrow">01 / CAPTURE</div><h2>Recorder</h2><label for="name">SOUND NAME</label><input id="name" type="text" maxlength="120" placeholder="New recording"><div class="sounds-capture"><button type="button" id="start" class="sounds-hold" aria-label="Hold to record, release to save"><span class="sounds-dot"></span><span id="hold-label">HOLD TO RECORD</span></button><p class="sounds-hint">Press and hold to record. Release to stop and save. Keep holding through the microphone permission prompt.</p><progress id="level" max="1" value="0"></progress><p id="status" role="status" aria-live="polite">Ready to record.</p></div></section><section class="sounds-section"><div class="sounds-eyebrow">02 / SOURCE</div><h2>Import audio</h2><input id="import" type="file" accept="audio/*" multiple></section><section class="sounds-section"><div class="sounds-eyebrow">03 / COLLECTION</div><h2>Your sounds</h2><p class="sounds-hint">Saved on this device. Export important recordings to Files as backup.</p><div id="library"></div></section></div>`;
+ panel.innerHTML=`<div class="sounds-shell"><header class="sounds-header"><button type="button" id="sounds-back" class="secondary">← CODE</button><strong>SOUNDS <span class="sounds-divider">/</span> LIBRARY</strong><span class="sounds-build">2026.11.19.6</span></header><section class="sounds-section"><div class="sounds-eyebrow">01 / CAPTURE</div><h2>Recorder</h2><label for="name">SOUND NAME</label><input id="name" type="text" maxlength="120" placeholder="New recording"><div class="sounds-capture"><div class="sounds-mic-row"><label for="mic-ready">MIC READY</label><input type="checkbox" id="mic-ready" role="switch" aria-label="Enable microphone"><span id="mic-state">OFF</span></div><button type="button" id="start" disabled class="sounds-hold" aria-label="Hold to record, release to save"><span class="sounds-dot"></span><span id="hold-label">HOLD TO RECORD</span></button><p class="sounds-hint">Press and hold to record. Release to stop and save. Turn on MIC READY first to grant permission, then hold to record.</p><progress id="level" max="1" value="0"></progress><p id="status" role="status" aria-live="polite">Ready to record.</p></div></section><section class="sounds-section"><div class="sounds-eyebrow">02 / SOURCE</div><h2>Import audio</h2><input id="import" type="file" accept="audio/*" multiple></section><section class="sounds-section"><div class="sounds-eyebrow">03 / COLLECTION</div><h2>Your sounds</h2><p class="sounds-hint">Saved on this device. Export important recordings to Files as backup.</p><div id="library"></div></section></div>`;
  document.body.append(panel);
  let loaded=false;
  link.addEventListener('click',async()=>{
@@ -960,7 +960,7 @@ document.addEventListener('click', function(e) {
  });
  panel.querySelector('#sounds-back').addEventListener('click',()=>{
    if(panel.classList.contains('is-recording')){panel.querySelector('#status').textContent='Release the record button before returning to Code.';return;}
-   panel.hidden=true;
+   panel.querySelector('#mic-ready').checked=false;panel.querySelector('#mic-ready').dispatchEvent(new Event('change'));panel.hidden=true;
  });
 })();
 </script><style id="sounds-workspace-style">
@@ -977,7 +977,7 @@ document.addEventListener('click', function(e) {
 #sounds-overlay label{font:700 11px ui-monospace,monospace;letter-spacing:.08em;margin:8px 0;display:block}
 #sounds-overlay input[type=text]{width:100%;font-size:16px}
 #sounds-overlay .sounds-capture{margin-top:14px}
-#sounds-overlay .sounds-hold{width:100%;min-height:80px;display:flex;align-items:center;justify-content:center;gap:13px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;font-size:15px;letter-spacing:.07em}
+#sounds-overlay .sounds-mic-row{display:flex;align-items:center;gap:12px;margin:10px 0 14px;padding:9px;border:1px solid #7778}#sounds-overlay .sounds-mic-row label{margin:0}#sounds-overlay #mic-ready{width:24px;height:24px;accent-color:#d8ae5b}#sounds-overlay #mic-state{margin-left:auto;font:700 11px ui-monospace,monospace}#sounds-overlay.is-ready .sounds-mic-row{border-color:#d8ae5b}#sounds-overlay .sounds-hold{width:100%;min-height:80px;display:flex;align-items:center;justify-content:center;gap:13px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;font-size:15px;letter-spacing:.07em}
 #sounds-overlay .sounds-dot{width:17px;height:17px;border-radius:50%;background:#9c312b;border:2px solid currentColor}
 #sounds-overlay .sounds-hint{font-size:12px;line-height:1.5;opacity:.78;margin:10px 0}
 #sounds-overlay progress{display:block;width:100%;height:9px;margin:14px 0;accent-color:var(--sound-accent)}
@@ -1005,42 +1005,51 @@ function put(record){return transaction('readwrite',s=>s.put(record))}
 function remove(id){return transaction('readwrite',s=>s.delete(id))}
 function say(s){status.textContent=s}
 function nameFor(defaultName){return $('name').value.trim()||defaultName}
-let recorder=null,stream=null,chunks=[],meterContext=null,meterTimer=null,requestId=0,pending=false,held=false,startedAt=0,clock=null;
-const overlay=document.querySelector('#sounds-overlay'),holdLabel=$('hold-label');
+let recorder=null,stream=null,chunks=[],meterContext=null,meterTimer=null,requestId=0,pending=false,held=false,startedAt=0,clock=null,finishing=false;
+const overlay=document.querySelector('#sounds-overlay'),holdLabel=$('hold-label'),mic=$('mic-ready'),micState=$('mic-state');
+function sayReady(message){micState.textContent=message;overlay.classList.toggle('is-ready',Boolean(stream));start.disabled=!stream||pending||finishing}
 function indicate(active){overlay.classList.toggle('is-recording',active);holdLabel.textContent=active?'RECORDING · RELEASE TO SAVE':'HOLD TO RECORD'}
-function release(){if(clock){clearInterval(clock);clock=null}if(meterTimer){clearInterval(meterTimer);meterTimer=null}level.value=0;if(meterContext){meterContext.close().catch(()=>{});meterContext=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}pending=false;recorder=null;indicate(false)}
+function stopMeter(){if(meterTimer){clearInterval(meterTimer);meterTimer=null}level.value=0;if(meterContext){meterContext.close().catch(()=>{});meterContext=null}}
+function disconnect(){++requestId;pending=false;held=false;stopMeter();if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}mic.checked=false;sayReady('OFF');indicate(false)}
+function finishClock(){if(clock){clearInterval(clock);clock=null}}
 async function saveBlob(blob,name,source){if(!blob.size)throw Error('The recording was empty');const id=crypto.randomUUID();await put({id,name,source,created:Date.now(),mime:blob.type||'audio/webm',blob});await render();return id}
-async function beginRecording(){
- if(pending||recorder)return;
- held=true;const token=++requestId;pending=true;indicate(true);say('Requesting microphone access…');
+async function activateMic(){
+ if(stream||pending)return;
+ const token=++requestId;pending=true;sayReady('CONNECTING');say('Requesting microphone permission…');
  try{
   if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined')throw Error('Microphone recording is unavailable in this browser');
   const incoming=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-  if(token!==requestId||!held){incoming.getTracks().forEach(t=>t.stop());return}
-  stream=incoming;pending=false;
+  if(token!==requestId||!mic.checked){incoming.getTracks().forEach(t=>t.stop());return}
+  stream=incoming;pending=false;sayReady('READY');say('Microphone ready. Hold RECORD to capture.');
+  incoming.getAudioTracks().forEach(track=>track.addEventListener('ended',()=>{if(stream===incoming){disconnect();say('Microphone disconnected.')}}));
+  try{meterContext=new AudioContext();const src=meterContext.createMediaStreamSource(stream),an=meterContext.createAnalyser();an.fftSize=1024;src.connect(an);const data=new Uint8Array(an.fftSize);meterTimer=setInterval(()=>{an.getByteTimeDomainData(data);let sum=0;for(const n of data)sum+=((n-128)/128)**2;level.value=Math.min(1,Math.sqrt(sum/data.length)*4)},120)}catch{}
+ }catch(e){if(token===requestId){disconnect();say('Cannot enable microphone: '+e.message)}}
+}
+mic.addEventListener('change',()=>{if(mic.checked){activateMic()}else if(recorder?.state==='recording'){endRecording();say('Saving recording before disconnecting microphone…');disconnectAfterSave=true}else if(finishing){disconnectAfterSave=true}else{disconnect();say('Microphone off.')}});
+let disconnectAfterSave=false;
+function beginRecording(){
+ if(!stream||recorder||pending||finishing)return;
+ held=true;indicate(true);
+ try{
   const options=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t));
   const active=new MediaRecorder(stream,options?{mimeType:options}:undefined);recorder=active;chunks=[];
   active.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
-  active.onerror=e=>{say('Recording error: '+(e.error?.message||'unknown'));release()};
+  active.onerror=e=>{say('Recording error: '+(e.error?.message||'unknown'));finishing=false;recorder=null;indicate(false);sayReady(stream?'READY':'OFF')};
   active.onstop=async()=>{
    const blob=new Blob(chunks,{type:active.mimeType||chunks[0]?.type||'audio/mp4'});
    try{await saveBlob(blob,nameFor('Recording '+new Date().toLocaleString()),'recorded');say('Saved recording locally ('+(blob.size/1024).toFixed(0)+' KB).')}
    catch(e){say('Save failed: '+e.message);if(blob.size){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='unsaved-recording.'+(blob.type.includes('mp4')?'m4a':'webm');a.textContent='Export unsaved recording';status.append(' ',a)}}
-   finally{release()}
+   finally{recorder=null;finishing=false;if(disconnectAfterSave){disconnectAfterSave=false;disconnect()}else{sayReady(stream?'READY':'OFF')} }
   };
   active.start(250);startedAt=Date.now();say('Recording · 0:00');
-  clock=setInterval(()=>{if(active.state==='recording')say('Recording · '+(Math.floor((Date.now()-startedAt)/60000))+':'+String(Math.floor((Date.now()-startedAt)/1000)%60).padStart(2,'0'))},250);
-  try{meterContext=new AudioContext();const src=meterContext.createMediaStreamSource(stream),an=meterContext.createAnalyser();an.fftSize=1024;src.connect(an);const data=new Uint8Array(an.fftSize);meterTimer=setInterval(()=>{an.getByteTimeDomainData(data);let sum=0;for(const n of data)sum+=((n-128)/128)**2;level.value=Math.min(1,Math.sqrt(sum/data.length)*4)},120)}catch{}
-  if(!held)endRecording();
- }catch(e){if(token===requestId){say('Cannot start recording: '+e.message);release()}}
+  clock=setInterval(()=>{if(active.state==='recording')say('Recording · '+Math.floor((Date.now()-startedAt)/60000)+':'+String(Math.floor((Date.now()-startedAt)/1000)%60).padStart(2,'0'))},250);
+ }catch(e){recorder=null;held=false;indicate(false);say('Recording failed: '+e.message)}
 }
 function endRecording(){
- if(!held&&!pending&&!recorder)return;
- held=false;
- if(pending){requestId++;say('Released before microphone was ready. Hold again to record.');release();return}
- if(recorder?.state==='recording'){say('Saving recording…');indicate(false);recorder.stop()}
+ if(!held)return;held=false;indicate(false);finishClock();
+ if(recorder?.state==='recording'){finishing=true;start.disabled=true;say('Saving recording…');try{recorder.stop()}catch(e){finishing=false;say('Stop failed: '+e.message)}}
 }
-start.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();try{start.setPointerCapture(e.pointerId)}catch{}beginRecording()});
+start.addEventListener('pointerdown',e=>{if(e.button!==0||start.disabled)return;e.preventDefault();try{start.setPointerCapture(e.pointerId)}catch{}beginRecording()});
 start.addEventListener('pointerup',e=>{e.preventDefault();endRecording()});
 start.addEventListener('pointercancel',endRecording);
 start.addEventListener('lostpointercapture',endRecording);
