@@ -1192,108 +1192,335 @@ body[data-theme=bauhaus] .live-panel-head{
 }
 body[data-theme=bauhaus] .live-panel-head button{color:#fff6df!important}
 
-/* THREE NEW WORLDS / editorial redesign
-   SCORE = contemporary engraved music folio.
-   PATCH = experimental laboratory signal cartography.
-   TERMINAL = high-contrast 1970s computer-room telemetry.
-   All three are original design languages, not vendor imitations. */
+
+/* THREE ORIGINAL VISUAL WORLDS: SECOND CURATORIAL PASS (2026-11-19)
+ *
+ * OPEN FORM (score)   : graphic notation, asymmetrical ink + vermilion.
+ * SIGNAL ATLAS (patch): matrix routing, blueprint petrol + peach + citron.
+ * CONTROL ROOM (terminal): amber telemetry, graphite and numbered readouts.
+ *
+ * Avoid decoration under the editor's text. The code remains the workpiece.
+ * These themes reuse the same compact, accessible iPhone geometry.
+ */
 body[data-theme=score]{
- --score-ink:#202d39;--score-paper:#f0e8d8;--score-plate:#d9d0be;--score-coral:#ba5344;
- --cursor:#ba5344;--control-corner:0px;--control-stroke:1px;
- --perform-bg:#f0e8d8;--perform-fg:#202d39;--perform-border:#50667a;--perform-grid:#50667a30;
- --file-bg:#f0e8d8;--file-fg:#202d39;--file-border:#50667a;
- background:var(--score-paper)!important;color:var(--score-ink)!important;
+ --s-bg:#ebe5d7;--s-panel:#d9d7ca;--s-editor:#f5f0e5;
+ --s-ink:#1d3038;--s-nav:#233b46;--s-accent:#d45138;
+ --s-muted:#576d70;--s-rule:#607679;--s-active:#f0bf68;
+ --cursor:#d45138;--control-corner:0px;--control-stroke:1px;
+ --file-bg:#f5f0e5;--file-fg:#1d3038;--file-border:#607679;
+ --perform-bg:#f5f0e5;--perform-fg:#1d3038;--perform-border:#607679;
+ --perform-grid:#60767935;
+ --inspector-active-bg:#f0bf68;--inspector-active-fg:#1d3038;
+ --live-amber:#c35d32;--live-cyan:#346a86;
+ --focus:#d45138;color-scheme:light;
+ background:var(--s-bg)!important;color:var(--s-ink)!important;
 }
-body[data-theme=score]>header{
- background:var(--score-ink)!important;color:var(--score-paper)!important;
- border:0!important;border-bottom:4px double var(--score-coral)!important;
+body[data-theme=patch]{
+ --s-bg:#102a32;--s-panel:#1e4750;--s-editor:#0d242c;
+ --s-ink:#edf0db;--s-nav:#143640;--s-accent:#f59b69;
+ --s-muted:#a5c8bf;--s-rule:#9fc9bd;--s-active:#e2e980;
+ --cursor:#f59b69;--control-corner:3px;--control-stroke:1px;
+ --file-bg:#183e47;--file-fg:#edf0db;--file-border:#9fc9bd;
+ --perform-bg:#0d242c;--perform-fg:#edf0db;--perform-border:#9fc9bd;
+ --perform-grid:#9fc9bd36;
+ --inspector-active-bg:#e2e980;--inspector-active-fg:#102a32;
+ --live-amber:#f0ae74;--live-cyan:#a5e0e1;
+ --focus:#e2e980;color-scheme:dark;
+ background:var(--s-bg)!important;color:var(--s-ink)!important;
+}
+body[data-theme=terminal]{
+ --s-bg:#0e1713;--s-panel:#1b2921;--s-editor:#101b16;
+ --s-ink:#e0eccd;--s-nav:#111c17;--s-accent:#ffbd61;
+ --s-muted:#91b19a;--s-rule:#7e9c86;--s-active:#ffbd61;
+ --cursor:#ffbd61;--control-corner:0px;--control-stroke:1px;
+ --file-bg:#1b2921;--file-fg:#e0eccd;--file-border:#91b19a;
+ --perform-bg:#101b16;--perform-fg:#e0eccd;--perform-border:#91b19a;
+ --perform-grid:#91b19a34;
+ --inspector-active-bg:#ffbd61;--inspector-active-fg:#0e1713;
+ --live-amber:#ffbd61;--live-cyan:#98d8c2;
+ --focus:#ffbd61;color-scheme:dark;
+ background:var(--s-bg)!important;color:var(--s-ink)!important;
+}
+/* An interface language for each world, not three recolored button sets. */
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal])>header{
+ background:var(--s-nav)!important;color:var(--s-ink)!important;
+ border:0!important;border-bottom:3px solid var(--s-accent)!important;
+ background-image:none!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal])>header small,
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal])>header .theme-strip select{
+ color:var(--s-ink)!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) header .identity-art{
+ color:var(--s-ink)!important;border:0!important;padding:0!important;
 }
 body[data-theme=score] header h1{
- font:italic 600 20px Georgia,serif!important;letter-spacing:-.035em!important;
- text-transform:none!important;
+ font:italic 600 clamp(14px,4.1vw,19px)/1.1 Georgia,serif!important;
+ letter-spacing:-.035em!important;text-transform:none!important;
 }
-body[data-theme=score] .projectbar{background:var(--score-plate)!important;border-bottom:1px solid #50667a!important}
-body[data-theme=score] .editor-frame{border:1px solid #50667a!important;border-left:5px solid var(--score-coral)!important}
-body[data-theme=score] .code-stack{background:var(--score-paper)!important}
-body[data-theme=score] #line-gutter{background:var(--score-plate)!important;border-right:1px solid #50667a!important}
-body[data-theme=score] .toolbar{background:var(--score-ink)!important;border:0!important}
-body[data-theme=score] .toolbar button{
- background:var(--score-paper)!important;color:var(--score-ink)!important;
- border:1px solid #50667a!important;border-radius:0!important;
-}
-body[data-theme=score] .toolbar #evaluate{background:var(--score-coral)!important;color:#fff8ec!important}
-body[data-theme=score] .console-shell{background:var(--score-paper)!important;border-top:4px double #50667a!important}
-body[data-theme=score] .console-bar{background:var(--score-ink)!important;color:var(--score-paper)!important}
-body[data-theme=score] .console-bar button{color:var(--score-paper)!important;border-right:1px solid #50667a!important}
-body[data-theme=score] .performance-panel .perform-header{background:var(--score-ink)!important;color:var(--score-paper)!important}
-body[data-theme=score] .performance-panel .perform-header button{color:var(--score-paper)!important;border-color:#9babb6!important}
-body[data-theme=score] .performance-panel .perform-header #perform-follow[aria-pressed=true]{background:var(--score-coral)!important;color:#fff8ec!important}
-body[data-theme=score] .live-panel-head{background:var(--score-ink)!important;color:var(--score-paper)!important}
-
-/* PATCH: signal-cartography laboratory, not fake patch-cable buttons. */
-body[data-theme=patch]{
- --patch-night:#102b32;--patch-blue:#1d4751;--patch-cream:#e8dfc6;
- --patch-orange:#e57b4c;--patch-mint:#9ec4aa;
- --cursor:var(--patch-orange);--control-corner:3px;--control-stroke:1px;
- --perform-bg:#102b32;--perform-fg:#e8dfc6;--perform-border:#9ec4aa;--perform-grid:#9ec4aa30;
- --file-bg:#173840;--file-fg:#e8dfc6;--file-border:#9ec4aa;
- background:var(--patch-night)!important;color:var(--patch-cream)!important;
-}
-body[data-theme=patch]>header{
- background:var(--patch-night)!important;color:var(--patch-cream)!important;
- border:1px solid var(--patch-mint)!important;border-bottom:3px solid var(--patch-orange)!important;
-}
-body[data-theme=patch] header h1{font:800 17px/1.1 ui-monospace,monospace!important;letter-spacing:-.035em!important}
-body[data-theme=patch] .projectbar{background:var(--patch-blue)!important;color:var(--patch-cream)!important}
-body[data-theme=patch] .editor-frame{border:1px solid var(--patch-mint)!important;background:var(--patch-night)!important}
-body[data-theme=patch] .code-stack,body[data-theme=patch] #line-gutter{background:var(--patch-night)!important}
-body[data-theme=patch] #code{color:var(--patch-cream)!important;caret-color:var(--patch-orange)!important}
-body[data-theme=patch] #line-gutter{color:var(--patch-mint)!important;border-right:2px dashed var(--patch-mint)!important}
-body[data-theme=patch] .toolbar{background:var(--patch-blue)!important;border:1px solid var(--patch-mint)!important}
-body[data-theme=patch] .toolbar button{
- background:var(--patch-night)!important;color:var(--patch-cream)!important;
- border:1px solid var(--patch-mint)!important;border-radius:3px!important;
-}
-body[data-theme=patch] .toolbar #evaluate{background:var(--patch-orange)!important;color:var(--patch-night)!important}
-body[data-theme=patch] .console-shell{background:var(--patch-night)!important;border-top:2px dashed var(--patch-mint)!important}
-body[data-theme=patch] .console-bar{background:var(--patch-blue)!important;color:var(--patch-cream)!important}
-body[data-theme=patch] .console-bar button{background:var(--patch-night)!important;color:var(--patch-cream)!important;border:1px solid var(--patch-mint)!important}
-body[data-theme=patch] .performance-panel .perform-header{background:var(--patch-blue)!important;color:var(--patch-cream)!important}
-body[data-theme=patch] .performance-panel .perform-header #perform-follow[aria-pressed=true]{background:var(--patch-orange)!important;color:var(--patch-night)!important}
-body[data-theme=patch] .live-panel-head{background:var(--patch-blue)!important;color:var(--patch-cream)!important}
-
-/* TERMINAL: archival amber phosphor and disciplined tabular typography. */
-body[data-theme=terminal]{
- --term-black:#111814;--term-panel:#19251d;--term-amber:#f2b55d;--term-cream:#f2e5ca;
- --term-dim:#899c82;--cursor:var(--term-amber);
- --control-corner:0px;--control-stroke:1px;
- --perform-bg:#111814;--perform-fg:#f2e5ca;--perform-border:#899c82;--perform-grid:#899c8230;
- --file-bg:#19251d;--file-fg:#f2e5ca;--file-border:#899c82;
- background:var(--term-black)!important;color:var(--term-cream)!important;
-}
-body[data-theme=terminal]>header{
- background:var(--term-black)!important;color:var(--term-amber)!important;
- border:1px solid var(--term-dim)!important;border-bottom:3px solid var(--term-amber)!important;
+body[data-theme=patch] header h1{
+ font:800 clamp(14px,4.1vw,18px)/1.1 "Arial Narrow",Arial,sans-serif!important;
+ letter-spacing:.075em!important;text-transform:uppercase!important;
 }
 body[data-theme=terminal] header h1{
- font:900 17px/1 ui-monospace,monospace!important;letter-spacing:.07em!important;
+ font:800 clamp(13px,4vw,18px)/1.1 ui-monospace,SFMono-Regular,monospace!important;
+ letter-spacing:.025em!important;text-transform:uppercase!important;
 }
-body[data-theme=terminal] .projectbar{background:var(--term-panel)!important;color:var(--term-cream)!important}
-body[data-theme=terminal] .editor-frame{border:1px solid var(--term-dim)!important}
-body[data-theme=terminal] .code-stack,body[data-theme=terminal] #line-gutter{background:var(--term-black)!important}
-body[data-theme=terminal] #code{color:var(--term-cream)!important;caret-color:var(--term-amber)!important}
-body[data-theme=terminal] #line-gutter{color:var(--term-dim)!important;border-right:1px solid var(--term-amber)!important}
-body[data-theme=terminal] .toolbar{background:var(--term-panel)!important;border:1px solid var(--term-dim)!important;gap:3px!important}
+body[data-theme=score]>header{
+ border-bottom:4px double var(--s-accent)!important;
+}
+body[data-theme=score]>header .identity-art{border-left:2px solid var(--s-accent)!important}
+body[data-theme=patch]>header{
+ border-bottom:3px solid var(--s-accent)!important;
+ box-shadow:inset 0 2px 0 var(--s-rule)!important;
+}
+body[data-theme=terminal]>header{
+ border-bottom:2px solid var(--s-accent)!important;
+ box-shadow:inset 0 2px 0 var(--s-rule)!important;
+}
+/* The composition strip is an instrument label; its file menu is a physical tab. */
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .projectbar{
+ background:var(--s-panel)!important;color:var(--s-ink)!important;
+ border-bottom:1px solid var(--s-rule)!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .projectbar .composition-picker>button{
+ background:var(--s-editor)!important;color:var(--s-ink)!important;
+ border:1px solid var(--s-rule)!important;
+ text-align:left!important;border-radius:var(--control-corner)!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .projectbar .menu>summary{
+ background:var(--s-nav)!important;color:var(--s-ink)!important;
+ border:1px solid var(--s-rule)!important;
+ font-family:ui-monospace,SFMono-Regular,monospace!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .menu-items,
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .project-list{
+ background:var(--file-bg)!important;color:var(--file-fg)!important;
+ border:1px solid var(--file-border)!important;
+ box-shadow:0 6px 18px #0005!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .menu-items button,
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .file-submenu>summary,
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .project-list .project-entry button.pick{
+ background:transparent!important;color:var(--file-fg)!important;
+ border-color:var(--file-border)!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .menu-items button:active,
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .project-list button.pick:active{
+ background:var(--s-active)!important;color:var(--s-nav)!important;
+}
+body[data-theme=score] .projectbar .composition-picker>button{
+ background:#f5f0e5!important;color:var(--s-ink)!important;
+ border-left:4px solid var(--s-accent)!important;
+}
+body[data-theme=score] .projectbar .menu>summary{
+ background:var(--s-nav)!important;color:#f5f0e5!important;
+}
+body[data-theme=score] .projectbar{color:var(--s-ink)!important}
+body[data-theme=score] .project-list .project-entry button.pick{color:var(--s-ink)!important}
+body[data-theme=patch] .projectbar .composition-picker>button{
+ background:#143640!important;color:#edf0db!important;
+ border-left:4px solid var(--s-accent)!important;
+}
+body[data-theme=terminal] .projectbar .composition-picker>button{
+ background:#111c17!important;color:#e0eccd!important;
+ border-left:3px solid var(--s-accent)!important;
+}
+/* The paper / plotting field / cathode-ray display. No ornament beneath letters. */
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .editor-frame{
+ background:var(--s-editor)!important;
+ border:1px solid var(--s-rule)!important;border-radius:0!important;
+ box-shadow:none!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .code-stack{
+ background:var(--s-editor)!important;box-shadow:none!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .code-stack #highlight-layer{
+ color:var(--s-ink)!important;background:transparent!important;
+ text-shadow:none!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) #code{
+ background:transparent!important;caret-color:var(--cursor)!important;
+}
+/* Editor uses a transparent editable text overlay. The visible syntax is
+   #highlight-layer, not #code: styling #code alone does not recolor text. */
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) #line-gutter{
+ background:var(--s-panel)!important;color:var(--s-muted)!important;
+ border:0!important;border-right:1px solid var(--s-rule)!important;
+}
+body[data-theme=score] .editor-frame{
+ border-left:4px solid var(--s-accent)!important;
+}
+body[data-theme=score] #line-gutter{
+ background:#e1ded0!important;color:#54696a!important;
+ border-right:2px solid #233b46!important;
+}
+body[data-theme=score] .code-stack .class{color:#ab422e!important}
+body[data-theme=score] .code-stack .num{color:#285a6c!important}
+body[data-theme=score] .code-stack .str{color:#98612b!important}
+body[data-theme=score] .code-stack .comment{color:#687573!important}
+body[data-theme=patch] .editor-frame{
+ border-top:2px solid var(--s-active)!important;
+}
+body[data-theme=patch] #line-gutter{
+ background:#1b414b!important;color:#b1d4c7!important;
+ border-right:2px dashed #e2e980!important;
+}
+body[data-theme=patch] .code-stack .class{color:#e2e980!important}
+body[data-theme=patch] .code-stack .num{color:#ffbe86!important}
+body[data-theme=patch] .code-stack .str{color:#a7d7d0!important}
+body[data-theme=patch] .code-stack .comment{color:#a5bfb1!important}
+body[data-theme=terminal] .editor-frame{
+ border-top:2px solid var(--s-accent)!important;
+}
+body[data-theme=terminal] #line-gutter{
+ background:#1b2921!important;color:#adc3aa!important;
+ border-right:1px solid var(--s-accent)!important;
+}
+body[data-theme=terminal] .code-stack .class{color:#ffbd61!important}
+body[data-theme=terminal] .code-stack .num{color:#9ed9c8!important}
+body[data-theme=terminal] .code-stack .str{color:#f1b689!important}
+body[data-theme=terminal] .code-stack .comment{color:#9bb09b!important}
+/* Transport: continuous part of the instrument, not floating pills. */
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .toolbar{
+ background:var(--s-nav)!important;color:var(--s-ink)!important;
+ border:0!important;border-top:2px solid var(--s-rule)!important;
+ box-shadow:none!important;gap:3px!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .toolbar button{
+ background:var(--s-panel)!important;color:var(--s-nav)!important;
+ border:1px solid var(--s-rule)!important;
+ border-radius:var(--control-corner)!important;
+ box-shadow:none!important;
+ font-family:ui-monospace,SFMono-Regular,monospace!important;
+ font-weight:800!important;letter-spacing:0!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .toolbar #evaluate{
+ background:var(--s-accent)!important;color:var(--s-nav)!important;
+ border-color:var(--s-accent)!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .toolbar #panic{
+ border-color:var(--s-accent)!important;
+}
+body[data-theme=score] .toolbar button{
+ background:#f5f0e5!important;color:#1d3038!important;
+}
+body[data-theme=score] .toolbar #evaluate{
+ color:#fff9ed!important;
+}
+body[data-theme=patch] .toolbar{
+ background:var(--s-panel)!important;border-top:2px solid var(--s-active)!important;
+}
+body[data-theme=patch] .toolbar button{
+ background:#123640!important;color:#edf0db!important;
+ border-color:#9fc9bd!important;
+}
+body[data-theme=patch] .toolbar #evaluate{
+ color:#102a32!important;
+}
+body[data-theme=patch] .toolbar #panic{
+ background:#e2e980!important;color:#102a32!important;
+ border-color:#e2e980!important;
+}
+body[data-theme=terminal] .toolbar{
+ border-top:2px solid var(--s-accent)!important;
+}
 body[data-theme=terminal] .toolbar button{
- background:var(--term-black)!important;color:var(--term-cream)!important;
- border:1px solid var(--term-dim)!important;border-radius:0!important;
- font-family:ui-monospace,monospace!important;
+ background:#192821!important;color:#e0eccd!important;
+ border-color:#789781!important;
 }
-body[data-theme=terminal] .toolbar #evaluate{background:var(--term-amber)!important;color:var(--term-black)!important}
-body[data-theme=terminal] .console-shell{background:var(--term-black)!important;border-top:2px solid var(--term-amber)!important}
-body[data-theme=terminal] .console-bar{background:var(--term-panel)!important;color:var(--term-cream)!important}
-body[data-theme=terminal] .console-bar button{background:transparent!important;color:var(--term-cream)!important;border:1px solid var(--term-dim)!important}
-body[data-theme=terminal] .console-bar button[aria-pressed=true]{background:var(--term-amber)!important;color:var(--term-black)!important}
-body[data-theme=terminal] .performance-panel .perform-header{background:var(--term-panel)!important;color:var(--term-cream)!important}
-body[data-theme=terminal] .performance-panel .perform-header #perform-follow[aria-pressed=true]{background:var(--term-amber)!important;color:var(--term-black)!important}
-body[data-theme=terminal] .live-panel-head{background:var(--term-panel)!important;color:var(--term-cream)!important}
+body[data-theme=terminal] .toolbar #evaluate{
+ color:#0e1713!important;
+}
+body[data-theme=terminal] .toolbar #panic{
+ background:#1b2921!important;color:#ffbd61!important;
+ border-color:#ffbd61!important;
+}
+/* Navigation + console use the same color roles as the transport. */
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .console-shell{
+ background:var(--s-editor)!important;color:var(--s-ink)!important;
+ border:1px solid var(--s-rule)!important;
+ box-shadow:none!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .console-bar{
+ background:var(--s-nav)!important;color:var(--s-ink)!important;
+ border-bottom:1px solid var(--s-rule)!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .console-bar .inspector-modes button{
+ background:transparent!important;color:var(--s-ink)!important;
+ border:1px solid var(--s-rule)!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .console-bar .inspector-modes button[aria-pressed=true]{
+ background:var(--s-active)!important;color:var(--s-nav)!important;
+ border-color:var(--s-active)!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) #console,
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) #syntax-preview{
+ background:var(--s-editor)!important;color:var(--s-ink)!important;
+ border-color:var(--s-rule)!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .console-shell #engine-status,
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) #console-panel{
+ color:var(--s-ink)!important;
+}
+body[data-theme=score] .console-bar{
+ background:#233b46!important;color:#f5f0e5!important;
+ border-left:4px solid var(--s-accent)!important;
+}
+body[data-theme=score] .console-bar .inspector-modes button,
+body[data-theme=score] .console-shell #engine-status{
+ color:#f5f0e5!important;
+}
+body[data-theme=patch] .console-bar{
+ background:#1e4750!important;
+ border-left:4px solid var(--s-active)!important;
+}
+body[data-theme=terminal] .console-bar{
+ background:#1b2921!important;
+ border-left:3px solid var(--s-accent)!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .live-panel{
+ background:var(--s-panel)!important;color:var(--s-ink)!important;
+ border-color:var(--s-rule)!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .live-panel-head{
+ background:var(--s-nav)!important;color:var(--s-ink)!important;
+ border-bottom:1px solid var(--s-rule)!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .live-panel-head button{
+ color:var(--s-ink)!important;
+}
+/* Score has ivory lettering in its dark header/console, ink on its paper editor. */
+body[data-theme=score]{
+ --s-ink:#1d3038;--s-nav:#233b46;
+}
+body[data-theme=score]>header,
+body[data-theme=score]>header .theme-strip select,
+body[data-theme=score]>header small,
+body[data-theme=score] .live-panel-head,
+body[data-theme=score] .live-panel-head button{
+ color:#f5f0e5!important;
+}
+body[data-theme=score] .console-bar .inspector-modes button[aria-pressed=true]{
+ color:#233b46!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) :is(button,select,summary):focus-visible{
+ outline:2px solid var(--focus)!important;outline-offset:2px!important;
+}
+@media(prefers-reduced-motion:reduce){
+ body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .toolbar button{
+  transition:none!important;
+ }
+}
+
+/* Keep the selected study's full name visible at phone widths.
+   The common auto-sized selector was needlessly ellipsizing short names. */
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal])>header .theme-strip{
+ width:clamp(98px,31vw,132px)!important;max-width:40vw!important;
+ flex:0 0 clamp(98px,31vw,132px)!important;min-width:0!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal])>header .theme-strip select{
+ width:100%!important;max-width:100%!important;min-width:0!important;
+ font:700 10px/1.15 ui-monospace,SFMono-Regular,monospace!important;
+ text-align:right!important;
+}
