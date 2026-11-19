@@ -936,3 +936,50 @@ body .performance-panel .perform-detail #perform-dialog-title{
   font-size:8px!important;
  }
 }
+
+/* Moog-style inspector: restrained hardware controls, equal rhythm,
+   consistent compact actions rather than oversized rectangular tiles. */
+body .performance-panel .perform-detail,
+body[data-theme] .performance-panel .perform-detail{
+ grid-template-columns:minmax(0,1fr) 40px 40px 48px 84px!important;
+ grid-template-rows:27px 27px!important;
+ column-gap:4px!important;row-gap:3px!important;
+ padding:3px 6px!important;
+}
+body .performance-panel .perform-detail button,
+body[data-theme] .performance-panel .perform-detail button{
+ box-sizing:border-box!important;height:27px!important;min-height:27px!important;
+ padding:2px 4px!important;
+ font-size:10px!important;line-height:1.1!important;
+ letter-spacing:0!important;
+}
+body .performance-panel .perform-detail #perform-dialog-close{
+ font-size:9px!important;
+}
+body .performance-panel .perform-detail #perform-dialog-neutral{
+ justify-self:end!important;align-self:center!important;
+ width:55px!important;min-width:55px!important;
+ max-width:55px!important;
+}
+body .performance-panel .perform-detail .perform-dialog-step-actions{
+ justify-content:end!important;
+}
+body .performance-panel .perform-detail .perform-dialog-step-actions button{
+ width:40px!important;min-width:40px!important;
+}
+body .performance-panel .perform-detail #perform-dialog-title{
+ font-size:12px!important;letter-spacing:.015em!important;
+}
+@media(max-width:420px){
+ body .performance-panel .perform-detail,
+ body[data-theme] .performance-panel .perform-detail{
+  grid-template-columns:minmax(0,1fr) 35px 35px 42px 78px!important;
+  column-gap:3px!important;padding:3px 4px!important;
+ }
+ body .performance-panel .perform-detail .perform-dialog-step-actions button{
+  width:35px!important;min-width:35px!important;
+ }
+ body .performance-panel .perform-detail #perform-dialog-neutral{
+  width:53px!important;min-width:53px!important;max-width:53px!important;
+ }
+}
