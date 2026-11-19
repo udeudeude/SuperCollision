@@ -325,7 +325,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   }
   function draw(){
     frame=0;
-    if(document.hidden)return;
+    if(document.hidden||panel.offsetParent===null)return;
     const allRows=journal.getInstrumentRows();
     const rows=showAll?allRows:allRows.filter(row=>row.active>0);
     const t=journal.timelineNow();
@@ -348,37 +348,30 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       lastTickSpan=timespan;
     }
     const events=journal.eventsForCurrent(),byName=new Map();
-    // A common logarithmic pitch range per instrument preserves intervals.
-    // Unknown pitches remain centered, never represented as measured audio.
+    // Scan historical notes once, retaining only notes near the viewport.
+    // A fixed octave reference avoids rescanning/repositioning every old
+    // note whenever a new pitch arrives.
     const pitchBounds=new Map();
+    const viewWidth=Math.max(250,scroller.clientWidth);
+    const viewLeft=follow&&(!pointerStart||!pointerStart.horizontal)
+      ?Math.max(0,graphWidth-scroller.clientWidth):scroller.scrollLeft;
+    const minX=Math.max(0,viewLeft-viewWidth),maxX=viewLeft+viewWidth*2;
     for(const ev of events){
-      const hz=ev.params?.freq;
-      if(!(Number.isFinite(hz)&&hz>0))continue;
-      const p=Math.log2(hz);
-      const b=pitchBounds.get(ev.name)||{lo:p,hi:p};
-      b.lo=Math.min(b.lo,p);b.hi=Math.max(b.hi,p);
-      pitchBounds.set(ev.name,b);
-    }
-    for(const ev of events){
+      const start=(ev.start-journal.zero)/1000*SCALE;
+      const end=((ev.end??t)-journal.zero)/1000*SCALE;
+      if(end<minX||start>maxX)continue;
       if(!byName.has(ev.name))byName.set(ev.name,[]);
       byName.get(ev.name).push(ev);
+      const hz=ev.params?.freq;
+      if(Number.isFinite(hz)&&hz>0){
+        const p=Math.log2(hz),b=pitchBounds.get(ev.name)||{lo:p,hi:p};
+        b.lo=Math.min(b.lo,p);b.hi=Math.max(b.hi,p);
+        pitchBounds.set(ev.name,b);
+      }
     }
     for(const row of rows){
       const dom=lastRows.get(row.name);
-      // Only materialize notes near the visible timeline. Long compositions
-      // may contain thousands of notes, but only a few fit on a phone screen.
-      // Determine the intended end-of-score window before automatic FOLLOW
-      // moves scrollLeft at the end of this paint.
-      const viewWidth=Math.max(250,scroller.clientWidth);
-      const viewLeft=follow&&(!pointerStart||!pointerStart.horizontal)
-        ?Math.max(0,graphWidth-scroller.clientWidth):scroller.scrollLeft;
-      const minX=Math.max(0,viewLeft-viewWidth);
-      const maxX=viewLeft+viewWidth*2;
-      const selected=(byName.get(row.name)||[]).filter(e=>{
-        const start=(e.start-journal.zero)/1000*SCALE;
-        const end=((e.end??t)-journal.zero)/1000*SCALE;
-        return end>=minX && start<=maxX;
-      });
+      const selected=byName.get(row.name)||[];
       const bars=[],used=new Set();
       for(const e of selected){
         used.add(e);
@@ -446,7 +439,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     // resting lane has smoothly compacted. This never advances note time.
     const pendingIdle=rows.some(row=>row.active===0&&row.restingFor<IDLE_AFTER_MS);
     if(panel.offsetParent!==null&&journal.enabled&&(!stopped||pendingIdle))
-      timer=setTimeout(schedule,stopped?550:350);
+      timer=setTimeout(schedule,stopped?700:750);
   }
   function schedule(){
     if(frame)return;frame=requestAnimationFrame(draw);
