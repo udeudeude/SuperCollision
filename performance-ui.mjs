@@ -42,16 +42,16 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     <div class="perform-dialog-actions">
       <button type="button" id="perform-dialog-mute">Mute</button>
       <button type="button" id="perform-dialog-solo">Solo</button>
-      <button type="button" id="perform-dialog-neutral" title="Restore this instrument’s original level, mute, solo, and sound parameters" aria-label="Reset selected instrument to defaults">Reset</button>
     </div>
     <div class="perform-dialog-gain-line">
       <label for="perform-dialog-gain">Level <output id="perform-dialog-gain-value">100%</output></label>
       <input id="perform-dialog-gain" type="range" min="0" max="2" step=".01" value="1">
-      <div class="perform-dialog-step-actions">
-        <button type="button" id="perform-dialog-minus">−5%</button>
-        <button type="button" id="perform-dialog-plus">+5%</button>
-      </div>
     </div>
+    <div class="perform-dialog-step-actions">
+      <button type="button" id="perform-dialog-minus">−5%</button>
+      <button type="button" id="perform-dialog-plus">+5%</button>
+    </div>
+    <button type="button" id="perform-dialog-neutral" title="Restore this instrument’s original level, mute, solo, and sound parameters" aria-label="Reset selected instrument to defaults">Reset</button>
     <section id="perform-dialog-parameters" hidden>
       <h3>Sound parameters</h3>
       <p>Adjust numeric settings exposed by the instrument code. These affect playing notes; they do not rewrite the composition.</p>
