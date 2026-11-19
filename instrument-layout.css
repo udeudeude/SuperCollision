@@ -967,3 +967,140 @@ body[data-theme=makenoise]>header{
  background-repeat:no-repeat!important;background-size:100% 2px!important;
  background-position:left bottom!important;
 }
+
+/* MAKE NOISE / REBUILT
+   Original homage to the visual language of 0-Coast and Mimeophon:
+   screen-printed ivory paths, silver jack rings, angular technical lettering,
+   sparse brass annotation, and black functional fields.
+   The patch diagram is original; it is not a logo or product-panel copy. */
+body[data-theme=makenoise]{
+ --mn-black:#090a0b;--mn-field:#111214;--mn-well:#1c1d20;
+ --mn-white:#f1f0e9;--mn-silver:#b9bcb7;--mn-gold:#b99a56;
+ --mn-line:#d7d9d3;--mn-dim:#919690;
+ --theme-paper:var(--mn-black);--theme-panel:var(--mn-field);
+ --theme-ink:var(--mn-white);--theme-rule:var(--mn-silver);
+ --theme-accent:var(--mn-gold);--theme-secondary:var(--mn-white);
+ --theme-header:var(--mn-black);--theme-editor:#0c1010;
+ --theme-editor-ink:#e7e9df;--theme-menu:#151618;--theme-menu-ink:var(--mn-white);
+ --file-bg:#151618;--file-fg:var(--mn-white);--file-border:var(--mn-silver);
+ --perform-bg:#0d0e10;--perform-fg:var(--mn-white);
+ --perform-border:var(--mn-silver);--perform-grid:#d7d9d326;
+ --control-corner:0px;--control-stroke:1px;
+ background:var(--mn-black)!important;color:var(--mn-white)!important;
+}
+body[data-theme=makenoise]>header{
+ background:var(--mn-black)!important;
+ border:1px solid var(--mn-silver)!important;
+ border-bottom:2px solid var(--mn-white)!important;
+ background-image:none!important;
+}
+body[data-theme=makenoise] header .identity-art{
+ border:0!important;padding:0!important;
+ color:var(--mn-white)!important;
+}
+body[data-theme=makenoise] header h1{
+ font-family:"Arial Narrow","Helvetica Neue",Arial,sans-serif!important;
+ font-stretch:condensed;font-weight:800!important;
+ letter-spacing:-.045em!important;text-transform:uppercase;
+}
+body[data-theme=makenoise] .projectbar{
+ background:var(--mn-field)!important;color:var(--mn-white)!important;
+ border-bottom:1px solid var(--mn-silver)!important;
+}
+body[data-theme=makenoise] .projectbar button,
+body[data-theme=makenoise] .projectbar summary{
+ background:var(--mn-field)!important;color:var(--mn-white)!important;
+ border:1px solid var(--mn-silver)!important;
+}
+body[data-theme=makenoise] .editor-frame{
+ border:1px solid var(--mn-silver)!important;
+ background:#0c1010!important;
+}
+body[data-theme=makenoise] .code-stack,
+body[data-theme=makenoise] #line-gutter{
+ background:#0c1010!important;
+}
+body[data-theme=makenoise] #line-gutter{
+ border-right:1px solid var(--mn-silver)!important;color:var(--mn-dim)!important;
+}
+body[data-theme=makenoise] .toolbar{
+ background:var(--mn-black)!important;border:1px solid var(--mn-silver)!important;
+}
+body[data-theme=makenoise] .toolbar button{
+ background:var(--mn-field)!important;color:var(--mn-white)!important;
+ border:1px solid var(--mn-silver)!important;
+ border-radius:0!important;box-shadow:none!important;
+ font-family:"Arial Narrow",Arial,sans-serif!important;
+ font-weight:800!important;letter-spacing:.035em!important;
+}
+body[data-theme=makenoise] .toolbar #evaluate{
+ background:var(--mn-white)!important;color:var(--mn-black)!important;
+ border-color:var(--mn-white)!important;
+}
+body[data-theme=makenoise] .toolbar #panic{
+ border-color:var(--mn-gold)!important;color:var(--mn-white)!important;
+}
+body[data-theme=makenoise] .console-shell{
+ background:var(--mn-black)!important;color:var(--mn-white)!important;
+ border:1px solid var(--mn-silver)!important;
+}
+body[data-theme=makenoise] .console-bar{
+ background:var(--mn-field)!important;color:var(--mn-white)!important;
+ border-bottom:1px solid var(--mn-silver)!important;
+}
+body[data-theme=makenoise] .console-bar button{
+ background:transparent!important;color:var(--mn-white)!important;
+ border:1px solid var(--mn-silver)!important;
+ font-family:"Arial Narrow",Arial,sans-serif!important;
+ letter-spacing:.045em!important;
+}
+body[data-theme=makenoise] .console-bar button[aria-pressed=true]{
+ background:var(--mn-white)!important;color:var(--mn-black)!important;
+}
+body[data-theme=makenoise] .menu-items,
+body[data-theme=makenoise] .project-list{
+ background:var(--mn-field)!important;color:var(--mn-white)!important;
+ border:1px solid var(--mn-silver)!important;
+}
+body[data-theme=makenoise] .menu-items button{
+ color:var(--mn-white)!important;border-color:var(--mn-silver)!important;
+ background:transparent!important;
+}
+body[data-theme=makenoise] .live-panel{
+ background:var(--mn-field)!important;color:var(--mn-white)!important;
+ border-color:var(--mn-silver)!important;
+}
+body[data-theme=makenoise] .performance-panel .perform-header{
+ background:var(--mn-field)!important;color:var(--mn-white)!important;
+ border-bottom:1px solid var(--mn-silver)!important;
+}
+body[data-theme=makenoise] .performance-panel .perform-header button,
+body[data-theme=makenoise] .performance-panel .perform-detail button{
+ border:1px solid var(--mn-silver)!important;
+ border-radius:0!important;box-shadow:none!important;
+ background:var(--mn-field)!important;color:var(--mn-white)!important;
+ font-family:"Arial Narrow",Arial,sans-serif!important;
+ font-weight:800!important;letter-spacing:.035em!important;
+}
+body[data-theme=makenoise] .performance-panel .perform-header #perform-follow[aria-pressed=true]{
+ background:var(--mn-white)!important;color:var(--mn-black)!important;
+}
+body[data-theme=makenoise] .performance-panel .perform-detail #perform-dialog-mute[aria-pressed=true],
+body[data-theme=makenoise] .performance-panel .perform-detail #perform-dialog-solo[aria-pressed=true]{
+ border-color:var(--voice-color,var(--mn-gold))!important;
+ box-shadow:inset 0 -2px var(--voice-color,var(--mn-gold))!important;
+}
+/* Screen-printed routing paths: ornament only in non-interactive panel edges. */
+body[data-theme=makenoise] .console-shell{
+ background-image:linear-gradient(90deg,transparent 0 14px,var(--mn-gold) 14px 15px,transparent 15px),
+ linear-gradient(90deg,transparent 0 24px,var(--mn-silver) 24px 25px,transparent 25px)!important;
+ background-size:100% 1px,100% 1px!important;
+ background-position:left top 2px,left top 5px!important;
+ background-repeat:no-repeat!important;
+}
+body[data-theme=makenoise] .performance-panel .perform-axis-ticks{
+ background-image:repeating-linear-gradient(to right,transparent 0 159px,#d7d9d326 159px 160px)!important;
+}
+body[data-theme=makenoise] :is(button,select,summary):focus-visible{
+ outline:2px solid var(--mn-gold)!important;outline-offset:2px!important;
+}
