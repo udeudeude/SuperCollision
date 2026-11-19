@@ -1512,3 +1512,15 @@ body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) :is(button,
   transition:none!important;
  }
 }
+
+/* Keep the selected study's full name visible at phone widths.
+   The common auto-sized selector was needlessly ellipsizing short names. */
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal])>header .theme-strip{
+ width:clamp(98px,31vw,132px)!important;max-width:40vw!important;
+ flex:0 0 clamp(98px,31vw,132px)!important;min-width:0!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal])>header .theme-strip select{
+ width:100%!important;max-width:100%!important;min-width:0!important;
+ font:700 10px/1.15 ui-monospace,SFMono-Regular,monospace!important;
+ text-align:right!important;
+}
