@@ -11,6 +11,7 @@ on:
       - '*.webmanifest'
       - '*.svg'
       - '_headers'
+      - 'assets/fonts/**'
       - 'scripts/build_language_catalog.py'
       - 'scripts/build_offline_manifest.py'
       - 'scripts/render_icons.py'
@@ -68,6 +69,9 @@ jobs:
           ]
           for name in names:
               copy2(source / name, target / name)
+          from shutil import copytree
+          if (source / "assets/fonts").is_dir():
+              copytree(source / "assets/fonts", target / "assets/fonts", dirs_exist_ok=True)
           PY
           python3 source/scripts/build_language_catalog.py upstream-help/HelpSource/Classes site/language-catalog.json
           python3 -m pip install --quiet --break-system-packages cairosvg
@@ -117,7 +121,7 @@ jobs:
           cd site
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html _headers instrument-layout.css instrument-layout.js live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs performance.css learning.mjs learning.css catalog-core.mjs editor-assist.mjs error-guide.mjs repair-ui.mjs repair-ui.css catalog-assist.css osc-priority-bridge.mjs sound-designer.mjs sound-designer-core.mjs sound-designer.css lab-offline.mjs lab-sw.js lab-composition-vault.mjs offline-cache-policy.mjs language-catalog.json manifest.webmanifest app-icon.svg apple-touch-icon.png app-icon-192.png app-icon-512.png lab-offline-assets.json
+          git add assets/fonts/ index.html _headers instrument-layout.css instrument-layout.js live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs performance.css learning.mjs learning.css catalog-core.mjs editor-assist.mjs error-guide.mjs repair-ui.mjs repair-ui.css catalog-assist.css osc-priority-bridge.mjs sound-designer.mjs sound-designer-core.mjs sound-designer.css lab-offline.mjs lab-sw.js lab-composition-vault.mjs offline-cache-policy.mjs language-catalog.json manifest.webmanifest app-icon.svg apple-touch-icon.png app-icon-192.png app-icon-512.png lab-offline-assets.json
           if git diff --cached --quiet; then
             echo "Production site is already current"
           else
