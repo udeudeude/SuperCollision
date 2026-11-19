@@ -52,7 +52,7 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 </style>
 </head>
 <body>
-<header><a href="./index.html" aria-label="Return to Code">← Code</a><h1>SOUNDS</h1><small class="build">2026.11.19.9</small></header>
+<header><a href="./index.html" aria-label="Return to Code">← Code</a><h1>SOUNDS</h1><small class="build">2026.11.19.10</small></header>
 <nav aria-label="Sounds workspace" id="sounds-tabs">
 <button data-view="library" role="tab" aria-controls="sounds-library" aria-selected="true">Library</button>
 <button data-view="record" role="tab" aria-controls="sounds-record" aria-selected="false">Record</button>
@@ -96,8 +96,22 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 </section>
 <section id="sounds-generate" role="tabpanel" hidden>
 <h2>Generate SuperCollider code</h2>
-<p class="muted">The existing artificial intelligence sound designer remains available in Code. A Sounds-only generator is the next integration step, without changes to the main page.</p>
-<a href="./index.html#sound-host">Open the existing generator in Code</a>
+<p class="muted">Describe a sound and generate editable SuperCollider source. Your personal provider account pays for requests; no automatic paid retries. Code is never executed on this page.</p>
+<label for="sounds-ai-provider">Provider</label><select id="sounds-ai-provider"><option value="openrouter">OpenRouter · free models only</option><option value="puter">Puter · personal allowance</option></select>
+<div id="sounds-ai-key-box"><label for="sounds-ai-key">Personal OpenRouter key (not stored)</label><input id="sounds-ai-key" type="password" autocomplete="off" placeholder="sk-or-…"><p class="muted"><a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer">Get your own key</a></p></div>
+<label for="sounds-ai-model">Free model</label><select id="sounds-ai-model"></select>
+<button id="sounds-puter-connect" type="button" hidden>Connect Puter</button>
+<label for="sounds-ai-prompt">Describe the sound</label><textarea id="sounds-ai-prompt" placeholder="A rough, reedy drone with slow wavering pitch…"></textarea>
+<div class="actions"><button id="sounds-ai-generate" class="primary" type="button">Generate instrument</button></div>
+<label for="sounds-ai-revision">Refinement (optional)</label><textarea id="sounds-ai-revision" placeholder="Make it darker, with more breath noise…" style="min-height:68px"></textarea>
+<button id="sounds-ai-revise" type="button" disabled>Revise generated instrument</button>
+<p id="sounds-generate-status" role="status" aria-live="polite"></p>
+<div id="sounds-ai-result" hidden>
+<label for="sounds-ai-code">Review and edit generated SuperCollider source</label><textarea id="sounds-ai-code" spellcheck="false" style="min-height:260px"></textarea>
+<pre id="sounds-ai-review" class="saved-code"></pre>
+<div class="actions"><button id="sounds-ai-save" type="button" class="primary" disabled>Save to library</button><button id="sounds-ai-copy" type="button" disabled>Copy code</button></div>
+</div>
+<p class="muted">Auditioning and audio processing will be added through SuperCollider itself, not a separate browser synthesizer.</p>
 </section>
 <section id="discover" role="tabpanel" hidden>
 <h2>Discover sounds</h2>
@@ -135,5 +149,6 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 <script type="module" src="./sounds-library.mjs?v=2"></script>
 <script type="module" src="./sounds-tools.mjs?v=2"></script>
 <script type="module" src="./sounds-discover.mjs?v=2"></script>
+<script type="module" src="./sounds-generate.mjs?v=1"></script>
 </body>
 </html>
