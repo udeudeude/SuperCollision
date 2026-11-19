@@ -1,0 +1,61 @@
+name: Publish Sounds workspace only
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'sounds.html'
+      - 'sounds-*.mjs'
+      - 'qa/sounds-*.mjs'
+      - '.github/workflows/publish-sounds.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: supercollision-pages-publish
+  cancel-in-progress: false
+jobs:
+  sounds:
+    name: Test and publish isolated Sounds files
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: source
+      - name: Validate Sounds JavaScript and license logic
+        run: |
+          set -euo pipefail
+          for file in source/sounds-*.mjs; do node --check "$file"; done
+          node source/qa/sounds-licenses-test.mjs
+      - name: Install browser test dependencies
+        run: |
+          npm install --no-save --prefix source playwright@1.56.1
+          source/node_modules/.bin/playwright install --with-deps chromium
+      - name: Run isolated Sounds browser acceptance tests
+        run: node source/qa/sounds-browser-test.mjs
+      - name: Checkout production branch without disturbing compiled engine
+        uses: actions/checkout@v4
+        with:
+          ref: pages-build
+          path: site
+          persist-credentials: true
+      - name: Overlay Sounds files only
+        run: |
+          set -euo pipefail
+          test -f site/runtime/sclang/sclang.js
+          test -f site/runtime/scsynth/scsynth.js
+          cp source/sounds.html site/sounds.html
+          for file in source/sounds-*.mjs; do cp "$file" site/; done
+          cd site
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- sounds.html sounds-*.mjs
+          if git diff --cached --quiet; then
+            echo "Sounds workspace already published"
+          else
+            git diff --cached --name-only | grep -Ev '^sounds(-[^/]+\\.mjs|\\.html)$' && { echo "Unexpected staged path"; exit 1; } || true
+            git commit -m "Publish tested standalone SuperCollision Sounds"
+            git push origin HEAD:pages-build
+          fi
