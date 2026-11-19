@@ -93,7 +93,18 @@ try {
             selectedColor:style('#inspector-code').color,
             selectedBg:style('#inspector-code').backgroundColor,
             emblemElements:document.querySelectorAll('.art-'+document.body.dataset.theme+' path, .art-'+document.body.dataset.theme+' rect, .art-'+document.body.dataset.theme+' circle').length,
-            choice:document.querySelector('#theme-choice option:checked')?.textContent
+            choice:document.querySelector('#theme-choice option:checked')?.textContent,
+            headerFg:style('header').color,
+            headerBg:style('header').backgroundColor,
+            projectFg:style('.projectbar .composition-picker>button').color,
+            projectBg:style('.projectbar .composition-picker>button').backgroundColor,
+            runFg:style('#evaluate').color,
+            runBg:style('#evaluate').backgroundColor,
+            stopFg:style('#panic').color,
+            stopBg:style('#panic').backgroundColor,
+            fileFg:style('.projectbar .menu>summary').color,
+            fileBg:style('.projectbar .menu>summary').backgroundColor,
+            codeBackplate:style('.code-stack').backgroundImage
           };
         });
         const rgb=value=>value.match(/[\d.]+/g)?.slice(0,3).map(Number)||[0,0,0];
@@ -105,6 +116,21 @@ try {
           theme+' visible editor syntax lacks contrast: '+JSON.stringify(paint));
         assert(contrast(paint.selectedColor,paint.selectedBg)>=4.5,
           theme+' inspector selected state is illegible: '+JSON.stringify(paint));
+        // A skin is not complete if its header, file chooser or main actions
+        // carry unreadable text. Test actual computed paints, not just tokens.
+        for(const [surface,foreground,background] of [
+          ['identity',paint.headerFg,paint.headerBg],
+          ['composition',paint.projectFg,paint.projectBg],
+          ['run',paint.runFg,paint.runBg],
+          ['stop',paint.stopFg,paint.stopBg],
+          ['file',paint.fileFg,paint.fileBg]
+        ]){
+          assert(contrast(foreground,background)>=4.5,
+            theme+' '+surface+' contrast below 4.5: '+JSON.stringify({foreground,background,contrast:contrast(foreground,background)}));
+        }
+        assert(paint.codeBackplate==='none',
+          theme+' applied decoration beneath editable code: '+paint.codeBackplate);
+
         assert(paint.editor!==paint.project && paint.header!==paint.project,
           theme+' lost its intended material hierarchy');
         assert(paint.emblemElements>=6,theme+' original header emblem missing');
