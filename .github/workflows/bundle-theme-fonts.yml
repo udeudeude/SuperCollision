@@ -18,12 +18,13 @@ jobs:
           python3 -m pip install --quiet fonttools brotli
           python3 - <<'PY'
           import pathlib, re, urllib.request
-          families=[('Oxanium','oxanium',800),('Josefin Sans','josefin-sans',700),('Libre Franklin','libre-franklin',800)]
+          families=[('Oxanium','oxanium',800),('Josefin Sans','josefin-sans',700),('Libre Franklin','libre-franklin',800),('Megrim','megrim',400),('Plaster','plaster',400)]
           dest=pathlib.Path('assets/fonts')
           dest.mkdir(parents=True,exist_ok=True)
           for family,slug,max_weight in families:
               query=family.replace(' ','+')
-              url=f'https://fonts.googleapis.com/css2?family={query}:wght@400..{max_weight}&display=swap'
+              weight_spec='400' if max_weight==400 else f'400..{max_weight}'
+              url=f'https://fonts.googleapis.com/css2?family={query}:wght@{weight_spec}&display=swap'
               req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 Chrome/120.0.0.0 Safari/537.36'})
               css=urllib.request.urlopen(req,timeout=25).read().decode()
               blocks=re.findall(r'@font-face\s*\{([^}]+)\}',css,re.S)
@@ -63,6 +64,23 @@ jobs:
                   break
               if filename.endswith('.woff2') and not data.startswith(b'wOF2'):
                   raise RuntimeError('Invalid Newell font')
+              (dest/target).write_bytes(data)
+          PY
+      - name: Bundle licensed Outpost Mono control face
+        run: |
+          python3 - <<'PY'
+          import pathlib, urllib.request
+          dest=pathlib.Path('assets/fonts')
+          base='https://raw.githubusercontent.com/ursooperduper/outpost-mono/main/'
+          for source,target in [
+              ('fonts/webfonts/OutpostMono-Regular.woff2','outpost-mono.woff2'),
+              ('OFL.txt','outpost-mono-OFL.txt')
+          ]:
+              data=urllib.request.urlopen(base+source,timeout=30).read()
+              if target.endswith('.woff2') and not data.startswith(b'wOF2'):
+                  raise RuntimeError('Outpost Mono font signature invalid')
+              if target.endswith('.txt') and b'SIL OPEN FONT LICENSE' not in data.upper():
+                  raise RuntimeError('Outpost Mono license invalid')
               (dest/target).write_bytes(data)
           PY
       - name: Commit offline fonts
