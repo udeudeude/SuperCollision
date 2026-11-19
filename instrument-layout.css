@@ -777,3 +777,20 @@ body .console-bar #engine-status,body[data-theme] .console-bar #engine-status{
  white-space:nowrap!important;text-overflow:clip!important;
  touch-action:pan-x!important;overscroll-behavior-x:contain;
 }
+
+/* Shared geometry for the four historically grounded interface languages.
+   This governs interactive chrome, including controls outside Mix. */
+body[data-theme=moog]{--control-corner:2px}
+body[data-theme=bauhaus]{--control-corner:0px}
+body[data-theme=blackmountain]{--control-corner:0px}
+body[data-theme=makenoise]{--control-corner:0px}
+body[data-theme=moog] button,body[data-theme=bauhaus] button,
+body[data-theme=blackmountain] button,body[data-theme=makenoise] button,
+body[data-theme=moog] select,body[data-theme=bauhaus] select,
+body[data-theme=blackmountain] select,body[data-theme=makenoise] select,
+body[data-theme=moog] .project-list,body[data-theme=bauhaus] .project-list,
+body[data-theme=blackmountain] .project-list,body[data-theme=makenoise] .project-list,
+body[data-theme=moog] .menu-items,body[data-theme=bauhaus] .menu-items,
+body[data-theme=blackmountain] .menu-items,body[data-theme=makenoise] .menu-items{
+ border-radius:var(--control-corner)!important;
+}
