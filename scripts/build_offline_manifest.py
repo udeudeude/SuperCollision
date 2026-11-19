@@ -43,7 +43,8 @@ def main() -> None:
         f for f in site.iterdir()
         if f.is_file() and f.suffix in ALLOWED and f.name != "lab-offline-assets.json"
     ]
-    files = sorted(set(frontend + [site / p for p in RUNTIME]), key=lambda p: p.as_posix())
+    fonts = list((site / "assets/fonts").glob("*.woff2")) if (site / "assets/fonts").is_dir() else []
+    files = sorted(set(frontend + fonts + [site / p for p in RUNTIME]), key=lambda p: p.as_posix())
     if not files or len(files) > 128:
         raise SystemExit("Offline pack asset count is invalid")
     for item in files:
