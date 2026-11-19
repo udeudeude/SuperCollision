@@ -788,3 +788,57 @@ body .performance-panel .perform-detail[hidden],
 body[data-theme] .performance-panel .perform-detail[hidden]{
  display:none!important;visibility:hidden!important;pointer-events:none!important;
 }
+
+/* Inspector: a single disciplined control grid, no oversized buttons. */
+body .performance-panel .perform-detail,
+body[data-theme] .performance-panel .perform-detail{
+  grid-template-columns:minmax(0,1fr) auto auto auto auto!important;
+  grid-template-rows:26px 27px!important;
+  column-gap:5px!important;row-gap:3px!important;
+  align-items:center!important;padding:4px 7px!important;
+}
+body .performance-panel .perform-detail .perform-dialog-actions{display:contents!important}
+body .performance-panel .perform-detail h2{grid-column:1!important;grid-row:1!important;margin:0!important}
+body .performance-panel .perform-detail #perform-dialog-mute{grid-column:2!important;grid-row:1!important}
+body .performance-panel .perform-detail #perform-dialog-solo{grid-column:3!important;grid-row:1!important}
+body .performance-panel .perform-detail #perform-dialog-parameters-toggle:not([hidden]){grid-column:4!important;grid-row:1!important}
+body .performance-panel .perform-detail #perform-dialog-close{grid-column:5!important;grid-row:1!important}
+body .performance-panel .perform-detail .perform-dialog-gain-line{
+  grid-column:1/3!important;grid-row:2!important;
+  display:flex!important;align-items:center!important;min-width:0!important;
+  gap:6px!important;margin:0!important;
+}
+body .performance-panel .perform-detail .perform-dialog-gain-line label{
+  flex:0 0 auto!important;margin:0!important;font-size:11px!important;
+}
+body .performance-panel .perform-detail #perform-dialog-gain{
+  flex:1 1 auto!important;min-width:65px!important;
+  width:100%!important;height:27px!important;min-height:27px!important;margin:0!important;
+}
+body .performance-panel .perform-detail .perform-dialog-step-actions{
+  grid-column:3/5!important;grid-row:2!important;
+  display:flex!important;align-items:center!important;gap:4px!important;
+  margin:0!important;min-width:0!important;
+}
+body .performance-panel .perform-detail #perform-dialog-neutral{
+  grid-column:5!important;grid-row:2!important;
+  display:block!important;width:auto!important;min-width:48px!important;
+  margin:0!important;
+}
+body .performance-panel .perform-detail button,
+body[data-theme] .performance-panel .perform-detail button{
+  min-height:27px!important;height:27px!important;
+  padding:3px 7px!important;border-radius:4px!important;
+  font:700 10px/1 ui-monospace,monospace!important;
+  white-space:nowrap!important;
+}
+body .performance-panel .perform-detail .perform-dialog-step-actions button{
+  min-width:40px!important;flex:0 0 auto!important;
+}
+body .performance-panel .perform-detail.perform-sound-mode .perform-dialog-step-actions,
+body .performance-panel .perform-detail.perform-sound-mode #perform-dialog-neutral{display:none!important}
+@media(max-width:420px){
+ body .performance-panel .perform-detail{column-gap:3px!important;padding:4px!important}
+ body .performance-panel .perform-detail button{padding:3px 4px!important}
+ body .performance-panel .perform-detail .perform-dialog-step-actions button{min-width:34px!important}
+}
