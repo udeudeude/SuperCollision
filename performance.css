@@ -888,3 +888,51 @@ body .performance-panel .perform-detail #perform-dialog-solo[aria-pressed=true]{
 body .performance-panel .perform-detail #perform-dialog-neutral{
   border-color:color-mix(in srgb,var(--voice-color,var(--perform-border)) 55%,var(--perform-border))!important;
 }
+
+/* Unified compact inspector: one rhythm, equal-height actions, no oversized
+   reset/return buttons or uneven button padding. */
+body .performance-panel .perform-detail,
+body[data-theme] .performance-panel .perform-detail{
+ grid-template-columns:minmax(0,1fr) 42px 42px 50px 84px!important;
+ grid-template-rows:27px 27px!important;
+ gap:3px 5px!important;padding:3px 7px!important;
+}
+body .performance-panel .perform-detail .perform-dialog-gain-line{
+ grid-column:1/3!important;grid-row:2!important;
+}
+body .performance-panel .perform-detail .perform-dialog-step-actions{
+ grid-column:3/5!important;grid-row:2!important;
+ justify-content:space-between!important;gap:4px!important;
+}
+body .performance-panel .perform-detail .perform-dialog-step-actions button{
+ flex:1 1 0!important;min-width:0!important;
+}
+body .performance-panel .perform-detail #perform-dialog-neutral{
+ grid-column:5!important;grid-row:2!important;min-width:0!important;
+}
+body .performance-panel .perform-detail #perform-dialog-close{
+ grid-column:5!important;grid-row:1!important;
+}
+body .performance-panel .perform-detail button,
+body[data-theme] .performance-panel .perform-detail button{
+ box-sizing:border-box!important;width:100%!important;min-width:0!important;
+ height:27px!important;min-height:27px!important;max-height:27px!important;
+ padding:2px 3px!important;margin:0!important;
+ border-radius:var(--mix-control-radius,2px)!important;
+ font:700 9px/1 ui-monospace,monospace!important;
+ letter-spacing:0!important;
+}
+body .performance-panel .perform-detail #perform-dialog-title{
+ font-size:12px!important;line-height:24px!important;
+}
+@media(max-width:420px){
+ body .performance-panel .perform-detail,
+ body[data-theme] .performance-panel .perform-detail{
+  grid-template-columns:minmax(0,1fr) 35px 35px 42px 76px!important;
+  gap:3px!important;padding:3px 4px!important;
+ }
+ body .performance-panel .perform-detail button,
+ body[data-theme] .performance-panel .perform-detail button{
+  font-size:8px!important;
+ }
+}
