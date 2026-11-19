@@ -101,7 +101,7 @@ jobs:
           assert "/index.html" in paths and "/lab-sw.js" in paths
           assert "/runtime/sclang/sclang.wasm" in paths
           assert "/runtime/scsynth/scsynth.wasm" in paths
-          for font in ("oxanium", "josefin-sans", "libre-franklin"):
+          for font in ("oxanium", "josefin-sans", "libre-franklin", "megrim", "plaster", "outpost-mono"):
               asset = f"/assets/fonts/{font}.woff2"
               assert asset in paths, f"Missing offline display font: {asset}"
               assert (site / asset.lstrip("/")).read_bytes()[:4] == b"wOF2"
