@@ -1,6 +1,6 @@
 # SuperCollision Sounds: canonical development handoff
 
-Updated 2026-11-19, local evening. **Scope is strictly Sounds-only.** Never edit `index.html`, main navigation, Live, Mix, shared offline infrastructure, or any other shared functionality without explicit user approval. The active app's Sounds interface may be embedded in `index.html`; treat it as frozen. Work on isolated `sounds.html`, `sounds-*.mjs`, `qa/sounds-*.mjs`, and the Sounds-only publisher. No competing audio-processing engine: all future editing, playback instruments, effects, buffers, loops and synthesis must run through SuperCollider, never an independent browser audio processor.
+Updated 2026-11-19, late evening. **Scope is strictly Sounds-only.** Never edit `index.html`, main navigation, Live, Mix, shared offline infrastructure, or any other shared functionality without explicit user approval. The active app's Sounds interface may be embedded in `index.html`; treat it as frozen. Work on isolated `sounds.html`, `sounds-*.mjs`, `qa/sounds-*.mjs`, and the Sounds-only publisher. No competing audio-processing engine: all future editing, playback instruments, effects, buffers, loops and synthesis must run through SuperCollider, never an independent browser audio processor.
 
 ## Product contract
 
@@ -32,8 +32,9 @@ All diff paths from the previous checkpoint `0c159523edeb84f9ff6062fc78bc3b3ff06
 
 ## Verification and known issues
 
-- GitHub Node syntax and license tests passed in the Sounds workflow run `44640397628`; browser installation and browser checks were in progress when this handoff was authored. Reinspect workflow, job steps, logs and `pages-build` before describing deployment as verified. Link: https://github.com/udeudeude/SuperCollision/actions/runs/44640397628
-- Before this iteration, `pages-build` did **not** contain `sounds.html` or the Sounds scripts even though prior replies linked to it. The dedicated workflow is intended to correct this; confirm actual publication.
+- **Verified** dedicated Sounds workflow run [44641246513](https://github.com/udeudeude/SuperCollision/actions/runs/44641246513): Node syntax, combined-license tests and Playwright/Google Chrome browser acceptance tests **all passed**. Sounds-only overlay to `pages-build` succeeded. The compiled SuperCollider engine and main application were preserved.
+- **Verified** `pages-build` blobs match `main` for `sounds.html`, `sounds-discover.mjs`, `sounds-generate.mjs`, `sounds-tools.mjs` and `index.html` (unchanged across branches). Standalone Sounds build is `2026.11.19.10`. Production deployment workflow [44641247027](https://github.com/udeudeude/SuperCollision/actions/runs/44641247027) completed successfully, though the externally hosted Cloudflare URL could not be fetched by the available browser, and the real iPhone remains untested.
+- An early browser run found a timing-related assertion; it was corrected. Another run identified and fixed a shell path-validation bug in the isolated publishing workflow. The full workflow then passed. Its concurrency group is separate from the main publisher to prevent the existing main workflow from cancelling Sounds-specific work.
 - Openverse/Freesound preview audio may be blocked by production's `Cross-Origin-Embedder-Policy: require-corp`. Add `crossOrigin='anonymous'` to remote audio elements before setting src, then test actual providers. Not all sources support browser-origin audio downloads; retain explicit manual import fallback.
 - Freesound API's `url` property may point to an API endpoint rather than the public sound page. Prefer its canonical public page URL based on username and sound ID.
 - Search results may arrive after source-selection changes; cancel the pending controller on tab/source changes.
