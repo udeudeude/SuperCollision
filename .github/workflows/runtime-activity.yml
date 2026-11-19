@@ -24,6 +24,12 @@ on:
       - 'sound-designer.css'
       - 'qa/runtime-activity.mjs'
       - '.github/workflows/runtime-activity.yml'
+# Cancel superseded automatic checks on newer commits.
+# Manual diagnostics use a separate group and are never displaced by a push.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 jobs:
