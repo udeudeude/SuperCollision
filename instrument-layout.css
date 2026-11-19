@@ -2036,3 +2036,18 @@ body[data-theme=blackmountain] .live-panel-label{
 @media(prefers-reduced-motion:reduce){
  body[data-theme=makenoise] header h1{transition:none!important}
 }
+
+/* Experimental display face; retained Oxanium fallback for offline installs
+   where the optional font is not bundled. */
+@font-face{
+ font-family:"SC Newell";
+ src:url("./assets/fonts/newell.woff2") format("woff2");
+ font-style:normal;font-weight:400;font-display:swap;
+}
+body[data-theme=makenoise] header h1,
+body[data-theme=makenoise] .live-panel-label,
+body[data-theme=makenoise] .perform-header strong{
+ font-family:"SC Newell","SC Oxanium",sans-serif!important;
+ font-style:normal!important;letter-spacing:.065em!important;
+ text-shadow:none!important;transform:none!important;
+}
