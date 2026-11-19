@@ -108,6 +108,8 @@ try {
         assert(paint.editor!==paint.project && paint.header!==paint.project,
           theme+' lost its intended material hierarchy');
         assert(paint.emblemElements>=6,theme+' original header emblem missing');
+        const chooserWidth=await page.locator('#theme-choice').evaluate(el=>el.getBoundingClientRect().width);
+        assert(chooserWidth>=94,theme+' chooser truncates its short name: '+chooserWidth);
         assert(paint.choice===({score:'Open Form',patch:'Signal Atlas',terminal:'Control Room'})[theme],
           theme+' old design title still shown');
       }
