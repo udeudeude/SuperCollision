@@ -14,7 +14,7 @@ const server=createServer(async(req,res)=>{
 });
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const base='http://127.0.0.1:'+server.address().port;
-const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+const browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.SOUNDS_BROWSER_CHANNEL?{channel:process.env.SOUNDS_BROWSER_CHANNEL}:{})});
 const context=await browser.newContext({viewport:{width:390,height:844}});
 const page=await context.newPage();
 const errors=[];
@@ -52,6 +52,7 @@ try{
  assert.equal(await page.locator('.managed-item').count(),1,'code item should not crash old audio renderer');
  await page.getByRole('button',{name:'★ Favorite'}).count().then(n=>assert.equal(n,0));
  await page.getByRole('button',{name:'☆ Favorite'}).click();
+ await page.getByRole('button',{name:'★ Favorite'}).waitFor();
  await page.locator('#sounds-filter').selectOption('favorite');
  assert.equal(await page.locator('.managed-item').count(),1);
  await page.locator('#sounds-filter').selectOption('all');
@@ -84,6 +85,7 @@ try{
  assert.equal(await page.locator('.managed-item').count(),3);
  assert.equal(await page.getByText('Creative Commons BY',{exact:false}).count()>0,true,'license must be retained');
  await page.reload();
+ await page.locator('.managed-item').first().waitFor();
  assert.equal(await page.locator('.managed-item').count(),3,'IndexedDB should persist across reload');
  assert.equal(queryCount>=2,true);
  assert.deepEqual(errors,[],'No unhandled page errors allowed');
