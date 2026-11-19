@@ -1872,3 +1872,57 @@ body[data-theme=blackmountain] :is(header h1,.perform-header strong,.live-panel-
  font-family:var(--world-display)!important;font-weight:600!important;
  letter-spacing:.075em!important;
 }
+
+/* Locally bundled SIL Open Font License display faces. No third-party
+   requests, and no font loading required to start the synthesizer. */
+@font-face{font-family:"SC Oxanium";src:url("./assets/fonts/oxanium.woff2") format("woff2");font-style:normal;font-weight:400 800;font-display:swap}
+@font-face{font-family:"SC Josefin";src:url("./assets/fonts/josefin-sans.woff2") format("woff2");font-style:normal;font-weight:400 800;font-display:swap}
+@font-face{font-family:"SC Franklin";src:url("./assets/fonts/libre-franklin.woff2") format("woff2");font-style:normal;font-weight:400 800;font-display:swap}
+body[data-theme=makenoise]{--world-display:"SC Oxanium","Avenir Next Condensed",sans-serif;--world-label:"SC Oxanium","Arial Narrow",sans-serif}
+body[data-theme=bauhaus]{--world-display:"SC Josefin",Futura,sans-serif;--world-label:"SC Josefin","Avenir Next",sans-serif}
+body[data-theme=blackmountain]{--world-display:"SC Franklin","Gill Sans",sans-serif;--world-label:"SC Franklin","Avenir Next",sans-serif}
+/* Display typography must be distinguishable from the code face. */
+body[data-theme=makenoise] :is(header h1,.live-panel-label,.perform-header strong,.learning-header strong,.sound-head strong){
+ font-family:var(--world-display)!important;font-weight:800!important;
+ text-transform:uppercase!important;letter-spacing:.11em!important;
+}
+body[data-theme=bauhaus] :is(header h1,.live-panel-label,.perform-header strong,.learning-header strong,.sound-head strong){
+ font-family:var(--world-display)!important;font-weight:700!important;
+ letter-spacing:.035em!important;
+}
+body[data-theme=blackmountain] :is(header h1,.live-panel-label,.perform-header strong,.learning-header strong,.sound-head strong){
+ font-family:var(--world-display)!important;font-weight:500!important;
+ letter-spacing:.075em!important;
+}
+/* More than color: different section geometry and information rhythm. */
+body[data-theme=makenoise] .projectbar{
+ border-top:2px solid #eeeae0!important;
+ border-bottom:1px solid #b9bcb7!important;
+}
+body[data-theme=makenoise] .projectbar .menu>summary{
+ border-left:3px double #eeeae0!important;
+}
+body[data-theme=makenoise] .console-bar{
+ border-top:2px solid #eeeae0!important;
+}
+body[data-theme=makenoise] .toolbar #evaluate{
+ clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,0 100%)!important;
+}
+body[data-theme=bauhaus] .projectbar .composition-picker>button{
+ border-left:6px solid #c34236!important;
+}
+body[data-theme=bauhaus] .toolbar #evaluate{
+ clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%)!important;
+}
+body[data-theme=bauhaus] .console-shell{
+ border-left:5px solid #d4a536!important;
+}
+body[data-theme=blackmountain] .projectbar .composition-picker>button{
+ border-left:4px solid #a4543d!important;
+}
+body[data-theme=blackmountain] .console-shell{
+ border-left:2px solid #817761!important;
+}
+body[data-theme=blackmountain] .toolbar button{
+ border-radius:0!important;box-shadow:none!important;
+}
