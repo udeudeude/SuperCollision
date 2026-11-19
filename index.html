@@ -947,11 +947,11 @@ document.addEventListener('click', function(e) {
  link.setAttribute('aria-label','Open sound library and microphone recorder');
  link.style.cssText='display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 12px;border:1px solid #77796f;color:inherit;text-decoration:none;font:700 11px ui-monospace,monospace;letter-spacing:.06em;margin-left:8px';
  const header=document.querySelector('header');if(header)header.append(link);
- const version=document.createElement('span');version.id='development-version';version.textContent='BUILD 2026.11.19.4';version.style.cssText='position:fixed;right:8px;top:calc(env(safe-area-inset-top) + 4px);z-index:11000;background:#d8ae5b;color:#171917;padding:3px 6px;font:700 10px ui-monospace,monospace;letter-spacing:.02em;pointer-events:none';document.body.append(version);
+ const version=document.createElement('span');version.id='development-version';version.textContent='BUILD 2026.11.19.5';version.style.cssText='position:fixed;right:8px;top:calc(env(safe-area-inset-top) + 4px);z-index:11000;background:#d8ae5b;color:#171917;padding:3px 6px;font:700 10px ui-monospace,monospace;letter-spacing:.02em;pointer-events:none';document.body.append(version);
  const panel=document.createElement('section');panel.id='sounds-overlay';panel.hidden=true;
  panel.setAttribute('aria-label','Sounds library');
- panel.style.cssText='position:fixed;inset:0;z-index:10000;overflow:auto;background:#161817;color:#e6e4db;padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom);font:15px system-ui';
- panel.innerHTML='<div style="max-width:850px;margin:auto"><div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #68685c"><button type="button" id="sounds-back">← CODE</button><strong>SOUNDS / LIBRARY</strong></div><section style="padding:14px 0"><h2>Record a sound</h2><p>Uses the microphone route available to this browser. Recordings stay on this device.</p><label for="name">Name</label><input id="name" type="text" maxlength="120" placeholder="New recording" style="width:100%"><div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button type="button" id="start">● Record</button><button type="button" id="stop" disabled>■ Stop & save</button></div><progress id="level" max="1" value="0" style="width:100%"></progress><p id="status" role="status" aria-live="polite">Ready to record.</p><p>Keep this page open while recording. Export important sounds to Files as backup.</p></section><section style="padding:14px 0;border-top:1px solid #68685c"><h2>Import audio</h2><input id="import" type="file" accept="audio/*" multiple></section><section style="padding:14px 0;border-top:1px solid #68685c"><h2>Your sounds</h2><p>Stored locally in this browser or Home Screen installation. Clearing website data can erase recordings.</p><div id="library"></div></section></div>';
+ panel.className='sounds-workspace';
+ panel.innerHTML=`<div class="sounds-shell"><header class="sounds-header"><button type="button" id="sounds-back" class="secondary">← CODE</button><strong>SOUNDS <span class="sounds-divider">/</span> LIBRARY</strong><span class="sounds-build">2026.11.19.5</span></header><section class="sounds-section"><div class="sounds-eyebrow">01 / CAPTURE</div><h2>Recorder</h2><label for="name">SOUND NAME</label><input id="name" type="text" maxlength="120" placeholder="New recording"><div class="sounds-capture"><button type="button" id="start" class="sounds-hold" aria-label="Hold to record, release to save"><span class="sounds-dot"></span><span id="hold-label">HOLD TO RECORD</span></button><p class="sounds-hint">Press and hold to record. Release to stop and save. Keep holding through the microphone permission prompt.</p><progress id="level" max="1" value="0"></progress><p id="status" role="status" aria-live="polite">Ready to record.</p></div></section><section class="sounds-section"><div class="sounds-eyebrow">02 / SOURCE</div><h2>Import audio</h2><input id="import" type="file" accept="audio/*" multiple></section><section class="sounds-section"><div class="sounds-eyebrow">03 / COLLECTION</div><h2>Your sounds</h2><p class="sounds-hint">Saved on this device. Export important recordings to Files as backup.</p><div id="library"></div></section></div>`;
  document.body.append(panel);
  let loaded=false;
  link.addEventListener('click',async()=>{
@@ -959,11 +959,41 @@ document.addEventListener('click', function(e) {
    if(!loaded){loaded=true;try{window.initializeSoundsLibrary()}catch(error){loaded=false;panel.querySelector('#status').textContent='Sound library failed to load: '+error.message}}
  });
  panel.querySelector('#sounds-back').addEventListener('click',()=>{
-   if(!panel.querySelector('#stop').disabled){panel.querySelector('#status').textContent='Stop and save the recording before returning to Code.';return;}
+   if(panel.classList.contains('is-recording')){panel.querySelector('#status').textContent='Release the record button before returning to Code.';return;}
    panel.hidden=true;
  });
 })();
-</script><script>
+</script><style id="sounds-workspace-style">
+#sounds-overlay[hidden]{display:none!important}
+#sounds-overlay{--sound-accent:var(--accent,#d8ae5b);position:fixed;inset:0;z-index:10000;overflow-y:auto;overscroll-behavior:contain;background:var(--bg,#161817);color:var(--fg,#e6e4db);padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);font:inherit}
+#sounds-overlay .sounds-shell{max-width:1000px;margin:auto}
+#sounds-overlay .sounds-header{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:2px solid currentColor;position:relative;min-height:56px}
+#sounds-overlay .sounds-header strong{font:800 14px/1.2 inherit;letter-spacing:.06em}
+#sounds-overlay .sounds-divider{opacity:.55}
+#sounds-overlay .sounds-build{margin-left:auto;font:10px ui-monospace,monospace;opacity:.75}
+#sounds-overlay .sounds-section{padding:18px 0;border-bottom:1px solid #7778}
+#sounds-overlay .sounds-eyebrow{font:700 10px ui-monospace,monospace;letter-spacing:.14em;opacity:.7}
+#sounds-overlay h2{font-size:1.1rem;text-transform:uppercase;letter-spacing:.045em;margin:8px 0 14px}
+#sounds-overlay label{font:700 11px ui-monospace,monospace;letter-spacing:.08em;margin:8px 0;display:block}
+#sounds-overlay input[type=text]{width:100%;font-size:16px}
+#sounds-overlay .sounds-capture{margin-top:14px}
+#sounds-overlay .sounds-hold{width:100%;min-height:80px;display:flex;align-items:center;justify-content:center;gap:13px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;font-size:15px;letter-spacing:.07em}
+#sounds-overlay .sounds-dot{width:17px;height:17px;border-radius:50%;background:#9c312b;border:2px solid currentColor}
+#sounds-overlay .sounds-hint{font-size:12px;line-height:1.5;opacity:.78;margin:10px 0}
+#sounds-overlay progress{display:block;width:100%;height:9px;margin:14px 0;accent-color:var(--sound-accent)}
+#sounds-overlay #status{font:12px/1.5 ui-monospace,monospace;min-height:20px}
+#sounds-overlay .item{display:grid;gap:8px;padding:13px 0;border-top:1px solid #7777;min-width:0}
+#sounds-overlay .item strong{display:block;overflow-wrap:anywhere}
+#sounds-overlay .item small{display:block;overflow-wrap:anywhere;opacity:.7}
+#sounds-overlay .item audio{width:100%;display:block;min-width:0}
+#sounds-overlay .item .actions{display:flex;gap:8px;flex-wrap:wrap}
+#sounds-overlay.is-recording{box-shadow:inset 0 0 0 9px #ec392d;animation:sounds-record-glow 1.1s ease-in-out infinite alternate}
+#sounds-overlay.is-recording .sounds-hold{background:#c92e26;color:white}
+#sounds-overlay.is-recording .sounds-dot{background:white}
+@keyframes sounds-record-glow{from{box-shadow:inset 0 0 0 7px #d82b23}to{box-shadow:inset 0 0 0 12px #ff6b45}}
+@media(prefers-reduced-motion:reduce){#sounds-overlay.is-recording{animation:none}}
+</style>
+<script>
 window.initializeSoundsLibrary=function(){
 const $=id=>document.querySelector('#sounds-overlay [id="'+id+'"]');
 const status=$('status'),start=$('start'),stop=$('stop'),level=$('level'),list=$('library');
@@ -975,11 +1005,49 @@ function put(record){return transaction('readwrite',s=>s.put(record))}
 function remove(id){return transaction('readwrite',s=>s.delete(id))}
 function say(s){status.textContent=s}
 function nameFor(defaultName){return $('name').value.trim()||defaultName}
-let recorder=null,stream=null,chunks=[],meterContext=null,meterTimer=null,requestId=0,pending=false;
-function release(){if(meterTimer){clearInterval(meterTimer);meterTimer=null}level.value=0;if(meterContext){meterContext.close().catch(()=>{});meterContext=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}start.disabled=false;stop.disabled=true;stop.textContent='■ Stop & save';pending=false;recorder=null}
+let recorder=null,stream=null,chunks=[],meterContext=null,meterTimer=null,requestId=0,pending=false,held=false,startedAt=0,clock=null;
+const overlay=document.querySelector('#sounds-overlay'),holdLabel=$('hold-label');
+function indicate(active){overlay.classList.toggle('is-recording',active);holdLabel.textContent=active?'RECORDING · RELEASE TO SAVE':'HOLD TO RECORD'}
+function release(){if(clock){clearInterval(clock);clock=null}if(meterTimer){clearInterval(meterTimer);meterTimer=null}level.value=0;if(meterContext){meterContext.close().catch(()=>{});meterContext=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}pending=false;recorder=null;indicate(false)}
 async function saveBlob(blob,name,source){if(!blob.size)throw Error('The recording was empty');const id=crypto.randomUUID();await put({id,name,source,created:Date.now(),mime:blob.type||'audio/webm',blob});await render();return id}
-start.onclick=async()=>{if(recorder||pending)return;const token=++requestId;pending=true;start.disabled=true;stop.disabled=false;stop.textContent='Cancel';say('Requesting microphone access…');try{if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined')throw Error('Microphone recording is unavailable in this browser');const incoming=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});if(token!==requestId){incoming.getTracks().forEach(t=>t.stop());return}stream=incoming;pending=false;say('Microphone connected. Starting recorder…');const options=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t));recorder=new MediaRecorder(stream,options?{mimeType:options}:undefined);chunks=[];recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};recorder.onerror=e=>{say('Recording error: '+(e.error?.message||'unknown'));release()};recorder.onstop=async()=>{const blob=new Blob(chunks,{type:recorder?.mimeType||chunks[0]?.type||'audio/mp4'});try{await saveBlob(blob,nameFor('Recording '+new Date().toLocaleString()),'recorded');say('Saved recording locally ('+(blob.size/1024).toFixed(0)+' KB).')}catch(e){say('Could not save: '+e.message+'; do not close this page before exporting.');const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='unsaved-recording.'+(blob.type.includes('mp4')?'m4a':'webm');a.textContent='Export unsaved recording';status.append(' ',a)}finally{release()}};recorder.start(1000);stop.disabled=false;stop.textContent='■ Stop & save';say('Recording… tap Stop & save when finished.');try{meterContext=new AudioContext();const src=meterContext.createMediaStreamSource(stream),an=meterContext.createAnalyser();an.fftSize=1024;src.connect(an);const data=new Uint8Array(an.fftSize);meterTimer=setInterval(()=>{an.getByteTimeDomainData(data);let sum=0;for(const n of data)sum+=((n-128)/128)**2;level.value=Math.min(1,Math.sqrt(sum/data.length)*4)},120)}catch{}}catch(e){say('Cannot start recording: '+e.message);release()}};
-stop.onclick=()=>{if(pending){requestId++;say('Microphone request cancelled.');release();return}if(recorder?.state==='recording'){stop.disabled=true;say('Finishing recording…');recorder.stop()}};
+async function beginRecording(){
+ if(pending||recorder)return;
+ held=true;const token=++requestId;pending=true;indicate(true);say('Requesting microphone access…');
+ try{
+  if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined')throw Error('Microphone recording is unavailable in this browser');
+  const incoming=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  if(token!==requestId||!held){incoming.getTracks().forEach(t=>t.stop());return}
+  stream=incoming;pending=false;
+  const options=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t));
+  const active=new MediaRecorder(stream,options?{mimeType:options}:undefined);recorder=active;chunks=[];
+  active.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+  active.onerror=e=>{say('Recording error: '+(e.error?.message||'unknown'));release()};
+  active.onstop=async()=>{
+   const blob=new Blob(chunks,{type:active.mimeType||chunks[0]?.type||'audio/mp4'});
+   try{await saveBlob(blob,nameFor('Recording '+new Date().toLocaleString()),'recorded');say('Saved recording locally ('+(blob.size/1024).toFixed(0)+' KB).')}
+   catch(e){say('Save failed: '+e.message);if(blob.size){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='unsaved-recording.'+(blob.type.includes('mp4')?'m4a':'webm');a.textContent='Export unsaved recording';status.append(' ',a)}}
+   finally{release()}
+  };
+  active.start(250);startedAt=Date.now();say('Recording · 0:00');
+  clock=setInterval(()=>{if(active.state==='recording')say('Recording · '+(Math.floor((Date.now()-startedAt)/60000))+':'+String(Math.floor((Date.now()-startedAt)/1000)%60).padStart(2,'0'))},250);
+  try{meterContext=new AudioContext();const src=meterContext.createMediaStreamSource(stream),an=meterContext.createAnalyser();an.fftSize=1024;src.connect(an);const data=new Uint8Array(an.fftSize);meterTimer=setInterval(()=>{an.getByteTimeDomainData(data);let sum=0;for(const n of data)sum+=((n-128)/128)**2;level.value=Math.min(1,Math.sqrt(sum/data.length)*4)},120)}catch{}
+  if(!held)endRecording();
+ }catch(e){if(token===requestId){say('Cannot start recording: '+e.message);release()}}
+}
+function endRecording(){
+ if(!held&&!pending&&!recorder)return;
+ held=false;
+ if(pending){requestId++;say('Released before microphone was ready. Hold again to record.');release();return}
+ if(recorder?.state==='recording'){say('Saving recording…');indicate(false);recorder.stop()}
+}
+start.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();try{start.setPointerCapture(e.pointerId)}catch{}beginRecording()});
+start.addEventListener('pointerup',e=>{e.preventDefault();endRecording()});
+start.addEventListener('pointercancel',endRecording);
+start.addEventListener('lostpointercapture',endRecording);
+start.addEventListener('contextmenu',e=>e.preventDefault());
+start.addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat){e.preventDefault();beginRecording()}});
+start.addEventListener('keyup',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();endRecording()}});
+window.addEventListener('blur',()=>{if(held)endRecording()});
 $('import').onchange=async e=>{const files=[...e.target.files];for(const file of files){try{if(!file.type.startsWith('audio/')&&!/\.(wav|mp3|m4a|aac|aiff|flac|ogg|opus)$/i.test(file.name))throw Error('Not a recognized audio file');await saveBlob(file,file.name,'imported');say('Imported '+file.name)}catch(err){say('Import failed: '+err.message)}}e.target.value=''};
 function button(text,fn){const b=document.createElement('button');b.textContent=text;b.onclick=fn;return b}
 async function render(){let entries;try{entries=(await all()).sort((a,b)=>b.created-a.created)}catch(e){list.textContent='Library unavailable: '+e.message;return}list.replaceChildren();if(!entries.length){list.textContent='No sounds saved yet.';return}for(const entry of entries){const row=document.createElement('article');row.className='item';const title=document.createElement('strong');title.textContent=entry.name;const meta=document.createElement('small');meta.textContent=new Date(entry.created).toLocaleString()+' · '+entry.source+' · '+(entry.blob.size/1024).toFixed(0)+' KB';const audio=document.createElement('audio');audio.controls=true;audio.preload='none';const url=URL.createObjectURL(entry.blob);audio.src=url;const actions=document.createElement('div');actions.className='actions';actions.append(button('Export',()=>{const a=document.createElement('a');a.href=url;a.download=entry.name.replace(/[\\/:*?"<>|]/g,'_')+(entry.name.includes('.')?'':entry.mime.includes('mp4')?'.m4a':entry.mime.includes('wav')?'.wav':'.webm');a.click()}),button('Delete',async()=>{if(!confirm('Delete '+entry.name+' from this device?'))return;try{await remove(entry.id);await render()}catch(e){say('Delete failed: '+e.message)}}));row.append(title,meta,audio,actions);list.append(row);audio.addEventListener('emptied',()=>URL.revokeObjectURL(url),{once:true})}}
