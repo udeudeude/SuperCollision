@@ -1827,3 +1827,48 @@ body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) :is(
  outline:2px solid var(--focus)!important;
  outline-offset:-2px!important;
 }
+
+/* Typography is a design layer, not a recoloring operation.
+   Display/control labels receive distinct faces; source code keeps a stable
+   monospace font for alignment and editing accuracy. */
+body[data-theme=makenoise]{
+ --world-display:"Oxanium","Avenir Next Condensed","Arial Narrow",sans-serif;
+ --world-label:"DIN Condensed","Avenir Next Condensed","Arial Narrow",sans-serif;
+}
+body[data-theme=bauhaus]{
+ --world-display:"Josefin Sans","Futura","Avenir Next",sans-serif;
+ --world-label:"Futura","Avenir Next",sans-serif;
+}
+body[data-theme=blackmountain]{
+ --world-display:"Gill Sans","Avenir Next",sans-serif;
+ --world-label:"Gill Sans","Avenir Next",sans-serif;
+}
+body[data-theme=makenoise] :is(header h1,.projectbar button,.projectbar summary,.console-bar button,.toolbar button,.perform-header strong,.perform-header button,.perform-detail h2,.perform-detail button,.live-panel-label,.learning-header strong,.sound-head strong){
+ font-family:var(--world-label)!important;
+}
+body[data-theme=makenoise] :is(header h1,.perform-header strong,.live-panel-label,.learning-header strong,.sound-head strong){
+ font-family:var(--world-display)!important;
+ font-stretch:condensed!important;font-weight:800!important;
+ letter-spacing:.045em!important;
+}
+body[data-theme=makenoise] header h1{
+ letter-spacing:.09em!important;font-size:18px!important;
+}
+body[data-theme=makenoise] :is(.toolbar button,.console-bar button,.perform-header button,.perform-detail button){
+ text-transform:uppercase!important;letter-spacing:.045em!important;
+}
+body[data-theme=bauhaus] :is(header h1,.projectbar button,.projectbar summary,.console-bar button,.toolbar button,.perform-header strong,.perform-header button,.perform-detail h2,.perform-detail button,.live-panel-label,.learning-header strong,.sound-head strong){
+ font-family:var(--world-label)!important;
+}
+body[data-theme=bauhaus] :is(header h1,.perform-header strong,.live-panel-label,.learning-header strong,.sound-head strong){
+ font-family:var(--world-display)!important;font-weight:700!important;
+ letter-spacing:.035em!important;
+}
+body[data-theme=blackmountain] :is(header h1,.projectbar button,.projectbar summary,.console-bar button,.toolbar button,.perform-header strong,.perform-header button,.perform-detail h2,.perform-detail button,.live-panel-label,.learning-header strong,.sound-head strong){
+ font-family:var(--world-label)!important;
+ font-weight:500!important;letter-spacing:.012em!important;
+}
+body[data-theme=blackmountain] :is(header h1,.perform-header strong,.live-panel-label,.learning-header strong,.sound-head strong){
+ font-family:var(--world-display)!important;font-weight:600!important;
+ letter-spacing:.075em!important;
+}
