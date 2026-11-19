@@ -72,5 +72,6 @@ jobs:
           git add assets/fonts/
           if ! git diff --cached --quiet; then
             git commit -m 'Bundle licensed theme display fonts for offline use'
-            git push
+            git pull --rebase origin main
+            git push origin HEAD:main
           fi
