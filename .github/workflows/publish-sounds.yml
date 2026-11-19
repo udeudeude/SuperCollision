@@ -32,9 +32,11 @@ jobs:
       - name: Install browser test dependencies
         run: |
           npm install --no-save --prefix source playwright@1.56.1
-          source/node_modules/.bin/playwright install --with-deps chromium
+          google-chrome --version
       - name: Run isolated Sounds browser acceptance tests
         run: node source/qa/sounds-browser-test.mjs
+        env:
+          SOUNDS_BROWSER_CHANNEL: chrome
       - name: Checkout production branch without disturbing compiled engine
         uses: actions/checkout@v4
         with:
