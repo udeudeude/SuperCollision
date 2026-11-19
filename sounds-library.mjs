@@ -1,19 +1,134 @@
+/* Sounds-only microphone capture and local import.
+ * All samples are stored unchanged; SuperCollider alone will edit/process them. */
+import {saveSound} from './sounds-store.mjs';
 const $=id=>document.getElementById(id);
-const status=$('status'),start=$('start'),stop=$('stop'),level=$('level'),list=$('library');
-const DB='supercollision-sounds-v1',STORE='sounds';
-function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(STORE))req.result.createObjectStore(STORE,{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
-async function transaction(mode,work){const db=await openDB();try{return await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,mode),store=tx.objectStore(STORE);let result;tx.oncomplete=()=>resolve(result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);work(store,value=>{result=value})})}finally{db.close()}}
-function all(){return transaction('readonly',(s,set)=>{const r=s.getAll();r.onsuccess=()=>set(r.result)})}
-function put(record){return transaction('readwrite',s=>s.put(record))}
-function remove(id){return transaction('readwrite',s=>s.delete(id))}
-function say(s){status.textContent=s}
-function nameFor(defaultName){return $('name').value.trim()||defaultName}
-let recorder=null,stream=null,chunks=[],meterContext=null,meterTimer=null,requestId=0,pending=false;
-function release(){if(meterTimer){clearInterval(meterTimer);meterTimer=null}level.value=0;if(meterContext){meterContext.close().catch(()=>{});meterContext=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}start.disabled=false;stop.disabled=true;stop.textContent='■ Stop & save';pending=false;recorder=null}
-async function saveBlob(blob,name,source){if(!blob.size)throw Error('The recording was empty');const id=crypto.randomUUID();await put({id,name,source,created:Date.now(),mime:blob.type||'audio/webm',blob});await render();return id}
-start.onclick=async()=>{if(recorder||pending)return;const token=++requestId;pending=true;start.disabled=true;stop.disabled=false;stop.textContent='Cancel';say('Requesting microphone access…');try{if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined')throw Error('Microphone recording is unavailable in this browser');const incoming=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});if(token!==requestId){incoming.getTracks().forEach(t=>t.stop());return}stream=incoming;pending=false;say('Microphone connected. Starting recorder…');const options=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t));recorder=new MediaRecorder(stream,options?{mimeType:options}:undefined);chunks=[];recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};recorder.onerror=e=>{say('Recording error: '+(e.error?.message||'unknown'));release()};recorder.onstop=async()=>{const blob=new Blob(chunks,{type:recorder?.mimeType||chunks[0]?.type||'audio/mp4'});try{await saveBlob(blob,nameFor('Recording '+new Date().toLocaleString()),'recorded');say('Saved recording locally ('+(blob.size/1024).toFixed(0)+' KB).')}catch(e){say('Could not save: '+e.message+'; do not close this page before exporting.');const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='unsaved-recording.'+(blob.type.includes('mp4')?'m4a':'webm');a.textContent='Export unsaved recording';status.append(' ',a)}finally{release()}};recorder.start(1000);stop.disabled=false;stop.textContent='■ Stop & save';say('Recording… tap Stop & save when finished.');try{meterContext=new AudioContext();const src=meterContext.createMediaStreamSource(stream),an=meterContext.createAnalyser();an.fftSize=1024;src.connect(an);const data=new Uint8Array(an.fftSize);meterTimer=setInterval(()=>{an.getByteTimeDomainData(data);let sum=0;for(const n of data)sum+=((n-128)/128)**2;level.value=Math.min(1,Math.sqrt(sum/data.length)*4)},120)}catch{}}catch(e){say('Cannot start recording: '+e.message);release()}};
-stop.onclick=()=>{if(pending){requestId++;say('Microphone request cancelled.');release();return}if(recorder?.state==='recording'){stop.disabled=true;say('Finishing recording…');recorder.stop()}};
-$('import').onchange=async e=>{const files=[...e.target.files];for(const file of files){try{if(!file.type.startsWith('audio/')&&!/\.(wav|mp3|m4a|aac|aiff|flac|ogg|opus)$/i.test(file.name))throw Error('Not a recognized audio file');await saveBlob(file,file.name,'imported');say('Imported '+file.name)}catch(err){say('Import failed: '+err.message)}}e.target.value=''};
-function button(text,fn){const b=document.createElement('button');b.textContent=text;b.onclick=fn;return b}
-async function render(){let entries;try{entries=(await all()).sort((a,b)=>b.created-a.created)}catch(e){list.textContent='Library unavailable: '+e.message;return}list.replaceChildren();if(!entries.length){list.textContent='No sounds saved yet.';return}for(const entry of entries){const row=document.createElement('article');row.className='item';const title=document.createElement('strong');title.textContent=entry.name;const meta=document.createElement('small');meta.textContent=new Date(entry.created).toLocaleString()+' · '+entry.source+' · '+(entry.blob.size/1024).toFixed(0)+' KB';const audio=document.createElement('audio');audio.controls=true;audio.preload='none';const url=URL.createObjectURL(entry.blob);audio.src=url;const actions=document.createElement('div');actions.className='actions';actions.append(button('Export',()=>{const a=document.createElement('a');a.href=url;a.download=entry.name.replace(/[\\/:*?"<>|]/g,'_')+(entry.name.includes('.')?'':entry.mime.includes('mp4')?'.m4a':entry.mime.includes('wav')?'.wav':'.webm');a.click()}),button('Delete',async()=>{if(!confirm('Delete '+entry.name+' from this device?'))return;try{await remove(entry.id);await render()}catch(e){say('Delete failed: '+e.message)}}));row.append(title,meta,audio,actions);list.append(row);audio.addEventListener('emptied',()=>URL.revokeObjectURL(url),{once:true})}}
-render();
+const status=$('status'),hold=$('start'),ready=$('mic-ready'),level=$('level'),importer=$('import');
+let stream=null,recorder=null,meter=null,meterTimer=null,audioContext=null;
+let micRequest=0,activePointer=null,keyboardDown=false,stopping=false;
+function say(message){status.textContent=message}
+function recordingStyle(on){document.body.classList.toggle('is-recording',on);hold.setAttribute('aria-pressed',String(on))}
+async function stopMeter(){
+ if(meterTimer!==null){clearInterval(meterTimer);meterTimer=null}
+ level.value=0;meter=null;
+ if(audioContext){const context=audioContext;audioContext=null;await context.close().catch(()=>{})}
+}
+function closeMic(){
+ micRequest++;
+ if(stream){for(const track of stream.getTracks())track.stop();stream=null}
+ stopMeter();
+ ready.checked=false;hold.disabled=true;
+}
+function activateMeter(){
+ try{
+  audioContext=new AudioContext();
+  const analyser=audioContext.createAnalyser();
+  analyser.fftSize=1024;
+  const source=audioContext.createMediaStreamSource(stream);
+  source.connect(analyser);
+  const data=new Uint8Array(analyser.fftSize);
+  meter=analyser;
+  meterTimer=setInterval(()=>{
+   if(!meter)return;meter.getByteTimeDomainData(data);let sum=0;
+   for(const n of data)sum+=((n-128)/128)**2;
+   level.value=Math.min(1,Math.sqrt(sum/data.length)*4);
+  },120);
+ }catch{stopMeter()}
+}
+ready.addEventListener('change',async()=>{
+ if(!ready.checked){if(recorder&&recorder.state==='recording')stopRecording();closeMic();say('Microphone off.');return}
+ const token=++micRequest;
+ if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){
+  ready.checked=false;say('Microphone recording is unavailable in this browser.');return
+ }
+ hold.disabled=true;say('Requesting microphone permission…');
+ try{
+  const acquired=await navigator.mediaDevices.getUserMedia({audio:{
+   echoCancellation:false,noiseSuppression:false,autoGainControl:false
+  }});
+  if(token!==micRequest||!ready.checked){acquired.getTracks().forEach(t=>t.stop());return}
+  stream=acquired;
+  stream.getAudioTracks().forEach(track=>track.addEventListener('ended',()=>{
+   if(recorder?.state==='recording')stopRecording();closeMic();say('Microphone disconnected.');
+  },{once:true}));
+  hold.disabled=false;activateMeter();
+  say('Microphone ready. Hold Record to capture; release to save.');
+ }catch(error){if(token===micRequest){ready.checked=false;hold.disabled=true;say('Microphone unavailable: '+error.message)}}
+});
+function startRecording(){
+ if(!stream||hold.disabled||recorder||stopping)return;
+ try{
+  const type=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t));
+  const current=new MediaRecorder(stream,type?{mimeType:type}:undefined),chunks=[];
+  recorder=current;
+  current.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};
+  current.onerror=e=>{say('Recorder error: '+(e.error?.message||'unknown'));if(current.state==='recording')current.stop()};
+  current.onstop=async()=>{
+   const blob=new Blob(chunks,{type:current.mimeType||chunks[0]?.type||'audio/mp4'});
+   try{
+    if(!blob.size)throw Error('Recording is empty');
+    const name=$('name').value.trim().slice(0,120)||'Recording '+new Date().toLocaleString();
+    await saveSound({id:crypto.randomUUID(),name,source:'recorded',created:Date.now(),
+     mime:blob.type,blob,favorite:false});
+    say('Saved recording locally ('+(blob.size/1024).toFixed(0)+' KB).');
+   }catch(error){
+    say('Save failed: '+error.message+'. Export this recording before closing the page.');
+    if(blob.size){
+     const url=URL.createObjectURL(blob),a=document.createElement('a');
+     a.href=url;a.download='unsaved-recording.'+(blob.type.includes('mp4')?'m4a':'webm');
+     a.textContent='Export unsaved recording';status.append(' ',a);
+     a.addEventListener('click',()=>setTimeout(()=>URL.revokeObjectURL(url),30000),{once:true});
+    }
+   }finally{
+    if(recorder===current)recorder=null;
+    stopping=false;recordingStyle(false);hold.disabled=!stream;
+   }
+  };
+  current.start(250);
+  recordingStyle(true);
+  say('Recording. Release to save.');
+ }catch(error){recorder=null;recordingStyle(false);say('Could not begin recording: '+error.message)}
+}
+function stopRecording(){
+ const current=recorder;
+ if(!current||current.state!=='recording'||stopping)return;
+ stopping=true;hold.disabled=true;recordingStyle(false);say('Saving recording…');
+ try{current.stop()}catch(error){stopping=false;hold.disabled=!stream;say('Could not stop recording: '+error.message)}
+}
+hold.addEventListener('pointerdown',event=>{
+ if(!event.isPrimary||event.button!==0||hold.disabled)return;
+ event.preventDefault();activePointer=event.pointerId;
+ try{hold.setPointerCapture(event.pointerId)}catch{}
+ startRecording();
+});
+function releasePointer(event){
+ if(activePointer!==event.pointerId)return;
+ activePointer=null;stopRecording();
+}
+hold.addEventListener('pointerup',releasePointer);
+hold.addEventListener('pointercancel',releasePointer);
+hold.addEventListener('lostpointercapture',releasePointer);
+hold.addEventListener('keydown',event=>{
+ if(event.code!=='Space'&&event.code!=='Enter')return;
+ if(event.repeat||keyboardDown)return;
+ event.preventDefault();keyboardDown=true;startRecording();
+});
+hold.addEventListener('keyup',event=>{
+ if(event.code!=='Space'&&event.code!=='Enter')return;
+ event.preventDefault();keyboardDown=false;stopRecording();
+});
+hold.addEventListener('blur',()=>{if(keyboardDown){keyboardDown=false;stopRecording()}});
+importer.addEventListener('change',async event=>{
+ const files=[...event.target.files];importer.disabled=true;
+ let imported=0;
+ for(const file of files){
+  try{
+   if(!file.type.startsWith('audio/')&&!/\.(wav|mp3|m4a|aac|aiff|flac|ogg|opus)$/i.test(file.name))throw Error('Unrecognized audio format');
+   await saveSound({id:crypto.randomUUID(),name:file.name.slice(0,120),source:'imported',
+    created:Date.now(),mime:file.type||'application/octet-stream',blob:file,favorite:false});
+   imported++;
+  }catch(error){say('Failed to import '+file.name+': '+error.message)}
+ }
+ importer.value='';importer.disabled=false;
+ if(imported)say('Imported '+imported+' audio file'+(imported===1?'':'s')+' into the library.');
+});
+window.addEventListener('pagehide',()=>{if(recorder?.state==='recording')stopRecording();closeMic()});
