@@ -1876,7 +1876,7 @@ body[data-theme=blackmountain] :is(header h1,.perform-header strong,.live-panel-
 /* Locally bundled SIL Open Font License display faces. No third-party
    requests, and no font loading required to start the synthesizer. */
 @font-face{font-family:"SC Oxanium";src:url("./assets/fonts/oxanium.woff2") format("woff2");font-style:normal;font-weight:400 800;font-display:swap}
-@font-face{font-family:"SC Josefin";src:url("./assets/fonts/josefin-sans.woff2") format("woff2");font-style:normal;font-weight:400 800;font-display:swap}
+@font-face{font-family:"SC Josefin";src:url("./assets/fonts/josefin-sans.woff2") format("woff2");font-style:normal;font-weight:400 700;font-display:swap}
 @font-face{font-family:"SC Franklin";src:url("./assets/fonts/libre-franklin.woff2") format("woff2");font-style:normal;font-weight:400 800;font-display:swap}
 body[data-theme=makenoise]{--world-display:"SC Oxanium","Avenir Next Condensed",sans-serif;--world-label:"SC Oxanium","Arial Narrow",sans-serif}
 body[data-theme=bauhaus]{--world-display:"SC Josefin",Futura,sans-serif;--world-label:"SC Josefin","Avenir Next",sans-serif}
