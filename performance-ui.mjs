@@ -104,6 +104,10 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   }
   const openMix=name=>{
     selectedInstrument=name;
+    // Match the selected instrument's stable color across Live, Mix, and
+    // its inspector. Reuse the existing journal color slot.
+    const instrumentRow=journal.getInstrumentRows().find(row=>row.name===name);
+    if(instrumentRow)mixDialog.style.setProperty('--voice-color','var(--voice-'+instrumentRow.slot+')');
     mixDialog.querySelector('#perform-dialog-title').textContent=name;
     mixDialog.querySelector('#perform-dialog-info').textContent=
       journal.compatible(name)?

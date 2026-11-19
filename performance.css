@@ -842,3 +842,22 @@ body .performance-panel .perform-detail.perform-sound-mode #perform-dialog-neutr
  body .performance-panel .perform-detail button{padding:3px 4px!important}
  body .performance-panel .perform-detail .perform-dialog-step-actions button{min-width:34px!important}
 }
+
+/* Selected instrument identity: match Live and timeline, without turning
+   every control into a competing colored button. */
+body .performance-panel .perform-detail #perform-dialog-title{
+ color:var(--voice-color,var(--perform-fg))!important;
+ border-left:3px solid var(--voice-color,var(--perform-border))!important;
+ padding-left:7px!important;
+}
+body .performance-panel .perform-detail #perform-dialog-gain{
+ accent-color:var(--voice-color,var(--perform-border))!important;
+}
+body .performance-panel .perform-detail #perform-dialog-mute[aria-pressed=true],
+body .performance-panel .perform-detail #perform-dialog-solo[aria-pressed=true]{
+ border-color:var(--voice-color,var(--perform-border))!important;
+ box-shadow:inset 0 -2px var(--voice-color,var(--perform-border))!important;
+}
+body .performance-panel .perform-detail #perform-dialog-neutral{
+ border-color:color-mix(in srgb,var(--voice-color,var(--perform-border)) 55%,var(--perform-border))!important;
+}
