@@ -958,7 +958,7 @@ document.addEventListener('click', function(e) {
    if(!loaded){loaded=true;try{await import('./sounds-library.mjs?v=2')}catch(error){loaded=false;panel.querySelector('#status').textContent='Sound library failed to load: '+error.message}}
  });
  panel.querySelector('#sounds-back').addEventListener('click',()=>{
-   if(!panel.querySelector('#stop').disabled){if(!confirm('A recording is in progress. Leave Sounds without saving it?'))return;}
+   if(!panel.querySelector('#stop').disabled){panel.querySelector('#status').textContent='Stop and save the recording before returning to Code.';return;}
    panel.hidden=true;
  });
 })();
