@@ -999,7 +999,68 @@ body[data-theme=makenoise]{
  --perform-border:#b9b4a9;--perform-grid:#b9b4a92c;
 }
 
-/* New three-world Mix palette bridge after legacy shared light surfaces. */
-body[data-theme=score]{--perform-bg:#f0e8d8;--perform-fg:#202d39;--perform-border:#50667a;--perform-grid:#50667a30}
-body[data-theme=patch]{--perform-bg:#102b32;--perform-fg:#e8dfc6;--perform-border:#9ec4aa;--perform-grid:#9ec4aa30}
-body[data-theme=terminal]{--perform-bg:#111814;--perform-fg:#f2e5ca;--perform-border:#899c82;--perform-grid:#899c8230}
+
+/* Open Form / Signal Atlas / Control Room Mix materials. Later than the
+   legacy all-light-theme fallback near the top of this file. */
+body[data-theme=score]{
+ --perform-bg:#f5f0e5;--perform-fg:#1d3038;--perform-border:#607679;
+ --perform-grid:#60767935;--mix-control-radius:0px;
+ --mix-control-border:1px solid #607679;--mix-control-shadow:none;
+}
+body[data-theme=patch]{
+ --perform-bg:#0d242c;--perform-fg:#edf0db;--perform-border:#9fc9bd;
+ --perform-grid:#9fc9bd36;--mix-control-radius:3px;
+ --mix-control-border:1px solid #9fc9bd;--mix-control-shadow:none;
+}
+body[data-theme=terminal]{
+ --perform-bg:#101b16;--perform-fg:#e0eccd;--perform-border:#91b19a;
+ --perform-grid:#91b19a34;--mix-control-radius:0px;
+ --mix-control-border:1px solid #91b19a;--mix-control-shadow:none;
+}
+body[data-theme=score] .performance-panel .perform-header{
+ background:#233b46!important;color:#f5f0e5!important;
+ border-bottom:3px double #d45138!important;
+}
+body[data-theme=patch] .performance-panel .perform-header{
+ background:#1e4750!important;color:#edf0db!important;
+ border-bottom:2px solid #e2e980!important;
+}
+body[data-theme=terminal] .performance-panel .perform-header{
+ background:#1b2921!important;color:#e0eccd!important;
+ border-bottom:2px solid #ffbd61!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .performance-panel .perform-header button{
+ background:transparent!important;color:inherit!important;
+ border:1px solid var(--perform-border)!important;
+ border-radius:var(--mix-control-radius)!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .performance-panel .perform-header #perform-follow[aria-pressed=true]{
+ background:var(--inspector-active-bg)!important;
+ color:var(--inspector-active-fg)!important;
+ border-color:var(--inspector-active-bg)!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .performance-panel .perform-detail{
+ background:var(--perform-bg)!important;color:var(--perform-fg)!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .performance-panel .perform-detail button{
+ background:transparent!important;color:var(--perform-fg)!important;
+ border:1px solid var(--perform-border)!important;
+ border-radius:var(--mix-control-radius)!important;
+ box-shadow:none!important;
+}
+body:is([data-theme=score],[data-theme=patch],[data-theme=terminal]) .performance-panel .perform-detail button[aria-pressed=true]{
+ border-color:var(--inspector-active-bg)!important;
+ box-shadow:inset 0 -3px var(--inspector-active-bg)!important;
+}
+body[data-theme=score] .performance-panel .perform-axis,
+body[data-theme=score] .performance-panel .perform-controls{
+ background:#f5f0e5!important;color:#1d3038!important;
+}
+body[data-theme=patch] .performance-panel .perform-axis,
+body[data-theme=patch] .performance-panel .perform-controls{
+ background:#0d242c!important;color:#edf0db!important;
+}
+body[data-theme=terminal] .performance-panel .perform-axis,
+body[data-theme=terminal] .performance-panel .perform-controls{
+ background:#101b16!important;color:#e0eccd!important;
+}

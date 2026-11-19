@@ -80,6 +80,38 @@ try {
         theme+' live inset overflows editor at '+width);
 
       assert(r.tabsFit,theme+' inspector tabs clipped at '+width+': '+JSON.stringify(r.tabDetails));
+      // Appearance is functional: visible syntax and selected controls must
+      // retain readable contrast and coherent surfaces in the three new worlds.
+      if(['score','patch','terminal'].includes(theme)){
+        const paint=await page.evaluate(()=>{
+          const style=(selector)=>getComputedStyle(document.querySelector(selector));
+          return {
+            foreground:style('#highlight-layer').color,
+            editor:style('.code-stack').backgroundColor,
+            header:style('header').backgroundColor,
+            project:style('.projectbar').backgroundColor,
+            selectedColor:style('#inspector-code').color,
+            selectedBg:style('#inspector-code').backgroundColor,
+            emblemElements:document.querySelectorAll('.art-'+document.body.dataset.theme+' path, .art-'+document.body.dataset.theme+' rect, .art-'+document.body.dataset.theme+' circle').length,
+            choice:document.querySelector('#theme-choice option:checked')?.textContent
+          };
+        });
+        const rgb=value=>value.match(/[\d.]+/g)?.slice(0,3).map(Number)||[0,0,0];
+        const lum=v=>v.map(x=>{
+          x=x/255;return x<=0.04045?x/12.92:Math.pow((x+0.055)/1.055,2.4);
+        }).reduce((sum,v,i)=>sum+v*[0.2126,0.7152,0.0722][i],0);
+        const contrast=(a,b)=>{const x=lum(rgb(a)),y=lum(rgb(b));return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
+        assert(contrast(paint.foreground,paint.editor)>=7,
+          theme+' visible editor syntax lacks contrast: '+JSON.stringify(paint));
+        assert(contrast(paint.selectedColor,paint.selectedBg)>=4.5,
+          theme+' inspector selected state is illegible: '+JSON.stringify(paint));
+        assert(paint.editor!==paint.project && paint.header!==paint.project,
+          theme+' lost its intended material hierarchy');
+        assert(paint.emblemElements>=6,theme+' original header emblem missing');
+        assert(paint.choice===({score:'Open Form',patch:'Signal Atlas',terminal:'Control Room'})[theme],
+          theme+' old design title still shown');
+      }
+
       if(width===390)await page.screenshot({path:path.join(root,'qa','screenshots',theme+'.png')});
 
       if(theme==='moog' && width===390) {
