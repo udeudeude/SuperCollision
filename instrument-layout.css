@@ -815,3 +815,73 @@ body[data-theme] .performance-panel .perform-detail button,
 body[data-theme] .performance-panel .perform-header button{
  border-radius:var(--control-corner,2px)!important;
 }
+
+/* Research-led theme palette system, 2026-11.
+   Bauhaus: warm paper + blue/red/yellow as sparse functional signals.
+   Black Mountain: Albers color interaction + textile-derived earthy tones.
+   Make Noise: black panel + cream silkscreen + restrained gold signal paths.
+   Moog retains its established warm palette. */
+body[data-theme=bauhaus]{
+ --theme-paper:#f2eddf;--theme-panel:#e8e2d2;--theme-ink:#1d303b;
+ --theme-rule:#355776;--theme-accent:#c34236;--theme-secondary:#d5a638;
+ --perform-bg:#f2eddf;--perform-fg:#1d303b;--perform-border:#355776;
+ --perform-grid:#3557762a;
+ --file-bg:#f2eddf;--file-fg:#1d303b;--file-border:#355776;
+}
+body[data-theme=blackmountain]{
+ --theme-paper:#e7dfcc;--theme-panel:#ddd2bc;--theme-ink:#3d3932;
+ --theme-rule:#817761;--theme-accent:#a4543d;--theme-secondary:#71836c;
+ --perform-bg:#e7dfcc;--perform-fg:#3d3932;--perform-border:#817761;
+ --perform-grid:#81776130;
+ --file-bg:#e7dfcc;--file-fg:#3d3932;--file-border:#817761;
+}
+body[data-theme=makenoise]{
+ --theme-paper:#0c0c0d;--theme-panel:#161618;--theme-ink:#eeeae0;
+ --theme-rule:#b9b4a9;--theme-accent:#c5a04d;--theme-secondary:#e8e3d6;
+ --perform-bg:#0c0c0d;--perform-fg:#eeeae0;--perform-border:#b9b4a9;
+ --perform-grid:#b9b4a92c;
+ --file-bg:#161618;--file-fg:#eeeae0;--file-border:#c5a04d;
+}
+body[data-theme=bauhaus] .console-shell,
+body[data-theme=blackmountain] .console-shell,
+body[data-theme=makenoise] .console-shell{
+ background:var(--theme-paper)!important;color:var(--theme-ink)!important;
+}
+body[data-theme=bauhaus] .console-bar,
+body[data-theme=blackmountain] .console-bar,
+body[data-theme=makenoise] .console-bar{
+ background:var(--theme-panel)!important;color:var(--theme-ink)!important;
+ border-bottom:1px solid var(--theme-rule)!important;
+}
+body[data-theme=bauhaus] .console-bar button,
+body[data-theme=blackmountain] .console-bar button,
+body[data-theme=makenoise] .console-bar button{
+ background:transparent!important;color:var(--theme-ink)!important;
+ border:1px solid var(--theme-rule)!important;
+}
+body[data-theme=bauhaus] .console-bar button[aria-pressed=true],
+body[data-theme=blackmountain] .console-bar button[aria-pressed=true],
+body[data-theme=makenoise] .console-bar button[aria-pressed=true]{
+ background:var(--theme-accent)!important;color:var(--theme-paper)!important;
+}
+body[data-theme=bauhaus] .toolbar button,
+body[data-theme=blackmountain] .toolbar button,
+body[data-theme=makenoise] .toolbar button{
+ border-color:var(--theme-rule)!important;
+}
+body[data-theme=bauhaus] .toolbar #evaluate{background:#c34236!important;color:#fffaf0!important}
+body[data-theme=blackmountain] .toolbar #evaluate{background:#a4543d!important;color:#fff5e3!important}
+body[data-theme=makenoise] .toolbar #evaluate{background:#c5a04d!important;color:#0c0c0d!important}
+body[data-theme=bauhaus] .performance-panel .perform-header,
+body[data-theme=blackmountain] .performance-panel .perform-header,
+body[data-theme=makenoise] .performance-panel .perform-header{
+ background:var(--theme-panel)!important;color:var(--theme-ink)!important;
+}
+/* Extend the existing original SVG identity drawings into understated
+   header emblems. No new decorative assets or network downloads. */
+body[data-theme=bauhaus] header .identity-art{border-left:3px solid #c34236;padding-left:2px}
+body[data-theme=blackmountain] header .identity-art{border-left:2px solid #a4543d;padding-left:2px}
+body[data-theme=makenoise] header .identity-art{border-left:2px solid #c5a04d;padding-left:2px}
+@media(prefers-reduced-motion:reduce){
+ body[data-theme] header .identity-art{transition:none!important}
+}
