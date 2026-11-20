@@ -92,7 +92,7 @@ try{
  assert.equal(await page.locator('.discovered-sound audio[src]').count(),0,'Discover must not fetch previews before network permission');
  await page.getByRole('button',{name:'Load preview (network)'}).first().click();
  assert.equal(await page.locator('.discovered-sound audio[src]').count(),0,'unknown network may not start a preview');
- const button=page.getByRole('button',{name:'Save original audio'}).first();
+ const button=page.getByRole('button',{name:'Save available audio'}).first();
  await button.click();
  assert.equal(downloadCount,0,'network override must be opt-in');
  await page.locator('#discover-allow-unverified').check();
@@ -108,7 +108,7 @@ try{
  await page.route('https://audio.example.test/cc0.wav',route=>route.fulfill({
   status:200,contentType:'audio/wav',body:'<html>Remote access denied'
  }),{times:1});
- await page.getByRole('button',{name:'Save original audio'}).first().click();
+ await page.getByRole('button',{name:'Save available audio'}).first().click();
  await page.getByText('The server returned an error page',{exact:false}).waitFor();
  await page.evaluate(()=>{
   const original=window.fetch.bind(window);
@@ -126,14 +126,14 @@ try{
    return original(url,options);
   };
  });
- await page.getByRole('button',{name:'Save original audio'}).first().click();
+ await page.getByRole('button',{name:'Save available audio'}).first().click();
  await page.waitForFunction(()=>window.__soundsCancelStarted===true);
  await page.locator('#discover-cancel-download').click();
  await page.waitForFunction(()=>window.__soundsCancelCount===1);
  await page.locator('#discover-cancel-download').waitFor({state:'hidden'});
  assert.equal(downloadCount,1,'cancelled download must not transfer extra audio');
  // Revoking the unknown-network override must stop even a stalled fetch immediately.
- await page.getByRole('button',{name:'Save original audio'}).first().click();
+ await page.getByRole('button',{name:'Save available audio'}).first().click();
  await page.locator('#discover-cancel-download').waitFor({state:'visible'});
  await page.locator('#discover-allow-unverified').uncheck();
  await page.waitForFunction(()=>window.__soundsCancelCount===2);
@@ -250,6 +250,38 @@ try{
  await page.goto(base+'/sounds-lab.html?preset=missing-audio-preset');
  await page.getByText('Preset unavailable:',{exact:false}).waitFor();
  assert.equal(await page.locator('#lab-sound').inputValue(),'','missing original may not be replaced by arbitrary other audio');
+ // Openverse also indexes Freesound previews, which are not original masters.
+ resultBody.results=[{id:'indexed-preview',title:'Indexed Freesound clip',creator:'Maker Three',
+  creator_url:'https://freesound.org/people/makerthree/',provider:'freesound',source:'freesound',
+  license:'by',license_version:'4.0',license_url:'https://creativecommons.org/licenses/by/4.0/',
+  attribution:'"Indexed Freesound clip" by Maker Three, CC BY 4.0',
+  foreign_landing_url:'https://freesound.org/people/makerthree/sounds/123/',
+  url:'https://audio.example.test/indexed-preview.mp3',duration:8500}];
+ resultBody.result_count=1;
+ await page.goto(base+'/sounds.html');
+ await page.getByRole('tab',{name:'Discover'}).click();
+ await page.locator('#discover-query').fill('indexed freesound');
+ await page.getByRole('button',{name:'Search sounds'}).click();
+ await page.getByText('Indexed Freesound clip').waitFor();
+ assert.match(await page.locator('.discovered-sound').first().textContent(),/compressed preview/);
+ assert.equal(await page.getByRole('button',{name:'Save available audio'}).count(),0);
+ await page.locator('#discover-allow-unverified').check();
+ await page.getByRole('button',{name:'Save compressed preview'}).click();
+ await page.getByText('Saved Indexed Freesound clip locally.',{exact:false}).waitFor();
+ const indexed=await page.evaluate(async()=>{
+  const {allSounds}=await import('/sounds-store.mjs');
+  return (await allSounds()).find(item=>item.name==='Indexed Freesound clip')?.origin;
+ });
+ assert.equal(indexed.variant,'compressed preview');
+ assert.equal(indexed.provider,'freesound');
+ assert.equal(indexed.creatorUrl,'https://freesound.org/people/makerthree/');
+ assert.equal(indexed.licenseVersion,'4.0');
+ assert.equal(indexed.attribution,'"Indexed Freesound clip" by Maker Three, CC BY 4.0');
+ await page.getByRole('tab',{name:'Library'}).click();
+ const importedRow=page.locator('.managed-item').filter({hasText:'Indexed Freesound clip'});
+ await importedRow.waitFor();
+ assert.match(await importedRow.textContent(),/compressed preview/);
+ assert.equal(await importedRow.getByRole('link',{name:'Creator profile'}).getAttribute('href'),indexed.creatorUrl);
  assert.deepEqual(errors,[],'No unhandled page errors allowed');
  console.log('Sounds browser regression passed: library, source, recording, discovery, license filters and persistence');
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}

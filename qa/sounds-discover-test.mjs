@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
-import {COMMONS_SOURCE,freesoundLicenseFilter,openverseSourceFilter,durationSeconds,importedAudioMime,rejectMislabelledAudio,downloadProgressText} from '../sounds-discover-core.mjs';
+import {COMMONS_SOURCE,freesoundLicenseFilter,openverseSourceFilter,durationSeconds,importedAudioMime,rejectMislabelledAudio,downloadProgressText,audioVariantFromResult} from '../sounds-discover-core.mjs';
 assert.equal(COMMONS_SOURCE,'wikimedia_audio');
 assert.equal(openverseSourceFilter('wikimedia'),'wikimedia_audio');
 assert.equal(openverseSourceFilter('openverse'),'');
+assert.equal(audioVariantFromResult({source:'freesound'},'openverse'),'compressed preview');
+assert.equal(audioVariantFromResult({provider:'freesound'},'openverse'),'compressed preview');
+assert.equal(audioVariantFromResult({},'freesound'),'compressed preview');
+assert.equal(audioVariantFromResult({source:'wikimedia_audio'},'openverse'),'provider-supplied audio (original quality unverified)');
 assert.equal(freesoundLicenseFilter({commercial:true,modification:true}),'license:("Attribution" OR "Creative Commons 0")');
 assert.equal(freesoundLicenseFilter({modification:true}),'');
 assert.equal(freesoundLicenseFilter({noAttribution:true}),'license:"Creative Commons 0"');
