@@ -58,6 +58,10 @@ try{
  await page.locator('#lab-sound').selectOption('native-smoke');
  await page.locator('#lab-engine').click();
  await page.getByText('SuperCollider ready.',{exact:false}).waitFor({timeout:120000});
+ await page.locator('#lab-engine').click();
+ await page.getByText('SuperCollider executed the tone code.',{exact:false}).waitFor({timeout:30000});
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/SynthDef\\(\\\\scSoundsDemo/);
+ 
  await page.locator('#lab-load').click();
  await page.waitForFunction(()=>{
    const status=document.querySelector('#lab-status')?.textContent||'';
@@ -187,7 +191,7 @@ try{
   assert.equal(await page.locator('#lab-sound').inputValue(),'native-smoke');
   assert.equal(await page.locator('#lab-play').isDisabled(),true,'reopened preset must never autoplay');
   await page.locator('#lab-engine').click();
-  await page.getByRole('button',{name:'Unlock audio'}).waitFor({timeout:120000});
+  await page.getByRole('button',{name:'Play tone'}).waitFor({timeout:120000});
   // An explicit second unlock tap is harmless on Chrome and required on some
   // browsers; the linked original must then transfer without a manual Load tap.
   await page.locator('#lab-engine').click();
