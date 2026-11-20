@@ -12,7 +12,12 @@ const source=$('discover-source'),query=$('discover-query'),licenseControls={
 const keyBox=$('discover-key-box'),key=$('discover-key'),more=$('discover-next'),previous=$('discover-previous');
 const allowUnverified=$('discover-allow-unverified');
 const MAX_BYTES=50*1024*1024, PAGE_SIZE=20;
-let page=1,pageCount=0,controller=null,busy=false;
+let page=1,pageCount=0,controller=null,busy=false,activeDownload=null;
+const cancelDownload=$('discover-cancel-download');
+function cancelActiveDownload(){if(activeDownload?.phase==='downloading')activeDownload.controller.abort()}
+cancelDownload.addEventListener('click',()=>{
+ if(activeDownload?.phase==='downloading'){cancelActiveDownload();say('Download cancelled. No audio was added.')}
+});
 const filters=()=>Object.fromEntries(Object.entries(licenseControls).map(([name,node])=>[name,!!node.checked]));
 function say(message){status.textContent=message}
 function element(tag,text){const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);return n}
@@ -22,6 +27,7 @@ function httpsUrl(value){
 }
 function syncSource(){keyBox.hidden=source.value!=='freesound';$('discover-source-description').textContent=source.value==='freesound'?'Freesound requires your personal application key. Saved files are preview quality.':'Openverse requires no account. Wikimedia results are drawn from its Commons collection.'}
 function invalidateSearch(message){
+ cancelActiveDownload();
  controller?.abort();controller=null;busy=false;page=1;pageCount=0;
  results.replaceChildren();more.disabled=true;previous.disabled=true;say(message);
 }
@@ -90,9 +96,9 @@ function downloadAllowed(){
  const verifiedWifi=connection?.type==='wifi'&&!connection?.saveData;
  return verifiedWifi||allowUnverified.checked;
 }
-async function downloadLimited(url,knownSize){
+async function downloadLimited(url,knownSize,signal){
  if(knownSize>MAX_BYTES)throw Error('This file exceeds the 50 MB per-download limit.');
- const response=await fetch(url,{cache:'no-store',credentials:'omit'});
+ const response=await fetch(url,{cache:'no-store',credentials:'omit',signal});
  if(!response.ok)throw Error('Download returned '+response.status);
  const type=importedAudioMime(response.headers.get('content-type'),url);
  const size=Number(response.headers.get('content-length')||0);
@@ -102,30 +108,43 @@ async function downloadLimited(url,knownSize){
  try{
   while(true){
    const part=await reader.read();if(part.done)break;
+   if(signal?.aborted)throw Error('Download cancelled.');
+   if(!downloadAllowed())throw Error('Wi-Fi can no longer be verified. Download stopped to avoid possible cellular use.');
    count+=part.value.byteLength;if(count>MAX_BYTES)throw Error('File exceeded 50 MB, so download stopped.');
    parts.push(part.value);
   }
  }catch(error){await reader.cancel().catch(()=>{});throw error}
+ if(signal?.aborted)throw Error('Download cancelled.');
  if(!count)throw Error('The downloaded file was empty.');
  return new Blob(parts,{type});
 }
 async function addToLibrary(item,button){
  if(!item.audioUrl){say('This result has no direct audio URL. Follow the source link, then import the file.');return}
+ if(activeDownload){say('Finish or cancel the current download first.');return}
  if(!downloadAllowed()){
   say('Download paused: Wi-Fi cannot be verified. To proceed, enable the explicit network override below. No file was downloaded.');allowUnverified.focus();return;
  }
- const label=button.textContent;
+ const label=button.textContent,job={controller:new AbortController(),phase:'downloading'};
+ activeDownload=job;cancelDownload.hidden=false;cancelDownload.disabled=false;
  button.disabled=true;button.textContent='Saving…';say('Downloading selected '+item.variant+'…');
  try{
-  const blob=await downloadLimited(item.audioUrl,item.filesize);
+  const blob=await downloadLimited(item.audioUrl,item.filesize,job.controller.signal);
+  if(job.controller.signal.aborted)throw Error('Download cancelled.');
+  job.phase='saving';cancelDownload.disabled=true;
   await saveSound({id:crypto.randomUUID(),name:item.name.slice(0,120),source:item.source,
    created:Date.now(),mime:blob.type,blob,favorite:false,
    origin:{provider:item.provider,id:item.id,url:item.pageUrl,creator:item.creator,
     license:item.license||'Unspecified',licenseVersion:item.licenseVersion||null,licenseUrl:item.licenseUrl,
     attribution:item.attribution||null,retrievedAt:new Date().toISOString(),variant:item.variant}});
   say('Saved '+item.name+' locally. Original license and creator information retained.');
- }catch(error){say('Could not save audio: '+error.message+'. Open its source page and import the downloaded file instead.')}
- finally{button.disabled=false;button.textContent=label}
+ }catch(error){
+  if(!job.controller.signal.aborted)say('Could not save audio: '+error.message+'. Open its source page and import the downloaded file instead.');
+ }
+ finally{
+  if(activeDownload===job)activeDownload=null;
+  cancelDownload.hidden=true;cancelDownload.disabled=false;
+  button.disabled=false;button.textContent=label;
+ }
 }
 function renderResult(item){
  const card=element('article');card.className='discovered-sound';
@@ -147,9 +166,10 @@ function renderResult(item){
 document.addEventListener('sounds-view-changed',event=>{
  if(event.detail?.view==='discover')return;
  if(busy){controller?.abort();controller=null;busy=false;more.disabled=true;previous.disabled=true;say('Search stopped when you left Discover. Search again to continue.')}
+ if(activeDownload?.phase==='downloading'){cancelActiveDownload();say('Download cancelled when you left Discover. No audio was imported.')}
  for(const audio of results.querySelectorAll('audio'))audio.pause();
 });
-window.addEventListener('pagehide',()=>controller?.abort());
+window.addEventListener('pagehide',()=>{controller?.abort();cancelActiveDownload()});
 form.addEventListener('submit',event=>{event.preventDefault();searchSounds(1)});
 more.addEventListener('click',()=>{if(!busy&&page<pageCount)searchSounds(page+1)});
 previous.addEventListener('click',()=>{if(!busy&&page>1)searchSounds(page-1)});
