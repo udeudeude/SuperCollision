@@ -11,6 +11,15 @@ const load=$('lab-load'),play=$('lab-play'),stop=$('lab-stop'),cancel=$('lab-can
 const details=$('lab-details');
 const regionStart=$('lab-start'),regionFinish=$('lab-finish'),regionRate=$('lab-rate'),regionAmp=$('lab-amp'),regionLoop=$('lab-loop'),regionSummary=$('lab-region-summary');
 const waveformCanvas=$('lab-waveform');
+const sourceView=$('lab-live-source'),copySource=$('lab-copy-source');
+function updateSourceBay(){
+ if(!sourceView)return;
+ if(!current||!currentItemId){sourceView.textContent='Select and transfer a recording to reveal the actual executable SuperCollider instrument.';copySource.disabled=true;return}
+ try{sourceView.textContent=exportedSource(regionSettings(),originalSound());copySource.disabled=false}
+ catch(error){sourceView.textContent='Instrument source unavailable: '+error.message;copySource.disabled=true}
+}
+copySource?.addEventListener('click',async()=>{if(copySource.disabled)return;try{await navigator.clipboard.writeText(sourceView.textContent);copySource.textContent='Copied';setTimeout(()=>copySource.textContent='Copy code',1300)}catch{copySource.textContent='Select code to copy'}});
+
 const presetName=$('lab-preset-name'),savePreset=$('lab-save-preset'),exportPreset=$('lab-export-preset');
 let pendingPresetId=new URL(location.href).searchParams.get('preset');
 let queuedPresetLoadId=null,linkedPreset=null;
@@ -58,6 +67,7 @@ function refreshControls(){
  stop.disabled=!serverReady;
  cancel.disabled=!controller;
  savePreset.disabled=exportPreset.disabled=!current||!currentItemId||!!controller;
+ updateSourceBay();
 }
 
 function renderWaveform(){
@@ -117,6 +127,7 @@ function updateRegionControls(changed){
  const seconds=current?current.frames/current.sampleRate:0;
  regionSummary.textContent='Region: '+start+'% to '+finish+'%'+(seconds?' ('+(seconds*start/100).toFixed(2)+'–'+(seconds*finish/100).toFixed(2)+' s)':'')+' · '+Number(regionRate.value).toFixed(2)+'× · Volume '+Math.round(Number(regionAmp.value)*100)+'% · '+(regionLoop.checked?'Loop':'One shot');
  renderWaveform();
+ updateSourceBay();
 }
 for(const [input,dimension] of [[regionStart,'start'],[regionFinish,'finish'],[regionRate,'rate'],[regionAmp,'amp'],[regionLoop,'loop']]){
  input.addEventListener('input',()=>updateRegionControls(dimension));
