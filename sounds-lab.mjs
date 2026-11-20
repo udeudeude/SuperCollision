@@ -131,7 +131,8 @@ function regionSettings(){
  if(!current||!currentItemId||!entries.some(item=>item.id===currentItemId))
   throw Error('Load and verify the original audio in SuperCollider first.');
  return validateRegion({bufferId:BUFFER,channels:current.channels,start:Number(regionStart.value)/100,
-  finish:Number(regionFinish.value)/100,rate:Number(regionRate.value),amp:Number(regionAmp.value),loop:regionLoop.checked});
+  finish:Number(regionFinish.value)/100,rate:Number(regionRate.value),amp:Number(regionAmp.value),loop:regionLoop.checked,
+  sourceSampleRate:current.sampleRate});
 }
 function originalSound(){
  const item=entries.find(entry=>entry.id===currentItemId);
@@ -312,8 +313,11 @@ load.addEventListener('click',async()=>{
    });
   }
   if(controller.signal.aborted)throw Error('Transfer cancelled');
+  // /b_alloc adopts the native server rate. Pass original file rate to
+  // SuperCollider's player, which corrects timing at playback without resampling.
   if(decoded.sampleRate!==sampleRate)
-   throw Error('Decoded sample rate differs from SuperCollider output; refusing pitch-altering transfer.');
+   print('Source rate '+decoded.sampleRate+' Hz; native output '+sampleRate+
+    ' Hz. SuperCollider will compensate playback speed without resampling.');
   if(linkedPreset?.soundId===item.id&&decoded.numberOfChannels!==linkedPreset.channels)
     throw Error('Original audio no longer matches the preset channel layout; refusing to substitute another instrument.');
    announce('Transferring samples to SuperCollider…');
@@ -338,7 +342,7 @@ load.addEventListener('click',async()=>{
     onProgress:ratio=>{progress.value=ratio;announce('Transferring into native SuperCollider buffer: '+Math.round(100*ratio)+'% acknowledged')}
   });
   allocated=true;currentItemId=item.id;waveform=waveformPeaks(decoded,512);updateRegionControls();
-  announce('Verified by native SuperCollider sample readback: '+current.frames+' frames, '+current.channels+' channel(s), '+current.sampleRate+' Hz. Ready for PlayBuf.');
+  announce('Verified by native SuperCollider sample readback: '+current.frames+' frames, '+current.channels+' channel(s), '+current.sampleRate+' Hz source. Native playback preserves original timing. Ready for PlayBuf.');
  }catch(error){
   current=null;currentItemId=null;waveform=null;renderWaveform();
   print('Sample transfer failed: '+error.message);
