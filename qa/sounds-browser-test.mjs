@@ -172,6 +172,7 @@ try{
  await presetRow.waitFor();
  assert.match(await presetRow.textContent(),/source audio available/i);
  await page.locator('#sounds-filter').selectOption('preset');
+ await page.waitForFunction(()=>document.querySelectorAll('.managed-item').length===2);
  assert.equal(await page.locator('.managed-item').count(),2,'presets need a dedicated Library filter');
  const link=await presetRow.getByRole('link',{name:'Open preset in Sample Lab'}).getAttribute('href');
  assert.equal(link,'./sounds-lab.html?preset=linked-instrument-preset');
