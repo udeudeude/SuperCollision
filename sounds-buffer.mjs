@@ -153,7 +153,8 @@ export class NativeBufferTransport{
     this.active=true;
     const total=frames*channels,started=Date.now();
     let allocated=false,phase='allocation',sent=0,acknowledged=0,packets=0;
-    const report=()=>onStage?.({phase,sent,acknowledged,total,packets,elapsedMs:Date.now()-started});
+    // Diagnostic observers must never strand or prevent freeing a native buffer.
+    const report=()=>{try{onStage?.({phase,sent,acknowledged,total,packets,elapsedMs:Date.now()-started})}catch{}};
     try{
       checkAborted(signal);
       report();
@@ -175,8 +176,7 @@ export class NativeBufferTransport{
       await this.sync({signal});
       acknowledged=total;report();
       checkAborted(signal);
-      phase='readback';report();
-      if(verify)await this.verifySamples(bufferId,audioBuffer,{signal});
+      if(verify){phase='readback';report();await this.verifySamples(bufferId,audioBuffer,{signal})}
       phase='complete';report();
       onProgress?.(1);
       return {bufferId,frames,channels,sampleRate:audioBuffer.sampleRate,verified:verify};
