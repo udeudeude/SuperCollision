@@ -65,9 +65,9 @@ try{
   },null,{timeout:90000});
  assert.match(await page.locator('#lab-status').textContent(),/^Verified by native SuperCollider sample readback:/);
  assert.equal(await page.locator('#lab-play').isEnabled(),true);
- await page.locator('#lab-start').fill('20');
- await page.locator('#lab-finish').fill('80');
- await page.locator('#lab-rate').fill('0.75');
+ await page.locator('#lab-start').evaluate(input=>{input.value='20';input.dispatchEvent(new Event('input',{bubbles:true}))});
+ await page.locator('#lab-finish').evaluate(input=>{input.value='80';input.dispatchEvent(new Event('input',{bubbles:true}))});
+ await page.locator('#lab-rate').evaluate(input=>{input.value='0.75';input.dispatchEvent(new Event('input',{bubbles:true}))});
  await page.locator('#lab-play').click();
  await page.getByText('Playing through native SuperCollider one shot',{exact:false}).waitFor();
  await page.locator('#lab-loop').check();
