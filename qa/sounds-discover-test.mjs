@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {COMMONS_SOURCE,freesoundLicenseFilter,openverseSourceFilter,durationSeconds,importedAudioMime} from '../sounds-discover-core.mjs';
+import {COMMONS_SOURCE,freesoundLicenseFilter,openverseSourceFilter,durationSeconds,importedAudioMime,rejectMislabelledAudio,downloadProgressText} from '../sounds-discover-core.mjs';
 assert.equal(COMMONS_SOURCE,'wikimedia_audio');
 assert.equal(openverseSourceFilter('wikimedia'),'wikimedia_audio');
 assert.equal(openverseSourceFilter('openverse'),'');
@@ -17,4 +17,11 @@ assert.equal(importedAudioMime('application/ogg','https://example.com/sound.ogg'
 assert.throws(()=>importedAudioMime('text/html','https://example.com/sound.mp3'),/instead of audio/);
 assert.throws(()=>importedAudioMime('application/json','https://example.com/sound.mp3'),/instead of audio/);
 assert.throws(()=>importedAudioMime('image/jpeg','https://example.com/sound.mp3'),/instead of audio/);
+assert.doesNotThrow(()=>rejectMislabelledAudio(new Uint8Array([82,73,70,70,0,0,87,65,86,69])));
+assert.throws(()=>rejectMislabelledAudio(new TextEncoder().encode('<html>Permission denied')),/error page instead of audio/);
+assert.throws(()=>rejectMislabelledAudio(new TextEncoder().encode('{"error":"expired"}')),/error page instead of audio/);
+assert.throws(()=>rejectMislabelledAudio(new TextEncoder().encode('<!doctype html>Unavailable')),/error page instead of audio/);
+assert.match(downloadProgressText(1048576,4194304),/1.00 of 4.00 MB/);
+assert.match(downloadProgressText(524288),/0.50 MB received/);
+console.log('Discover transfer integrity and progress checks passed');
 console.log('Sounds discovery provider, duration and media-type tests passed');
