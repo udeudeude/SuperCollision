@@ -206,7 +206,22 @@ try{
  assert.equal(await page.locator('.managed-item').count(),3,'IndexedDB should persist across reload');
  assert.equal(queryCount>=2,true);
  await page.goto(base+'/sounds-lab.html');
- assert.equal(await page.locator('#lab-source-bay').count(),1,'the SuperCollider source bay must be permanently present');
+ assert.equal(await page.locator('#lab-demo-code').isEditable(),true,'built-in native synth should be editable before importing audio');
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/SynthDef\\(\\\\scSoundsDemo/);
+ assert.equal(await page.locator('#lab-demo-sync-label').textContent(),'CONTROLS MATCH CODE');
+ await page.locator('#lab-demo-pitch').fill('660');
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/\\\\freq, 660/);
+ const demoBeforeEdit=await page.locator('#lab-demo-code').inputValue();
+ await page.locator('#lab-demo-code').fill(demoBeforeEdit.replace('SinOsc.ar(freq)','LFTri.ar(freq)'));
+ assert.equal(await page.locator('#lab-demo-sync-label').textContent(),'CODE EDITED · CONTROLS OFF');
+ await page.locator('#lab-demo-pitch').fill('880');
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/LFTri\\.ar\\(freq\\)/,'moving controls must preserve manual code');
+ assert.equal(await page.locator('#lab-demo-code-bay').getAttribute('data-sync'),'modified');
+ page.once('dialog',dialog=>dialog.accept());
+ await page.locator('#lab-demo-reset').click();
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/\\\\freq, 880/);
+ assert.equal(await page.locator('#lab-demo-sync-label').textContent(),'CONTROLS MATCH CODE');
+  assert.equal(await page.locator('#lab-source-bay').count(),1,'the SuperCollider source bay must be permanently present');
  assert.equal(await page.locator('#lab-live-source').isEditable(),false,'only native-loaded instruments have editable code');
  assert.equal(await page.locator('#lab-sync-label').textContent(),'NO SOURCE');
  assert.equal(await page.locator('#lab-source-bay').evaluate(bay=>
