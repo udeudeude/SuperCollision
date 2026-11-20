@@ -3,13 +3,34 @@
 import {allSounds,saveSound} from './sounds-store.mjs';
 import {NativeBufferTransport} from './sounds-buffer.mjs';
 import {readPcmWaveForNativeBuffer} from './sounds-pcm-ingest.mjs';
-import {REGION_DEFINITIONS,regionPlayCommand,regionLiveSource,stopRegionCommand,sampleInstrumentSource,validateRegion} from './sounds-sampler.mjs';
+import {REGION_DEFINITIONS,regionPlayCommand,regionLiveSource,stopRegionCommand,sampleInstrumentSource,validateRegion,demoSynthSource,DEMO_MARKER} from './sounds-sampler.mjs';
 import {waveformPeaks,waveformDragRegion} from './sounds-waveform.mjs';
 const $=id=>document.getElementById(id);
 const status=$('lab-status'),log=$('lab-log'),sound=$('lab-sound'),engine=$('lab-engine');
 const load=$('lab-load'),play=$('lab-play'),stop=$('lab-stop'),cancel=$('lab-cancel'),progress=$('lab-progress');
 const details=$('lab-details');
 const regionStart=$('lab-start'),regionFinish=$('lab-finish'),regionRate=$('lab-rate'),regionAmp=$('lab-amp'),regionLoop=$('lab-loop'),regionSummary=$('lab-region-summary');
+const demoCode=$('lab-demo-code'),demoPitch=$('lab-demo-pitch'),demoLevel=$('lab-demo-level'),demoReset=$('lab-demo-reset');
+const demoBay=$('lab-demo-code-bay'),demoControls=$('lab-demo-controls'),demoSyncLabel=$('lab-demo-sync-label');
+let demoGenerated='',demoDirty=false;
+function updateDemoCode(force=false){
+ demoGenerated=demoSynthSource({frequency:Number(demoPitch.value),amplitude:Number(demoLevel.value)});
+ $('lab-demo-pitch-value').textContent=demoPitch.value+' Hz';
+ $('lab-demo-level-value').textContent=Math.round(Number(demoLevel.value)*100)+'%';
+ if(force||!demoDirty||demoCode.value===demoGenerated){
+  demoCode.value=demoGenerated;demoDirty=false;
+ }
+ demoBay.dataset.sync=demoControls.dataset.sync=demoDirty?'modified':'matched';
+ demoSyncLabel.textContent=demoDirty?'CODE EDITED · CONTROLS OFF':'CONTROLS MATCH CODE';
+ demoReset.textContent=demoDirty?'Restore code from controls':'Reset code from controls';
+}
+demoCode.addEventListener('input',()=>{demoDirty=demoCode.value!==demoGenerated;updateDemoCode()});
+for(const slider of [demoPitch,demoLevel])slider.addEventListener('input',()=>updateDemoCode());
+demoReset.addEventListener('click',()=>{
+ if(demoDirty&&!confirm('Replace your edited tone code with the pitch and volume controls?'))return;
+ updateDemoCode(true);
+});
+updateDemoCode();
 const waveformCanvas=$('lab-waveform');
 const sourceView=$('lab-live-source'),copySource=$('lab-copy-source');
 const resetSource=$('lab-reset-source'),sourceState=$('lab-source-state');
@@ -85,7 +106,7 @@ const DEFINITION_SOURCE=REGION_DEFINITIONS;
 let lang=null,synth=null,transport=null,languageReady=false,serverReady=false,definitionsReady=false;
 let bootRequested=false,booting=false,bootTimeout=null,current=null,currentItemId=null,controller=null,entries=[],allocated=false;
 let synthBootPending=false,synthBootCompleted=false,serverSampleRate=null,nativeAudioContext=null;
-function announce(t){status.textContent=t}
+function announce(t){status.textContent=t;const hint=$('lab-setup-hint');if(hint&&(/failed|unavailable|requires|error|timed out/i).test(t))hint.textContent='If this persists, open Technical details and troubleshooting at the bottom of the page.'}
 function print(t){log.textContent=(log.textContent+String(t)+'\n').slice(-10000);log.scrollTop=log.scrollHeight}
 /* The compiled scsynth getter can return a numerical handle instead of the
  * actual Web Audio context. Observe its own context constructor, never create
@@ -116,6 +137,10 @@ function outputSampleRate(){
  return Math.round(sampleRate);
 }
 function refreshControls(){
+ const hint=$('lab-setup-hint');
+ if(hint){hint.textContent=!serverReady?'First startup loads native SuperCollider. After it starts, tap Play tone to hear the code above.':!definitionsReady?'SuperCollider is preparing its instruments…':'Play tone runs the visible SuperCollider source. To work with a recording, select one below.';}
+ if(!serverReady&&!booting&&!lang)engine.textContent='Start SuperCollider';
+ if(serverReady&&definitionsReady)engine.textContent='Play tone';
  sound.disabled=!!controller;
  load.disabled=!serverReady||!definitionsReady||!sound.value||!!controller;
  play.disabled=!current||!definitionsReady||!!controller;
@@ -262,14 +287,14 @@ async function listSounds(){
    announce('Preset source has been removed. Native sample playback is unavailable.');
   }
   showSoundDetails();
-  if(!entries.length)announce('No saved audio yet. Record, import or Discover a sound first.');
+  if(!entries.length)details.textContent='No recordings yet. Play the built-in tone above, or return to Sounds to record, import or discover audio.';
  }catch(error){announce('Local sound library unavailable: '+error.message)}
  refreshControls();
  maybeLoadLinkedPreset();
 }
 function requestServer(){
  if(!lang||!languageReady||bootRequested||serverReady)return;
- bootRequested=true;announce('Starting the SuperCollider audio server…');
+ bootRequested=true;engine.textContent='Starting audio…';announce('Starting the SuperCollider audio server…');
  bootTimeout=setTimeout(()=>{if(!serverReady){bootRequested=false;engine.textContent='Retry server startup';print('Startup timed out; native synthesis boot: '+(synthBootPending?'pending':synthBootCompleted?'complete':'not begun')+'; context: '+(synth?.getAudioContext?.()?.state||'unavailable'));announce('Native server startup timed out. Tap Retry to try again.')}},50000);
  try{lang.runCode('s.waitForBoot({ "'+READY+'".postln; }, onFailure: { "'+FAILED+'".postln; }, clock: SystemClock);')}
  catch(error){bootRequested=false;clearTimeout(bootTimeout);announce('Server request failed: '+error.message)}
@@ -282,18 +307,23 @@ engine.addEventListener('click',async()=>{
  if(synth&&serverReady){
    try{
     const context=outputContext();
-    if(typeof context?.resume!=='function')throw Error('Native SuperCollider audio context unavailable; reload and retry.');
+    if(typeof context?.resume!=='function')throw Error('Native SuperCollider audio output is unavailable. Open Technical details below.');
     await context.resume();
+    if(context.state!=='running')throw Error('Audio output is '+context.state+'. Tap Play tone again, or check browser audio permissions.');
     print('SuperCollider audio unlocked ('+context.state+').');
-    if(!controller&&!current)announce('SuperCollider audio unlocked ('+context.state+').');
+    if(!definitionsReady){announce('SuperCollider is still preparing its instruments. Tap Play tone when ready.');return}
+    const code=demoCode.value.trim();
+    if(!code)throw Error('The visible SuperCollider tone code is empty.');
+    lang.runCode(code);
+    announce('Sending the visible tone code to native SuperCollider…');
     maybeLoadLinkedPreset();
-   }catch(error){announce('Audio unlock failed: '+error.message)}
+   }catch(error){announce('Could not play tone: '+error.message);print('Tone playback: '+error.message)}
    return;
   }
  if(lang){if(languageReady&&!bootRequested){requestServer();return}announce('SuperCollider initialization is already in progress.');return}
  if(booting){announce('SuperCollider initialization is already in progress.');return}
  if(!crossOriginIsolated){announce('The standalone SuperCollider runtime requires a cross-origin-isolated secure page. Check the hosting headers.');return}
- booting=true;engine.disabled=true;announce('Loading native SuperCollider language and synthesis modules…');
+ booting=true;engine.disabled=true;engine.textContent='Loading audio…';announce('Loading native SuperCollider language and synthesis modules…');
  try{
   observeNativeAudioContext();
   const base=new URL('./runtime/',location.href);
@@ -313,7 +343,9 @@ engine.addEventListener('click',async()=>{
    }
    const sampleRateMatch=text.match(/__SC_SOUNDS_LAB_RATE__:(\d+(?:\.\d+)?)/);
    if(sampleRateMatch){serverSampleRate=Number(sampleRateMatch[1]);print('Native SuperCollider server sample rate: '+serverSampleRate+' Hz.');}
-   if(text.includes(DEFS)){definitionsReady=true;engine.textContent='Unlock audio';announce('SuperCollider ready. Select a sound and transfer it into a native buffer.');refreshControls();maybeLoadLinkedPreset()}
+   if(text.includes(DEFS)){definitionsReady=true;engine.textContent='Play tone';announce('SuperCollider ready. Tap Play tone to hear the visible code.');refreshControls();maybeLoadLinkedPreset()}
+   if(text.includes(DEMO_MARKER)&&!controller)announce(current?'SuperCollider executed the tone. Your recording is still loaded below.':'SuperCollider executed the tone code. If silent, check your phone volume and audio output.');
+   if(/ERROR:\s|FAILURE IN SERVER/.test(text))announce('SuperCollider reported an error. Open Technical details below for the message.');
    if(text.includes(FAILED)){clearTimeout(bootTimeout);bootRequested=false;engine.textContent='Retry server startup';announce('SuperCollider server failed to start. Tap Retry to try again.')}
    const cleaned=text.replaceAll(READY,'').replaceAll(FAILED,'').replaceAll(DEFS,'').trim();
    if(cleaned)print(cleaned);
