@@ -299,7 +299,7 @@ savePreset.addEventListener('click',async()=>{
   const preset={soundId:item.id,channels:settings.channels,start:settings.start,finish:settings.finish,
    rate:settings.rate,amp:settings.amp,loop:settings.loop};
   await saveSound({id:crypto.randomUUID(),name,source:'preset',created:Date.now(),favorite:false,
-   preset,code:exportedSource(settings,item)});
+   preset,code:exportedSource(settings,item),origin:item.origin?{...item.origin}:undefined});
   announce('Saved '+name+' to the Library as a preset referencing its original audio.');
  }catch(error){announce('Could not save sample instrument: '+error.message)}
  finally{refreshControls()}
