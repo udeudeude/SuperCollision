@@ -214,11 +214,13 @@ try{
  const demoBeforeEdit=await page.locator('#lab-demo-code').inputValue();
  await page.locator('#lab-demo-code').fill(demoBeforeEdit.replace('SinOsc.ar(freq)','LFTri.ar(freq)'));
  assert.equal(await page.locator('#lab-demo-sync-label').textContent(),'CODE EDITED · CONTROLS OFF');
- await page.locator('#lab-demo-pitch').fill('880');
- assert.match(await page.locator('#lab-demo-code').inputValue(),/LFTri\.ar\(freq\)/,'moving controls must preserve manual code');
+ assert.equal(await page.locator('#lab-demo-pitch').isDisabled(),true,'stale sliders must not imply control over edited sound');
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/LFTri\.ar\(freq\)/,'manual source edits must remain untouched');
  assert.equal(await page.locator('#lab-demo-code-bay').getAttribute('data-sync'),'modified');
  page.once('dialog',dialog=>dialog.accept());
  await page.locator('#lab-demo-reset').click();
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/\\freq, 660/);
+ await page.locator('#lab-demo-pitch').fill('880');
  assert.match(await page.locator('#lab-demo-code').inputValue(),/\\freq, 880/);
  assert.equal(await page.locator('#lab-demo-sync-label').textContent(),'CONTROLS MATCH CODE');
   assert.equal(await page.locator('#lab-source-bay').count(),1,'the SuperCollider source bay must be permanently present');
@@ -319,6 +321,32 @@ try{
  await importedRow.waitFor();
  assert.match(await importedRow.textContent(),/compressed preview/);
  assert.equal(await importedRow.getByRole('link',{name:'Creator profile'}).getAttribute('href'),indexed.creatorUrl);
+ // On-screen notes must be truthful, touch-sized controls backed by visible SuperCollider source.
+ // No browser oscillator, engine boot, network connection or autoplay is needed to inspect them.
+ await page.goto(base+'/sounds-lab.html');
+ assert.equal(await page.locator('#lab-audio-phase').getAttribute('data-phase'),'idle');
+ assert.equal(await page.locator('#lab-note-keys button').count(),8);
+ await page.getByRole('button',{name:'C4, 262 hertz'}).click();
+ assert.equal(await page.locator('#lab-demo-pitch').inputValue(),'262');
+ assert.equal(await page.getByRole('button',{name:'C4, 262 hertz'}).getAttribute('aria-pressed'),'true');
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/\\freq, 262/);
+ assert.match(await page.locator('#lab-status').textContent(),/Start SuperCollider/);
+ const sourceBeforeOverride=await page.locator('#lab-demo-code').inputValue();
+ await page.locator('#lab-demo-code').fill(sourceBeforeOverride+'\n// Original code edit is protected');
+ assert.equal(await page.locator('#lab-demo-controls').getAttribute('data-sync'),'modified');
+ assert.equal(await page.getByRole('button',{name:'C4, 262 hertz'}).isDisabled(),true);
+ assert.equal(await page.locator('#lab-demo-pitch').isDisabled(),true);
+ // Dismissing Reset must not discard the user edit.
+ await page.locator('#lab-demo-reset').click();
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/Original code edit is protected/);
+ page.once('dialog',dialog=>dialog.accept());
+ await page.locator('#lab-demo-reset').click();
+ assert.equal(await page.locator('#lab-demo-code').inputValue(),sourceBeforeOverride);
+ assert.equal(await page.getByRole('button',{name:'C4, 262 hertz'}).isDisabled(),false);
+ assert.equal(await page.locator('#lab-demo-pitch').isDisabled(),false);
+ const sizes=await page.locator('#lab-note-keys button').evaluateAll(els=>els.map(el=>({width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height})));
+ assert(sizes.every(box=>box.width>=50&&box.height>=48),'touch keys must remain finger-sized at a mobile viewport');
+
  // Saved synthesizer code must survive the complete Bench -> Library -> Bench journey.
  // No native engine is booted: opening a preset must NEVER execute arbitrary saved code.
  await page.goto(base+'/sounds-lab.html');
