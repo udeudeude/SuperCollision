@@ -68,10 +68,10 @@ assert.doesNotMatch(source,/\\sourceRate, 44100/,'desktop script must use source
 assert.match(sampleInstrumentSource({...normal,channels:2,loop:false}),/SynthDef\(\\scSoundsStereoOnce/);
 assert.throws(()=>sampleInstrumentSource({...normal,rate:Infinity}),/Speed/);
 const tone=demoSynthSource({frequency:660,amplitude:0.2});
-assert.match(tone,/SynthDef\\(\\\\scSoundsDemo/,'audition is a native SuperCollider instrument');
-assert.match(tone,/SinOsc\\.ar\\(freq\\)/,'oscillator must be in native synthesis code');
-assert.match(tone,/Synth\\(\\\\scSoundsDemo, \\[\\\\freq, 660, \\\\amp, 0\\.2\\]\\)/);
-assert.match(tone,/s\\.sync;[\\s\\S]+Synth\\(/,'definition installation precedes playback');
+assert.match(tone,/SynthDef\(\\scSoundsDemo/,'audition is a native SuperCollider instrument');
+assert.match(tone,/SinOsc\.ar\(freq\)/,'oscillator must be in native synthesis code');
+assert.match(tone,/Synth\(\\scSoundsDemo, \[\\freq, 660, \\amp, 0\.2\]\)/);
+assert.match(tone,/s\.sync;[\s\S]+Synth\(/,'definition installation precedes playback');
 assert.ok(tone.includes(DEMO_MARKER),'native audition must confirm command execution');
 assert.throws(()=>demoSynthSource({frequency:Infinity}),/pitch/);
 assert.throws(()=>demoSynthSource({frequency:20}),/pitch/);
