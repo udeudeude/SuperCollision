@@ -12,13 +12,33 @@ const details=$('lab-details');
 const regionStart=$('lab-start'),regionFinish=$('lab-finish'),regionRate=$('lab-rate'),regionAmp=$('lab-amp'),regionLoop=$('lab-loop'),regionSummary=$('lab-region-summary');
 const waveformCanvas=$('lab-waveform');
 const sourceView=$('lab-live-source'),copySource=$('lab-copy-source');
-function updateSourceBay(){
+const resetSource=$('lab-reset-source'),sourceState=$('lab-source-state');
+let sourceDirty=false;
+function updateSourceBay(force=false){
  if(!sourceView)return;
- if(!current||!currentItemId){sourceView.textContent='Select and transfer a recording to reveal the actual executable SuperCollider instrument.';copySource.disabled=true;return}
- try{sourceView.textContent=exportedSource(regionSettings(),originalSound());copySource.disabled=false}
- catch(error){sourceView.textContent='Instrument source unavailable: '+error.message;copySource.disabled=true}
+ if(!current||!currentItemId){
+  sourceView.value='Select and transfer a recording to reveal executable SuperCollider playback code.';
+  sourceView.readOnly=true;copySource.disabled=true;resetSource.disabled=true;
+  sourceDirty=false;sourceState.textContent='Load a sample to edit its playback code.';return;
+ }
+ try{
+  if(!sourceDirty||force){
+   sourceView.value=regionPlayCommand(regionSettings());sourceDirty=false;
+   sourceState.textContent='Generated from the controls. Tap the code to edit; Play runs the displayed command.';
+  }
+  sourceView.readOnly=false;copySource.disabled=false;resetSource.disabled=false;
+ }catch(error){sourceState.textContent='Playback code unavailable: '+error.message;sourceView.readOnly=true;copySource.disabled=true}
 }
-copySource?.addEventListener('click',async()=>{if(copySource.disabled)return;try{await navigator.clipboard.writeText(sourceView.textContent);copySource.textContent='Copied';setTimeout(()=>copySource.textContent='Copy code',1300)}catch{copySource.textContent='Select code to copy'}});
+sourceView.addEventListener('input',()=>{
+ if(sourceView.readOnly)return;
+ sourceDirty=true;sourceState.textContent='Custom SuperCollider command. Play will run these edits. Changing a control regenerates the command.';
+});
+resetSource.addEventListener('click',()=>updateSourceBay(true));
+copySource?.addEventListener('click',async()=>{
+ if(copySource.disabled)return;
+ try{await navigator.clipboard.writeText(sourceView.value);copySource.textContent='Copied';setTimeout(()=>copySource.textContent='Copy',1300)}
+ catch{sourceState.textContent='Clipboard unavailable. Select the code to copy.'}
+});
 
 const presetName=$('lab-preset-name'),savePreset=$('lab-save-preset'),exportPreset=$('lab-export-preset');
 let pendingPresetId=new URL(location.href).searchParams.get('preset');
@@ -371,7 +391,8 @@ play.addEventListener('click',async()=>{
  try{
   const context=outputContext();if(typeof context?.resume==='function')await context.resume();
   const params=regionSettings();
-  const code=regionPlayCommand(params);
+  const code=sourceView.value.trim();
+  if(!code)throw Error('Playback code is empty.');
   lang.runCode(code);
   announce('Playing through native SuperCollider '+(params.loop?'loop':'one shot')+' · '+Math.round(params.start*100)+'–'+Math.round(params.finish*100)+'% · '+params.rate+'×.');
  }catch(error){announce('Playback failed: '+error.message)}
