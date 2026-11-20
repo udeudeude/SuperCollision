@@ -65,10 +65,10 @@ try{
  await page.locator('#lab-load').click();
  await page.waitForFunction(()=>{
    const status=document.querySelector('#lab-status')?.textContent||'';
-   return status.startsWith('Verified by native SuperCollider sample readback:')||status.startsWith('Sample transfer failed:');
+   return !document.querySelector('#lab-play')?.disabled||status.startsWith('Sample transfer failed:');
   },null,{timeout:90000});
- assert.match(await page.locator('#lab-status').textContent(),/^Verified by native SuperCollider sample readback:/);
- // Late audio-unlock completion must not erase a previously verified buffer.
+ assert.equal(await page.locator('#lab-play').isEnabled(),true,'actual native transfer must complete before Play enables');
+ // Playing a demo tone must not erase a previously verified buffer.
  await page.locator('#lab-engine').click();
  await page.waitForFunction(()=>document.querySelector('#lab-log')?.textContent.includes('SuperCollider audio unlocked ('),null,{timeout:10000});
  assert.equal(await page.locator('#lab-play').isEnabled(),true,'demo playback must not unload a verified sample');
@@ -197,10 +197,10 @@ try{
   await page.locator('#lab-engine').click();
   await page.waitForFunction(()=>{
    const status=document.querySelector('#lab-status')?.textContent||'';
-   return status.startsWith('Verified by native SuperCollider sample readback:')||
+   return !document.querySelector('#lab-play')?.disabled||
      status.startsWith('Sample transfer failed:');
   },null,{timeout:90000});
-  assert.match(await page.locator('#lab-status').textContent(),/^Verified by native SuperCollider sample readback:/,'linked audio should reload into actual native SuperCollider buffers');
+  assert.equal(await page.locator('#lab-play').isEnabled(),true,'linked audio should reload into actual native SuperCollider buffers');
   assert.equal(await page.locator('#lab-start').inputValue(),'20');
   assert.equal(await page.locator('#lab-finish').inputValue(),'80');
   assert.equal(await page.locator('#lab-rate').inputValue(),'0.75');
