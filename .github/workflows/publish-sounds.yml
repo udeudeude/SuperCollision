@@ -4,6 +4,15 @@ on:
     branches: [main]
     paths:
       - 'sounds.html'
+      - 'sounds-lab.html'
+      - 'sounds-*.mjs'
+      - 'qa/sounds-*.mjs'
+      - '.github/workflows/publish-sounds.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'sounds.html'
+      - 'sounds-lab.html'
       - 'sounds-*.mjs'
       - 'qa/sounds-*.mjs'
       - '.github/workflows/publish-sounds.yml'
@@ -22,7 +31,7 @@ jobs:
       - name: Checkout source only
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}
           path: source
       - name: Validate Sounds JavaScript and license logic
         run: |
@@ -30,6 +39,7 @@ jobs:
           for file in source/sounds-*.mjs; do node --check "$file"; done
           node source/qa/sounds-licenses-test.mjs
           node source/qa/sounds-discover-test.mjs
+          node source/qa/sounds-buffer-test.mjs
           node source/qa/sounds-backup-test.mjs
       - name: Install browser test dependencies
         run: |
@@ -40,28 +50,31 @@ jobs:
         env:
           SOUNDS_BROWSER_CHANNEL: chrome
       - name: Checkout production branch without disturbing compiled engine
+        if: github.event_name != 'pull_request'
         uses: actions/checkout@v4
         with:
           ref: pages-build
           path: site
           persist-credentials: true
       - name: Overlay Sounds files only
+        if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           test -f site/runtime/sclang/sclang.js
           test -f site/runtime/scsynth/scsynth.js
           cp source/sounds.html site/sounds.html
+          cp source/sounds-lab.html site/sounds-lab.html
           for file in source/sounds-*.mjs; do cp "$file" site/; done
           cd site
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- sounds.html sounds-*.mjs
+          git add -- sounds.html sounds-lab.html sounds-*.mjs
           if git diff --cached --quiet; then
             echo "Sounds workspace already published"
           else
             while IFS= read -r staged; do
               case "$staged" in
-                sounds.html|sounds-*.mjs) ;;
+                sounds.html|sounds-lab.html|sounds-*.mjs) ;;
                 *) echo "Unexpected staged path: $staged"; exit 1 ;;
               esac
             done < <(git diff --cached --name-only)
