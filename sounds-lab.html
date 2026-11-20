@@ -26,6 +26,12 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 #lab-log{white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;color:#b6cbb8;background:#0d1612;padding:12px;font:12px/1.4 ui-monospace,monospace}
 #lab-status{font-weight:600;min-height:28px}
 #lab-waveform{display:block;width:100%;height:116px;background:#141b16;border:1px solid #575d54;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+#lab-source-bay{position:sticky;bottom:0;z-index:8;margin:0 -16px;background:#101713;border-top:3px solid #d8ae5b;padding:9px 16px 12px;box-shadow:0 -8px 24px #0009}
+#lab-source-bay .source-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+#lab-source-bay h2{font:750 11px/1.4 ui-monospace,monospace;letter-spacing:.08em;color:#e5bc71;margin:0}
+#lab-live-source{white-space:pre;overflow:auto;max-height:116px;min-height:55px;margin:8px 0 0;padding:9px;background:#090e0b;color:#c6d8c6;font:11px/1.45 ui-monospace,monospace}
+#lab-source-bay button{min-height:30px;padding:5px 10px;font-size:11px}
+@media(min-width:800px){#lab-source-bay{margin:0 auto;max-width:760px}}
 </style>
 </head>
 <body>
@@ -63,7 +69,7 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 <p class="muted">Only a verified native buffer can become a preset. A missing or deleted source recording will not be silently replaced.</p>
 </section>
 <section><h2>Status / diagnostics</h2><p id="lab-status" role="status" aria-live="polite">Start the native engine to begin.</p><pre id="lab-log" aria-label="SuperCollider diagnostic output"></pre></section>
-</main>
+</main><aside id="lab-source-bay" aria-label="Persistent executable SuperCollider source"><div class="source-head"><h2>SUPERCOLLIDER / INSTRUMENT SOURCE</h2><button type="button" id="lab-copy-source" disabled>Copy code</button></div><pre id="lab-live-source" tabindex="0" aria-live="off">Select and transfer a recording to reveal the actual executable SuperCollider instrument.</pre></aside>
 <script type="module" src="./sounds-lab.mjs?v=10"></script>
 </body>
 </html>
