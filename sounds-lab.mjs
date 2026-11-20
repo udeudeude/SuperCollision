@@ -211,7 +211,16 @@ function installDefinitions(){
  catch(error){announce('Could not create SuperCollider instruments: '+error.message)}
 }
 engine.addEventListener('click',async()=>{
- if(synth&&serverReady){try{const context=outputContext();if(typeof context?.resume!=='function')throw Error('Native SuperCollider audio context unavailable; reload and retry.');await context.resume();announce('SuperCollider audio unlocked ('+context.state+').')}catch(error){announce('Audio unlock failed: '+error.message)}return}
+ if(synth&&serverReady){
+   try{
+    const context=outputContext();
+    if(typeof context?.resume!=='function')throw Error('Native SuperCollider audio context unavailable; reload and retry.');
+    await context.resume();
+    announce('SuperCollider audio unlocked ('+context.state+').');
+    maybeLoadLinkedPreset();
+   }catch(error){announce('Audio unlock failed: '+error.message)}
+   return;
+  }
  if(lang){if(languageReady&&!bootRequested){requestServer();return}announce('SuperCollider initialization is already in progress.');return}
  if(booting){announce('SuperCollider initialization is already in progress.');return}
  if(!crossOriginIsolated){announce('The standalone SuperCollider runtime requires a cross-origin-isolated secure page. Check the hosting headers.');return}
@@ -235,7 +244,7 @@ engine.addEventListener('click',async()=>{
    }
    const sampleRateMatch=text.match(/__SC_SOUNDS_LAB_RATE__:(\d+(?:\.\d+)?)/);
    if(sampleRateMatch){serverSampleRate=Number(sampleRateMatch[1]);print('Native SuperCollider server sample rate: '+serverSampleRate+' Hz.');}
-   if(text.includes(DEFS)){definitionsReady=true;engine.textContent='Unlock audio';announce('SuperCollider ready. Select a sound and transfer it into a native buffer.');refreshControls()}
+   if(text.includes(DEFS)){definitionsReady=true;engine.textContent='Unlock audio';announce('SuperCollider ready. Select a sound and transfer it into a native buffer.');refreshControls();maybeLoadLinkedPreset()}
    if(text.includes(FAILED)){clearTimeout(bootTimeout);bootRequested=false;engine.textContent='Retry server startup';announce('SuperCollider server failed to start. Tap Retry to try again.')}
    const cleaned=text.replaceAll(READY,'').replaceAll(FAILED,'').replaceAll(DEFS,'').trim();
    if(cleaned)print(cleaned);
@@ -258,6 +267,7 @@ engine.addEventListener('click',async()=>{
  finally{booting=false;engine.disabled=false;refreshControls()}
 });
 sound.addEventListener('change',()=>{
+ queuedPresetLoadId=null;linkedPreset=null;
  if(current&&lang){try{lang.runCode(stopRegionCommand)}catch{}}
  current=null;currentItemId=null;waveform=null;progress.value=0;regionStart.value=0;regionFinish.value=100;updateRegionControls();
  showSoundDetails();
@@ -281,7 +291,9 @@ load.addEventListener('click',async()=>{
   if(controller.signal.aborted)throw Error('Transfer cancelled');
   if(decoded.sampleRate!==sampleRate)
    throw Error('Decoded sample rate differs from SuperCollider output; refusing pitch-altering transfer.');
-  announce('Transferring samples to SuperCollider…');
+  if(linkedPreset?.soundId===item.id&&decoded.numberOfChannels!==linkedPreset.channels)
+    throw Error('Original audio no longer matches the preset channel layout; refusing to substitute another instrument.');
+   announce('Transferring samples to SuperCollider…');
   // A separate Sounds-only engine owns this buffer. Never alter the main editor's server.
   if(allocated){
    lang.runCode('~scSoundsLabPlayer.tryPerform(\\free); ~scSoundsLabPlayer = nil;');
