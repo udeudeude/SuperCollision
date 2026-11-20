@@ -20,8 +20,8 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: supercollision-sounds-publish
-  cancel-in-progress: false
+  group: supercollision-sounds-${{ github.event.pull_request.number || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   sounds:
     name: Test and publish isolated Sounds files
@@ -57,6 +57,7 @@ jobs:
           path: site
           persist-credentials: true
       - name: Smoke-test actual compiled SuperCollider engine in isolated browser
+        if: github.event_name == 'pull_request'
         # The WebAssembly player is experimental. Gather concrete diagnostics
         # without blocking recovery/backup fixes if a runner lacks audio support.
         continue-on-error: true
