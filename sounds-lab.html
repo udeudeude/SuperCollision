@@ -29,7 +29,7 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 </style>
 </head>
 <body>
-<header><a href="./sounds.html">← Sounds</a><h1>Native Sample Lab</h1><small>EXPERIMENTAL · 04</small></header>
+<header><a href="./sounds.html">← Sounds</a><h1>Native Sample Lab</h1><small>EXPERIMENTAL · 05</small></header>
 <main>
 <p class="muted">Experimental isolated SuperCollider playback test. Uses the same native language and synthesis engine as SuperCollision, without changing the main Code page. This is not a browser sampler or a second sound engine.</p>
 <section><h2>1 / Initialize SuperCollider</h2>
@@ -55,9 +55,11 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 <p class="muted" id="lab-region-summary" aria-live="polite">Region: 0% to 100% · 1× · Volume 16% · One shot</p>
 <p class="muted">Native equal-power loop crossfades reduce boundary clicks; difficult sources can still produce audible artifacts. Stop releases only this laboratory player. Source audio is never overwritten.</p>
 <div class="actions"><button id="lab-play" class="primary" type="button" disabled>Play sample</button><button id="lab-stop" type="button" disabled>Stop</button></div>
+<div class="actions"><button id="lab-save-preset" type="button" disabled>Save region as preset</button></div>
+<p class="muted">Presets save only the selected region, speed, volume and loop setting in the unified Sounds Library. They keep attribution and refer to the original audio on this device. Deleting the original audio makes its presets unavailable; no duplicate recording is made.</p>
 </section>
 <section><h2>Status / diagnostics</h2><p id="lab-status" role="status" aria-live="polite">Start the native engine to begin.</p><pre id="lab-log" aria-label="SuperCollider diagnostic output"></pre></section>
 </main>
-<script type="module" src="./sounds-lab.mjs?v=4"></script>
+<script type="module" src="./sounds-lab.mjs?v=5"></script>
 </body>
 </html>
