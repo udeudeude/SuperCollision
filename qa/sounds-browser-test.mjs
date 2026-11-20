@@ -155,6 +155,38 @@ try{
  await page.locator('#lab-finish').evaluate(input=>{input.value='50';input.dispatchEvent(new Event('input',{bubbles:true}))});
  assert.equal(await page.locator('#lab-start').inputValue(),'49','region sliders should preserve an ordered, nonempty selection');
  assert.match(await page.locator('#lab-region-summary').textContent(),/Region: 49% to 50%/);
+
+ const linkedAudioId=await page.evaluate(async()=>{
+  const {allSounds,saveSound}=await import('/sounds-store.mjs');
+  const audio=(await allSounds()).find(item=>item.blob instanceof Blob);
+  await saveSound({id:'linked-instrument-preset',name:'Reusable sample instrument',source:'preset',
+   created:Date.now(),favorite:false,code:'// native sample instrument',
+   preset:{soundId:audio.id,channels:1,start:0.2,finish:0.8,rate:0.75,amp:0.12,loop:true}});
+  await saveSound({id:'missing-audio-preset',name:'Missing sample preset',source:'preset',
+   created:Date.now(),favorite:false,code:'// referenced original was deleted',
+   preset:{soundId:'deleted-original',channels:1,start:0.25,finish:0.75,rate:1,amp:0.1,loop:false}});
+  return audio.id;
+ });
+ await page.goto(base+'/sounds.html');
+ const presetRow=page.locator('.managed-item').filter({hasText:'Reusable sample instrument'});
+ await presetRow.waitFor();
+ assert.match(await presetRow.textContent(),/source audio available/i);
+ await page.locator('#sounds-filter').selectOption('preset');
+ await page.waitForFunction(()=>document.querySelectorAll('.managed-item').length===2);
+ assert.equal(await page.locator('.managed-item').count(),2,'presets need a dedicated Library filter');
+ const link=await presetRow.getByRole('link',{name:'Open preset in Sample Lab'}).getAttribute('href');
+ assert.equal(link,'./sounds-lab.html?preset=linked-instrument-preset');
+ await page.goto(base+'/sounds-lab.html?preset=linked-instrument-preset');
+ await page.waitForFunction(()=>document.querySelector('#lab-sound')?.value!==''&&document.querySelector('#lab-start')?.value==='20');
+ assert.equal(await page.locator('#lab-sound').inputValue(),linkedAudioId,'preset must resolve the original by immutable identifier');
+ assert.equal(await page.locator('#lab-finish').inputValue(),'80');
+ assert.equal(await page.locator('#lab-rate').inputValue(),'0.75');
+ assert.equal(await page.locator('#lab-amp').inputValue(),'0.12');
+ assert.equal(await page.locator('#lab-loop').isChecked(),true);
+ assert.equal(await page.locator('#lab-play').isDisabled(),true,'linked presets must still require verified native transfer');
+ await page.goto(base+'/sounds-lab.html?preset=missing-audio-preset');
+ await page.getByText('Preset unavailable:',{exact:false}).waitFor();
+ assert.equal(await page.locator('#lab-sound').inputValue(),'','missing original may not be replaced by arbitrary other audio');
  assert.deepEqual(errors,[],'No unhandled page errors allowed');
  console.log('Sounds browser regression passed: library, source, recording, discovery, license filters and persistence');
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}

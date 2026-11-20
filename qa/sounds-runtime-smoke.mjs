@@ -86,6 +86,27 @@ try{
  await page.locator('#lab-loop').check();
  await page.locator('#lab-play').click();
  await page.getByText('Playing through native SuperCollider loop',{exact:false}).waitFor();
+
+ await page.locator('#lab-preset-name').fill('Native verified instrument');
+ assert.equal(await page.locator('#lab-save-preset').isEnabled(),true);
+ await page.locator('#lab-save-preset').click();
+ await page.getByText('Saved Native verified instrument to the Library',{exact:false}).waitFor();
+ const stored=await page.evaluate(async()=>{
+  const {allSounds}=await import('/sounds-store.mjs');
+  return (await allSounds()).filter(item=>item.source==='preset').map(item=>({
+   name:item.name,sourceId:item.preset?.soundId,rate:item.preset?.rate,loop:item.preset?.loop,code:item.code
+  }));
+ });
+ assert.equal(stored.length,1);
+ assert.equal(stored[0].sourceId,'native-smoke','preset must reference, never duplicate, original audio');
+ assert.equal(stored[0].rate,0.75);
+ assert.equal(stored[0].loop,true);
+ assert.match(stored[0].code,/Buffer\.read\(s, path/);
+ const scriptEvent=page.waitForEvent('download');
+ await page.locator('#lab-export-preset').click();
+ const script=await scriptEvent;
+ assert.match(script.suggestedFilename(),/Native verified instrument\.scd$/);
+ assert.match(await readFile(await script.path(),'utf-8'),/SynthDef\(\\scSoundsMonoLoop/);
  await page.locator('#lab-stop').click();
  await page.getByText('Stopped Sounds laboratory playback.',{exact:false}).waitFor();
  assert.equal(errors.length,0,'No page errors: '+errors.join('; '));

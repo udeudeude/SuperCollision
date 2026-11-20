@@ -24,6 +24,7 @@ async function refresh(){
  const version=++pending;
  let items;try{items=await allSounds()}catch(error){say('Library unavailable: '+error.message);return}
  if(version!==pending)return;
+ const audioIds=new Set(items.filter(item=>item.blob instanceof Blob).map(item=>item.id));
  for(const url of objectUrls)URL.revokeObjectURL(url);objectUrls=[];
  const query=search.value.trim().toLowerCase(),kind=filter.value;
  items=items.filter(item=>{
@@ -48,6 +49,9 @@ async function refresh(){
    const licenseLink=safeUrl(origin.licenseUrl);
    if(licenseLink){row.append(' · ');const a=node('a','License');a.href=licenseLink;a.target='_blank';a.rel='noopener noreferrer';row.append(a)}
   }
+  if(item.preset?.soundId){
+   row.append(node('small',audioIds.has(item.preset.soundId)?'Native SuperCollider sample preset · source audio available':'Sample preset · ORIGINAL AUDIO MISSING. Restore the source recording from a backup.'));
+  }
   if(item.code){
    const codePreview=node('pre',item.code);codePreview.className='saved-code';row.append(codePreview);
   }else if(item.blob instanceof Blob){
@@ -66,8 +70,13 @@ async function refresh(){
    if(!newName.trim()){say('The sound name cannot be empty.');return}
    try{await saveSound({...item,name:newName.trim().slice(0,120)})}catch(error){say('Rename failed: '+error.message)}
   }));
+  if(item.preset?.soundId){
+   const lab=node('a','Open preset in Sample Lab');
+   lab.href='./sounds-lab.html?preset='+encodeURIComponent(item.id);
+   actions.append(lab);
+  }
   if(item.code){
-   actions.append(action('Edit source',()=>{
+   if(!item.preset)actions.append(action('Edit source',()=>{
     editing=item.id;title.value=item.name;code.value=item.code;
     saveButton.textContent='Save changes';cancelButton.hidden=false;
     document.querySelector('#sounds-tabs [data-view="create"]').click();
