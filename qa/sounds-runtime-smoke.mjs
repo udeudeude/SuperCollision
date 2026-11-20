@@ -28,7 +28,8 @@ const browser=await chromium.launch({headless:true,args:['--no-sandbox','--autop
 const page=await browser.newPage();
 const errors=[];
 page.on('pageerror',e=>errors.push(e.message));
-page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text())});
+page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push('console: '+m.text())});
+page.on('response',response=>{if(response.status()>=400&&!response.url().endsWith('/favicon.ico'))errors.push('HTTP '+response.status()+' '+response.url())});
 try{
  await page.goto(base+'/sounds-lab.html');
  assert.equal(await page.evaluate(()=>crossOriginIsolated),true,'real native runtime requires cross-origin isolation');
@@ -58,7 +59,11 @@ try{
  await page.locator('#lab-engine').click();
  await page.getByText('SuperCollider ready.',{exact:false}).waitFor({timeout:120000});
  await page.locator('#lab-load').click();
- await page.getByText('Verified by native SuperCollider sample readback:',{exact:false}).waitFor({timeout:90000});
+ await page.waitForFunction(()=>{
+   const status=document.querySelector('#lab-status')?.textContent||'';
+   return status.startsWith('Verified by native SuperCollider sample readback:')||status.startsWith('Sample transfer failed:');
+  },null,{timeout:90000});
+ assert.match(await page.locator('#lab-status').textContent(),/^Verified by native SuperCollider sample readback:/);
  assert.equal(await page.locator('#lab-play').isEnabled(),true);
  await page.locator('#lab-play').click();
  await page.getByText('Playing through native SuperCollider',{exact:false}).waitFor();
