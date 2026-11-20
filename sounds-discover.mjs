@@ -20,7 +20,15 @@ function httpsUrl(value){
  try{const u=new URL(value);return u.protocol==='https:'?u.href:null}catch{return null}
 }
 function syncSource(){keyBox.hidden=source.value!=='freesound';$('discover-source-description').textContent=source.value==='freesound'?'Freesound requires your personal application key. Saved files are preview quality.':'Openverse requires no account. Wikimedia results are drawn from its Commons collection.'}
-source.addEventListener('change',()=>{controller?.abort();busy=false;syncSource();page=1;results.replaceChildren();say('Search for sounds to see results.');more.disabled=true;previous.disabled=true});
+function invalidateSearch(message){
+ controller?.abort();controller=null;busy=false;page=1;pageCount=0;
+ results.replaceChildren();more.disabled=true;previous.disabled=true;say(message);
+}
+source.addEventListener('change',()=>{invalidateSearch('Collection changed. Search again to see matching sounds.');syncSource()});
+for(const control of Object.values(licenseControls)){
+ control.addEventListener('change',()=>invalidateSearch('License filters changed. Search again to see matching sounds.'));
+}
+query.addEventListener('input',()=>{if(pageCount||busy)invalidateSearch('Search terms changed. Search again to see matching sounds.')});
 syncSource();
 function providerMetadata(sound,provider){
  if(provider==='freesound'){

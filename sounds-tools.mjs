@@ -73,6 +73,13 @@ async function refresh(){
     document.querySelector('#sounds-tabs [data-view="create"]').click();
     code.focus();
    }));
+   actions.append(action('Export .scd',()=>{
+    const blob=new Blob([item.code],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob);
+    const a=node('a');a.href=url;
+    a.download=(item.name||'instrument').replace(/[\\/:*?"<>|]/g,'_').slice(0,110).replace(/\.scd$/i,'')+'.scd';
+    document.body.append(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+   }));
    actions.append(action('Copy code',async()=>{
     try{await navigator.clipboard.writeText(item.code);say('SuperCollider code copied.')}
     catch{say('Clipboard permission denied. Select and copy the displayed source instead.')}
