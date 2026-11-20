@@ -6,9 +6,16 @@ const NAMES=Object.freeze({
 });
 function definition(channels,loop){
   const name=NAMES[channels+':'+loop];
-  const reader=loop
-    ? 'BufRd.ar('+channels+', bufnum, Phasor.ar(0, playbackRate, low, high, low), loop: 1, interpolation: 2)'
-    : 'PlayBuf.ar('+channels+', bufnum, playbackRate, startPos: low, loop: 0)';
+  // Entire crossfade is calculated by SuperCollider. The incoming readhead
+  // finishes at the phase reset position, avoiding a click at the wrap.
+  const loopReader=
+    '    var fadeFrames = (BufSampleRate.kr(bufnum) * 0.012 * rate.clip(0.25, 2)).min((high - low) * 0.25).max(0.25);\n'+
+    '    var phase = Phasor.ar(0, playbackRate, low + fadeFrames, high, low + fadeFrames);\n'+
+    '    var seam = ((phase - (high - fadeFrames)) / fadeFrames).clip(0, 1) * 1.5707963267948966;\n'+
+    '    var tail = BufRd.ar('+channels+', bufnum, phase, loop: 1, interpolation: 2);\n'+
+    '    var head = BufRd.ar('+channels+', bufnum, phase - high + low + fadeFrames, loop: 1, interpolation: 2);\n'+
+    '    var signal = (tail * seam.cos) + (head * seam.sin);\n';
+  const onceReader='    var signal = PlayBuf.ar('+channels+', bufnum, playbackRate, startPos: low, loop: 0);\n';
   const stopEnvelope='EnvGen.kr(Env.asr(0.008, 1, 0.03), gate, doneAction: 2)';
   const envelope=loop ? stopEnvelope :
     '(progress / (0.006 / segmentSeconds).clip(0.01, 0.45)).clip(0, 1) * ((1 - progress) / (0.006 / segmentSeconds).clip(0.01, 0.45)).clip(0, 1) * '+stopEnvelope;
@@ -19,7 +26,7 @@ function definition(channels,loop){
     '    var high = (finish.clip(0.01, 1) * frames).clip(low + 1, frames);\n'+
     '    var playbackRate = BufRateScale.kr(bufnum) * rate.clip(0.25, 2);\n'+
     '    var segmentSeconds = ((finish - start).max(0.01) * BufDur.kr(bufnum) / rate.clip(0.25, 2)).max(0.012);\n'+
-    '    var signal = '+reader+';\n'+
+    (loop?loopReader:onceReader)+
     (loop?'':'    var progress = Line.kr(0, 1, segmentSeconds, doneAction: 2);\n')+
     '    var envelope = '+envelope+';\n'+
     '    Out.ar(0, '+output+');\n'+

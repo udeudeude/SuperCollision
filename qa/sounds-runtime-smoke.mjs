@@ -65,6 +65,19 @@ try{
   },null,{timeout:90000});
  assert.match(await page.locator('#lab-status').textContent(),/^Verified by native SuperCollider sample readback:/);
  assert.equal(await page.locator('#lab-play').isEnabled(),true);
+ assert.ok(await page.locator('#lab-waveform').evaluate(canvas=>{
+  const data=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+  for(let i=0;i<data.length;i+=4)if(data[i]===229&&data[i+1]===188&&data[i+2]===113)return true;
+  return false;
+ }), 'decoded audio should yield visible native-sample waveform');
+ await page.locator('#lab-waveform').scrollIntoViewIfNeeded();
+ const bounds=await page.locator('#lab-waveform').boundingBox();
+ await page.mouse.move(bounds.x+bounds.width*0.2,bounds.y+bounds.height/2);
+ await page.mouse.down();
+ await page.mouse.move(bounds.x+bounds.width*0.8,bounds.y+bounds.height/2,{steps:6});
+ await page.mouse.up();
+ assert.match(await page.locator('#lab-region-summary').textContent(),/Region: 20% to 80%/);
+ assert.equal(await page.locator('#lab-start').inputValue(),'20');
  await page.locator('#lab-start').evaluate(input=>{input.value='20';input.dispatchEvent(new Event('input',{bubbles:true}))});
  await page.locator('#lab-finish').evaluate(input=>{input.value='80';input.dispatchEvent(new Event('input',{bubbles:true}))});
  await page.locator('#lab-rate').evaluate(input=>{input.value='0.75';input.dispatchEvent(new Event('input',{bubbles:true}))});
