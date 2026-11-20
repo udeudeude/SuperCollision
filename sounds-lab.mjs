@@ -12,7 +12,7 @@ const BUFFER=700;
 const READY='__SC_SOUNDS_LAB_READY__',FAILED='__SC_SOUNDS_LAB_FAILED__',DEFS='__SC_SOUNDS_LAB_DEFS__',RATE='__SC_SOUNDS_LAB_RATE__:';
 const DEFINITION_SOURCE=REGION_DEFINITIONS;
 let lang=null,synth=null,transport=null,languageReady=false,serverReady=false,definitionsReady=false;
-let bootRequested=false,booting=false,bootTimeout=null,current=null,controller=null,entries=[],allocated=false;
+let bootRequested=false,booting=false,bootTimeout=null,current=null,currentItemId=null,controller=null,entries=[],allocated=false;
 let synthBootPending=false,synthBootCompleted=false,serverSampleRate=null,nativeAudioContext=null;
 function announce(t){status.textContent=t}
 function print(t){log.textContent=(log.textContent+String(t)+'\n').slice(-10000);log.scrollTop=log.scrollHeight}
@@ -65,9 +65,12 @@ for(const [input,dimension] of [[regionStart,'start'],[regionFinish,'finish'],[r
 updateRegionControls();
 async function listSounds(){
  try{
+  const previousId=sound.value;
   entries=(await allSounds()).filter(item=>item.blob instanceof Blob).sort((a,b)=>Number(b.created||0)-Number(a.created||0));
   sound.replaceChildren(new Option('Choose a recorded or imported sound…',''));
   for(const item of entries)sound.add(new Option((item.name||'Untitled')+' · '+((item.blob.size/1024/1024).toFixed(1))+' MB',item.id));
+  if(entries.some(item=>item.id===previousId))sound.value=previousId;
+  if(currentItemId&&!entries.some(item=>item.id===currentItemId)){current=null;currentItemId=null;progress.value=0}
   if(!entries.length)announce('No saved audio yet. Record, import or Discover a sound first.');
  }catch(error){announce('Local sound library unavailable: '+error.message)}
  refreshControls();
@@ -132,7 +135,7 @@ engine.addEventListener('click',async()=>{
 });
 sound.addEventListener('change',()=>{
  if(current&&lang){try{lang.runCode(stopRegionCommand)}catch{}}
- current=null;progress.value=0;regionStart.value=0;regionFinish.value=100;updateRegionControls();
+ current=null;currentItemId=null;progress.value=0;regionStart.value=0;regionFinish.value=100;updateRegionControls();
  const item=entries.find(item=>item.id===sound.value);
  details.textContent=item?('Source: '+item.source+' · '+(item.origin?.creator||'local recording')+' · '+(item.origin?.license||'personal or unknown license')):'';
  refreshControls();
@@ -140,7 +143,7 @@ sound.addEventListener('change',()=>{
 load.addEventListener('click',async()=>{
  const item=entries.find(entry=>entry.id===sound.value);
  if(!item||!serverReady||!definitionsReady||controller)return;
- controller=new AbortController();current=null;progress.value=0;refreshControls();
+ controller=new AbortController();current=null;currentItemId=null;progress.value=0;refreshControls();
  try{
   if(item.blob.size>50*1024*1024)throw Error('Choose an audio file under 50 MB for this laboratory.');
   const context=outputContext(),sampleRate=outputSampleRate();
@@ -165,9 +168,9 @@ load.addEventListener('click',async()=>{
     signal:controller.signal,
     onProgress:ratio=>{progress.value=ratio;announce('Transferring into native SuperCollider buffer: '+Math.round(100*ratio)+'%')}
   });
-  allocated=true;updateRegionControls();
+  allocated=true;currentItemId=item.id;updateRegionControls();
   announce('Verified by native SuperCollider sample readback: '+current.frames+' frames, '+current.channels+' channel(s), '+current.sampleRate+' Hz. Ready for PlayBuf.');
- }catch(error){current=null;announce('Sample transfer failed: '+error.message)}
+ }catch(error){current=null;currentItemId=null;announce('Sample transfer failed: '+error.message)}
  finally{controller=null;refreshControls()}
 });
 cancel.addEventListener('click',()=>{controller?.abort();announce('Cancelling sample transfer and releasing the incomplete buffer…')});
