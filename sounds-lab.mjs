@@ -10,11 +10,11 @@ const BUFFER=700;
 const READY='__SC_SOUNDS_LAB_READY__',FAILED='__SC_SOUNDS_LAB_FAILED__',DEFS='__SC_SOUNDS_LAB_DEFS__';
 const DEFINITION_SOURCE=String.raw`(
 Routine({
-  SynthDef(\\scSoundsMono, { |bufnum=0, amp=0.16, rate=1|
+  SynthDef(\scSoundsMono, { |bufnum=0, amp=0.16, rate=1|
     var signal=PlayBuf.ar(1,bufnum,BufRateScale.kr(bufnum)*rate,doneAction:2);
     Out.ar(0,Pan2.ar(signal*amp));
   }).add;
-  SynthDef(\\scSoundsStereo, { |bufnum=0, amp=0.16, rate=1|
+  SynthDef(\scSoundsStereo, { |bufnum=0, amp=0.16, rate=1|
     var signal=PlayBuf.ar(2,bufnum,BufRateScale.kr(bufnum)*rate,doneAction:2);
     Out.ar(0,signal*amp);
   }).add;
