@@ -347,7 +347,7 @@ try{
  assert.equal(await page.locator('#lab-demo-code-bay').getAttribute('data-sync'),'matched');
  assert.equal(await page.locator('#lab-engine').textContent(),'Start SuperCollider','restoring source must never autoplay or start the engine');
 
- const editedTone=cleanTone.code+'\\n// A user-authored variation kept verbatim.';
+ const editedTone=cleanTone.code+'\n// A user-authored variation kept verbatim.';
  await page.locator('#lab-demo-code').fill(editedTone);
  assert.equal(await page.locator('#lab-demo-code-bay').getAttribute('data-sync'),'modified');
  await page.locator('#lab-tone-name').fill('Saved native tone variant');
