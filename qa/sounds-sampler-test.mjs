@@ -4,8 +4,8 @@ const normal={bufferId:700,channels:1,start:0,finish:1,rate:1,amp:0.16,loop:fals
 assert.equal(validateRegion(normal).rate,1);
 assert.equal(validateRegion(normal).sourceSampleRate,0,'desktop Buffer.read must retain its own file sample rate');
 assert.equal(validateRegion({...normal,sourceSampleRate:44100}).sourceSampleRate,44100);
-assert.match(regionPlayCommand({...normal,sourceSampleRate:44100}),/\\\\sourceRate, 44100/);
-assert.match(regionPlayCommand(normal),/\\\\sourceRate, 0/);
+assert.match(regionPlayCommand({...normal,sourceSampleRate:44100}),/\\sourceRate, 44100/);
+assert.match(regionPlayCommand(normal),/\\sourceRate, 0/);
 assert.equal(validateRegion({...normal,start:0.56,finish:0.57}).finish,0.57,'one-percent regions are valid despite floating-point rounding');
 assert.match(regionPlayCommand(normal),/Synth\(\\scSoundsMonoOnce/);
 assert.match(regionPlayCommand({...normal,channels:2,loop:true,rate:0.5,start:0.2,finish:0.8}),/Synth\(\\scSoundsStereoLoop/);
@@ -54,7 +54,7 @@ assert.match(source,/Sample maker; credit required/,'preserve attribution withou
 assert.equal((source.match(/SynthDef\(\\unexpected/g)||[]).length,1,'untrusted name should remain one comment line');
 assert.doesNotMatch(source,/^\s*SynthDef\(\\unexpected/m,'untrusted name may not inject SuperCollider source');
 assert.match(source,/NOT embedded/,'users must export the original audio independently');
-assert.doesNotMatch(source,/\\\\sourceRate, 44100/,'desktop script must use source file sample rate, not the web server sample rate');
+assert.doesNotMatch(source,/\\sourceRate, 44100/,'desktop script must use source file sample rate, not the web server sample rate');
 assert.match(sampleInstrumentSource({...normal,channels:2,loop:false}),/SynthDef\(\\scSoundsStereoOnce/);
 assert.throws(()=>sampleInstrumentSource({...normal,rate:Infinity}),/Speed/);
 console.log('Sounds native region definitions, one-shot, loop, and validated controls passed.');
