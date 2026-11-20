@@ -70,6 +70,26 @@ export function regionLiveSource(options){
 }
 export const stopRegionCommand='~scSoundsLabPlayer.tryPerform(\\set, \\gate, 0); ~scSoundsLabPlayer = nil;';
 
+/* A short native SuperCollider audition that needs neither a recording nor
+ * a browser audio oscillator. The displayed source is the source we execute.
+ * The marker is emitted only after s.sync and the native Synth request. */
+export const DEMO_MARKER='__SC_SOUNDS_LAB_DEMO__';
+export function demoSynthSource({frequency=440,amplitude=0.16}={}){
+ if(!Number.isSafeInteger(frequency)||frequency<150||frequency>1000)
+  throw Error('Demo pitch must be between 150 and 1000 Hz.');
+ if(!Number.isFinite(amplitude)||amplitude<0.05||amplitude>0.25)
+  throw Error('Demo volume must be between 0.05 and 0.25.');
+ return '(\\nRoutine({\\n'+
+  '  SynthDef(\\\\scSoundsDemo, { |freq=440, amp=0.16|\\n'+
+  '    var envelope = EnvGen.kr(Env.perc(0.01, 1.2), doneAction: 2);\\n'+
+  '    var tone = SinOsc.ar(freq) * envelope * amp;\\n'+
+  '    Out.ar(0, Pan2.ar(tone));\\n'+
+  '  }).add;\\n'+
+  '  s.sync;\\n'+
+  '  Synth(\\\\scSoundsDemo, [\\\\freq, '+frequency+', \\\\amp, '+Number(amplitude.toFixed(2))+']);\\n'+
+  '  "'+DEMO_MARKER+'".postln;\\n'+
+  '}).play(SystemClock);\\n)';
+}
 /* Export a standalone SuperCollider script for a user-supplied copy of the
  * original audio. A sound preset never embeds audio or assumes browser
  * IndexedDB paths are readable by a desktop SuperCollider server. */
