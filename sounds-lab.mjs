@@ -2,6 +2,7 @@
  * This page boots its own sclang/scsynth; main editor remains untouched. */
 import {allSounds,saveSound} from './sounds-store.mjs';
 import {NativeBufferTransport} from './sounds-buffer.mjs';
+import {readPcmWaveForNativeBuffer} from './sounds-pcm-ingest.mjs';
 import {REGION_DEFINITIONS,regionPlayCommand,stopRegionCommand,sampleInstrumentSource,validateRegion} from './sounds-sampler.mjs';
 import {waveformPeaks,waveformDragRegion} from './sounds-waveform.mjs';
 const $=id=>document.getElementById(id);
@@ -281,26 +282,34 @@ load.addEventListener('click',async()=>{
   if(item.blob.size>50*1024*1024)throw Error('Choose an audio file under 50 MB for this laboratory.');
   const context=outputContext(),sampleRate=outputSampleRate();
   if(typeof context?.resume==='function')await context.resume();
-  // Decode for native-buffer ingestion through the SuperCollider-owned output
-  // AudioContext. A separate OfflineAudioContext can stall after server restart.
-  // This does not create browser playback or a competing sound processor.
-  if(typeof context?.decodeAudioData!=='function')
-   throw Error('Native SuperCollider output cannot decode this file. Import compatible audio instead.');
-  print('Decoding via native output context at '+sampleRate+' Hz; original remains unchanged.');
-  announce('Decoding original audio for SuperCollider ingestion…');
+  // Uncompressed PCM WAVE can be unpacked exactly into native sample values,
+  // avoiding decodeAudioData freezes observed after compiled scsynth startup.
+  // This is container ingestion only: no browser synthesis, editing or effects.
   const sourceBytes=await item.blob.arrayBuffer();
-  let decodeTimer,abortDecoder;
-  const decoded=await Promise.race([
-   context.decodeAudioData(sourceBytes),
-   new Promise((_,reject)=>{
-    abortDecoder=()=>reject(Error('Transfer cancelled'));
-    controller.signal.addEventListener('abort',abortDecoder,{once:true});
-    decodeTimer=setTimeout(()=>reject(Error('Audio decoding timed out. Retry or import another format.')),30000);
-   })
-  ]).finally(()=>{
-   clearTimeout(decodeTimer);
-   controller.signal.removeEventListener('abort',abortDecoder);
-  });
+  let decoded=readPcmWaveForNativeBuffer(sourceBytes);
+  if(decoded){
+   print('Reading PCM WAVE sample values for native SuperCollider; no resampling or processing.');
+   announce('Reading original WAVE samples for native transfer…');
+  }else{
+   // Other formats use the SuperCollider-owned output context for ingestion.
+   // No separate playback or effects engine is introduced.
+   if(typeof context?.decodeAudioData!=='function')
+    throw Error('Native SuperCollider output cannot decode this file. Import compatible audio instead.');
+   print('Decoding via native output context at '+sampleRate+' Hz; original remains unchanged.');
+   announce('Decoding original audio for SuperCollider ingestion…');
+   let decodeTimer,abortDecoder;
+   decoded=await Promise.race([
+    context.decodeAudioData(sourceBytes),
+    new Promise((_,reject)=>{
+     abortDecoder=()=>reject(Error('Transfer cancelled'));
+     controller.signal.addEventListener('abort',abortDecoder,{once:true});
+     decodeTimer=setTimeout(()=>reject(Error('Audio decoding timed out. Retry or import another format.')),30000);
+    })
+   ]).finally(()=>{
+    clearTimeout(decodeTimer);
+    controller.signal.removeEventListener('abort',abortDecoder);
+   });
+  }
   if(controller.signal.aborted)throw Error('Transfer cancelled');
   if(decoded.sampleRate!==sampleRate)
    throw Error('Decoded sample rate differs from SuperCollider output; refusing pitch-altering transfer.');
