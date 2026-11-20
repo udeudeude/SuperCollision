@@ -2,7 +2,7 @@
  * No service-worker or main-page changes. Audio is stored unchanged. */
 import {readableLicense,meetsLicenseFilters,openverseLicenseFilter} from './sounds-licenses.mjs';
 import {saveSound} from './sounds-store.mjs';
-import {freesoundLicenseFilter,openverseSourceFilter,durationSeconds,importedAudioMime} from './sounds-discover-core.mjs';
+import {freesoundLicenseFilter,openverseSourceFilter,durationSeconds,importedAudioMime,rejectMislabelledAudio,downloadProgressText} from './sounds-discover-core.mjs';
 const $=id=>document.getElementById(id);
 const form=$('discover-form'),results=$('discover-results'),status=$('discover-status');
 const source=$('discover-source'),query=$('discover-query'),licenseControls={
@@ -96,6 +96,21 @@ function downloadAllowed(){
  const verifiedWifi=connection?.type==='wifi'&&!connection?.saveData;
  return verifiedWifi||allowUnverified.checked;
 }
+function enforceDownloadPolicy(){
+ if(activeDownload?.phase==='downloading'&&!downloadAllowed()){
+  cancelActiveDownload();
+  say('Download cancelled because Wi-Fi can no longer be verified. Existing sounds are safe.');
+ }
+}
+allowUnverified.addEventListener('change',enforceDownloadPolicy);
+const connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+connection?.addEventListener?.('change',enforceDownloadPolicy);
+window.addEventListener('offline',()=>{
+ if(activeDownload?.phase==='downloading'){
+  cancelActiveDownload();
+  say('Download cancelled because the device went offline. Existing sounds are safe.');
+ }
+});
 async function downloadLimited(url,knownSize,signal){
  if(knownSize>MAX_BYTES)throw Error('This file exceeds the 50 MB per-download limit.');
  const response=await fetch(url,{cache:'no-store',credentials:'omit',signal});
@@ -104,7 +119,7 @@ async function downloadLimited(url,knownSize,signal){
  const size=Number(response.headers.get('content-length')||0);
  if(size>MAX_BYTES){await response.body?.cancel();throw Error('File exceeds 50 MB.')}
  if(!response.body?.getReader)throw Error('Your browser cannot verify download size safely. Download from the source and Import instead.');
- const reader=response.body.getReader(),parts=[];let count=0;
+ const reader=response.body.getReader(),parts=[];let count=0,lastProgressBucket=-1;
  try{
   while(true){
    const part=await reader.read();if(part.done)break;
@@ -112,10 +127,24 @@ async function downloadLimited(url,knownSize,signal){
    if(!downloadAllowed())throw Error('Wi-Fi can no longer be verified. Download stopped to avoid possible cellular use.');
    count+=part.value.byteLength;if(count>MAX_BYTES)throw Error('File exceeded 50 MB, so download stopped.');
    parts.push(part.value);
+   const bucket=size>0?Math.floor(20*count/size):Math.floor(count/262144);
+   if(bucket!==lastProgressBucket){
+    lastProgressBucket=bucket;
+    say(downloadProgressText(count,size));
+   }
   }
  }catch(error){await reader.cancel().catch(()=>{});throw error}
  if(signal?.aborted)throw Error('Download cancelled.');
+ if(!downloadAllowed())throw Error('Wi-Fi can no longer be verified. Audio was not saved.');
  if(!count)throw Error('The downloaded file was empty.');
+ // Inspect only a small prefix, never decode or process the original recording.
+ const prefix=new Uint8Array(Math.min(count,256));let position=0;
+ for(const part of parts){
+  const take=Math.min(part.byteLength,prefix.length-position);
+  if(take>0)prefix.set(part.subarray(0,take),position);
+  position+=take;if(position===prefix.length)break;
+ }
+ rejectMislabelledAudio(prefix);
  return new Blob(parts,{type});
 }
 async function addToLibrary(item,button){
@@ -130,6 +159,7 @@ async function addToLibrary(item,button){
  try{
   const blob=await downloadLimited(item.audioUrl,item.filesize,job.controller.signal);
   if(job.controller.signal.aborted)throw Error('Download cancelled.');
+  if(!downloadAllowed())throw Error('Wi-Fi can no longer be verified. Audio was not saved.');
   job.phase='saving';cancelDownload.disabled=true;
   await saveSound({id:crypto.randomUUID(),name:item.name.slice(0,120),source:item.source,
    created:Date.now(),mime:blob.type,blob,favorite:false,
