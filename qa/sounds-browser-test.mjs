@@ -319,6 +319,51 @@ try{
  await importedRow.waitFor();
  assert.match(await importedRow.textContent(),/compressed preview/);
  assert.equal(await importedRow.getByRole('link',{name:'Creator profile'}).getAttribute('href'),indexed.creatorUrl);
- assert.deepEqual(errors,[],'No unhandled page errors allowed');
+ // Saved synthesizer code must survive the complete Bench -> Library -> Bench journey.
+ // No native engine is booted: opening a preset must NEVER execute arbitrary saved code.
+ await page.goto(base+'/sounds-lab.html');
+ await page.locator('#lab-demo-pitch').evaluate(el=>{el.value='660';el.dispatchEvent(new Event('input',{bubbles:true}))});
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/\\\\freq, 660/);
+ await page.locator('#lab-tone-name').fill('Saved native tone');
+ await page.locator('#lab-tone-save').click();
+ await page.getByText('Saved Saved native tone to your Sounds Library.',{exact:false}).waitFor();
+ const cleanTone=await page.evaluate(async()=>{
+   const {allSounds}=await import('/sounds-store.mjs');
+   return (await allSounds()).find(i=>i.name==='Saved native tone');
+ });
+ assert.equal(cleanTone.source,'written');
+ assert.equal(cleanTone.bench.kind,'tone');
+ assert.equal(cleanTone.bench.frequency,660);
+ assert.equal(cleanTone.bench.amplitude,0.16);
+ await page.goto(base+'/sounds.html');
+ const cleanRow=page.locator('.managed-item').filter({hasText:'Saved native tone'});
+ await cleanRow.waitFor();
+ const cleanLink=await cleanRow.getByRole('link',{name:'Open in Instrument Bench'}).getAttribute('href');
+ assert.equal(cleanLink,'./sounds-lab.html?tone='+encodeURIComponent(cleanTone.id));
+ await page.goto(base+'/sounds-lab.html?tone='+encodeURIComponent(cleanTone.id));
+ await page.getByText('Opened from Library.',{exact:false}).waitFor();
+ assert.equal(await page.locator('#lab-demo-pitch').inputValue(),'660');
+ assert.equal(await page.locator('#lab-demo-code').inputValue(),cleanTone.code);
+ assert.equal(await page.locator('#lab-demo-code-bay').getAttribute('data-sync'),'matched');
+ assert.equal(await page.locator('#lab-engine').textContent(),'Start SuperCollider','restoring source must never autoplay or start the engine');
+
+ const editedTone=cleanTone.code+'\\n// A user-authored variation kept verbatim.';
+ await page.locator('#lab-demo-code').fill(editedTone);
+ assert.equal(await page.locator('#lab-demo-code-bay').getAttribute('data-sync'),'modified');
+ await page.locator('#lab-tone-name').fill('Saved native tone variant');
+ await page.locator('#lab-tone-save').click();
+ await page.getByText('Saved Saved native tone variant to your Sounds Library.',{exact:false}).waitFor();
+ const variant=await page.evaluate(async()=>{
+   const {allSounds}=await import('/sounds-store.mjs');
+   return (await allSounds()).find(i=>i.name==='Saved native tone variant');
+ });
+ assert.equal(variant.code,editedTone,'manual code must never be silently replaced by slider-generated code');
+ assert.equal(variant.bench.frequency,660);
+ await page.goto(base+'/sounds-lab.html?tone='+encodeURIComponent(variant.id));
+ await page.getByText('Opened from Library.',{exact:false}).waitFor();
+ assert.equal(await page.locator('#lab-demo-code').inputValue(),editedTone);
+ assert.equal(await page.locator('#lab-demo-controls').getAttribute('data-sync'),'modified','custom code must visibly extinguish controls');
+ assert.equal(await page.locator('#lab-engine').textContent(),'Start SuperCollider');
+  assert.deepEqual(errors,[],'No unhandled page errors allowed');
  console.log('Sounds browser regression passed: library, source, recording, discovery, license filters and persistence');
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
