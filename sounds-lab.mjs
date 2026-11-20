@@ -85,7 +85,7 @@ const DEFINITION_SOURCE=REGION_DEFINITIONS;
 let lang=null,synth=null,transport=null,languageReady=false,serverReady=false,definitionsReady=false;
 let bootRequested=false,booting=false,bootTimeout=null,current=null,currentItemId=null,controller=null,entries=[],allocated=false;
 let synthBootPending=false,synthBootCompleted=false,serverSampleRate=null,nativeAudioContext=null;
-function announce(t){status.textContent=t}
+function announce(t){status.textContent=t;const hint=$('lab-setup-hint');if(hint&&(/failed|unavailable|requires|error|timed out/i).test(t))hint.textContent='If this persists, open Technical details and troubleshooting at the bottom of the page.'}
 function print(t){log.textContent=(log.textContent+String(t)+'\n').slice(-10000);log.scrollTop=log.scrollHeight}
 /* The compiled scsynth getter can return a numerical handle instead of the
  * actual Web Audio context. Observe its own context constructor, never create
@@ -116,6 +116,9 @@ function outputSampleRate(){
  return Math.round(sampleRate);
 }
 function refreshControls(){
+ const hint=$('lab-setup-hint');
+ if(hint){hint.textContent=current?'Sound loaded. Scroll down to the code and playback controls.':!serverReady?'Choose a sound, then tap Start SuperCollider. Startup may take a little time.':!definitionsReady?'SuperCollider is starting its instruments…':!sound.value?'SuperCollider is ready. Choose a sound from the library.':'SuperCollider is ready. Tap Load selected sound.';}
+ if(!serverReady&&!booting&&!lang)engine.textContent='Start SuperCollider';
  sound.disabled=!!controller;
  load.disabled=!serverReady||!definitionsReady||!sound.value||!!controller;
  play.disabled=!current||!definitionsReady||!!controller;
