@@ -364,5 +364,14 @@ stop.addEventListener('click',()=>{
  catch(error){announce('Could not stop native SuperCollider playback: '+error.message)}
 });
 document.addEventListener('sounds-library-changed',listSounds);
-window.addEventListener('pagehide',()=>{controller?.abort();if(lang&&serverReady){try{lang.runCode(stopRegionCommand)}catch{}}if(synth&&allocated){try{transport.release(BUFFER)}catch{}}});
+window.addEventListener('pagehide',event=>{
+ controller?.abort();
+ if(lang&&serverReady){try{lang.runCode(stopRegionCommand)}catch{}}
+ if(synth&&allocated){try{transport.release(BUFFER)}catch{}}
+ // Release the native engine's own output device on a real page exit. Never
+ // preserve a second live audio thread behind the next Sounds Lab instance.
+ if(!event.persisted){
+  try{const context=outputContext();if(context?.state!=='closed')context?.close?.().catch(()=>{})}catch{}
+ }
+});
 listSounds();
