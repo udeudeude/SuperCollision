@@ -43,7 +43,7 @@ export function importedAudioMime(contentType,url){
 export function rejectMislabelledAudio(bytes){
  const prefix=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes||[]);
  const head=new TextDecoder().decode(prefix.subarray(0,256)).replace(/^\uFEFF/,'').trimStart();
- if(/^(?:<!doctype\s+html\b|<html(?:\s|>)|<head(?:\s|>)|<body(?:\s|>)|<\?xml\b|<\?php\b|[\[{]\s*["']?(?:error|errors|detail|message)\b)/i.test(head))
+ if(/^[\[{]/.test(head)||/^(?:<!doctype\s+html\b|<html(?:\s|>)|<head(?:\s|>)|<body(?:\s|>)|<\?xml\b|<\?php\b|[\[{]\s*["']?(?:error|errors|detail|message)\b)/i.test(head))
   throw Error('The server returned an error page instead of audio. Open its source page and Import the file manually.');
 }
 export function downloadProgressText(bytes,total=0){
