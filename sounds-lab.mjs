@@ -1,8 +1,8 @@
 /* Isolated native SuperCollider buffer laboratory.
  * This page boots its own sclang/scsynth; main editor remains untouched. */
-import {allSounds} from './sounds-store.mjs';
+import {allSounds,saveSound} from './sounds-store.mjs';
 import {NativeBufferTransport} from './sounds-buffer.mjs';
-import {REGION_DEFINITIONS,regionPlayCommand,stopRegionCommand} from './sounds-sampler.mjs';
+import {REGION_DEFINITIONS,regionPlayCommand,stopRegionCommand,sampleInstrumentSource,validateRegion} from './sounds-sampler.mjs';
 import {waveformPeaks,waveformDragRegion} from './sounds-waveform.mjs';
 const $=id=>document.getElementById(id);
 const status=$('lab-status'),log=$('lab-log'),sound=$('lab-sound'),engine=$('lab-engine');
@@ -10,6 +10,8 @@ const load=$('lab-load'),play=$('lab-play'),stop=$('lab-stop'),cancel=$('lab-can
 const details=$('lab-details');
 const regionStart=$('lab-start'),regionFinish=$('lab-finish'),regionRate=$('lab-rate'),regionAmp=$('lab-amp'),regionLoop=$('lab-loop'),regionSummary=$('lab-region-summary');
 const waveformCanvas=$('lab-waveform');
+const presetName=$('lab-preset-name'),savePreset=$('lab-save-preset'),exportPreset=$('lab-export-preset');
+let pendingPresetId=new URL(location.href).searchParams.get('preset');
 let waveform=null,waveformAnchor=null;
 const BUFFER=700;
 const READY='__SC_SOUNDS_LAB_READY__',FAILED='__SC_SOUNDS_LAB_FAILED__',DEFS='__SC_SOUNDS_LAB_DEFS__',RATE='__SC_SOUNDS_LAB_RATE__:';
@@ -53,6 +55,7 @@ function refreshControls(){
  play.disabled=!current||!definitionsReady||!!controller;
  stop.disabled=!serverReady;
  cancel.disabled=!controller;
+ savePreset.disabled=exportPreset.disabled=!current||!currentItemId||!!controller;
 }
 
 function renderWaveform(){
@@ -118,14 +121,50 @@ for(const [input,dimension] of [[regionStart,'start'],[regionFinish,'finish'],[r
  input.addEventListener('change',()=>updateRegionControls(dimension));
 }
 updateRegionControls();
+function showSoundDetails(){
+ const item=entries.find(entry=>entry.id===sound.value);
+ details.textContent=item?('Source: '+item.source+' · '+(item.origin?.creator||'local recording')+' · '+(item.origin?.license||'personal or unknown license')):'';
+}
+function regionSettings(){
+ if(!current||!currentItemId||!entries.some(item=>item.id===currentItemId))
+  throw Error('Load and verify the original audio in SuperCollider first.');
+ return validateRegion({bufferId:BUFFER,channels:current.channels,start:Number(regionStart.value)/100,
+  finish:Number(regionFinish.value)/100,rate:Number(regionRate.value),amp:Number(regionAmp.value),loop:regionLoop.checked});
+}
+function originalSound(){
+ const item=entries.find(entry=>entry.id===currentItemId);
+ if(!item)throw Error('Original audio no longer exists in the library.');
+ return item;
+}
+function exportedSource(settings,item){
+ return sampleInstrumentSource(settings,{name:item.name,origin:item.origin});
+}
 async function listSounds(){
  try{
   const previousId=sound.value;
-  entries=(await allSounds()).filter(item=>item.blob instanceof Blob).sort((a,b)=>Number(b.created||0)-Number(a.created||0));
+  const catalog=await allSounds();
+  entries=catalog.filter(item=>item.blob instanceof Blob).sort((a,b)=>Number(b.created||0)-Number(a.created||0));
   sound.replaceChildren(new Option('Choose a recorded or imported sound…',''));
   for(const item of entries)sound.add(new Option((item.name||'Untitled')+' · '+((item.blob.size/1024/1024).toFixed(1))+' MB',item.id));
   if(entries.some(item=>item.id===previousId))sound.value=previousId;
   if(currentItemId&&!entries.some(item=>item.id===currentItemId)){current=null;currentItemId=null;waveform=null;renderWaveform();progress.value=0}
+  if(pendingPresetId){
+   const preset=catalog.find(item=>item.id===pendingPresetId&&item.source==='preset'&&item.preset);
+   pendingPresetId=null;
+   const target=preset&&entries.find(item=>item.id===preset.preset.soundId);
+   if(target){
+    sound.value=target.id;
+    regionStart.value=Math.round(preset.preset.start*100);
+    regionFinish.value=Math.round(preset.preset.finish*100);
+    regionRate.value=preset.preset.rate;
+    regionAmp.value=preset.preset.amp;
+    regionLoop.checked=preset.preset.loop===true;
+    presetName.value=preset.name||'';
+    updateRegionControls();
+    announce('Preset loaded: '+preset.name+'. Start SuperCollider and transfer its original audio before playing.');
+   }else announce('Preset unavailable: its original audio may have been deleted. No substitute recording was chosen.');
+  }
+  showSoundDetails();
   if(!entries.length)announce('No saved audio yet. Record, import or Discover a sound first.');
  }catch(error){announce('Local sound library unavailable: '+error.message)}
  refreshControls();
@@ -191,8 +230,7 @@ engine.addEventListener('click',async()=>{
 sound.addEventListener('change',()=>{
  if(current&&lang){try{lang.runCode(stopRegionCommand)}catch{}}
  current=null;currentItemId=null;waveform=null;progress.value=0;regionStart.value=0;regionFinish.value=100;updateRegionControls();
- const item=entries.find(item=>item.id===sound.value);
- details.textContent=item?('Source: '+item.source+' · '+(item.origin?.creator||'local recording')+' · '+(item.origin?.license||'personal or unknown license')):'';
+ showSoundDetails();
  refreshControls();
 });
 load.addEventListener('click',async()=>{
@@ -233,11 +271,38 @@ play.addEventListener('click',async()=>{
  if(!current||!definitionsReady)return;
  try{
   const context=outputContext();if(typeof context?.resume==='function')await context.resume();
-  const params={bufferId:BUFFER,channels:current.channels,start:Number(regionStart.value)/100,finish:Number(regionFinish.value)/100,rate:Number(regionRate.value),amp:Number(regionAmp.value),loop:regionLoop.checked};
+  const params=regionSettings();
   const code=regionPlayCommand(params);
   lang.runCode(code);
   announce('Playing through native SuperCollider '+(params.loop?'loop':'one shot')+' · '+Math.round(params.start*100)+'–'+Math.round(params.finish*100)+'% · '+params.rate+'×.');
  }catch(error){announce('Playback failed: '+error.message)}
+});
+function downloadableFilename(name){
+ return (String(name||'sample-instrument').replace(/[\\/:*?"<>|\x00-\x1f]/g,'_').slice(0,110).replace(/\.scd$/i,'')||'sample-instrument')+'.scd';
+}
+exportPreset.addEventListener('click',()=>{
+ try{
+  const item=originalSound(),code=exportedSource(regionSettings(),item);
+  const url=URL.createObjectURL(new Blob([code],{type:'text/plain;charset=utf-8'}));
+  const anchor=document.createElement('a');anchor.download=downloadableFilename(presetName.value.trim()||item.name+' instrument');
+  anchor.href=url;document.body.append(anchor);anchor.click();anchor.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+  announce('Exported editable SuperCollider script. Export the original audio separately from Library; it is not embedded.');
+ }catch(error){announce('Instrument export failed: '+error.message)}
+});
+savePreset.addEventListener('click',async()=>{
+ if(savePreset.disabled)return;
+ savePreset.disabled=true;
+ try{
+  const item=originalSound(),settings=regionSettings();
+  const name=(presetName.value.trim()||item.name+' instrument').slice(0,120);
+  const preset={soundId:item.id,channels:settings.channels,start:settings.start,finish:settings.finish,
+   rate:settings.rate,amp:settings.amp,loop:settings.loop};
+  await saveSound({id:crypto.randomUUID(),name,source:'preset',created:Date.now(),favorite:false,
+   preset,code:exportedSource(settings,item),origin:item.origin?{...item.origin}:undefined});
+  announce('Saved '+name+' to the Library as a preset referencing its original audio.');
+ }catch(error){announce('Could not save sample instrument: '+error.message)}
+ finally{refreshControls()}
 });
 stop.addEventListener('click',()=>{
  try{lang.runCode(stopRegionCommand);announce('Stopped Sounds laboratory playback.')}

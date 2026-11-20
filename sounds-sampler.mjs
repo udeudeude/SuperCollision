@@ -53,3 +53,54 @@ export function regionPlayCommand(options){
     ', \\start, '+p.start+', \\finish, '+p.finish+']);';
 }
 export const stopRegionCommand='~scSoundsLabPlayer.tryPerform(\\set, \\gate, 0); ~scSoundsLabPlayer = nil;';
+
+/* Export a standalone SuperCollider script for a user-supplied copy of the
+ * original audio. A sound preset never embeds audio or assumes browser
+ * IndexedDB paths are readable by a desktop SuperCollider server. */
+function scComment(value){
+ return String(value??'').replace(/[\r\n\u2028\u2029\t\x00-\x1f\x7f]+/g,' ').trim().slice(0,500);
+}
+export function sampleInstrumentSource(settings,{name='Sound',origin=null}={}){
+ const p=validateRegion({bufferId:0,...settings});
+ const def=NAMES[p.channels+':'+p.loop];
+ const header=[
+  '// SuperCollision Sounds - native SuperCollider sample instrument',
+  '// Source sound: '+scComment(name),
+  '// Audio is NOT embedded. Export the original separately from Sounds Library.',
+  '// Select that original audio file when the desktop SuperCollider file dialog opens.',
+  '// Source file must have '+p.channels+' channel(s).',
+ ];
+ if(origin){
+  for(const [label,value] of [['Creator',origin.creator],['License',origin.license],
+    ['Original URL',origin.url],['License URL',origin.licenseUrl],['Attribution',origin.attribution]]){
+   if(value)header.push('// '+label+': '+scComment(value));
+  }
+ }
+ const lines=[
+  '(',
+  'Dialog.openPanel({ |path|',
+  '  s.waitForBoot({',
+  definition(p.channels,p.loop),
+  '    s.sync;',
+  '    Buffer.read(s, path, action: { |loaded|',
+  '      if(loaded.numChannels != '+p.channels+') {',
+  '        ("Expected '+p.channels+' audio channel(s); selected file has " ++ loaded.numChannels).warn;',
+  '        loaded.free;',
+  '      } {',
+  '        ~scSoundsExportPlayer.tryPerform(\\free);',
+  '        ~scSoundsExportBuffer.tryPerform(\\free);',
+  '        ~scSoundsExportBuffer = loaded;',
+  '        ~scSoundsExportPlayer = Synth(\\'+def+', [\\bufnum, loaded.bufnum, \\amp, '+p.amp+
+    ', \\rate, '+p.rate+', \\start, '+p.start+', \\finish, '+p.finish+']);',
+  '      };',
+  '    });',
+  '  });',
+  '}, { "No audio file selected.".postln; });',
+  ')',
+  '',
+  '// Stop: ~scSoundsExportPlayer.tryPerform(\\set, \\gate, 0);',
+  '// Free buffer after stopping: ~scSoundsExportBuffer.tryPerform(\\free);',
+  ''
+ ];
+ return header.join('\n')+'\n\n'+lines.join('\n');
+}
