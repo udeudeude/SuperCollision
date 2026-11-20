@@ -31,7 +31,7 @@ export const REGION_DEFINITIONS='(\nRoutine({\n'+[1,2].flatMap(ch=>[false,true].
 export function validateRegion({bufferId,channels,start,finish,rate,amp,loop}){
   if(!Number.isSafeInteger(bufferId)||bufferId<0||bufferId>1023)throw Error('Invalid native buffer identifier');
   if(channels!==1&&channels!==2)throw Error('Only mono and stereo samples are supported');
-  if(!Number.isFinite(start)||!Number.isFinite(finish)||start<0||finish>1||finish-start<0.01)
+  if(!Number.isFinite(start)||!Number.isFinite(finish)||start<0||finish>1||finish-start<0.009999)
     throw Error('Region must span at least 1% of the sample.');
   if(!Number.isFinite(rate)||rate<0.25||rate>2)throw Error('Speed must be from 0.25× to 2×.');
   if(!Number.isFinite(amp)||amp<0||amp>0.5)throw Error('Volume must be between 0 and 50%.');
