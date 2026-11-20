@@ -212,8 +212,8 @@ try{
  assert.equal(await page.locator('#lab-source-bay').evaluate(bay=>
    Boolean(bay.compareDocumentPosition(document.querySelector('#lab-waveform'))&Node.DOCUMENT_POSITION_FOLLOWING)),true,
    'source must be above the reachable waveform and controls');
- assert.equal(await page.locator('#lab-source-bay').evaluate(bay=>getComputedStyle(bay).position),'relative',
-  'source must not occupy a sticky drawer at the bottom of the viewport');
+ assert.equal(await page.locator('#lab-source-bay').evaluate(bay=>getComputedStyle(bay).position),'sticky',
+  'source should stay visible at top while thumb controls remain reachable below');
  assert.ok(await page.locator('#lab-live-source').evaluate(field=>parseFloat(getComputedStyle(field).fontSize)>=16),
   'iPhone code editor should avoid focus zoom at small type sizes');
  await page.locator('#lab-sound option').nth(1).waitFor({state:'attached'});
