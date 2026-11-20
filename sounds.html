@@ -49,6 +49,7 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 .managed-item,.discovered-sound{border-top:1px solid #575d54;padding:13px 0;min-width:0}
 .managed-item strong,.discovered-sound strong,.managed-item small,.discovered-sound small{display:block;overflow-wrap:anywhere}
 .managed-item audio,.discovered-sound audio{display:block;width:100%;margin:9px 0}
+.discovered-sound audio[hidden]{display:none!important}
 .saved-code{margin:8px 0;background:#10151d;color:#e4e6e8;max-height:210px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:10px;font:12px/1.5 ui-monospace,monospace}
 .filter-group{border:1px solid #52594e;margin:12px 0;padding:12px}
 .filter-group legend{font-weight:700;padding:0 4px}
@@ -59,7 +60,7 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 </style>
 </head>
 <body>
-<header><a href="./index.html" aria-label="Return to Code">← Code</a><h1>SOUNDS</h1><small class="build">2026.11.20.8</small></header>
+<header><a href="./index.html" aria-label="Return to Code">← Code</a><h1>SOUNDS</h1><small class="build">2026.11.20.9</small></header>
 <nav aria-label="Sounds workspace" id="sounds-tabs">
 <div class="sounds-library-nav"><button data-view="library" role="tab" aria-controls="sounds-library" aria-selected="true">Library</button><span class="nav-description">Your collection</span></div>
 <div class="sounds-acquire-nav"><span class="nav-heading">ACQUIRE A SOUND</span><div class="sounds-acquire-buttons">
@@ -157,7 +158,7 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 <div class="filter-group">
 <label class="check" for="discover-allow-unverified"><input id="discover-allow-unverified" type="checkbox">Allow downloads when Wi-Fi cannot be verified, including possible cellular use</label>
 <button id="discover-cancel-download" type="button" hidden>Cancel current download</button>
-<p class="muted">Unchecked by default. iPhone browsers often cannot report Wi-Fi reliably; this explicit override is required to download in that case. Streaming a preview may use mobile data. Switching away from Discover pauses its previews. Audio downloads show byte progress, stop if network permission changes, and reject recognizable provider error pages even when they arrive with an audio file label.</p>
+<p class="muted">Unchecked by default. iPhone browsers often cannot report Wi-Fi reliably; this explicit override is required to download in that case. Preview audio loads only after a separate tap, subject to the same network permission. Switching away from Discover releases any loaded previews. Audio downloads show byte progress, stop if network permission changes, and reject recognizable provider error pages even when they arrive with an audio file label.</p>
 </div>
 <p id="discover-status" role="status" aria-live="polite">Enter a search term to browse sounds.</p>
 <div id="discover-results"></div>
@@ -168,7 +169,7 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 <script type="module" src="./sounds-page.mjs?v=3"></script>
 <script type="module" src="./sounds-library.mjs?v=2"></script>
 <script type="module" src="./sounds-tools.mjs?v=4"></script>
-<script type="module" src="./sounds-discover.mjs?v=6"></script>
+<script type="module" src="./sounds-discover.mjs?v=7"></script>
 <script type="module" src="./sounds-generate.mjs?v=1"></script>
 <script type="module" src="./sounds-backup-ui.mjs?v=2"></script>
 </body>
