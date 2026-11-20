@@ -24,8 +24,8 @@ const server=createServer(async(req,res)=>{
 });
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const base='http://127.0.0.1:'+server.address().port;
-const browser=await chromium.launch({headless:true,args:['--no-sandbox','--autoplay-policy=no-user-gesture-required'],...(process.env.SOUNDS_BROWSER_CHANNEL?{channel:process.env.SOUNDS_BROWSER_CHANNEL}:{})});
-const page=await browser.newPage();
+let browser=await chromium.launch({headless:true,args:['--no-sandbox','--autoplay-policy=no-user-gesture-required'],...(process.env.SOUNDS_BROWSER_CHANNEL?{channel:process.env.SOUNDS_BROWSER_CHANNEL}:{})});
+let page=await browser.newPage();
 const errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push('console: '+m.text())});
@@ -114,6 +114,17 @@ try{
    return (await allSounds()).find(item=>item.source==='preset')?.id;
   });
   assert.ok(savedPresetId,'sample preset should be saved before reopening');
+  // The compiled SuperCollider runtime retains native audio threads until
+  // its browser process closes. A fresh process represents opening the saved
+  // preset again and avoids testing two live scsynth servers simultaneously.
+  const preserved=await page.context().storageState({indexedDB:true});
+  await browser.close();
+  browser=await chromium.launch({headless:true,args:['--no-sandbox','--autoplay-policy=no-user-gesture-required'],...(process.env.SOUNDS_BROWSER_CHANNEL?{channel:process.env.SOUNDS_BROWSER_CHANNEL}:{})});
+  const secondContext=await browser.newContext({storageState:preserved});
+  page=await secondContext.newPage();
+  page.on('pageerror',e=>errors.push(e.message));
+  page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push('console: '+m.text())});
+  page.on('response',response=>{if(response.status()>=400&&!response.url().endsWith('/favicon.ico'))errors.push('HTTP '+response.status()+' '+response.url())});
   await page.goto(base+'/sounds-lab.html?preset='+encodeURIComponent(savedPresetId));
   await page.locator('#lab-sound option[value="native-smoke"]').waitFor({state:'attached'});
   assert.equal(await page.locator('#lab-sound').inputValue(),'native-smoke');
