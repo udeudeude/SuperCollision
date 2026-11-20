@@ -41,6 +41,7 @@ jobs:
           node source/qa/sounds-discover-test.mjs
           node source/qa/sounds-buffer-test.mjs
           node source/qa/sounds-backup-test.mjs
+          node --check source/qa/sounds-runtime-smoke.mjs
       - name: Install browser test dependencies
         run: |
           npm install --no-save --prefix source playwright@1.56.1
@@ -49,13 +50,20 @@ jobs:
         run: node source/qa/sounds-browser-test.mjs
         env:
           SOUNDS_BROWSER_CHANNEL: chrome
-      - name: Checkout production branch without disturbing compiled engine
-        if: github.event_name != 'pull_request'
+      - name: Checkout production branch for real SuperCollider runtime smoke
         uses: actions/checkout@v4
         with:
           ref: pages-build
           path: site
           persist-credentials: true
+      - name: Smoke-test actual compiled SuperCollider engine in isolated browser
+        # The WebAssembly player is experimental. Gather concrete diagnostics
+        # without blocking recovery/backup fixes if a runner lacks audio support.
+        continue-on-error: true
+        timeout-minutes: 4
+        env:
+          SOUNDS_BROWSER_CHANNEL: chrome
+        run: node source/qa/sounds-runtime-smoke.mjs
       - name: Overlay Sounds files only
         if: github.event_name != 'pull_request'
         run: |
