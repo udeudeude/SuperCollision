@@ -323,7 +323,7 @@ try{
  // No native engine is booted: opening a preset must NEVER execute arbitrary saved code.
  await page.goto(base+'/sounds-lab.html');
  await page.locator('#lab-demo-pitch').evaluate(el=>{el.value='660';el.dispatchEvent(new Event('input',{bubbles:true}))});
- assert.match(await page.locator('#lab-demo-code').inputValue(),/\\\\freq, 660/);
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/\\freq, 660/);
  await page.locator('#lab-tone-name').fill('Saved native tone');
  await page.locator('#lab-tone-save').click();
  await page.getByText('Saved Saved native tone to your Sounds Library.',{exact:false}).waitFor();
