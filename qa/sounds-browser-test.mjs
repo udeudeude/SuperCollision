@@ -206,6 +206,16 @@ try{
  assert.equal(await page.locator('.managed-item').count(),3,'IndexedDB should persist across reload');
  assert.equal(queryCount>=2,true);
  await page.goto(base+'/sounds-lab.html');
+ assert.equal(await page.locator('#lab-source-bay').count(),1,'the SuperCollider source bay must be permanently present');
+ assert.equal(await page.locator('#lab-live-source').isEditable(),false,'only native-loaded instruments have editable code');
+ assert.equal(await page.locator('#lab-sync-label').textContent(),'NO SOURCE');
+ assert.equal(await page.locator('#lab-source-bay').evaluate(bay=>
+   Boolean(bay.compareDocumentPosition(document.querySelector('#lab-waveform'))&Node.DOCUMENT_POSITION_FOLLOWING)),true,
+   'source must be above the reachable waveform and controls');
+ assert.equal(await page.locator('#lab-source-bay').evaluate(bay=>getComputedStyle(bay).position),'relative',
+  'source must not occupy a sticky drawer at the bottom of the viewport');
+ assert.ok(await page.locator('#lab-live-source').evaluate(field=>parseFloat(getComputedStyle(field).fontSize)>=16),
+  'iPhone code editor should avoid focus zoom at small type sizes');
  await page.locator('#lab-sound option').nth(1).waitFor({state:'attached'});
  assert.ok(await page.locator('#lab-sound option').count()>=3,'laboratory should see original local audio items');
  assert.equal(await page.locator('#lab-load').isDisabled(),true,'native transfer must wait for engine startup');
