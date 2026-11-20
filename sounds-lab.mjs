@@ -194,10 +194,10 @@ async function listSounds(){
    announce('Preset source has been removed. Native sample playback is unavailable.');
   }
   showSoundDetails();
-  maybeLoadLinkedPreset();
   if(!entries.length)announce('No saved audio yet. Record, import or Discover a sound first.');
  }catch(error){announce('Local sound library unavailable: '+error.message)}
  refreshControls();
+ maybeLoadLinkedPreset();
 }
 function requestServer(){
  if(!lang||!languageReady||bootRequested||serverReady)return;
