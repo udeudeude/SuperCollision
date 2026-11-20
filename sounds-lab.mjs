@@ -12,6 +12,7 @@ const regionStart=$('lab-start'),regionFinish=$('lab-finish'),regionRate=$('lab-
 const waveformCanvas=$('lab-waveform');
 const presetName=$('lab-preset-name'),savePreset=$('lab-save-preset'),exportPreset=$('lab-export-preset');
 let pendingPresetId=new URL(location.href).searchParams.get('preset');
+let queuedPresetLoadId=null,linkedPreset=null;
 let waveform=null,waveformAnchor=null;
 const BUFFER=700;
 const READY='__SC_SOUNDS_LAB_READY__',FAILED='__SC_SOUNDS_LAB_FAILED__',DEFS='__SC_SOUNDS_LAB_DEFS__',RATE='__SC_SOUNDS_LAB_RATE__:';
@@ -110,8 +111,8 @@ for(const type of ['pointerup','pointercancel','lostpointercapture'])
 window.addEventListener('resize',renderWaveform);
 function updateRegionControls(changed){
  let start=Number(regionStart.value),finish=Number(regionFinish.value);
- if(changed==='start'&&start>=finish){finish=Math.min(100,start+1);regionFinish.value=finish}
- if(changed==='finish'&&finish<=start){start=Math.max(0,finish-1);regionStart.value=start}
+ if(changed==='start'&&finish-start<0.99999){finish=Math.min(100,Number((start+1).toFixed(1)));regionFinish.value=finish}
+ if(changed==='finish'&&finish-start<0.99999){start=Math.max(0,Number((finish-1).toFixed(1)));regionStart.value=start}
  const seconds=current?current.frames/current.sampleRate:0;
  regionSummary.textContent='Region: '+start+'% to '+finish+'%'+(seconds?' ('+(seconds*start/100).toFixed(2)+'–'+(seconds*finish/100).toFixed(2)+' s)':'')+' · '+Number(regionRate.value).toFixed(2)+'× · Volume '+Math.round(Number(regionAmp.value)*100)+'% · '+(regionLoop.checked?'Loop':'One shot');
  renderWaveform();
@@ -139,6 +140,17 @@ function originalSound(){
 function exportedSource(settings,item){
  return sampleInstrumentSource(settings,{name:item.name,origin:item.origin});
 }
+function maybeLoadLinkedPreset(){
+ if(!queuedPresetLoadId||!serverReady||!definitionsReady||controller||current)return;
+ if(sound.value!==queuedPresetLoadId){queuedPresetLoadId=null;linkedPreset=null;return}
+ if(outputContext()?.state!=='running'){
+  announce('Preset selected. Tap Unlock audio, then the linked original will transfer to SuperCollider.');
+  return;
+ }
+ queuedPresetLoadId=null;
+ announce('Transferring the preset’s linked original into native SuperCollider…');
+ load.click();
+}
 async function listSounds(){
  try{
   const previousId=sound.value;
@@ -153,21 +165,39 @@ async function listSounds(){
    pendingPresetId=null;
    const target=preset&&entries.find(item=>item.id===preset.preset.soundId);
    if(target){
-    sound.value=target.id;
-    regionStart.value=Math.round(preset.preset.start*100);
-    regionFinish.value=Math.round(preset.preset.finish*100);
-    regionRate.value=preset.preset.rate;
-    regionAmp.value=preset.preset.amp;
-    regionLoop.checked=preset.preset.loop===true;
-    presetName.value=preset.name||'';
-    updateRegionControls();
-    announce('Preset loaded: '+preset.name+'. Start SuperCollider and transfer its original audio before playing.');
-   }else announce('Preset unavailable: its original audio may have been deleted. No substitute recording was chosen.');
+    try{
+     const p=preset.preset;
+     const settings=validateRegion({bufferId:BUFFER,channels:p.channels,start:p.start,finish:p.finish,
+      rate:p.rate,amp:p.amp,loop:p.loop});
+     sound.value=target.id;
+     regionStart.value=String(Number((settings.start*100).toFixed(1)));
+     regionFinish.value=String(Number((settings.finish*100).toFixed(1)));
+     regionRate.value=settings.rate;
+     regionAmp.value=settings.amp;
+     regionLoop.checked=settings.loop;
+     presetName.value=(preset.name||'').slice(0,120);
+     linkedPreset={soundId:target.id,channels:settings.channels};
+     queuedPresetLoadId=target.id;
+     updateRegionControls();
+     announce('Preset selected: '+preset.name+'. Start SuperCollider; its original will transfer after audio unlock.');
+    }catch(error){
+     sound.value='';linkedPreset=null;queuedPresetLoadId=null;
+     announce('Preset invalid: '+error.message+'. No source was selected.');
+    }
+   }else{
+    sound.value='';linkedPreset=null;queuedPresetLoadId=null;
+    announce('Preset unavailable: its original audio may have been deleted. No substitute recording was chosen.');
+   }
+  }
+  if(linkedPreset&&!entries.some(item=>item.id===linkedPreset.soundId)){
+   queuedPresetLoadId=null;linkedPreset=null;
+   announce('Preset source has been removed. Native sample playback is unavailable.');
   }
   showSoundDetails();
   if(!entries.length)announce('No saved audio yet. Record, import or Discover a sound first.');
  }catch(error){announce('Local sound library unavailable: '+error.message)}
  refreshControls();
+ maybeLoadLinkedPreset();
 }
 function requestServer(){
  if(!lang||!languageReady||bootRequested||serverReady)return;
@@ -181,7 +211,16 @@ function installDefinitions(){
  catch(error){announce('Could not create SuperCollider instruments: '+error.message)}
 }
 engine.addEventListener('click',async()=>{
- if(synth&&serverReady){try{const context=outputContext();if(typeof context?.resume!=='function')throw Error('Native SuperCollider audio context unavailable; reload and retry.');await context.resume();announce('SuperCollider audio unlocked ('+context.state+').')}catch(error){announce('Audio unlock failed: '+error.message)}return}
+ if(synth&&serverReady){
+   try{
+    const context=outputContext();
+    if(typeof context?.resume!=='function')throw Error('Native SuperCollider audio context unavailable; reload and retry.');
+    await context.resume();
+    announce('SuperCollider audio unlocked ('+context.state+').');
+    maybeLoadLinkedPreset();
+   }catch(error){announce('Audio unlock failed: '+error.message)}
+   return;
+  }
  if(lang){if(languageReady&&!bootRequested){requestServer();return}announce('SuperCollider initialization is already in progress.');return}
  if(booting){announce('SuperCollider initialization is already in progress.');return}
  if(!crossOriginIsolated){announce('The standalone SuperCollider runtime requires a cross-origin-isolated secure page. Check the hosting headers.');return}
@@ -205,7 +244,7 @@ engine.addEventListener('click',async()=>{
    }
    const sampleRateMatch=text.match(/__SC_SOUNDS_LAB_RATE__:(\d+(?:\.\d+)?)/);
    if(sampleRateMatch){serverSampleRate=Number(sampleRateMatch[1]);print('Native SuperCollider server sample rate: '+serverSampleRate+' Hz.');}
-   if(text.includes(DEFS)){definitionsReady=true;engine.textContent='Unlock audio';announce('SuperCollider ready. Select a sound and transfer it into a native buffer.');refreshControls()}
+   if(text.includes(DEFS)){definitionsReady=true;engine.textContent='Unlock audio';announce('SuperCollider ready. Select a sound and transfer it into a native buffer.');refreshControls();maybeLoadLinkedPreset()}
    if(text.includes(FAILED)){clearTimeout(bootTimeout);bootRequested=false;engine.textContent='Retry server startup';announce('SuperCollider server failed to start. Tap Retry to try again.')}
    const cleaned=text.replaceAll(READY,'').replaceAll(FAILED,'').replaceAll(DEFS,'').trim();
    if(cleaned)print(cleaned);
@@ -228,6 +267,7 @@ engine.addEventListener('click',async()=>{
  finally{booting=false;engine.disabled=false;refreshControls()}
 });
 sound.addEventListener('change',()=>{
+ queuedPresetLoadId=null;linkedPreset=null;
  if(current&&lang){try{lang.runCode(stopRegionCommand)}catch{}}
  current=null;currentItemId=null;waveform=null;progress.value=0;regionStart.value=0;regionFinish.value=100;updateRegionControls();
  showSoundDetails();
@@ -241,17 +281,32 @@ load.addEventListener('click',async()=>{
   if(item.blob.size>50*1024*1024)throw Error('Choose an audio file under 50 MB for this laboratory.');
   const context=outputContext(),sampleRate=outputSampleRate();
   if(typeof context?.resume==='function')await context.resume();
-  const Decoder=window.OfflineAudioContext||window.webkitOfflineAudioContext;
-  if(!Decoder)throw Error('This browser cannot decode audio for native SuperCollider buffers.');
-  // Decode only; never startRendering or connect an independent sound player.
-  const decoder=new Decoder(2,1,sampleRate);
-  print('Decoding into native server output rate '+sampleRate+' Hz; original remains unchanged.');
+  // Decode for native-buffer ingestion through the SuperCollider-owned output
+  // AudioContext. A separate OfflineAudioContext can stall after server restart.
+  // This does not create browser playback or a competing sound processor.
+  if(typeof context?.decodeAudioData!=='function')
+   throw Error('Native SuperCollider output cannot decode this file. Import compatible audio instead.');
+  print('Decoding via native output context at '+sampleRate+' Hz; original remains unchanged.');
   announce('Decoding original audio for SuperCollider ingestion…');
-  const decoded=await decoder.decodeAudioData(await item.blob.arrayBuffer());
+  const sourceBytes=await item.blob.arrayBuffer();
+  let decodeTimer,abortDecoder;
+  const decoded=await Promise.race([
+   context.decodeAudioData(sourceBytes),
+   new Promise((_,reject)=>{
+    abortDecoder=()=>reject(Error('Transfer cancelled'));
+    controller.signal.addEventListener('abort',abortDecoder,{once:true});
+    decodeTimer=setTimeout(()=>reject(Error('Audio decoding timed out. Retry or import another format.')),30000);
+   })
+  ]).finally(()=>{
+   clearTimeout(decodeTimer);
+   controller.signal.removeEventListener('abort',abortDecoder);
+  });
   if(controller.signal.aborted)throw Error('Transfer cancelled');
   if(decoded.sampleRate!==sampleRate)
    throw Error('Decoded sample rate differs from SuperCollider output; refusing pitch-altering transfer.');
-  announce('Transferring samples to SuperCollider…');
+  if(linkedPreset?.soundId===item.id&&decoded.numberOfChannels!==linkedPreset.channels)
+    throw Error('Original audio no longer matches the preset channel layout; refusing to substitute another instrument.');
+   announce('Transferring samples to SuperCollider…');
   // A separate Sounds-only engine owns this buffer. Never alter the main editor's server.
   if(allocated){
    lang.runCode('~scSoundsLabPlayer.tryPerform(\\free); ~scSoundsLabPlayer = nil;');
@@ -309,5 +364,14 @@ stop.addEventListener('click',()=>{
  catch(error){announce('Could not stop native SuperCollider playback: '+error.message)}
 });
 document.addEventListener('sounds-library-changed',listSounds);
-window.addEventListener('pagehide',()=>{controller?.abort();if(lang&&serverReady){try{lang.runCode(stopRegionCommand)}catch{}}if(synth&&allocated){try{transport.release(BUFFER)}catch{}}});
+window.addEventListener('pagehide',event=>{
+ controller?.abort();
+ if(lang&&serverReady){try{lang.runCode(stopRegionCommand)}catch{}}
+ if(synth&&allocated){try{transport.release(BUFFER)}catch{}}
+ // Release the native engine's own output device on a real page exit. Never
+ // preserve a second live audio thread behind the next Sounds Lab instance.
+ if(!event.persisted){
+  try{const context=outputContext();if(context?.state!=='closed')context?.close?.().catch(()=>{})}catch{}
+ }
+});
 listSounds();
