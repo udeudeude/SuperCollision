@@ -61,24 +61,22 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 @media(max-width:440px){#lab-source-bay{padding:10px}
  #lab-live-source{font-size:16px;min-height:164px;max-height:37dvh}
  #lab-source-bay .source-head h2{font-size:11px}}
-</style>
+#lab-setup{margin-top:12px}#lab-setup .actions{gap:8px}#lab-setup .actions button{flex:1 1 180px}#lab-status{color:#e5bc71;font-size:14px;line-height:1.4;margin:10px 0}#lab-diagnostics{border-top:1px solid #515a51;padding:15px 0;margin:12px 0}#lab-diagnostics summary{cursor:pointer;color:#e5bc71;font-weight:700}#lab-setup-hint{font-size:12px}.lab-intro{font-size:14px;line-height:1.45;color:#d3d5c9;margin:8px 0 14px}header{padding:10px 0;gap:10px}header a{white-space:nowrap}header h1{font-size:1.02rem}header small{font-size:11px}#lab-source-bay{position:relative;top:auto}#lab-setup progress{height:9px}@media(max-width:440px){section{padding:12px}header{align-items:center}header small{font-size:10px}}</style>
 </head>
 <body>
 <header><a href="./sounds.html">← Sounds</a><h1>Native Sample Lab</h1><small>BUILD 2026.11.20.14</small></header>
 <main>
-<p class="muted">Experimental isolated SuperCollider playback test. Uses the same native language and synthesis engine as SuperCollision, without changing the main Code page. This is not a browser sampler or a second sound engine. Uncompressed 8/16/24/32-bit PCM, 32/64-bit floating-point and standard extensible WAVE files are read directly as sample values for SuperCollider, without resampling or editing; other formats still use compatible browser decoding for native transfer.</p>
-<section><h2>1 / Initialize SuperCollider</h2>
-<p class="muted">Requires cross-origin isolation and the existing compiled SuperCollider runtime. Starting may use substantial memory. An audio unlock button remains available after startup. Opening a saved preset automatically transfers its original once native audio is unlocked, but never starts playing without a separate Play tap.</p>
-<div class="actions"><button id="lab-engine" type="button" class="primary">Start native engine</button></div>
-</section>
-<section><h2>2 / Load an existing recording</h2>
-<label for="lab-sound">Sound library</label><select id="lab-sound"><option value="">Loading local sounds…</option></select>
+<p class="lab-intro">Choose a sound, start SuperCollider, then play and shape it. The code and controls below work together.</p>
+<section id="lab-setup"><h2>1 / Choose a sound</h2>
+<label for="lab-sound">From your Sounds library</label>
+<select id="lab-sound"><option value="">Loading saved sounds…</option></select>
 <p id="lab-details" class="muted"></p>
-<p class="muted">Supported uncompressed WAVE values are read directly without browser decoding or resampling. Recordings with a different sample rate from your device retain their original timing and pitch through native SuperCollider playback-rate compensation. Other formats may be decoded and resampled by the browser solely for ingestion. Audio is transferred to SuperCollider with /b_alloc and /b_setn, then checked against the server's /b_getn sample readback. Transfers can be cancelled. The diagnostics report how many samples the native server has acknowledged and distinguish allocation, transfer and readback stalls. Playback uses native SuperCollider PlayBuf. The library's original audio file is never replaced.</p>
-<div class="actions"><button id="lab-load" class="primary" type="button" disabled>Transfer to SuperCollider</button><button id="lab-cancel" type="button" disabled>Cancel transfer</button></div>
-<progress id="lab-progress" max="1" value="0" aria-label="Native buffer transfer progress"></progress>
+<div class="actions"><button id="lab-engine" type="button" class="primary">Start SuperCollider</button><button id="lab-load" type="button" disabled>Load selected sound</button><button id="lab-cancel" type="button" disabled>Cancel loading</button></div>
+<p id="lab-setup-hint" class="muted">First choose a recording. Start SuperCollider once, then load the sound. Audio may need a second tap to unlock on iPhone.</p>
+<p id="lab-status" role="status" aria-live="polite">Ready. Choose a sound to begin.</p>
+<progress id="lab-progress" max="1" value="0" aria-label="Sample loading progress"></progress>
 </section>
-<section><h2>3 / Native sample region &amp; audition</h2>
+<section><h2>2 / Play and shape your sound</h2>
 <aside id="lab-source-bay" aria-label="Editable native SuperCollider instrument source"><div class="source-head"><h2>SUPERCOLLIDER / LIVE INSTRUMENT SOURCE</h2><button type="button" id="lab-copy-source" disabled>Copy</button></div><span id="lab-sync-indicator" class="sync-indicator" role="status"><span class="sync-lamp" aria-hidden="true"></span><span id="lab-sync-label">NO SOURCE</span></span><label for="lab-live-source" class="muted">Full, executable native SynthDef and playback code. Tap to edit; Play runs exactly this source. Control changes require your approval before replacing manual edits.</label><textarea id="lab-live-source" spellcheck="false" wrap="off" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Editable SuperCollider playback command" readonly>Select and transfer a recording to reveal executable SuperCollider playback code.</textarea><p id="lab-source-state" class="muted" role="status">Load a sample to edit its playback code.</p><button type="button" id="lab-reset-source" disabled>Reset code from controls</button><button type="button" id="lab-apply-control" hidden>Apply control change</button><button type="button" id="lab-keep-code" hidden>Keep edited code</button></aside>
 <p class="muted">Non-destructive controls for the loaded sample. Playback, region selection, speed and looping are performed by SuperCollider's native PlayBuf, BufRd and Phasor instruments, never a browser audio engine. Loop seams use a short equal-power overlap calculated by SuperCollider. Changing controls takes effect the next time you tap Play.</p>
 <p class="muted">Drag horizontally across the waveform to select a region, or use the accessible start and end sliders below. The waveform is a read-only visualization; audio processing stays in SuperCollider.</p>
@@ -92,13 +90,13 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 </div><p class="muted">Native equal-power loop crossfades reduce boundary clicks; difficult sources can still produce audible artifacts. Stop releases only this laboratory player. Source audio is never overwritten.</p>
 <div class="actions"><button id="lab-play" class="primary" type="button" disabled>Play sample</button><button id="lab-stop" type="button" disabled>Stop</button></div>
 </section>
-<section><h2>4 / Save a reusable instrument</h2>
+<section><h2>3 / Save your instrument</h2>
 <p class="muted">Save the selected region, speed, loop and volume as a Library preset referencing the original recording. No audio is duplicated or modified. Export an editable .scd script to use with desktop SuperCollider; export the original audio separately from Library, then choose it when the script asks for a file.</p>
 <label for="lab-preset-name">Instrument name</label><input id="lab-preset-name" type="text" maxlength="120" placeholder="e.g. Reedy loop instrument">
 <div class="actions"><button id="lab-save-preset" class="primary" type="button" disabled>Save preset to Library</button><button id="lab-export-preset" type="button" disabled>Export SuperCollider .scd</button></div>
 <p class="muted">Only a verified native buffer can become a preset. A missing or deleted source recording will not be silently replaced.</p>
 </section>
-<section><h2>Status / diagnostics</h2><p id="lab-status" role="status" aria-live="polite">Start the native engine to begin.</p><pre id="lab-log" aria-label="SuperCollider diagnostic output"></pre></section>
+<details id="lab-diagnostics"><summary>Technical details and troubleshooting</summary><p class="muted">The native SuperCollider engine loads and verifies sample buffers. WAVE files are read directly when supported; other formats may require decoding for transfer. Your original sound is never altered.</p><pre id="lab-log" aria-label="SuperCollider diagnostic output"></pre></details>
 </main>
 <script type="module" src="./sounds-lab.mjs?v=14"></script>
 </body>
