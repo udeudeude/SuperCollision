@@ -281,13 +281,26 @@ load.addEventListener('click',async()=>{
   if(item.blob.size>50*1024*1024)throw Error('Choose an audio file under 50 MB for this laboratory.');
   const context=outputContext(),sampleRate=outputSampleRate();
   if(typeof context?.resume==='function')await context.resume();
-  const Decoder=window.OfflineAudioContext||window.webkitOfflineAudioContext;
-  if(!Decoder)throw Error('This browser cannot decode audio for native SuperCollider buffers.');
-  // Decode only; never startRendering or connect an independent sound player.
-  const decoder=new Decoder(2,1,sampleRate);
-  print('Decoding into native server output rate '+sampleRate+' Hz; original remains unchanged.');
+  // Decode for native-buffer ingestion through the SuperCollider-owned output
+  // AudioContext. A separate OfflineAudioContext can stall after server restart.
+  // This does not create browser playback or a competing sound processor.
+  if(typeof context?.decodeAudioData!=='function')
+   throw Error('Native SuperCollider output cannot decode this file. Import compatible audio instead.');
+  print('Decoding via native output context at '+sampleRate+' Hz; original remains unchanged.');
   announce('Decoding original audio for SuperCollider ingestion…');
-  const decoded=await decoder.decodeAudioData(await item.blob.arrayBuffer());
+  const sourceBytes=await item.blob.arrayBuffer();
+  let decodeTimer,abortDecoder;
+  const decoded=await Promise.race([
+   context.decodeAudioData(sourceBytes),
+   new Promise((_,reject)=>{
+    abortDecoder=()=>reject(Error('Transfer cancelled'));
+    controller.signal.addEventListener('abort',abortDecoder,{once:true});
+    decodeTimer=setTimeout(()=>reject(Error('Audio decoding timed out. Retry or import another format.')),30000);
+   })
+  ]).finally(()=>{
+   clearTimeout(decodeTimer);
+   controller.signal.removeEventListener('abort',abortDecoder);
+  });
   if(controller.signal.aborted)throw Error('Transfer cancelled');
   if(decoded.sampleRate!==sampleRate)
    throw Error('Decoded sample rate differs from SuperCollider output; refusing pitch-altering transfer.');
