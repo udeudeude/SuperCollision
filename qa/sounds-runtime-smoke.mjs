@@ -64,6 +64,11 @@ try{
    return status.startsWith('Verified by native SuperCollider sample readback:')||status.startsWith('Sample transfer failed:');
   },null,{timeout:90000});
  assert.match(await page.locator('#lab-status').textContent(),/^Verified by native SuperCollider sample readback:/);
+ // Late audio-unlock completion must not erase a previously verified buffer.
+ await page.locator('#lab-engine').click();
+ await page.waitForFunction(()=>document.querySelector('#lab-log')?.textContent.includes('SuperCollider audio unlocked ('),null,{timeout:10000});
+ assert.match(await page.locator('#lab-status').textContent(),/^Verified by native SuperCollider sample readback:/);
+
  assert.equal(await page.locator('#lab-play').isEnabled(),true);
  assert.ok(await page.locator('#lab-waveform').evaluate(canvas=>{
   const data=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
