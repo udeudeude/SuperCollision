@@ -9,9 +9,9 @@ function definition(channels,loop){
   const reader=loop
     ? 'BufRd.ar('+channels+', bufnum, Phasor.ar(0, playbackRate, low, high, low), loop: 1, interpolation: 2)'
     : 'PlayBuf.ar('+channels+', bufnum, playbackRate, startPos: low, loop: 0)';
-  const envelope=loop
-    ? 'EnvGen.kr(Env.asr(0.008, 1, 0.03), gate, doneAction: 2)'
-    : '(Line.kr(0, 1, segmentSeconds, doneAction: 2) / (0.006 / segmentSeconds).clip(0.01, 0.45)).clip(0, 1) * ((1 - Line.kr(0, 1, segmentSeconds)) / (0.006 / segmentSeconds).clip(0.01, 0.45)).clip(0, 1)';
+  const stopEnvelope='EnvGen.kr(Env.asr(0.008, 1, 0.03), gate, doneAction: 2)';
+  const envelope=loop ? stopEnvelope :
+    '(progress / (0.006 / segmentSeconds).clip(0.01, 0.45)).clip(0, 1) * ((1 - progress) / (0.006 / segmentSeconds).clip(0.01, 0.45)).clip(0, 1) * '+stopEnvelope;
   const output=channels===1?'Pan2.ar(signal * amp * envelope)':'signal * amp * envelope';
   return 'SynthDef(\\'+name+', { |bufnum=0, amp=0.16, rate=1, start=0, finish=1, gate=1|\n'+
     '    var frames = BufFrames.kr(bufnum);\n'+
@@ -20,6 +20,7 @@ function definition(channels,loop){
     '    var playbackRate = BufRateScale.kr(bufnum) * rate.clip(0.25, 2);\n'+
     '    var segmentSeconds = ((finish - start).max(0.01) * BufDur.kr(bufnum) / rate.clip(0.25, 2)).max(0.012);\n'+
     '    var signal = '+reader+';\n'+
+    (loop?'':'    var progress = Line.kr(0, 1, segmentSeconds, doneAction: 2);\n')+
     '    var envelope = '+envelope+';\n'+
     '    Out.ar(0, '+output+');\n'+
     '  }).add;';
@@ -44,4 +45,4 @@ export function regionPlayCommand(options){
     ', [\\bufnum, '+p.bufferId+', \\amp, '+p.amp+', \\rate, '+p.rate+
     ', \\start, '+p.start+', \\finish, '+p.finish+']);';
 }
-export const stopRegionCommand='~scSoundsLabPlayer.tryPerform(\\free); ~scSoundsLabPlayer = nil;';
+export const stopRegionCommand='~scSoundsLabPlayer.tryPerform(\\set, \\gate, 0); ~scSoundsLabPlayer = nil;';
