@@ -37,7 +37,8 @@ const failed=new NativeBufferTransport(p=>{
  if(message.address==='/sync')queueMicrotask(()=>failed.receive(oscMessage('/fail',[{type:'s',value:'/b_alloc'},{type:'s',value:'no memory'}])));
 });
 await assert.rejects(failed.upload(56,mono),/rejected/);
-assert.equal(pending.at(-1).address,'/b_free');
+assert.equal(pending.at(-2).address,'/b_free');
+assert.equal(pending.at(-1).address,'/sync','failure cleanup must synchronize buffer release');
 assert.equal(failed.active,false);
 
 /* Native roundtrip: /b_alloc -> /b_setn -> /b_getn, with actual sample readback. */
