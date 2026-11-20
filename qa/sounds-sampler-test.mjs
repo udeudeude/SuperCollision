@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {REGION_DEFINITIONS,validateRegion,regionPlayCommand,stopRegionCommand} from '../sounds-sampler.mjs';
+import {REGION_DEFINITIONS,validateRegion,regionPlayCommand,stopRegionCommand,sampleInstrumentSource} from '../sounds-sampler.mjs';
 const normal={bufferId:700,channels:1,start:0,finish:1,rate:1,amp:0.16,loop:false};
 assert.equal(validateRegion(normal).rate,1);
 assert.equal(validateRegion({...normal,start:0.56,finish:0.57}).finish,0.57,'one-percent regions are valid despite floating-point rounding');
@@ -25,4 +25,25 @@ assert.equal(high-high+low+fade,low+fade,'incoming readhead must meet outgoing r
 assert.match(REGION_DEFINITIONS,/BufRateScale\.kr/);
 assert.match(REGION_DEFINITIONS,/s\.sync/);
 assert.match(stopRegionCommand,/\\gate, 0/);
+
+const source=sampleInstrumentSource({...normal,start:0.25,finish:0.7,rate:1.5,loop:true},{
+ name:'Untrusted\nSynthDef(\\unexpected, {})',
+ origin:{creator:'Sample maker',license:'CC BY 4.0',url:'https://example.test/audio.wav',
+  licenseUrl:'https://creativecommons.org/licenses/by/4.0/',attribution:'Sample maker; credit\nrequired'}
+});
+assert.match(source,/Dialog\.openPanel/,'desktop script should explicitly ask for the original audio');
+assert.match(source,/Buffer\.read\(s, path, action:/,'native SuperCollider must load the exported audio itself');
+assert.match(source,/SynthDef\(\\scSoundsMonoLoop/);
+assert.match(source,/BufRd\.ar/);
+assert.match(source,/loaded\.numChannels != 1/,'a different channel layout must not be substituted silently');
+assert.match(source,/\\rate, 1\.5/);
+assert.match(source,/\\start, 0\.25/);
+assert.match(source,/\\finish, 0\.7/);
+assert.match(source,/CC BY 4\.0/,'preserve exact license');
+assert.match(source,/Sample maker; credit required/,'preserve attribution without executable newlines');
+assert.equal((source.match(/SynthDef\(\\unexpected/g)||[]).length,1,'untrusted name should remain one comment line');
+assert.doesNotMatch(source,/^\s*SynthDef\(\\unexpected/m,'untrusted name may not inject SuperCollider source');
+assert.match(source,/NOT embedded/,'users must export the original audio independently');
+assert.match(sampleInstrumentSource({...normal,channels:2,loop:false}),/SynthDef\(\\scSoundsStereoOnce/);
+assert.throws(()=>sampleInstrumentSource({...normal,rate:Infinity}),/Speed/);
 console.log('Sounds native region definitions, one-shot, loop, and validated controls passed.');
