@@ -38,6 +38,6 @@ export async function saveSoundsBatch(items){
  if(!Array.isArray(items)||!items.every(item=>item&&typeof item.id==='string'&&typeof item.name==='string'))
   throw Error('Invalid recovery batch');
  if(!items.length)return;
- await transaction('readwrite',store=>{for(const item of items)store.put(item)});
+ await transaction('readwrite',store=>{for(const item of items)store.add(item)});
  document.dispatchEvent(new Event('sounds-library-changed'));
 }
