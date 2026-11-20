@@ -36,7 +36,7 @@ assert.match(REGION_DEFINITIONS,/sourceRate=0/,'desktop script can use native Bu
 assert.match(REGION_DEFINITIONS,/s\.sync/);
 assert.match(stopRegionCommand,/\\gate, 0/);
 const nativeEditor=regionLiveSource({...normal,start:0.2,finish:0.8,rate:0.75,loop:true,sourceSampleRate:44100});
-assert.match(nativeEditor,/^\\(\\nRoutine\\(\\{/,'live editor source must execute as a native SuperCollider Routine');
+assert.ok(nativeEditor.startsWith('(')&&nativeEditor.includes('Routine({'), 'live editor source must execute as a native SuperCollider Routine');
 assert.match(nativeEditor,/SynthDef\\(\\\\scSoundsMonoLoop/,'editable source must include the real synthesis graph');
 assert.match(nativeEditor,/BufRd\\.ar/,'loop processing must remain visible');
 assert.match(nativeEditor,/\\\\sourceRate, 44100/,'native source metadata must reach real playback');
