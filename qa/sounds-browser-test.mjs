@@ -89,6 +89,9 @@ try{
  await page.getByText('Allowed BY').waitFor();
  assert.equal(await page.locator('.discovered-sound').count(),2,'default filters must exclude NC/ND/unknown');
  assert.match(await page.locator('.discovered-sound').first().textContent(),/4 s/, 'Openverse milliseconds must display as seconds');
+ assert.equal(await page.locator('.discovered-sound audio[src]').count(),0,'Discover must not fetch previews before network permission');
+ await page.getByRole('button',{name:'Load preview (network)'}).first().click();
+ assert.equal(await page.locator('.discovered-sound audio[src]').count(),0,'unknown network may not start a preview');
  const button=page.getByRole('button',{name:'Save original audio'}).first();
  await button.click();
  assert.equal(downloadCount,0,'network override must be opt-in');
@@ -153,6 +156,13 @@ try{
  assert.equal(freesoundQueries,1);
  assert.equal(freesoundFilter,'license:"Creative Commons 0"','Freesound should filter at provider, not merely discard results locally');
  assert.match(await page.locator('.discovered-sound').first().textContent(),/3 s/,'Freesound durations are in seconds');
+ assert.equal(await page.locator('.discovered-sound audio[src]').count(),0,'previews stay unloaded after searching');
+ await page.locator('#discover-allow-unverified').check();
+ await page.getByRole('button',{name:'Load preview (network)'}).first().click();
+ assert.equal(await page.locator('.discovered-sound audio[src]').count(),1,'explicit network permission can load a preview');
+ await page.locator('#discover-allow-unverified').uncheck();
+ assert.equal(await page.locator('.discovered-sound audio[src]').count(),0,'revoking permission releases loaded previews');
+ assert.equal(await page.getByRole('button',{name:'Load preview (network)'}).first().isVisible(),true);
  await page.getByRole('tab',{name:'Library'}).click();
  assert.equal(await page.locator('.managed-item').count(),3);
  assert.equal(await page.getByText('Creative Commons BY',{exact:false}).count()>0,true,'license must be retained');

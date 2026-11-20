@@ -218,7 +218,7 @@ engine.addEventListener('click',async()=>{
     if(typeof context?.resume!=='function')throw Error('Native SuperCollider audio context unavailable; reload and retry.');
     await context.resume();
     print('SuperCollider audio unlocked ('+context.state+').');
-    if(!controller)announce('SuperCollider audio unlocked ('+context.state+').');
+    if(!controller&&!current)announce('SuperCollider audio unlocked ('+context.state+').');
     maybeLoadLinkedPreset();
    }catch(error){announce('Audio unlock failed: '+error.message)}
    return;
@@ -323,13 +323,31 @@ load.addEventListener('click',async()=>{
    transport.release(BUFFER);await transport.sync({signal:controller.signal});allocated=false;
   }
   print('Requesting native buffer upload: '+decoded.length+' frames, '+decoded.numberOfChannels+' channel(s), '+decoded.sampleRate+' Hz.');
+  let lastPhase='',lastQuarter=-1;
   current=await transport.upload(BUFFER,decoded,{
     signal:controller.signal,
-    onProgress:ratio=>{progress.value=ratio;announce('Transferring into native SuperCollider buffer: '+Math.round(100*ratio)+'%')}
+    onStage:stage=>{
+      const quarter=Math.floor(4*stage.acknowledged/Math.max(1,stage.total));
+      if(stage.phase!==lastPhase||(stage.phase==='transfer'&&quarter!==lastQuarter)){
+        print('Native '+stage.phase+': '+stage.acknowledged+'/'+stage.total+
+         ' samples acknowledged ('+stage.sent+' sent, '+stage.packets+
+         ' packets, '+stage.elapsedMs+' ms).');
+        lastPhase=stage.phase;lastQuarter=quarter;
+      }
+    },
+    onProgress:ratio=>{progress.value=ratio;announce('Transferring into native SuperCollider buffer: '+Math.round(100*ratio)+'% acknowledged')}
   });
   allocated=true;currentItemId=item.id;waveform=waveformPeaks(decoded,512);updateRegionControls();
   announce('Verified by native SuperCollider sample readback: '+current.frames+' frames, '+current.channels+' channel(s), '+current.sampleRate+' Hz. Ready for PlayBuf.');
- }catch(error){current=null;currentItemId=null;waveform=null;renderWaveform();print('Sample transfer failed: '+error.message);announce('Sample transfer failed: '+error.message)}
+ }catch(error){
+  current=null;currentItemId=null;waveform=null;renderWaveform();
+  print('Sample transfer failed: '+error.message);
+  print('Native diagnostics: server '+(serverReady?'ready':'not ready')+
+   ', definitions '+(definitionsReady?'ready':'not ready')+
+   ', output context '+(outputContext()?.state||'unavailable')+
+   ', server sample rate '+(serverSampleRate||'unknown')+' Hz.');
+  announce('Sample transfer failed: '+error.message);
+ }
  finally{controller=null;refreshControls()}
 });
 cancel.addEventListener('click',()=>{controller?.abort();announce('Cancelling sample transfer and releasing the incomplete buffer…')});

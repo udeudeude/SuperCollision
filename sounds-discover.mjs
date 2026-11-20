@@ -26,8 +26,21 @@ function httpsUrl(value){
  try{const u=new URL(value);return u.protocol==='https:'?u.href:null}catch{return null}
 }
 function syncSource(){keyBox.hidden=source.value!=='freesound';$('discover-source-description').textContent=source.value==='freesound'?'Freesound requires your personal application key. Saved files are preview quality.':'Openverse requires no account. Wikimedia results are drawn from its Commons collection.'}
+/* Remote previews are optional network transfers too. Never set an audio
+ * source until a user explicitly requests it under the same Wi-Fi policy. */
+function unloadPreviews(){
+ for(const card of results.querySelectorAll('.discovered-sound')){
+  const audio=card.querySelector('audio[data-remote-preview]');
+  if(!audio)continue;
+  audio.pause();
+  if(audio.hasAttribute('src')){audio.removeAttribute('src');audio.load()}
+  audio.hidden=true;
+  const button=card.querySelector('button[data-preview-action]');
+  if(button)button.hidden=false;
+ }
+}
 function invalidateSearch(message){
- cancelActiveDownload();
+ unloadPreviews();cancelActiveDownload();
  controller?.abort();controller=null;busy=false;page=1;pageCount=0;
  results.replaceChildren();more.disabled=true;previous.disabled=true;say(message);
 }
@@ -60,7 +73,7 @@ async function searchSounds(nextPage=1){
  if(!navigator.onLine){say('Discover requires an internet connection. Your saved library works offline.');return}
  if(controller)controller.abort();
  controller=new AbortController();const signal=controller.signal;
- busy=true;results.replaceChildren();more.disabled=true;previous.disabled=true;say('Searching '+(from==='freesound'?'Freesound':'Openverse')+'…');
+ unloadPreviews();busy=true;results.replaceChildren();more.disabled=true;previous.disabled=true;say('Searching '+(from==='freesound'?'Freesound':'Openverse')+'…');
  try{
   let url,options={signal,cache:'no-store'};
   if(from==='freesound'){
@@ -97,6 +110,7 @@ function downloadAllowed(){
  return verifiedWifi||allowUnverified.checked;
 }
 function enforceDownloadPolicy(){
+ if(!downloadAllowed())unloadPreviews();
  if(activeDownload?.phase==='downloading'&&!downloadAllowed()){
   cancelActiveDownload();
   say('Download cancelled because Wi-Fi can no longer be verified. Existing sounds are safe.');
@@ -106,6 +120,7 @@ allowUnverified.addEventListener('change',enforceDownloadPolicy);
 const connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
 connection?.addEventListener?.('change',enforceDownloadPolicy);
 window.addEventListener('offline',()=>{
+ unloadPreviews();
  if(activeDownload?.phase==='downloading'){
   cancelActiveDownload();
   say('Download cancelled because the device went offline. Existing sounds are safe.');
@@ -181,11 +196,22 @@ function renderResult(item){
  const name=element('strong',item.name);
  const meta=element('small',item.creator+' · '+(item.duration?Math.round(item.duration)+' s · ':'')+item.provider+' · '+readableLicense(item.license));
  card.append(name,meta);
- if(item.audioUrl){
-  const audio=element('audio');audio.controls=true;audio.preload='none';audio.crossOrigin='anonymous';audio.src=item.audioUrl;audio.setAttribute('aria-label','Preview '+item.name);card.append(audio);
- }
  const actions=element('div');actions.className='actions';
  if(item.audioUrl){
+  const audio=element('audio');
+  audio.controls=true;audio.preload='none';audio.crossOrigin='anonymous';
+  audio.dataset.remotePreview='true';audio.hidden=true;
+  audio.setAttribute('aria-label','Preview '+item.name);
+  const preview=action('Load preview (network)',()=>{
+   if(!downloadAllowed()){
+    say('Preview blocked: Wi-Fi cannot be verified. Use the network override below to allow preview streaming.');
+    allowUnverified.focus();return;
+   }
+   audio.src=item.audioUrl;audio.hidden=false;preview.hidden=true;
+  });
+  preview.dataset.previewAction='true';
+  actions.append(preview);
+  card.append(audio);
   const save=action(item.variant==='source audio'?'Save original audio':'Save compressed preview',()=>addToLibrary(item,save));
   actions.append(save);
  }
@@ -197,9 +223,9 @@ document.addEventListener('sounds-view-changed',event=>{
  if(event.detail?.view==='discover')return;
  if(busy){controller?.abort();controller=null;busy=false;more.disabled=true;previous.disabled=true;say('Search stopped when you left Discover. Search again to continue.')}
  if(activeDownload?.phase==='downloading'){cancelActiveDownload();say('Download cancelled when you left Discover. No audio was imported.')}
- for(const audio of results.querySelectorAll('audio'))audio.pause();
+ unloadPreviews();
 });
-window.addEventListener('pagehide',()=>{controller?.abort();cancelActiveDownload()});
+window.addEventListener('pagehide',()=>{controller?.abort();cancelActiveDownload();unloadPreviews()});
 form.addEventListener('submit',event=>{event.preventDefault();searchSounds(1)});
 more.addEventListener('click',()=>{if(!busy&&page<pageCount)searchSounds(page+1)});
 previous.addEventListener('click',()=>{if(!busy&&page>1)searchSounds(page-1)});
