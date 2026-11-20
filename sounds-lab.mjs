@@ -3,11 +3,14 @@
 import {allSounds} from './sounds-store.mjs';
 import {NativeBufferTransport} from './sounds-buffer.mjs';
 import {REGION_DEFINITIONS,regionPlayCommand,stopRegionCommand} from './sounds-sampler.mjs';
+import {waveformPeaks,waveformDragRegion} from './sounds-waveform.mjs';
 const $=id=>document.getElementById(id);
 const status=$('lab-status'),log=$('lab-log'),sound=$('lab-sound'),engine=$('lab-engine');
 const load=$('lab-load'),play=$('lab-play'),stop=$('lab-stop'),cancel=$('lab-cancel'),progress=$('lab-progress');
 const details=$('lab-details');
 const regionStart=$('lab-start'),regionFinish=$('lab-finish'),regionRate=$('lab-rate'),regionAmp=$('lab-amp'),regionLoop=$('lab-loop'),regionSummary=$('lab-region-summary');
+const waveformCanvas=$('lab-waveform');
+let waveform=null,waveformAnchor=null;
 const BUFFER=700;
 const READY='__SC_SOUNDS_LAB_READY__',FAILED='__SC_SOUNDS_LAB_FAILED__',DEFS='__SC_SOUNDS_LAB_DEFS__',RATE='__SC_SOUNDS_LAB_RATE__:';
 const DEFINITION_SOURCE=REGION_DEFINITIONS;
@@ -51,12 +54,64 @@ function refreshControls(){
  stop.disabled=!serverReady;
  cancel.disabled=!controller;
 }
+
+function renderWaveform(){
+ const canvas=waveformCanvas;
+ if(!canvas)return;
+ const width=Math.max(1,Math.round(canvas.clientWidth||320)),height=116;
+ const ratio=Math.min(2,window.devicePixelRatio||1);
+ canvas.width=Math.round(width*ratio);
+ canvas.height=Math.round(height*ratio);
+ const ctx=canvas.getContext('2d');
+ if(!ctx)return;
+ ctx.scale(ratio,ratio);
+ ctx.fillStyle='#141b16';ctx.fillRect(0,0,width,height);
+ if(!waveform){
+  ctx.fillStyle='#b7b9ad';ctx.font='12px system-ui';
+  ctx.fillText('Transfer a saved sound to see its waveform',12,56);
+  return;
+ }
+ const start=Number(regionStart.value)/100,finish=Number(regionFinish.value)/100;
+ ctx.fillStyle='rgba(216,174,91,0.14)';
+ ctx.fillRect(width*start,0,width*(finish-start),height);
+ const middle=height/2,scale=height*0.45;
+ for(let x=0;x<width;x++){
+  const [low,high]=waveform[Math.min(waveform.length-1,Math.floor(x*waveform.length/width))];
+  ctx.fillStyle=x/width>=start&&x/width<=finish?'#e5bc71':'#78897d';
+  const top=middle-high*scale,bottom=middle-low*scale;
+  ctx.fillRect(x,top,1,Math.max(1,bottom-top));
+ }
+ for(const edge of [start,finish]){
+  ctx.fillStyle='#ffe4a1';ctx.fillRect(Math.min(width-2,width*edge),0,2,height);
+ }
+}
+function waveformPoint(event){
+ const box=waveformCanvas.getBoundingClientRect();
+ return Math.max(0,Math.min(1,(event.clientX-box.left)/Math.max(1,box.width)));
+}
+waveformCanvas.addEventListener('pointerdown',event=>{
+ if(!waveform||!current||event.button!==0)return;
+ waveformAnchor=waveformPoint(event);
+ waveformCanvas.setPointerCapture(event.pointerId);
+});
+waveformCanvas.addEventListener('pointermove',event=>{
+ if(waveformAnchor===null||!waveform)return;
+ const point=waveformPoint(event);
+ if(Math.abs(point-waveformAnchor)<0.01)return;
+ const region=waveformDragRegion(waveformAnchor,point);
+ regionStart.value=region.start;regionFinish.value=region.finish;
+ updateRegionControls();
+});
+for(const type of ['pointerup','pointercancel','lostpointercapture'])
+ waveformCanvas.addEventListener(type,()=>{waveformAnchor=null});
+window.addEventListener('resize',renderWaveform);
 function updateRegionControls(changed){
  let start=Number(regionStart.value),finish=Number(regionFinish.value);
  if(changed==='start'&&start>=finish){finish=Math.min(100,start+1);regionFinish.value=finish}
  if(changed==='finish'&&finish<=start){start=Math.max(0,finish-1);regionStart.value=start}
  const seconds=current?current.frames/current.sampleRate:0;
  regionSummary.textContent='Region: '+start+'% to '+finish+'%'+(seconds?' ('+(seconds*start/100).toFixed(2)+'–'+(seconds*finish/100).toFixed(2)+' s)':'')+' · '+Number(regionRate.value).toFixed(2)+'× · Volume '+Math.round(Number(regionAmp.value)*100)+'% · '+(regionLoop.checked?'Loop':'One shot');
+ renderWaveform();
 }
 for(const [input,dimension] of [[regionStart,'start'],[regionFinish,'finish'],[regionRate,'rate'],[regionAmp,'amp'],[regionLoop,'loop']]){
  input.addEventListener('input',()=>updateRegionControls(dimension));
@@ -70,7 +125,7 @@ async function listSounds(){
   sound.replaceChildren(new Option('Choose a recorded or imported sound…',''));
   for(const item of entries)sound.add(new Option((item.name||'Untitled')+' · '+((item.blob.size/1024/1024).toFixed(1))+' MB',item.id));
   if(entries.some(item=>item.id===previousId))sound.value=previousId;
-  if(currentItemId&&!entries.some(item=>item.id===currentItemId)){current=null;currentItemId=null;progress.value=0}
+  if(currentItemId&&!entries.some(item=>item.id===currentItemId)){current=null;currentItemId=null;waveform=null;renderWaveform();progress.value=0}
   if(!entries.length)announce('No saved audio yet. Record, import or Discover a sound first.');
  }catch(error){announce('Local sound library unavailable: '+error.message)}
  refreshControls();
@@ -135,7 +190,7 @@ engine.addEventListener('click',async()=>{
 });
 sound.addEventListener('change',()=>{
  if(current&&lang){try{lang.runCode(stopRegionCommand)}catch{}}
- current=null;currentItemId=null;progress.value=0;regionStart.value=0;regionFinish.value=100;updateRegionControls();
+ current=null;currentItemId=null;waveform=null;progress.value=0;regionStart.value=0;regionFinish.value=100;updateRegionControls();
  const item=entries.find(item=>item.id===sound.value);
  details.textContent=item?('Source: '+item.source+' · '+(item.origin?.creator||'local recording')+' · '+(item.origin?.license||'personal or unknown license')):'';
  refreshControls();
@@ -143,7 +198,7 @@ sound.addEventListener('change',()=>{
 load.addEventListener('click',async()=>{
  const item=entries.find(entry=>entry.id===sound.value);
  if(!item||!serverReady||!definitionsReady||controller)return;
- controller=new AbortController();current=null;currentItemId=null;progress.value=0;refreshControls();
+ controller=new AbortController();current=null;currentItemId=null;waveform=null;renderWaveform();progress.value=0;refreshControls();
  try{
   if(item.blob.size>50*1024*1024)throw Error('Choose an audio file under 50 MB for this laboratory.');
   const context=outputContext(),sampleRate=outputSampleRate();
@@ -168,9 +223,9 @@ load.addEventListener('click',async()=>{
     signal:controller.signal,
     onProgress:ratio=>{progress.value=ratio;announce('Transferring into native SuperCollider buffer: '+Math.round(100*ratio)+'%')}
   });
-  allocated=true;currentItemId=item.id;updateRegionControls();
+  allocated=true;currentItemId=item.id;waveform=waveformPeaks(decoded,512);updateRegionControls();
   announce('Verified by native SuperCollider sample readback: '+current.frames+' frames, '+current.channels+' channel(s), '+current.sampleRate+' Hz. Ready for PlayBuf.');
- }catch(error){current=null;currentItemId=null;announce('Sample transfer failed: '+error.message)}
+ }catch(error){current=null;currentItemId=null;waveform=null;renderWaveform();announce('Sample transfer failed: '+error.message)}
  finally{controller=null;refreshControls()}
 });
 cancel.addEventListener('click',()=>{controller?.abort();announce('Cancelling sample transfer and releasing the incomplete buffer…')});
