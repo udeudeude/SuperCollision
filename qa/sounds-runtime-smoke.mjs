@@ -70,6 +70,7 @@ try{
   for(let i=0;i<data.length;i+=4)if(data[i]===229&&data[i+1]===188&&data[i+2]===113)return true;
   return false;
  }), 'decoded audio should yield visible native-sample waveform');
+ await page.locator('#lab-waveform').scrollIntoViewIfNeeded();
  const bounds=await page.locator('#lab-waveform').boundingBox();
  await page.mouse.move(bounds.x+bounds.width*0.2,bounds.y+bounds.height/2);
  await page.mouse.down();
