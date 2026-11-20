@@ -47,9 +47,12 @@ await page.route('https://freesound.org/apiv2/search/**',async route=>{
  freesoundFilter=new URL(request.url()).searchParams.get('filter')||'';
  assert.equal(request.headers().authorization,'Token test-freesound-key');
  await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
-  count:1,next:null,results:[{id:23,name:'Freesound bell',username:'Sound Maker',
-   duration:2.5,license:'Creative Commons 0',
-   previews:{'preview-hq-mp3':'https://audio.example.test/bell.mp3'}}]
+  count:2,next:null,results:[{id:23,name:'Freesound bell',username:'Sound Maker',
+   duration:2.5,license:'http://creativecommons.org/publicdomain/zero/1.0/',
+   previews:{'preview-hq-mp3':'https://audio.example.test/bell.mp3'}},
+   {id:24,name:'Freesound BY',username:'Another Maker',duration:3.2,
+    license:'https://creativecommons.org/licenses/by/4.0/',
+    previews:{'preview-hq-mp3':'https://audio.example.test/by-preview.mp3'}}]
  })});
 });
 await page.route('https://audio.example.test/**',async route=>{downloadCount++;await route.fulfill({status:200,contentType:'audio/wav',headers:{'access-control-allow-origin':'*'},body:Buffer.from('RIFFdemo')})});
@@ -155,7 +158,16 @@ try{
  await page.getByText('Freesound bell').waitFor();
  assert.equal(freesoundQueries,1);
  assert.equal(freesoundFilter,'license:"Creative Commons 0"','Freesound should filter at provider, not merely discard results locally');
+ assert.equal(await page.locator('.discovered-sound').count(),1,'CC0/no-attribution filters must work with Freesound URL licenses');
  assert.match(await page.locator('.discovered-sound').first().textContent(),/3 s/,'Freesound durations are in seconds');
+ assert.match(await page.locator('.discovered-sound').first().textContent(),/Creative Commons Zero.*1.0/);
+ assert.equal(await page.locator('.discovered-sound a').filter({hasText:'License terms'}).first().getAttribute('href'),'https://creativecommons.org/publicdomain/zero/1.0/');
+ await page.locator('#discover-no-attribution').uncheck();
+ await page.locator('#discover-cc0').uncheck();
+ await page.getByRole('button',{name:'Search sounds'}).click();
+ await page.getByText('Freesound BY').waitFor();
+ assert.equal(await page.locator('.discovered-sound').count(),2,'BY and CC0 URLs must pass the combined default commercial/remix filters');
+ assert.equal(await page.locator('.discovered-sound').filter({hasText:'Freesound BY'}).locator('a').filter({hasText:'License terms'}).getAttribute('href'),'https://creativecommons.org/licenses/by/4.0/');
  assert.equal(await page.locator('.discovered-sound audio[src]').count(),0,'previews stay unloaded after searching');
  await page.locator('#discover-allow-unverified').check();
  await page.getByRole('button',{name:'Load preview (network)'}).first().click();
