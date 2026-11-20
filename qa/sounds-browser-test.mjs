@@ -147,6 +147,10 @@ try{
  assert.ok(await page.locator('#lab-sound option').count()>=3,'laboratory should see original local audio items');
  assert.equal(await page.locator('#lab-load').isDisabled(),true,'native transfer must wait for engine startup');
  assert.equal(await page.locator('#lab-play').isDisabled(),true,'playback must wait for native sample transfer');
+ await page.locator('#lab-start').fill('90');
+ await page.locator('#lab-finish').fill('50');
+ assert.equal(await page.locator('#lab-start').inputValue(),'49','region sliders should preserve an ordered, nonempty selection');
+ assert.match(await page.locator('#lab-region-summary').textContent(),/Region: 49% to 50%/);
  assert.deepEqual(errors,[],'No unhandled page errors allowed');
  console.log('Sounds browser regression passed: library, source, recording, discovery, license filters and persistence');
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
