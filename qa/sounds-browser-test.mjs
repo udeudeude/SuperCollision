@@ -327,7 +327,7 @@ try{
  await page.getByRole('button',{name:'C4, 262 hertz'}).click();
  assert.equal(await page.locator('#lab-demo-pitch').inputValue(),'262');
  assert.equal(await page.getByRole('button',{name:'C4, 262 hertz'}).getAttribute('aria-pressed'),'true');
- assert.match(await page.locator('#lab-demo-code').inputValue(),/\\\\freq, 262/);
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/\\freq, 262/);
  assert.match(await page.locator('#lab-status').textContent(),/Start SuperCollider/);
  const sourceBeforeOverride=await page.locator('#lab-demo-code').inputValue();
  await page.locator('#lab-demo-code').fill(sourceBeforeOverride+'\n// Original code edit is protected');
