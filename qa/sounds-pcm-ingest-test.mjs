@@ -42,6 +42,11 @@ equals(sound.getChannelData(0),[32767/32768,0,-0.5]);
 equals(sound.getChannelData(1),[-1,0.5,0.25]);
 assert.throws(()=>sound.getChannelData(2),RangeError);
 assert.deepEqual(pcm16.bytes,original,'ingest must not alter source bytes');
+const rate44100=wave({channels:1,frames:3,rate:44100,bits:16});
+rate44100.view.setInt16(rate44100.at,16384,true);
+const source44100=read(rate44100);
+assert.equal(source44100.sampleRate,44100,'ingest must preserve original sample-rate metadata for native playback correction');
+assert.equal(source44100.getChannelData(0)[0],0.5,'source samples must not be resampled');
 
 const pcm8=wave({channels:1,frames:3,bits:8,junk:true});
 [0,128,255].forEach((x,i)=>pcm8.view.setUint8(pcm8.at+i,x));
