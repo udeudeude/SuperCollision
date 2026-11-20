@@ -23,7 +23,7 @@ Routine({
 }).play(SystemClock);
 )`;
 let lang=null,synth=null,transport=null,languageReady=false,serverReady=false,definitionsReady=false;
-let bootRequested=false,booting=false,bootTimeout=null,current=null,controller=null,entries=[];
+let bootRequested=false,booting=false,bootTimeout=null,current=null,controller=null,entries=[],allocated=false;
 function announce(t){status.textContent=t}
 function print(t){log.textContent=(log.textContent+String(t)+'\n').slice(-10000);log.scrollTop=log.scrollHeight}
 function refreshControls(){
@@ -111,12 +111,12 @@ load.addEventListener('click',async()=>{
    throw Error('Decoded sample rate differs from SuperCollider output; refusing pitch-altering transfer.');
   announce('Transferring samples to SuperCollider…');
   // A separate Sounds-only engine owns this buffer. Never alter the main editor's server.
-  if(window.__scSoundsAllocated){transport.release(BUFFER);await transport.sync();window.__scSoundsAllocated=false}
+  if(allocated){synth.sendOsc(oscMessage('/g_freeAll',[{type:'i',value:0}]));transport.release(BUFFER);await transport.sync();allocated=false}
   current=await transport.upload(BUFFER,decoded,{
     signal:controller.signal,
     onProgress:ratio=>{progress.value=ratio;announce('Transferring into native SuperCollider buffer: '+Math.round(100*ratio)+'%')}
   });
-  window.__scSoundsAllocated=true;
+  allocated=true;
   announce('Ready: '+current.frames+' frames, '+current.channels+' channel(s), '+current.sampleRate+' Hz. Playback uses SuperCollider PlayBuf.');
  }catch(error){current=null;announce('Sample transfer failed: '+error.message)}
  finally{controller=null;refreshControls()}
@@ -136,5 +136,5 @@ stop.addEventListener('click',()=>{
  catch(error){announce('Could not stop native SuperCollider playback: '+error.message)}
 });
 document.addEventListener('sounds-library-changed',listSounds);
-window.addEventListener('pagehide',()=>{controller?.abort();if(synth&&window.__scSoundsAllocated){try{transport.release(BUFFER)}catch{}}});
+window.addEventListener('pagehide',()=>{controller?.abort();if(synth&&allocated){try{transport.release(BUFFER)}catch{}}});
 listSounds();
