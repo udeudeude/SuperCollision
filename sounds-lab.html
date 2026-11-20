@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#161817">
+<title>Native Sample Lab · SuperCollision Sounds</title>
+<style>
+:root{color-scheme:dark;background:#161817;color:#eae7da;font:15px/1.5 system-ui,sans-serif}
+*{box-sizing:border-box}
+body{max-width:760px;margin:0 auto;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom);min-height:100dvh}
+header{padding:18px 0;border-bottom:1px solid #515a51;display:flex;justify-content:space-between;align-items:center;gap:15px}
+h1{font-size:1.18rem;letter-spacing:.06em;margin:0}h2{font-size:1.05rem;margin:0 0 10px}
+a{color:#e5bc71}p{margin:8px 0 14px}.muted{color:#b5b8aa;font-size:13px}
+section{border:1px solid #575d54;margin:14px 0;padding:16px}
+label{font-weight:650;display:block;margin:12px 0 6px}
+select,button{border:1px solid #858776;border-radius:2px;background:#252a26;color:#f5f0e6;padding:11px;font:16px system-ui}
+select{width:100%}button{font-weight:750;min-height:48px}button.primary{background:#d8ae5b;color:#161817}
+button:disabled{opacity:.42}.actions{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+button:focus-visible,a:focus-visible,select:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
+progress{width:100%;height:16px;accent-color:#d8ae5b}
+#lab-log{white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;color:#b6cbb8;background:#0d1612;padding:12px;font:12px/1.4 ui-monospace,monospace}
+#lab-status{font-weight:600;min-height:28px}
+</style>
+</head>
+<body>
+<header><a href="./sounds.html">← Sounds</a><h1>Native Sample Lab</h1><small>EXPERIMENTAL · 01</small></header>
+<main>
+<p class="muted">Experimental isolated SuperCollider playback test. Uses the same native language and synthesis engine as SuperCollision, without changing the main Code page. This is not a browser sampler or a second sound engine.</p>
+<section><h2>1 / Initialize SuperCollider</h2>
+<p class="muted">Requires cross-origin isolation and the existing compiled SuperCollider runtime. Starting may use substantial memory. An audio unlock button remains available after startup.</p>
+<div class="actions"><button id="lab-engine" type="button" class="primary">Start native engine</button></div>
+</section>
+<section><h2>2 / Load an existing recording</h2>
+<label for="lab-sound">Sound library</label><select id="lab-sound"><option value="">Loading local sounds…</option></select>
+<p id="lab-details" class="muted"></p>
+<p class="muted">A sample is decoded for ingestion, converted to interleaved float samples and transferred in acknowledged chunks using SuperCollider's /b_alloc and /b_setn commands. Playback uses native SuperCollider PlayBuf. The library's source audio is never replaced.</p>
+<div class="actions"><button id="lab-load" class="primary" type="button" disabled>Transfer to SuperCollider</button><button id="lab-cancel" type="button" disabled>Cancel transfer</button></div>
+<progress id="lab-progress" max="1" value="0" aria-label="Native buffer transfer progress"></progress>
+</section>
+<section><h2>3 / Audition</h2>
+<p class="muted">Audio is generated solely by SuperCollider. This initial test supports one short mono or stereo sample at a time, with no effects or editing.</p>
+<div class="actions"><button id="lab-play" class="primary" type="button" disabled>Play sample</button><button id="lab-stop" type="button" disabled>Stop</button></div>
+</section>
+<section><h2>Status / diagnostics</h2><p id="lab-status" role="status" aria-live="polite">Start the native engine to begin.</p><pre id="lab-log" aria-label="SuperCollider diagnostic output"></pre></section>
+</main>
+<script type="module" src="./sounds-lab.mjs?v=1"></script>
+</body>
+</html>
