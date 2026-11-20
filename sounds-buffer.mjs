@@ -145,37 +145,50 @@ export class NativeBufferTransport{
     }
     return points.length;
   }
-  async upload(bufferId,audioBuffer,{signal,onProgress,verify=true}={}){
+  async upload(bufferId,audioBuffer,{signal,onProgress,onStage,verify=true}={}){
     if(this.active)throw Error('Only one sample transfer can run at once');
     const frames=audioBuffer.length,channels=audioBuffer.numberOfChannels;
     if(!Number.isInteger(channels)||channels<1||channels>2||!Number.isInteger(frames)||frames<1||frames*channels>MAX_SAMPLES)
       throw Error('Choose a shorter mono or stereo recording. The current limit is '+MAX_SAMPLES+' samples.');
-    this.active=true;let allocated=false;
+    this.active=true;
+    const total=frames*channels,started=Date.now();
+    let allocated=false,phase='allocation',sent=0,acknowledged=0,packets=0;
+    const report=()=>onStage?.({phase,sent,acknowledged,total,packets,elapsedMs:Date.now()-started});
     try{
       checkAborted(signal);
+      report();
       this.send(oscMessage('/b_alloc',[i(bufferId),i(frames),i(channels)]));
       allocated=true;
       await this.sync({signal});
-      let count=0;
-      for(const {offset,packet} of audioPackets(bufferId,audioBuffer)){
+      phase='transfer';report();
+      for(const {offset,count,packet} of audioPackets(bufferId,audioBuffer)){
         checkAborted(signal);
-        this.send(packet);count++;
-        if(count%12===0){
+        this.send(packet);packets++;sent=offset+count;
+        // A /synced response only confirms packets through the preceding
+        // /sync. Do not report queued bytes as acknowledged by scsynth.
+        if(packets%12===0){
           await this.sync({signal});
-          onProgress?.(Math.min(0.98,0.98*(offset+FLOATS_PER_PACKET)/(frames*channels)));
+          acknowledged=sent;report();
+          onProgress?.(Math.min(0.98,0.98*acknowledged/total));
         }
       }
       await this.sync({signal});
+      acknowledged=total;report();
       checkAborted(signal);
+      phase='readback';report();
       if(verify)await this.verifySamples(bufferId,audioBuffer,{signal});
+      phase='complete';report();
       onProgress?.(1);
       return {bufferId,frames,channels,sampleRate:audioBuffer.sampleRate,verified:verify};
     }catch(error){
+      const failedPhase=phase,failedSent=sent,failedAck=acknowledged,elapsedMs=Date.now()-started;
+      phase='cleanup';report();
       if(allocated){
-        // SuperCollider processes ordered commands; best-effort synchronize free.
+        // Best-effort cleanup is bounded independently of the failed sync.
         try{this.send(oscMessage('/b_free',[i(bufferId)]));await this.sync({timeoutMs:2000})}catch{}
       }
-      throw error;
+      throw Error('Native SuperCollider '+failedPhase+' failed after '+elapsedMs+' ms; '+
+        failedAck+' of '+total+' samples acknowledged ('+failedSent+' sent): '+error.message);
     }finally{this.active=false}
   }
   release(bufferId){this.send(oscMessage('/b_free',[i(bufferId)]))}
