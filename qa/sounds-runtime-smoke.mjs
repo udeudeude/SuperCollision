@@ -1,7 +1,6 @@
 /* Browser smoke against the ACTUAL compiled SuperCollider WebAssembly modules.
  * Read-only compiled runtime comes from pages-build; Sounds source is the PR head.
  * This tests interpreter boot, server buffer readback, region-controlled PlayBuf and BufRd/Phasor requests.
- * Uses 24-bit PCM WAVE to exercise read-only native sample ingestion.
  * It is not a physical speaker or iPhone audio-output test. */
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
@@ -35,17 +34,13 @@ try{
  await page.goto(base+'/sounds-lab.html');
  assert.equal(await page.evaluate(()=>crossOriginIsolated),true,'real native runtime requires cross-origin isolation');
  await page.evaluate(async()=>{
-  const frames=4800,rate=48000,buffer=new ArrayBuffer(44+frames*3),v=new DataView(buffer);
+  const frames=4800,rate=48000,buffer=new ArrayBuffer(44+frames*2),v=new DataView(buffer);
   const str=(offset,text)=>{for(let j=0;j<text.length;j++)v.setUint8(offset+j,text.charCodeAt(j))};
-  str(0,'RIFF');v.setUint32(4,36+frames*3,true);str(8,'WAVE');str(12,'fmt ');
+  str(0,'RIFF');v.setUint32(4,36+frames*2,true);str(8,'WAVE');str(12,'fmt ');
   v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
-  v.setUint32(24,rate,true);v.setUint32(28,rate*3,true);v.setUint16(32,3,true);v.setUint16(34,24,true);
-  str(36,'data');v.setUint32(40,frames*3,true);
-  for(let frame=0;frame<frames;frame++){
-   const sample=Math.round(0.35*8388607*Math.sin(2*Math.PI*440*frame/rate)),offset=44+frame*3;
-   v.setUint8(offset,sample&255);v.setUint8(offset+1,(sample>>8)&255);
-   v.setUint8(offset+2,(sample>>16)&255);
-  }
+  v.setUint32(24,rate,true);v.setUint32(28,rate*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);
+  str(36,'data');v.setUint32(40,frames*2,true);
+  for(let frame=0;frame<frames;frame++)v.setInt16(44+frame*2,Math.round(0.35*32767*Math.sin(2*Math.PI*440*frame/rate)),true);
   const db=await new Promise((resolve,reject)=>{
    const r=indexedDB.open('supercollision-sounds-v1',1);
    r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('sounds'))r.result.createObjectStore('sounds',{keyPath:'id'})};
