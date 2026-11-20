@@ -24,6 +24,8 @@ assert.throws(()=>importedAudioMime('image/jpeg','https://example.com/sound.mp3'
 assert.doesNotThrow(()=>rejectMislabelledAudio(new Uint8Array([82,73,70,70,0,0,87,65,86,69])));
 assert.throws(()=>rejectMislabelledAudio(new TextEncoder().encode('<html>Permission denied')),/error page instead of audio/);
 assert.throws(()=>rejectMislabelledAudio(new TextEncoder().encode('{"error":"expired"}')),/error page instead of audio/);
+assert.throws(()=>rejectMislabelledAudio(new TextEncoder().encode('{"status":"forbidden"}')),/error page instead of audio/);
+assert.throws(()=>rejectMislabelledAudio(new TextEncoder().encode('[{"code":403}]')),/error page instead of audio/);
 assert.throws(()=>rejectMislabelledAudio(new TextEncoder().encode('<!doctype html>Unavailable')),/error page instead of audio/);
 assert.match(downloadProgressText(1048576,4194304),/1.00 of 4.00 MB/);
 assert.match(downloadProgressText(524288),/0.50 MB received/);

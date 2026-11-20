@@ -1,6 +1,6 @@
 /* Sounds / Discover. Online search only; explicit, size-limited, permission-aware downloads.
  * No service-worker or main-page changes. Audio is stored unchanged. */
-import {readableLicense,meetsLicenseFilters,openverseLicenseFilter} from './sounds-licenses.mjs';
+import {readableLicense,meetsLicenseFilters,openverseLicenseFilter,parseCreativeCommonsLicenseUrl} from './sounds-licenses.mjs';
 import {saveSound} from './sounds-store.mjs';
 import {freesoundLicenseFilter,openverseSourceFilter,durationSeconds,importedAudioMime,rejectMislabelledAudio,downloadProgressText,audioVariantFromResult} from './sounds-discover-core.mjs';
 const $=id=>document.getElementById(id);
@@ -53,11 +53,12 @@ syncSource();
 function providerMetadata(sound,provider){
  if(provider==='freesound'){
   const preview=httpsUrl(sound.previews?.['preview-hq-mp3']||sound.previews?.['preview-lq-mp3']);
+  const parsedLicense=parseCreativeCommonsLicenseUrl(sound.license);
   return {id:String(sound.id||''),name:sound.name||'Untitled Freesound audio',
-   creator:sound.username||'Creator not specified',creatorUrl:httpsUrl('https://freesound.org/people/'+encodeURIComponent(sound.username||'')+'/'),license:sound.license||'',licenseUrl:null,
+   creator:sound.username||'Creator not specified',creatorUrl:httpsUrl('https://freesound.org/people/'+encodeURIComponent(sound.username||'')+'/'),license:sound.license||'',licenseUrl:parsedLicense?.url||null,
    pageUrl:httpsUrl('https://freesound.org/people/'+encodeURIComponent(sound.username||'')+'/sounds/'+sound.id+'/'),
    audioUrl:preview,variant:audioVariantFromResult(sound,provider),provider:'Freesound',source:'freesound',
-   duration:durationSeconds(sound.duration,'freesound'),filesize:null,attribution:null,licenseVersion:null};
+   duration:durationSeconds(sound.duration,'freesound'),filesize:null,attribution:null,licenseVersion:parsedLicense?.version||null};
  }
  return {id:String(sound.id||''),name:sound.title||'Untitled Openverse audio',
   creator:sound.creator||'Creator not specified',creatorUrl:httpsUrl(sound.creator_url),license:sound.license||'',licenseVersion:sound.license_version||null,licenseUrl:httpsUrl(sound.license_url),
