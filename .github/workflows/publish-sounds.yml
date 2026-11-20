@@ -58,9 +58,7 @@ jobs:
           persist-credentials: true
       - name: Smoke-test actual compiled SuperCollider engine in isolated browser
         if: github.event_name == 'pull_request'
-        # The WebAssembly player is experimental. Gather concrete diagnostics
-        # without blocking recovery/backup fixes if a runner lacks audio support.
-        continue-on-error: true
+        # Native WASM boot and /b_getn readback now pass in Chrome.
         timeout-minutes: 4
         env:
           SOUNDS_BROWSER_CHANNEL: chrome
