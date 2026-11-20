@@ -149,6 +149,8 @@ try{
  assert.ok(await page.locator('#lab-sound option').count()>=3,'laboratory should see original local audio items');
  assert.equal(await page.locator('#lab-load').isDisabled(),true,'native transfer must wait for engine startup');
  assert.equal(await page.locator('#lab-play').isDisabled(),true,'playback must wait for native sample transfer');
+ assert.equal(await page.locator('#lab-waveform').count(),1);
+ assert.ok(await page.locator('#lab-waveform').evaluate(canvas=>canvas.width>0&&canvas.height>0),'waveform placeholder must render before engine startup');
  await page.locator('#lab-start').evaluate(input=>{input.value='90';input.dispatchEvent(new Event('input',{bubbles:true}))});
  await page.locator('#lab-finish').evaluate(input=>{input.value='50';input.dispatchEvent(new Event('input',{bubbles:true}))});
  assert.equal(await page.locator('#lab-start').inputValue(),'49','region sliders should preserve an ordered, nonempty selection');
