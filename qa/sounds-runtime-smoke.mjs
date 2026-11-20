@@ -70,13 +70,47 @@ try{
  assert.match(await page.locator('#lab-status').textContent(),/^Verified by native SuperCollider sample readback:/);
 
  assert.equal(await page.locator('#lab-play').isEnabled(),true);
+ const nativeSource=await page.locator('#lab-live-source').inputValue();
+ assert.ok(nativeSource.includes('SynthDef(')&&nativeSource.includes('scSoundsMonoOnce'),
+  'visible source must include native synthesis');
+ assert.ok(nativeSource.includes('PlayBuf.ar'),'native signal processing must never be hidden');
+ assert.ok(nativeSource.includes('s.sync'),'native code waits for the definition before starting');
+ assert.equal(await page.locator('#lab-live-source').isEditable(),true);
+ assert.equal(await page.locator('#lab-sync-label').textContent(),'CONTROLS MATCH CODE');
+ const edited=nativeSource.replace('var frames = BufFrames.kr(bufnum);',
+  'var frames = BufFrames.kr(bufnum); // playtest hand edit');
+ assert.notEqual(edited,nativeSource,'test must modify actual SuperCollider code');
+ await page.locator('#lab-live-source').fill(edited);
+ assert.match(await page.locator('#lab-sync-label').textContent(),/CODE OVERRIDE/);
+ assert.equal(await page.locator('#lab-save-preset').isDisabled(),true,
+  'custom code must not be silently discarded in structured presets');
+ assert.equal(await page.locator('#lab-export-preset').isDisabled(),true);
+ await page.locator('#lab-play').click();
+ await page.getByText('Submitted edited SuperCollider synthesis code.',{exact:false}).waitFor();
+ await page.locator('#lab-rate').evaluate(input=>{input.value='1.1';input.dispatchEvent(new Event('input',{bubbles:true}))});
+ assert.equal(await page.locator('#lab-live-source').inputValue(),edited,'control changes must preserve manual edits');
+ assert.match(await page.locator('#lab-sync-label').textContent(),/CONTROL CHANGE PENDING/);
+ await page.locator('#lab-keep-code').click();
+ assert.equal(await page.locator('#lab-live-source').inputValue(),edited);
+ assert.match(await page.locator('#lab-sync-label').textContent(),/CONTROLS NOT SYNCHRONIZED/);
+ await page.locator('#lab-rate').evaluate(input=>{input.value='1.25';input.dispatchEvent(new Event('input',{bubbles:true}))});
+ await page.locator('#lab-apply-control').click();
+ assert.equal(await page.locator('#lab-sync-label').textContent(),'CONTROLS MATCH CODE');
+ assert.equal(await page.locator('#lab-save-preset').isEnabled(),true);
+ assert.doesNotMatch(await page.locator('#lab-live-source').inputValue(),/playtest hand edit/,
+  'explicitly applying control changes must restore the real native code');
  assert.ok(await page.locator('#lab-waveform').evaluate(canvas=>{
   const data=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
   for(let i=0;i<data.length;i+=4)if(data[i]===229&&data[i+1]===188&&data[i+2]===113)return true;
   return false;
  }), 'decoded audio should yield visible native-sample waveform');
- await page.locator('#lab-waveform').scrollIntoViewIfNeeded();
+ // Keep the live code pinned at the visible top, and deliberately bring
+ // the touch waveform into the reachable lower viewport instead of behind it.
+ await page.locator('#lab-waveform').evaluate(el=>el.scrollIntoView({block:'end',behavior:'instant'}));
  const bounds=await page.locator('#lab-waveform').boundingBox();
+ const sourceBounds=await page.locator('#lab-source-bay').boundingBox();
+ assert.ok(bounds.y>=sourceBounds.y+sourceBounds.height-2,
+  'waveform must be reachable below persistent source, not concealed beneath it');
  await page.mouse.move(bounds.x+bounds.width*0.2,bounds.y+bounds.height/2);
  await page.mouse.down();
  await page.mouse.move(bounds.x+bounds.width*0.8,bounds.y+bounds.height/2,{steps:6});
