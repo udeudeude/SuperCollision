@@ -3,7 +3,7 @@
 import {allSounds,saveSound} from './sounds-store.mjs';
 import {NativeBufferTransport} from './sounds-buffer.mjs';
 import {readPcmWaveForNativeBuffer} from './sounds-pcm-ingest.mjs';
-import {REGION_DEFINITIONS,regionPlayCommand,stopRegionCommand,sampleInstrumentSource,validateRegion} from './sounds-sampler.mjs';
+import {REGION_DEFINITIONS,regionPlayCommand,regionLiveSource,stopRegionCommand,sampleInstrumentSource,validateRegion} from './sounds-sampler.mjs';
 import {waveformPeaks,waveformDragRegion} from './sounds-waveform.mjs';
 const $=id=>document.getElementById(id);
 const status=$('lab-status'),log=$('lab-log'),sound=$('lab-sound'),engine=$('lab-engine');
@@ -15,43 +15,60 @@ const sourceView=$('lab-live-source'),copySource=$('lab-copy-source');
 const resetSource=$('lab-reset-source'),sourceState=$('lab-source-state');
 const sourceBay=$('lab-source-bay'),syncLabel=$('lab-sync-label'),regionControls=$('lab-region-controls');
 const applyControl=$('lab-apply-control'),keepCode=$('lab-keep-code');
-let sourceDirty=false,pendingControl=false;
+let sourceDirty=false,pendingControl=false,generatedSource='';
 function syncMode(mode,label){
  sourceBay.dataset.sync=mode;regionControls.dataset.sync=mode;syncLabel.textContent=label;
 }
+function syncPresetActions(){
+ const disabled=!current||!currentItemId||!!controller||sourceDirty;
+ savePreset.disabled=exportPreset.disabled=disabled;
+ const title=sourceDirty?'Custom live code is not included in structured presets. Copy your code or reset to matching controls before saving.':'';
+ savePreset.title=exportPreset.title=title;
+}
 function updateSourceBay(force=false){
- if(!sourceView)return;
  if(!current||!currentItemId){
-  sourceView.value='Select and transfer a recording to reveal executable SuperCollider playback code.';
+  sourceView.value='Select and transfer a recording to reveal executable SuperCollider source.';
   sourceView.readOnly=true;copySource.disabled=true;resetSource.disabled=true;
-  sourceDirty=false;pendingControl=false;applyControl.hidden=true;keepCode.hidden=true;
+  sourceDirty=false;pendingControl=false;generatedSource='';
+  applyControl.hidden=true;keepCode.hidden=true;
   syncMode('unavailable','NO SOURCE');
-  sourceState.textContent='Load a sample to edit its playback code.';return;
+  sourceState.textContent='Load a sample to edit its synthesis code.';
+  syncPresetActions();return;
  }
  try{
-  if(force||!sourceDirty){
-   sourceView.value=regionPlayCommand(regionSettings());sourceDirty=false;pendingControl=false;
+  generatedSource=regionLiveSource(regionSettings());
+  if(force||!sourceDirty||sourceView.value===generatedSource){
+   if(sourceView.value!==generatedSource)sourceView.value=generatedSource;
+   sourceDirty=false;pendingControl=false;
    applyControl.hidden=true;keepCode.hidden=true;
    syncMode('matched','CONTROLS MATCH CODE');
-   sourceState.textContent='Controls and executable SuperCollider command are synchronized.';
+   sourceState.textContent='The complete native SynthDef and Play command match the controls. Tap the code to edit.';
   }else if(pendingControl){
    syncMode('pending','CODE OVERRIDE · CONTROL CHANGE PENDING');
    applyControl.hidden=false;keepCode.hidden=false;
-   sourceState.textContent='The control was moved, but your edited code is preserved. Apply the control change to regenerate code, or keep your edited code.';
+   sourceState.textContent='Manual edits are preserved. Apply the control change to regenerate the code, or keep your edits.';
   }else{
    syncMode('modified','CODE OVERRIDE · CONTROLS NOT SYNCHRONIZED');
-   sourceState.textContent='Your edited SuperCollider command will run on Play. The dimmed controls show previous settings.';
+   sourceState.textContent='Edited code runs on Play; dimmed controls are not synchronized. Copy your custom code before resetting. Saving preset and desktop export require matching controls.';
   }
   sourceView.readOnly=false;copySource.disabled=false;resetSource.disabled=false;
- }catch(error){sourceState.textContent='Playback code unavailable: '+error.message;sourceView.readOnly=true;copySource.disabled=true}
+ }catch(error){sourceState.textContent='Native source unavailable: '+error.message;sourceView.readOnly=true;copySource.disabled=true}
+ syncPresetActions();
 }
 sourceView.addEventListener('input',()=>{
  if(sourceView.readOnly)return;
- sourceDirty=true;pendingControl=false;applyControl.hidden=true;keepCode.hidden=true;updateSourceBay();
+ sourceDirty=sourceView.value!==generatedSource;
+ pendingControl=false;applyControl.hidden=true;keepCode.hidden=true;
+ updateSourceBay();
 });
-resetSource.addEventListener('click',()=>{if(sourceDirty&&!confirm('Replace your edited SuperCollider code with the current graphical control settings?'))return;updateSourceBay(true)});
+resetSource.addEventListener('click',()=>{
+ if(sourceDirty&&!confirm('Replace your edited SuperCollider code with the current graphical control settings?'))return;
+ updateSourceBay(true);
+});
 applyControl.addEventListener('click',()=>updateSourceBay(true));
-keepCode.addEventListener('click',()=>{pendingControl=false;applyControl.hidden=true;keepCode.hidden=true;updateSourceBay()});
+keepCode.addEventListener('click',()=>{
+ pendingControl=false;applyControl.hidden=true;keepCode.hidden=true;updateSourceBay();
+});
 copySource?.addEventListener('click',async()=>{
  if(copySource.disabled)return;
  try{await navigator.clipboard.writeText(sourceView.value);copySource.textContent='Copied';setTimeout(()=>copySource.textContent='Copy',1300)}
@@ -104,7 +121,6 @@ function refreshControls(){
  play.disabled=!current||!definitionsReady||!!controller;
  stop.disabled=!serverReady;
  cancel.disabled=!controller;
- savePreset.disabled=exportPreset.disabled=!current||!currentItemId||!!controller;
  updateSourceBay();
 }
 
@@ -153,7 +169,7 @@ waveformCanvas.addEventListener('pointermove',event=>{
  if(Math.abs(point-waveformAnchor)<0.01)return;
  const region=waveformDragRegion(waveformAnchor,point);
  regionStart.value=region.start;regionFinish.value=region.finish;
- updateRegionControls();
+ updateRegionControls('waveform');
 });
 for(const type of ['pointerup','pointercancel','lostpointercapture'])
  waveformCanvas.addEventListener(type,()=>{waveformAnchor=null});
@@ -320,6 +336,9 @@ engine.addEventListener('click',async()=>{
  finally{booting=false;engine.disabled=false;refreshControls()}
 });
 sound.addEventListener('change',()=>{
+ if(sourceDirty&&!confirm('Switch recordings and discard the edited SuperCollider code?')){
+  sound.value=currentItemId||'';return;
+ }
  queuedPresetLoadId=null;linkedPreset=null;
  if(current&&lang){try{lang.runCode(stopRegionCommand)}catch{}}
  current=null;currentItemId=null;waveform=null;progress.value=0;regionStart.value=0;regionFinish.value=100;updateRegionControls();
@@ -329,6 +348,7 @@ sound.addEventListener('change',()=>{
 load.addEventListener('click',async()=>{
  const item=entries.find(entry=>entry.id===sound.value);
  if(!item||!serverReady||!definitionsReady||controller)return;
+ if(sourceDirty&&!confirm('Retransferring audio will replace your edited SuperCollider code. Continue?'))return;
  controller=new AbortController();current=null;currentItemId=null;waveform=null;renderWaveform();progress.value=0;refreshControls();
  try{
   if(item.blob.size>50*1024*1024)throw Error('Choose an audio file under 50 MB for this laboratory.');
@@ -391,7 +411,7 @@ load.addEventListener('click',async()=>{
     },
     onProgress:ratio=>{progress.value=ratio;announce('Transferring into native SuperCollider buffer: '+Math.round(100*ratio)+'% acknowledged')}
   });
-  allocated=true;currentItemId=item.id;waveform=waveformPeaks(decoded,512);updateRegionControls();
+  allocated=true;currentItemId=item.id;sourceDirty=false;pendingControl=false;waveform=waveformPeaks(decoded,512);updateRegionControls();
   announce('Verified by native SuperCollider sample readback: '+current.frames+' frames, '+current.channels+' channel(s), '+current.sampleRate+' Hz source. Native playback preserves original timing. Ready for PlayBuf.');
  }catch(error){
   current=null;currentItemId=null;waveform=null;renderWaveform();
@@ -413,7 +433,8 @@ play.addEventListener('click',async()=>{
   const code=sourceView.value.trim();
   if(!code)throw Error('Playback code is empty.');
   lang.runCode(code);
-  announce('Playing through native SuperCollider '+(params.loop?'loop':'one shot')+' · '+Math.round(params.start*100)+'–'+Math.round(params.finish*100)+'% · '+params.rate+'×.');
+  announce(sourceDirty?'Submitted edited SuperCollider synthesis code. Controls are not synchronized; check diagnostics for errors.':
+   'Playing through native SuperCollider '+(params.loop?'loop':'one shot')+' · '+Math.round(params.start*100)+'–'+Math.round(params.finish*100)+'% · '+params.rate+'×.');
  }catch(error){announce('Playback failed: '+error.message)}
 });
 function downloadableFilename(name){
