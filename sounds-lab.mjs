@@ -344,7 +344,7 @@ engine.addEventListener('click',async()=>{
    const sampleRateMatch=text.match(/__SC_SOUNDS_LAB_RATE__:(\d+(?:\.\d+)?)/);
    if(sampleRateMatch){serverSampleRate=Number(sampleRateMatch[1]);print('Native SuperCollider server sample rate: '+serverSampleRate+' Hz.');}
    if(text.includes(DEFS)){definitionsReady=true;engine.textContent='Play tone';announce('SuperCollider ready. Tap Play tone to hear the visible code.');refreshControls();maybeLoadLinkedPreset()}
-   if(text.includes(DEMO_MARKER))announce('SuperCollider executed the tone code. If silent, check your phone volume and audio output.');
+   if(text.includes(DEMO_MARKER)&&!controller&&!current)announce('SuperCollider executed the tone code. If silent, check your phone volume and audio output.');
    if(/ERROR:\s|FAILURE IN SERVER/.test(text))announce('SuperCollider reported an error. Open Technical details below for the message.');
    if(text.includes(FAILED)){clearTimeout(bootTimeout);bootRequested=false;engine.textContent='Retry server startup';announce('SuperCollider server failed to start. Tap Retry to try again.')}
    const cleaned=text.replaceAll(READY,'').replaceAll(FAILED,'').replaceAll(DEFS,'').trim();
