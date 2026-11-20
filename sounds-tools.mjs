@@ -78,6 +78,11 @@ async function refresh(){
    actions.append(lab);
   }
   if(item.code){
+   if(item.bench?.kind==='tone'){
+    const lab=node('a','Open in Instrument Bench');
+    lab.href='./sounds-lab.html?tone='+encodeURIComponent(item.id);
+    actions.append(lab);
+   }
    if(!item.preset)actions.append(action('Edit source',()=>{
     editing=item.id;title.value=item.name;code.value=item.code;
     saveButton.textContent='Save changes';cancelButton.hidden=false;

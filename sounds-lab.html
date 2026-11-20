@@ -84,10 +84,10 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 #lab-recording{border-color:#505b51}
 #lab-recording progress:indeterminate{opacity:.7}
 @media(max-width:400px){#lab-demo-controls{gap:8px}#lab-demo-code{max-height:27dvh}#lab-setup .actions button{padding:11px 7px}#lab-setup h2{font-size:1.15rem}}
-</style>
+#lab-setup .tone-save-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px;margin-top:4px}#lab-setup .tone-save-row label{font:700 10px/1.4 ui-monospace,monospace;letter-spacing:.06em;color:#cdbb90;margin:0}#lab-tone-name{font:16px system-ui;margin-top:4px;width:100%;min-width:0}#lab-tone-save{font-size:13px;min-height:46px}#lab-tone-save-status{margin:6px 0;min-height:0}#lab-tone-library-link:not([hidden]){display:inline-block;margin:0 0 9px;font-size:13px}@media(max-width:400px){#lab-setup .tone-save-row{grid-template-columns:1fr}#lab-tone-save{width:100%}}</style>
 </head>
 <body>
-<header><a href="./sounds.html">← Sounds</a><h1>Instrument Bench</h1><small>BUILD 2026.11.20.16</small></header>
+<header><a href="./sounds.html">← Sounds</a><h1>Instrument Bench</h1><small>BUILD 2026.11.20.17</small></header>
 <main>
 <p class="lab-intro">Make a sound first. The instrument runs entirely in SuperCollider. No recording required.</p>
 <section id="lab-setup">
@@ -102,6 +102,7 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
  <div class="demo-param"><label for="lab-demo-level">Volume <output id="lab-demo-level-value" for="lab-demo-level">16%</output></label><input id="lab-demo-level" type="range" min="0.05" max="0.25" step="0.01" value="0.16"></div>
 </div>
 <div class="actions"><button id="lab-engine" type="button" class="primary">Start SuperCollider</button><button id="lab-demo-reset" type="button">Reset code from controls</button></div>
+<div class="tone-save-row"><label for="lab-tone-name">INSTRUMENT NAME<input id="lab-tone-name" type="text" value="First tone" maxlength="120" autocomplete="off"></label><button id="lab-tone-save" type="button">Save code to Library</button></div><p id="lab-tone-save-status" class="muted" role="status" aria-live="polite"></p><a href="./sounds.html" id="lab-tone-library-link" hidden>Open Sounds Library</a>
 <p id="lab-status" role="status" aria-live="polite">Ready. Start SuperCollider, then tap Play tone.</p>
 <p id="lab-setup-hint" class="muted">First startup loads the native sound engine. When Play tone appears, tap it to hear the displayed code.</p>
 </section>
@@ -135,6 +136,6 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 </section>
 <details id="lab-diagnostics"><summary>Technical details and troubleshooting</summary><p class="muted">The native SuperCollider engine loads and verifies sample buffers. WAVE files are read directly when supported; other formats may require decoding for transfer. Your original sound is never altered.</p><pre id="lab-log" aria-label="SuperCollider diagnostic output"></pre></details>
 </main>
-<script type="module" src="./sounds-lab.mjs?v=16"></script>
+<script type="module" src="./sounds-lab.mjs?v=17"></script>
 </body>
 </html>
