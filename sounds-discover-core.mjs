@@ -32,3 +32,19 @@ export function importedAudioMime(contentType,url){
  try{extension=new URL(url).pathname.split('.').pop().toLowerCase()}catch{}
  return EXT_TO_MIME[extension]||'application/octet-stream';
 }
+
+/* Read-only transfer diagnostics. A success status and an audio MIME header
+ * are not proof that a remote server returned audio rather than an error page. */
+export function rejectMislabelledAudio(bytes){
+ const prefix=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes||[]);
+ const head=new TextDecoder().decode(prefix.subarray(0,256)).replace(/^\uFEFF/,'').trimStart();
+ if(/^(?:<!doctype\s+html\b|<html(?:\s|>)|<head(?:\s|>)|<body(?:\s|>)|<\?xml\b|<\?php\b|[\[{]\s*["']?(?:error|errors|detail|message)\b)/i.test(head))
+  throw Error('The server returned an error page instead of audio. Open its source page and Import the file manually.');
+}
+export function downloadProgressText(bytes,total=0){
+ const count=Math.max(0,Number(bytes)||0),size=Number(total);
+ const mb=n=>(n/1048576).toFixed(n<10485760?2:1);
+ if(Number.isFinite(size)&&size>0)
+  return 'Downloading: '+mb(count)+' of '+mb(size)+' MB ('+Math.min(100,Math.floor(100*count/size))+'%).';
+ return 'Downloading: '+mb(count)+' MB received (50 MB limit).';
+}
