@@ -31,3 +31,13 @@ export async function deleteSound(id){
  await transaction('readwrite',s=>s.delete(id));
  document.dispatchEvent(new Event('sounds-library-changed'));
 }
+
+/* Atomic recovery: either all new items are restored or the transaction fails.
+ * Existing identifiers must be checked by the caller; never overwrite on restore. */
+export async function saveSoundsBatch(items){
+ if(!Array.isArray(items)||!items.every(item=>item&&typeof item.id==='string'&&typeof item.name==='string'))
+  throw Error('Invalid recovery batch');
+ if(!items.length)return;
+ await transaction('readwrite',store=>{for(const item of items)store.add(item)});
+ document.dispatchEvent(new Event('sounds-library-changed'));
+}

@@ -52,7 +52,7 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 </style>
 </head>
 <body>
-<header><a href="./index.html" aria-label="Return to Code">← Code</a><h1>SOUNDS</h1><small class="build">2026.11.19.10</small></header>
+<header><a href="./index.html" aria-label="Return to Code">← Code</a><h1>SOUNDS</h1><small class="build">2026.11.19.11</small></header>
 <nav aria-label="Sounds workspace" id="sounds-tabs">
 <button data-view="library" role="tab" aria-controls="sounds-library" aria-selected="true">Library</button>
 <button data-view="record" role="tab" aria-controls="sounds-record" aria-selected="false">Record</button>
@@ -70,6 +70,15 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 <div><label for="sounds-filter">Type</label><select id="sounds-filter"><option value="all">Everything</option><option value="favorite">Favorites</option><option value="recorded">Recordings</option><option value="imported">Imports</option><option value="written">Written code</option><option value="generated">Generated</option><option value="openverse">Openverse</option><option value="freesound">Freesound</option></select></div>
 </div>
 <div id="sounds-managed-list" aria-live="polite"></div>
+<div class="filter-group" id="sounds-backup">
+<h2>Back up your entire library</h2>
+<p class="muted">Export every sound, original recording, imported audio file, source code, license, attribution and favorite. The .scsounds backup is uncompressed and contains your private recordings; keep it somewhere safe outside browser storage.</p>
+<button id="sounds-backup-export" type="button">Export complete library</button>
+<label for="sounds-backup-import">Restore from a SuperCollision Sounds backup</label>
+<input id="sounds-backup-import" type="file" accept=".scsounds,application/octet-stream">
+<p class="muted">Restore adds missing sounds only. Existing sound identifiers are never overwritten. Restores are all-or-nothing.</p>
+<p id="sounds-backup-status" role="status" aria-live="polite"></p>
+</div>
 </section>
 <section id="sounds-record" role="tabpanel" hidden>
 <h2>Record audio</h2>
@@ -147,8 +156,9 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 </main>
 <script type="module" src="./sounds-page.mjs?v=2"></script>
 <script type="module" src="./sounds-library.mjs?v=2"></script>
-<script type="module" src="./sounds-tools.mjs?v=2"></script>
-<script type="module" src="./sounds-discover.mjs?v=2"></script>
+<script type="module" src="./sounds-tools.mjs?v=3"></script>
+<script type="module" src="./sounds-discover.mjs?v=3"></script>
 <script type="module" src="./sounds-generate.mjs?v=1"></script>
+<script type="module" src="./sounds-backup-ui.mjs?v=1"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 # SuperCollision Sounds: canonical development handoff
 
-Updated 2026-11-19, late evening. **Scope is strictly Sounds-only.** Never edit `index.html`, main navigation, Live, Mix, shared offline infrastructure, or any other shared functionality without explicit user approval. The active app's Sounds interface may be embedded in `index.html`; treat it as frozen. Work on isolated `sounds.html`, `sounds-*.mjs`, `qa/sounds-*.mjs`, and the Sounds-only publisher. No competing audio-processing engine: all future editing, playback instruments, effects, buffers, loops and synthesis must run through SuperCollider, never an independent browser audio processor.
+Updated 2026-11-19, Sounds iteration 2. **Scope is strictly Sounds-only.** Never edit `index.html`, main navigation, Live, Mix, shared offline infrastructure, or any other shared functionality without explicit user approval. The active app's Sounds interface may be embedded in `index.html`; treat it as frozen. Work on isolated `sounds.html`, `sounds-*.mjs`, `qa/sounds-*.mjs`, and the Sounds-only publisher. No competing audio-processing engine: all future editing, playback instruments, effects, buffers, loops and synthesis must run through SuperCollider, never an independent browser audio processor.
 
 ## Product contract
 
@@ -16,7 +16,7 @@ All processing/editing/building uses SuperCollider's existing runtime. Browser A
 
 ## Code created this iteration
 
-- `sounds.html`: single Sounds library and six tabs (Library plus five acquisition methods), build `2026.11.19.10`.
+- `sounds.html`: single Sounds library and six tabs (Library plus five acquisition methods), build `2026.11.19.11`.
 - `sounds-page.mjs`: isolated tab navigation.
 - `sounds-library.mjs`: microphone permission toggle, pointer/keyboard press-hold capture and import.
 - `sounds-tools.mjs`: unified list for blobs and SuperCollider code; filter, search, favorites, rename, copy/edit code, export, delete and attribution copying.
@@ -43,6 +43,22 @@ All diff paths from the previous checkpoint `0c159523edeb84f9ff6062fc78bc3b3ff06
 - Browser recorder uses MediaRecorder capture and AudioContext solely for the volume meter, not processing; all eventual sound editing must use SuperCollider.
 - Cloudflare Pages production branch is `pages-build`; `publish-ui.yml` copies a fixed set of root files and does not copy Sounds. Do not alter that shared workflow; use the Sounds-only publisher.
 - Avoid many small root commits; the existing global publish workflow triggers on every root `*.mjs` or `*.html` change, consuming Actions time. Bundle coherent changes. Consider moving internal Sounds scripts into a `sounds/` folder in a future safe migration so updates do not trigger the global publish workflow.
+
+## Sounds iteration 2: archive, restoration, source export, discovery consistency
+
+On the Sounds-only feature branch `sounds/backup-discover-20261119-r2`:
+- `sounds-backup.mjs`: binary-safe `.scsounds` archive (versioned UTF-8 JSON manifest, original Blob bytes, bounded manifest, strict length and duplicate validation). Preserves names, source code, license attribution and metadata; no audio transformations.
+- `sounds-backup-ui.mjs`: one-click full library export and offline backup import. Restore skips existing sound IDs and prompts before changes; `saveSoundsBatch` uses one IndexedDB readwrite transaction with `add` so existing items cannot be overwritten even under a racing update.
+- `sounds-tools.mjs`: export saved SuperCollider code as plain `.scd` without changing it.
+- `sounds-discover.mjs`: abort in-flight requests and clear stale results after collection, query, or license-filter changes.
+- `sounds.html`: backup/recovery interface in Library, incremented to build `2026.11.19.11`; main page is still untouched.
+- `qa/sounds-backup-test.mjs`: archive round-trip, binary-byte preservation, corrupt/truncated data and duplicate ID coverage.
+- `qa/sounds-browser-test.mjs`: .scd export, full export/delete/restore, duplicate-safe restore and stale-result invalidation.
+- `.github/workflows/publish-sounds.yml`: runs backup tests before publishing.
+
+**Verification state:** After merge to main, verify Actions build, production branch parity and browser tests. No external API, iPhone, native SuperCollider runtime, or deployed Cloudflare test has been completed in this iteration. Backup archive is not compressed or encrypted; users must store it outside browser storage, and large libraries still depend on available device storage. The format has strict file framing but no per-recording cryptographic checksum.
+
+**Next:** Investigate native SuperCollider buffer loading in isolated host; improve Freesound filtering/pagination and remote provider behavior; test iPhone recording and restore; potentially add integrity checks and a larger-library export strategy. Do not touch `index.html` or the shared offline manifest.
 
 ## Immediate priorities
 
