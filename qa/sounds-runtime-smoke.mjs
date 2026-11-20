@@ -61,7 +61,7 @@ try{
  // Unlock the native SuperCollider-owned audio context explicitly. Chrome's
  // asynchronous context resume can otherwise race with the first /b_alloc.
  await page.getByRole('button',{name:'Unlock audio'}).click();
- await page.getByText('SuperCollider audio unlocked (running)',{exact:false}).waitFor({timeout:20000});
+ await page.locator('#lab-status').getByText('SuperCollider audio unlocked (running)',{exact:false}).waitFor({timeout:20000});
  await page.locator('#lab-load').click();
  await page.waitForFunction(()=>{
    const status=document.querySelector('#lab-status')?.textContent||'';
