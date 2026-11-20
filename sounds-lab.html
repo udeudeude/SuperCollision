@@ -14,10 +14,10 @@ h1{font-size:1.18rem;letter-spacing:.06em;margin:0}h2{font-size:1.05rem;margin:0
 a{color:#e5bc71}p{margin:8px 0 14px}.muted{color:#b5b8aa;font-size:13px}
 section{border:1px solid #575d54;margin:14px 0;padding:16px}
 label{font-weight:650;display:block;margin:12px 0 6px}
-select,button{border:1px solid #858776;border-radius:2px;background:#252a26;color:#f5f0e6;padding:11px;font:16px system-ui}
-select{width:100%}button{font-weight:750;min-height:48px}button.primary{background:#d8ae5b;color:#161817}
+select,button,input[type=text]{border:1px solid #858776;border-radius:2px;background:#252a26;color:#f5f0e6;padding:11px;font:16px system-ui}
+select,input[type=text]{width:100%}button{font-weight:750;min-height:48px}button.primary{background:#d8ae5b;color:#161817}
 button:disabled{opacity:.42}.actions{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
-button:focus-visible,a:focus-visible,select:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
+button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 progress{width:100%;height:16px;accent-color:#d8ae5b}
 input[type=range]{display:block;width:100%;min-height:42px;accent-color:#d8ae5b;touch-action:pan-y}
 input[type=checkbox]{width:23px;height:23px;accent-color:#d8ae5b}
@@ -29,7 +29,7 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 </style>
 </head>
 <body>
-<header><a href="./sounds.html">← Sounds</a><h1>Native Sample Lab</h1><small>EXPERIMENTAL · 04</small></header>
+<header><a href="./sounds.html">← Sounds</a><h1>Native Sample Lab</h1><small>EXPERIMENTAL · 05</small></header>
 <main>
 <p class="muted">Experimental isolated SuperCollider playback test. Uses the same native language and synthesis engine as SuperCollision, without changing the main Code page. This is not a browser sampler or a second sound engine.</p>
 <section><h2>1 / Initialize SuperCollider</h2>
@@ -56,8 +56,14 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 <p class="muted">Native equal-power loop crossfades reduce boundary clicks; difficult sources can still produce audible artifacts. Stop releases only this laboratory player. Source audio is never overwritten.</p>
 <div class="actions"><button id="lab-play" class="primary" type="button" disabled>Play sample</button><button id="lab-stop" type="button" disabled>Stop</button></div>
 </section>
+<section><h2>4 / Save a reusable instrument</h2>
+<p class="muted">Save the selected region, speed, loop and volume as a Library preset referencing the original recording. No audio is duplicated or modified. Export an editable .scd script to use with desktop SuperCollider; export the original audio separately from Library, then choose it when the script asks for a file.</p>
+<label for="lab-preset-name">Instrument name</label><input id="lab-preset-name" type="text" maxlength="120" placeholder="e.g. Reedy loop instrument">
+<div class="actions"><button id="lab-save-preset" class="primary" type="button" disabled>Save preset to Library</button><button id="lab-export-preset" type="button" disabled>Export SuperCollider .scd</button></div>
+<p class="muted">Only a verified native buffer can become a preset. A missing or deleted source recording will not be silently replaced.</p>
+</section>
 <section><h2>Status / diagnostics</h2><p id="lab-status" role="status" aria-live="polite">Start the native engine to begin.</p><pre id="lab-log" aria-label="SuperCollider diagnostic output"></pre></section>
 </main>
-<script type="module" src="./sounds-lab.mjs?v=4"></script>
+<script type="module" src="./sounds-lab.mjs?v=5"></script>
 </body>
 </html>
