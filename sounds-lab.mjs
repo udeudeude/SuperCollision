@@ -413,7 +413,7 @@ play.addEventListener('click',async()=>{
   const code=sourceView.value.trim();
   if(!code)throw Error('Playback code is empty.');
   lang.runCode(code);
-  announce('Playing through native SuperCollider +(params.loop?'loop':'one shot')+' · '+Math.round(params.start*100)+'–'+Math.round(params.finish*100)+'% · '+params.rate+'×.');
+  announce('Playing through native SuperCollider '+(params.loop?'loop':'one shot')+' · '+Math.round(params.start*100)+'–'+Math.round(params.finish*100)+'% · '+params.rate+'×.');
  }catch(error){announce('Playback failed: '+error.message)}
 });
 function downloadableFilename(name){
