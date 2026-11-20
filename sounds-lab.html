@@ -65,7 +65,7 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 .section-kicker{font:700 11px/1.4 ui-monospace,monospace;letter-spacing:.12em;color:#e3bf7a;margin-bottom:9px}
 #lab-setup{border-color:#938263;background:linear-gradient(155deg,#252921,#171b18)}
 #lab-setup h2{font-size:1.23rem;letter-spacing:.015em}
-#lab-demo-code-bay{border:1px solid #627361;background:#101813;padding:10px}
+#lab-demo-code-bay{position:sticky;top:env(safe-area-inset-top);z-index:6;border:1px solid #627361;background:#101813;padding:10px;box-shadow:0 6px 15px #0007}
 .demo-code-head{display:flex;justify-content:space-between;gap:8px;align-items:center;color:#e5bc71;font:700 11px/1.5 ui-monospace,monospace}
 #lab-demo-sync{display:inline-flex;gap:6px;align-items:center;font:700 10px/1.3 ui-monospace,monospace;color:#b9d4bd}
 .demo-lamp{width:11px;height:11px;border-radius:50%;background:#8ee2a5;box-shadow:0 0 7px #8ee2a577;flex:none}
@@ -101,6 +101,7 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 #lab-audio-phase[data-phase="error"] .phase-lamp{background:#d98579;box-shadow:0 0 6px #d9857966}
 #lab-setup[data-sync="modified"] .note-console{border-color:#626657}
 @media(min-width:560px){.note-keys{grid-template-columns:repeat(8,minmax(0,1fr))}}
+@media(max-height:550px){#lab-demo-code-bay{position:relative;top:auto}}
 </style>
 </head>
 <body>
