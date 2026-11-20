@@ -104,8 +104,13 @@ try{
   for(let i=0;i<data.length;i+=4)if(data[i]===229&&data[i+1]===188&&data[i+2]===113)return true;
   return false;
  }), 'decoded audio should yield visible native-sample waveform');
- await page.locator('#lab-waveform').scrollIntoViewIfNeeded();
+ // Keep the live code pinned at the visible top, and deliberately bring
+ // the touch waveform into the reachable lower viewport instead of behind it.
+ await page.locator('#lab-waveform').evaluate(el=>el.scrollIntoView({block:'end',behavior:'instant'}));
  const bounds=await page.locator('#lab-waveform').boundingBox();
+ const sourceBounds=await page.locator('#lab-source-bay').boundingBox();
+ assert.ok(bounds.y>=sourceBounds.y+sourceBounds.height-2,
+  'waveform must be reachable below persistent source, not concealed beneath it');
  await page.mouse.move(bounds.x+bounds.width*0.2,bounds.y+bounds.height/2);
  await page.mouse.down();
  await page.mouse.move(bounds.x+bounds.width*0.8,bounds.y+bounds.height/2,{steps:6});
