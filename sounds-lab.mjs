@@ -147,7 +147,7 @@ function updateRegionControls(changed){
  const seconds=current?current.frames/current.sampleRate:0;
  regionSummary.textContent='Region: '+start+'% to '+finish+'%'+(seconds?' ('+(seconds*start/100).toFixed(2)+'–'+(seconds*finish/100).toFixed(2)+' s)':'')+' · '+Number(regionRate.value).toFixed(2)+'× · Volume '+Math.round(Number(regionAmp.value)*100)+'% · '+(regionLoop.checked?'Loop':'One shot');
  renderWaveform();
- updateSourceBay();
+ updateSourceBay(Boolean(changed));
 }
 for(const [input,dimension] of [[regionStart,'start'],[regionFinish,'finish'],[regionRate,'rate'],[regionAmp,'amp'],[regionLoop,'loop']]){
  input.addEventListener('input',()=>updateRegionControls(dimension));
@@ -394,7 +394,7 @@ play.addEventListener('click',async()=>{
   const code=sourceView.value.trim();
   if(!code)throw Error('Playback code is empty.');
   lang.runCode(code);
-  announce('Playing through native SuperCollider '+(params.loop?'loop':'one shot')+' · '+Math.round(params.start*100)+'–'+Math.round(params.finish*100)+'% · '+params.rate+'×.');
+  announce('Playing through native SuperCollider +(params.loop?'loop':'one shot')+' · '+Math.round(params.start*100)+'–'+Math.round(params.finish*100)+'% · '+params.rate+'×.');
  }catch(error){announce('Playback failed: '+error.message)}
 });
 function downloadableFilename(name){
