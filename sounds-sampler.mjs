@@ -59,6 +59,15 @@ export function regionPlayCommand(options){
     ', [\\bufnum, '+p.bufferId+', \\amp, '+p.amp+', \\rate, '+p.rate+
     ', \\start, '+p.start+', \\finish, '+p.finish+', \\sourceRate, '+p.sourceSampleRate+']);';
 }
+/* The exact native synthesis definition and invocation shown in the editable
+ * Sample Lab source editor. Unlike a control-only command, this includes the
+ * real DSP graph; user edits are compiled in SuperCollider before playback.
+ * Routine/s.sync guarantees that the definition is installed before Synth. */
+export function regionLiveSource(options){
+ const p=validateRegion(options);
+ return '(\nRoutine({\n'+definition(p.channels,p.loop)+'\n  s.sync;\n  '+
+   regionPlayCommand(p)+'\n}).play(SystemClock);\n)';
+}
 export const stopRegionCommand='~scSoundsLabPlayer.tryPerform(\\set, \\gate, 0); ~scSoundsLabPlayer = nil;';
 
 /* Export a standalone SuperCollider script for a user-supplied copy of the
