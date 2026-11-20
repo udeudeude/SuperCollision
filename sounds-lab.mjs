@@ -217,7 +217,8 @@ engine.addEventListener('click',async()=>{
     const context=outputContext();
     if(typeof context?.resume!=='function')throw Error('Native SuperCollider audio context unavailable; reload and retry.');
     await context.resume();
-    announce('SuperCollider audio unlocked ('+context.state+').');
+    print('SuperCollider audio unlocked ('+context.state+').');
+    if(!controller)announce('SuperCollider audio unlocked ('+context.state+').');
     maybeLoadLinkedPreset();
    }catch(error){announce('Audio unlock failed: '+error.message)}
    return;
@@ -321,13 +322,14 @@ load.addEventListener('click',async()=>{
    lang.runCode('~scSoundsLabPlayer.tryPerform(\\free); ~scSoundsLabPlayer = nil;');
    transport.release(BUFFER);await transport.sync({signal:controller.signal});allocated=false;
   }
+  print('Requesting native buffer upload: '+decoded.length+' frames, '+decoded.numberOfChannels+' channel(s), '+decoded.sampleRate+' Hz.');
   current=await transport.upload(BUFFER,decoded,{
     signal:controller.signal,
     onProgress:ratio=>{progress.value=ratio;announce('Transferring into native SuperCollider buffer: '+Math.round(100*ratio)+'%')}
   });
   allocated=true;currentItemId=item.id;waveform=waveformPeaks(decoded,512);updateRegionControls();
   announce('Verified by native SuperCollider sample readback: '+current.frames+' frames, '+current.channels+' channel(s), '+current.sampleRate+' Hz. Ready for PlayBuf.');
- }catch(error){current=null;currentItemId=null;waveform=null;renderWaveform();announce('Sample transfer failed: '+error.message)}
+ }catch(error){current=null;currentItemId=null;waveform=null;renderWaveform();print('Sample transfer failed: '+error.message);announce('Sample transfer failed: '+error.message)}
  finally{controller=null;refreshControls()}
 });
 cancel.addEventListener('click',()=>{controller?.abort();announce('Cancelling sample transfer and releasing the incomplete buffer…')});
