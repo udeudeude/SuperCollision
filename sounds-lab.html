@@ -65,7 +65,7 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 .section-kicker{font:700 11px/1.4 ui-monospace,monospace;letter-spacing:.12em;color:#e3bf7a;margin-bottom:9px}
 #lab-setup{border-color:#938263;background:linear-gradient(155deg,#252921,#171b18)}
 #lab-setup h2{font-size:1.23rem;letter-spacing:.015em}
-#lab-demo-code-bay{border:1px solid #627361;background:#101813;padding:10px}
+#lab-demo-code-bay{position:sticky;top:env(safe-area-inset-top);z-index:6;border:1px solid #627361;background:#101813;padding:10px;box-shadow:0 6px 15px #0007}
 .demo-code-head{display:flex;justify-content:space-between;gap:8px;align-items:center;color:#e5bc71;font:700 11px/1.5 ui-monospace,monospace}
 #lab-demo-sync{display:inline-flex;gap:6px;align-items:center;font:700 10px/1.3 ui-monospace,monospace;color:#b9d4bd}
 .demo-lamp{width:11px;height:11px;border-radius:50%;background:#8ee2a5;box-shadow:0 0 7px #8ee2a577;flex:none}
@@ -84,10 +84,28 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 #lab-recording{border-color:#505b51}
 #lab-recording progress:indeterminate{opacity:.7}
 @media(max-width:400px){#lab-demo-controls{gap:8px}#lab-demo-code{max-height:27dvh}#lab-setup .actions button{padding:11px 7px}#lab-setup h2{font-size:1.15rem}}
-#lab-setup .tone-save-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px;margin-top:4px}#lab-setup .tone-save-row label{font:700 10px/1.4 ui-monospace,monospace;letter-spacing:.06em;color:#cdbb90;margin:0}#lab-tone-name{font:16px system-ui;margin-top:4px;width:100%;min-width:0}#lab-tone-save{font-size:13px;min-height:46px}#lab-tone-save-status{margin:6px 0;min-height:0}#lab-tone-library-link:not([hidden]){display:inline-block;margin:0 0 9px;font-size:13px}@media(max-width:400px){#lab-setup .tone-save-row{grid-template-columns:1fr}#lab-tone-save{width:100%}}</style>
+#lab-setup .tone-save-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px;margin-top:4px}#lab-setup .tone-save-row label{font:700 10px/1.4 ui-monospace,monospace;letter-spacing:.06em;color:#cdbb90;margin:0}#lab-tone-name{font:16px system-ui;margin-top:4px;width:100%;min-width:0}#lab-tone-save{font-size:13px;min-height:46px}#lab-tone-save-status{margin:6px 0;min-height:0}#lab-tone-library-link:not([hidden]){display:inline-block;margin:0 0 9px;font-size:13px}@media(max-width:400px){#lab-setup .tone-save-row{grid-template-columns:1fr}#lab-tone-save{width:100%}}
+.note-console{margin:10px 0 9px;border:1px solid #746a51;padding:9px 10px 11px;background:linear-gradient(#303228,#1b201a);border-radius:3px}
+.note-console-head{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#e5bc71;font:700 11px/1.3 ui-monospace,monospace;letter-spacing:.05em;margin:0 0 10px}
+#lab-note-hint{color:#b9bcae;font:400 11px/1.3 system-ui;text-align:right;letter-spacing:0}
+.note-keys{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.note-keys button{min-width:0;min-height:54px;touch-action:manipulation;border:1px solid #868b78;border-bottom:4px solid #6f7568;border-radius:4px;background:linear-gradient(#ebe1c7,#c0b59d);color:#232923;font:800 19px/1 ui-monospace,monospace;transition:background .08s,transform .08s;user-select:none;-webkit-user-select:none}
+.note-keys button small{font-size:11px;padding-left:2px}
+.note-keys button[aria-pressed="true"]{background:linear-gradient(#e0b75e,#b9853d);border-color:#ffdc8c;border-bottom-color:#85602e;box-shadow:0 0 0 1px #6f5b38}
+.note-keys button:active:not(:disabled){transform:translateY(2px);border-bottom-width:2px}
+.note-keys button:disabled{opacity:.30;filter:grayscale(.6)}
+#lab-audio-phase{display:flex;align-items:center;gap:8px;font:700 11px/1.4 ui-monospace,monospace;letter-spacing:.04em;color:#c1c5b7;margin:6px 0 9px}
+.phase-lamp{flex:none;width:11px;height:11px;border:1px solid #8b9080;border-radius:50%;background:#555a4e}
+#lab-audio-phase[data-phase="starting"] .phase-lamp{background:#e4b35c;box-shadow:0 0 6px #d6a95166}
+#lab-audio-phase[data-phase="ready"] .phase-lamp,#lab-audio-phase[data-phase="played"] .phase-lamp{background:#8ee2a5;box-shadow:0 0 7px #8ee2a577}
+#lab-audio-phase[data-phase="error"] .phase-lamp{background:#d98579;box-shadow:0 0 6px #d9857966}
+#lab-setup[data-sync="modified"] .note-console{border-color:#626657}
+@media(min-width:560px){.note-keys{grid-template-columns:repeat(8,minmax(0,1fr))}}
+@media(max-height:550px){#lab-demo-code-bay{position:relative;top:auto}}
+</style>
 </head>
 <body>
-<header><a href="./sounds.html">← Sounds</a><h1>Instrument Bench</h1><small>BUILD 2026.11.20.17</small></header>
+<header><a href="./sounds.html">← Sounds</a><h1>Instrument Bench</h1><small>BUILD 2026.11.20.18</small></header>
 <main>
 <p class="lab-intro">Make a sound first. The instrument runs entirely in SuperCollider. No recording required.</p>
 <section id="lab-setup">
@@ -98,10 +116,24 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
  <textarea id="lab-demo-code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" aria-label="Editable SuperCollider synthesizer code">Loading SuperCollider code…</textarea>
 </div>
 <div id="lab-demo-controls" data-sync="matched">
- <div class="demo-param"><label for="lab-demo-pitch">Pitch <output id="lab-demo-pitch-value" for="lab-demo-pitch">440 Hz</output></label><input id="lab-demo-pitch" type="range" min="150" max="1000" step="10" value="440"></div>
+ <div class="demo-param"><label for="lab-demo-pitch">Pitch <output id="lab-demo-pitch-value" for="lab-demo-pitch">440 Hz</output></label><input id="lab-demo-pitch" type="range" min="150" max="1000" step="1" value="440"></div>
  <div class="demo-param"><label for="lab-demo-level">Volume <output id="lab-demo-level-value" for="lab-demo-level">16%</output></label><input id="lab-demo-level" type="range" min="0.05" max="0.25" step="0.01" value="0.16"></div>
 </div>
+<div class="note-console" aria-label="Playable native SuperCollider notes">
+ <div class="note-console-head"><strong>TOUCH KEYS</strong><span id="lab-note-hint">Choose a note, then start SuperCollider</span></div>
+ <div id="lab-note-keys" class="note-keys" role="group" aria-label="One-octave native SuperCollider touch keys">
+  <button type="button" data-note="262" data-label="C4" aria-label="C4, 262 hertz" aria-pressed="false">C<small>4</small></button>
+  <button type="button" data-note="294" data-label="D4" aria-label="D4, 294 hertz" aria-pressed="false">D<small>4</small></button>
+  <button type="button" data-note="330" data-label="E4" aria-label="E4, 330 hertz" aria-pressed="false">E<small>4</small></button>
+  <button type="button" data-note="349" data-label="F4" aria-label="F4, 349 hertz" aria-pressed="false">F<small>4</small></button>
+  <button type="button" data-note="392" data-label="G4" aria-label="G4, 392 hertz" aria-pressed="false">G<small>4</small></button>
+  <button type="button" data-note="440" data-label="A4" aria-label="A4, 440 hertz" aria-pressed="false">A<small>4</small></button>
+  <button type="button" data-note="494" data-label="B4" aria-label="B4, 494 hertz" aria-pressed="false">B<small>4</small></button>
+  <button type="button" data-note="523" data-label="C5" aria-label="C5, 523 hertz" aria-pressed="false">C<small>5</small></button>
+ </div>
+</div>
 <div class="actions"><button id="lab-engine" type="button" class="primary">Start SuperCollider</button><button id="lab-demo-reset" type="button">Reset code from controls</button></div>
+<div id="lab-audio-phase" data-phase="idle" role="status" aria-live="polite"><span class="phase-lamp" aria-hidden="true"></span><span id="lab-audio-phase-label">ENGINE NOT STARTED</span></div>
 <div class="tone-save-row"><label for="lab-tone-name">INSTRUMENT NAME<input id="lab-tone-name" type="text" value="First tone" maxlength="120" autocomplete="off"></label><button id="lab-tone-save" type="button">Save code to Library</button></div><p id="lab-tone-save-status" class="muted" role="status" aria-live="polite"></p><a href="./sounds.html" id="lab-tone-library-link" hidden>Open Sounds Library</a>
 <p id="lab-status" role="status" aria-live="polite">Ready. Start SuperCollider, then tap Play tone.</p>
 <p id="lab-setup-hint" class="muted">First startup loads the native sound engine. When Play tone appears, tap it to hear the displayed code.</p>
@@ -136,6 +168,6 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 </section>
 <details id="lab-diagnostics"><summary>Technical details and troubleshooting</summary><p class="muted">The native SuperCollider engine loads and verifies sample buffers. WAVE files are read directly when supported; other formats may require decoding for transfer. Your original sound is never altered.</p><pre id="lab-log" aria-label="SuperCollider diagnostic output"></pre></details>
 </main>
-<script type="module" src="./sounds-lab.mjs?v=17"></script>
+<script type="module" src="./sounds-lab.mjs?v=18"></script>
 </body>
 </html>

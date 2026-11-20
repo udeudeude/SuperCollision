@@ -15,6 +15,11 @@ const demoBay=$('lab-demo-code-bay'),demoControls=$('lab-demo-controls'),demoSyn
 const toneName=$('lab-tone-name'),toneSave=$('lab-tone-save'),toneSaveStatus=$('lab-tone-save-status'),toneLibraryLink=$('lab-tone-library-link');
 let pendingToneId=new URL(location.href).searchParams.get('tone');
 let demoGenerated='',demoDirty=false;
+const noteButtons=Array.from(document.querySelectorAll('#lab-note-keys button'));
+const audioPhase=$('lab-audio-phase'),audioPhaseLabel=$('lab-audio-phase-label'),noteHint=$('lab-note-hint');
+let lastPlayedLabel='tone';
+function setAudioPhase(phase,label){audioPhase.dataset.phase=phase;audioPhaseLabel.textContent=label}
+
 function updateDemoCode(force=false){
  demoGenerated=demoSynthSource({frequency:Number(demoPitch.value),amplitude:Number(demoLevel.value)});
  $('lab-demo-pitch-value').textContent=demoPitch.value+' Hz';
@@ -23,11 +28,28 @@ function updateDemoCode(force=false){
   demoCode.value=demoGenerated;demoDirty=false;
  }
  demoBay.dataset.sync=demoControls.dataset.sync=demoDirty?'modified':'matched';
+ demoPitch.disabled=demoLevel.disabled=demoDirty;
+ for(const key of noteButtons){
+  key.disabled=demoDirty;
+  key.setAttribute('aria-pressed',String(!demoDirty&&Number(key.dataset.note)===Number(demoPitch.value)));
+ }
+ noteHint.textContent=demoDirty?'Edited code: reset to use keys':audioPhase.dataset.phase==='ready'||audioPhase.dataset.phase==='played'?'Tap a key to play':'Choose a note, then start SuperCollider';
  demoSyncLabel.textContent=demoDirty?'CODE EDITED · CONTROLS OFF':'CONTROLS MATCH CODE';
  demoReset.textContent=demoDirty?'Restore code from controls':'Reset code from controls';
 }
 demoCode.addEventListener('input',()=>{demoDirty=demoCode.value!==demoGenerated;updateDemoCode()});
-for(const slider of [demoPitch,demoLevel])slider.addEventListener('input',()=>updateDemoCode());
+for(const slider of [demoPitch,demoLevel])slider.addEventListener('input',()=>{if(!demoDirty)updateDemoCode()});
+for(const key of noteButtons)key.addEventListener('click',()=>{
+ if(demoDirty){announce('Your edited code is active. Reset it before playing notes from the controls.');return}
+ demoPitch.value=key.dataset.note;
+ updateDemoCode();
+ const label=key.dataset.label;
+ if(!serverReady||!definitionsReady){
+  announce(label+' selected. Tap Start SuperCollider to enable audible notes.');
+  return;
+ }
+ void playVisibleTone(label);
+});
 demoReset.addEventListener('click',()=>{
  if(demoDirty&&!confirm('Replace your edited tone code with the pitch and volume controls?'))return;
  updateDemoCode(true);
@@ -122,7 +144,7 @@ const BUFFER=700;
 const READY='__SC_SOUNDS_LAB_READY__',FAILED='__SC_SOUNDS_LAB_FAILED__',DEFS='__SC_SOUNDS_LAB_DEFS__',RATE='__SC_SOUNDS_LAB_RATE__:';
 const DEFINITION_SOURCE=REGION_DEFINITIONS;
 let lang=null,synth=null,transport=null,languageReady=false,serverReady=false,definitionsReady=false;
-let bootRequested=false,booting=false,bootTimeout=null,current=null,currentItemId=null,controller=null,entries=[],allocated=false;
+let bootRequested=false,booting=false,bootTimeout=null,definitionTimeout=null,installingDefinitions=false,current=null,currentItemId=null,controller=null,entries=[],allocated=false;
 let synthBootPending=false,synthBootCompleted=false,serverSampleRate=null,nativeAudioContext=null;
 function announce(t){status.textContent=t;const hint=$('lab-setup-hint');if(hint&&(/failed|unavailable|requires|error|timed out/i).test(t))hint.textContent='If this persists, open Technical details and troubleshooting at the bottom of the page.'}
 function print(t){log.textContent=(log.textContent+String(t)+'\n').slice(-10000);log.scrollTop=log.scrollHeight}
@@ -158,7 +180,10 @@ function refreshControls(){
  const hint=$('lab-setup-hint');
  if(hint){hint.textContent=!serverReady?'First startup loads native SuperCollider. After it starts, tap Play tone to hear the code above.':!definitionsReady?'SuperCollider is preparing its instruments…':'Play tone runs the visible SuperCollider source. To work with a recording, select one below.';}
  if(!serverReady&&!booting&&!lang)engine.textContent='Start SuperCollider';
+ engine.disabled=booting||bootRequested||installingDefinitions||Boolean(lang&&!languageReady);
+ if(!serverReady&&lang&&languageReady&&!bootRequested)engine.textContent='Retry server startup';
  if(serverReady&&definitionsReady)engine.textContent='Play tone';
+ if(noteHint)noteHint.textContent=demoDirty?'Edited code: reset to use keys':definitionsReady?'Tap a key to play':'Choose a note, then start SuperCollider';
  sound.disabled=!!controller;
  load.disabled=!serverReady||!definitionsReady||!sound.value||!!controller;
  play.disabled=!current||!definitionsReady||!!controller;
@@ -330,36 +355,58 @@ async function listSounds(){
 }
 function requestServer(){
  if(!lang||!languageReady||bootRequested||serverReady)return;
- bootRequested=true;engine.textContent='Starting audio…';announce('Starting the SuperCollider audio server…');
- bootTimeout=setTimeout(()=>{if(!serverReady){bootRequested=false;engine.textContent='Retry server startup';print('Startup timed out; native synthesis boot: '+(synthBootPending?'pending':synthBootCompleted?'complete':'not begun')+'; context: '+(synth?.getAudioContext?.()?.state||'unavailable'));announce('Native server startup timed out. Tap Retry to try again.')}},50000);
+ bootRequested=true;engine.disabled=true;engine.textContent='Starting audio…';setAudioPhase('starting','STARTING NATIVE AUDIO ENGINE');announce('Starting the SuperCollider audio server…');
+ bootTimeout=setTimeout(()=>{if(!serverReady){bootRequested=false;engine.textContent='Retry server startup';print('Startup timed out; native synthesis boot: '+(synthBootPending?'pending':synthBootCompleted?'complete':'not begun')+'; context: '+(synth?.getAudioContext?.()?.state||'unavailable'));announce('Native server startup timed out. Tap Retry to try again.');setAudioPhase('error','ENGINE STARTUP TIMED OUT');refreshControls();engine.disabled=false;}},50000);
  try{lang.runCode('s.waitForBoot({ "'+READY+'".postln; }, onFailure: { "'+FAILED+'".postln; }, clock: SystemClock);')}
- catch(error){bootRequested=false;clearTimeout(bootTimeout);announce('Server request failed: '+error.message)}
+ catch(error){bootRequested=false;clearTimeout(bootTimeout);announce('Server request failed: '+error.message);setAudioPhase('error','SERVER STARTUP FAILED');engine.disabled=false}
 }
 function installDefinitions(){
- try{lang.runCode('("'+RATE+'" ++ s.sampleRate).postln;');lang.runCode(DEFINITION_SOURCE);announce('SuperCollider server ready. Installing native PlayBuf instruments…')}
- catch(error){announce('Could not create SuperCollider instruments: '+error.message)}
+ if(installingDefinitions||definitionsReady)return;
+ installingDefinitions=true;engine.disabled=true;engine.textContent='Preparing instruments…';
+ setAudioPhase('starting','PREPARING NATIVE INSTRUMENTS');
+ announce('SuperCollider started. Preparing its native instruments…');
+ definitionTimeout=setTimeout(()=>{
+  if(!definitionsReady){
+   installingDefinitions=false;setAudioPhase('error','INSTRUMENT SETUP TIMED OUT');
+   announce('SuperCollider started, but instrument setup stalled. Tap Retry instruments.');
+   engine.textContent='Retry instruments';refreshControls();
+  }
+ },25000);
+ try{lang.runCode('("'+RATE+'" ++ s.sampleRate).postln;');lang.runCode(DEFINITION_SOURCE)}
+ catch(error){
+  clearTimeout(definitionTimeout);installingDefinitions=false;
+  setAudioPhase('error','INSTRUMENT SETUP FAILED');
+  announce('Could not prepare SuperCollider instruments: '+error.message);
+  engine.textContent='Retry instruments';refreshControls();
+ }
+}
+async function playVisibleTone(label='tone'){
+ try{
+  if(!synth||!serverReady||!definitionsReady)throw Error('SuperCollider is still starting. Wait for the green READY lamp.');
+  const context=outputContext();
+  if(typeof context?.resume!=='function')throw Error('Native SuperCollider audio output is unavailable. Open Technical details below.');
+  await context.resume();
+  if(context.state!=='running')throw Error('Audio output is '+context.state+'. Check your browser audio permissions.');
+  print('SuperCollider audio unlocked ('+context.state+').');
+  const code=demoCode.value.trim();
+  if(!code)throw Error('The visible SuperCollider code is empty.');
+  lastPlayedLabel=demoDirty?'edited code':label;
+  lang.runCode(code);
+  setAudioPhase('ready','RUNNING '+lastPlayedLabel.toUpperCase());
+  announce('Sent '+lastPlayedLabel+' to native SuperCollider. If silent, check your phone volume.');
+  maybeLoadLinkedPreset();
+ }catch(error){
+  setAudioPhase('error','PLAYBACK NEEDS ATTENTION');
+  announce('Could not play '+label+': '+error.message);
+  print('Tone playback: '+error.message);
+ }
 }
 engine.addEventListener('click',async()=>{
- if(synth&&serverReady){
-   try{
-    const context=outputContext();
-    if(typeof context?.resume!=='function')throw Error('Native SuperCollider audio output is unavailable. Open Technical details below.');
-    await context.resume();
-    if(context.state!=='running')throw Error('Audio output is '+context.state+'. Tap Play tone again, or check browser audio permissions.');
-    print('SuperCollider audio unlocked ('+context.state+').');
-    if(!definitionsReady){announce('SuperCollider is still preparing its instruments. Tap Play tone when ready.');return}
-    const code=demoCode.value.trim();
-    if(!code)throw Error('The visible SuperCollider tone code is empty.');
-    lang.runCode(code);
-    announce('Sending the visible tone code to native SuperCollider…');
-    maybeLoadLinkedPreset();
-   }catch(error){announce('Could not play tone: '+error.message);print('Tone playback: '+error.message)}
-   return;
-  }
+ if(synth&&serverReady){if(!definitionsReady){installDefinitions();return}await playVisibleTone('tone');return}
  if(lang){if(languageReady&&!bootRequested){requestServer();return}announce('SuperCollider initialization is already in progress.');return}
  if(booting){announce('SuperCollider initialization is already in progress.');return}
- if(!crossOriginIsolated){announce('The standalone SuperCollider runtime requires a cross-origin-isolated secure page. Check the hosting headers.');return}
- booting=true;engine.disabled=true;engine.textContent='Loading audio…';announce('Loading native SuperCollider language and synthesis modules…');
+ if(!crossOriginIsolated){setAudioPhase('error','AUDIO ENGINE BLOCKED');announce('This page lacks the isolation headers needed for native SuperCollider. Open Technical details below.');return}
+ booting=true;engine.disabled=true;engine.textContent='Loading audio…';setAudioPhase('starting','LOADING SUPERCOLLIDER');announce('Loading native SuperCollider language and synthesis modules…');
  try{
   observeNativeAudioContext();
   const base=new URL('./runtime/',location.href);
@@ -379,10 +426,10 @@ engine.addEventListener('click',async()=>{
    }
    const sampleRateMatch=text.match(/__SC_SOUNDS_LAB_RATE__:(\d+(?:\.\d+)?)/);
    if(sampleRateMatch){serverSampleRate=Number(sampleRateMatch[1]);print('Native SuperCollider server sample rate: '+serverSampleRate+' Hz.');}
-   if(text.includes(DEFS)){definitionsReady=true;engine.textContent='Play tone';announce('SuperCollider ready. Tap Play tone to hear the visible code.');refreshControls();maybeLoadLinkedPreset()}
-   if(text.includes(DEMO_MARKER)&&!controller)announce(current?'SuperCollider executed the tone. Your recording is still loaded below.':'SuperCollider executed the tone code. If silent, check your phone volume and audio output.');
-   if(/ERROR:\s|FAILURE IN SERVER/.test(text))announce('SuperCollider reported an error. Open Technical details below for the message.');
-   if(text.includes(FAILED)){clearTimeout(bootTimeout);bootRequested=false;engine.textContent='Retry server startup';announce('SuperCollider server failed to start. Tap Retry to try again.')}
+   if(text.includes(DEFS)){clearTimeout(definitionTimeout);installingDefinitions=false;definitionsReady=true;engine.textContent='Play tone';setAudioPhase('ready','READY · TAP A KEY OR PLAY TONE');announce('SuperCollider ready. Tap any touch key or Play tone.');refreshControls();maybeLoadLinkedPreset()}
+   if(text.includes(DEMO_MARKER)&&!controller){setAudioPhase('played','SUPERCOLLIDER EXECUTED '+lastPlayedLabel.toUpperCase());announce('Native SuperCollider executed '+lastPlayedLabel+'. If silent, check phone volume and audio route.');}
+   if(/ERROR:\s|FAILURE IN SERVER/.test(text)){setAudioPhase('error','SUPERCOLLIDER REPORTED AN ERROR');announce('SuperCollider reported an error. Open Technical details below for the message.');}
+   if(text.includes(FAILED)){clearTimeout(bootTimeout);bootRequested=false;engine.textContent='Retry server startup';setAudioPhase('error','ENGINE STARTUP FAILED');announce('SuperCollider server failed to start. Tap Retry to try again.');refreshControls()}
    const cleaned=text.replaceAll(READY,'').replaceAll(FAILED,'').replaceAll(DEFS,'').trim();
    if(cleaned)print(cleaned);
   };
@@ -400,7 +447,7 @@ engine.addEventListener('click',async()=>{
   };
   lang.bootInterpreter();
   announce('SuperCollider language started. Waiting for its server.');
- }catch(error){announce('SuperCollider startup failed: '+error.message);print(error.stack||error.message)}
+ }catch(error){setAudioPhase('error','ENGINE STARTUP FAILED');announce('SuperCollider startup failed: '+error.message);print(error.stack||error.message)}
  finally{booting=false;engine.disabled=false;refreshControls()}
 });
 sound.addEventListener('change',()=>{
