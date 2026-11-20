@@ -104,7 +104,7 @@ engine.addEventListener('click',async()=>{
    if(text.includes(READY)&&!serverReady){
     clearTimeout(bootTimeout);serverReady=true;bootRequested=false;installDefinitions();
    }
-   const sampleRateMatch=text.match(/__SC_SOUNDS_LAB_RATE__:(\\d+(?:\\.\\d+)?)/);
+   const sampleRateMatch=text.match(/__SC_SOUNDS_LAB_RATE__:(\d+(?:\.\d+)?)/);
    if(sampleRateMatch){serverSampleRate=Number(sampleRateMatch[1]);print('Native SuperCollider server sample rate: '+serverSampleRate+' Hz.');}
    if(text.includes(DEFS)){definitionsReady=true;engine.textContent='Unlock audio';announce('SuperCollider ready. Select a sound and transfer it into a native buffer.');refreshControls()}
    if(text.includes(FAILED)){clearTimeout(bootTimeout);bootRequested=false;engine.textContent='Retry server startup';announce('SuperCollider server failed to start. Tap Retry to try again.')}
