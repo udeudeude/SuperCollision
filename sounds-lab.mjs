@@ -310,6 +310,7 @@ engine.addEventListener('click',async()=>{
     if(typeof context?.resume!=='function')throw Error('Native SuperCollider audio output is unavailable. Open Technical details below.');
     await context.resume();
     if(context.state!=='running')throw Error('Audio output is '+context.state+'. Tap Play tone again, or check browser audio permissions.');
+    print('SuperCollider audio unlocked ('+context.state+').');
     if(!definitionsReady){announce('SuperCollider is still preparing its instruments. Tap Play tone when ready.');return}
     const code=demoCode.value.trim();
     if(!code)throw Error('The visible SuperCollider tone code is empty.');
@@ -344,7 +345,7 @@ engine.addEventListener('click',async()=>{
    if(sampleRateMatch){serverSampleRate=Number(sampleRateMatch[1]);print('Native SuperCollider server sample rate: '+serverSampleRate+' Hz.');}
    if(text.includes(DEFS)){definitionsReady=true;engine.textContent='Play tone';announce('SuperCollider ready. Tap Play tone to hear the visible code.');refreshControls();maybeLoadLinkedPreset()}
    if(text.includes(DEMO_MARKER))announce('SuperCollider executed the tone code. If silent, check your phone volume and audio output.');
-   if(/ERROR:\\s|FAILURE IN SERVER/.test(text))announce('SuperCollider reported an error. Open Technical details below for the message.');
+   if(/ERROR:\s|FAILURE IN SERVER/.test(text))announce('SuperCollider reported an error. Open Technical details below for the message.');
    if(text.includes(FAILED)){clearTimeout(bootTimeout);bootRequested=false;engine.textContent='Retry server startup';announce('SuperCollider server failed to start. Tap Retry to try again.')}
    const cleaned=text.replaceAll(READY,'').replaceAll(FAILED,'').replaceAll(DEFS,'').trim();
    if(cleaned)print(cleaned);
