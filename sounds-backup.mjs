@@ -6,6 +6,21 @@ const MAX_MANIFEST=16*1024*1024;
 const MAX_ENTRIES=50000;
 const encoder=new TextEncoder(),decoder=new TextDecoder('utf-8',{fatal:true});
 const PREFIX_BYTES=encoder.encode(MAGIC).byteLength+DIGITS+1;
+const CHECKSUM_CHUNK=1024*1024;
+const CRC_TABLE=Uint32Array.from({length:256},(_,n)=>{
+ let c=n;for(let bit=0;bit<8;bit++)c=(c>>>1)^((c&1)?0xedb88320:0);
+ return c>>>0;
+});
+/* Streaming CRC32 detects accidental bit changes without allocating entire recordings.
+ * It is not a cryptographic authenticity signature. */
+async function checksum(blob){
+ let crc=0xffffffff;
+ for(let offset=0;offset<blob.size;offset+=CHECKSUM_CHUNK){
+  const bytes=new Uint8Array(await blob.slice(offset,offset+CHECKSUM_CHUNK).arrayBuffer());
+  for(const byte of bytes)crc=CRC_TABLE[(crc^byte)&255]^(crc>>>8);
+ }
+ return ((crc^0xffffffff)>>>0).toString(16).padStart(8,'0');
+}
 
 function validateMetadata(value){
  if(!value||typeof value!=='object'||Array.isArray(value)
@@ -13,18 +28,20 @@ function validateMetadata(value){
   ||typeof value.name!=='string'||!value.name||value.name.length>1000)
   throw Error('Backup contains an invalid library item.');
 }
-export function createSoundsBackup(items){
+export async function createSoundsBackup(items){
  if(!Array.isArray(items)||items.length>MAX_ENTRIES)throw Error('Too many sounds to back up.');
- const blobs=[],entries=[];
+ const blobs=[],entries=[],ids=new Set();
  for(const item of items){
   validateMetadata(item);
+  if(ids.has(item.id))throw Error('Library contains duplicate sound identifiers.');
+  ids.add(item.id);
   const metadata={...item};delete metadata.blob;
   const blob=item.blob instanceof Blob?item.blob:null;
   blobs.push(blob);
-  entries.push({metadata,binary:blob?{size:blob.size,type:blob.type||item.mime||'application/octet-stream'}:null});
+  entries.push({metadata,binary:blob?{size:blob.size,type:blob.type||item.mime||'application/octet-stream',crc32:await checksum(blob)}:null});
  }
  const manifestBytes=encoder.encode(JSON.stringify({
-  format:'supercollision-sounds',version:1,exportedAt:new Date().toISOString(),entries
+  format:'supercollision-sounds',version:2,exportedAt:new Date().toISOString(),entries
  }));
  if(manifestBytes.byteLength>MAX_MANIFEST)throw Error('Sound metadata exceeds the 16 MB backup limit.');
  const size=String(manifestBytes.byteLength).padStart(DIGITS,'0');
@@ -44,7 +61,7 @@ export async function readSoundsBackup(file){
  let manifest;
  try{manifest=JSON.parse(decoder.decode(await file.slice(PREFIX_BYTES,PREFIX_BYTES+length).arrayBuffer()))}
  catch{throw Error('Backup manifest is not valid UTF-8 JSON.')}
- if(manifest?.format!=='supercollision-sounds'||manifest.version!==1
+ if(manifest?.format!=='supercollision-sounds'||![1,2].includes(manifest.version)
   ||!Array.isArray(manifest.entries)||manifest.entries.length>MAX_ENTRIES)
   throw Error('Unsupported or corrupt Sounds backup version.');
  let offset=PREFIX_BYTES+length;
@@ -60,6 +77,12 @@ export async function readSoundsBackup(file){
    const metadata={...entry.metadata};
    delete metadata.blob;
    const blob=file.slice(offset,offset+binary.size,binary.type);
+   if(manifest.version===2){
+    if(typeof binary.crc32!=='string'||!/^[0-9a-f]{8}$/.test(binary.crc32))
+     throw Error('Backup is missing its audio integrity checksum.');
+    if(await checksum(blob)!==binary.crc32)
+     throw Error('Backup audio failed its integrity check; nothing was restored.');
+   }
    items.push({...metadata,blob});
    offset+=binary.size;
   }else{

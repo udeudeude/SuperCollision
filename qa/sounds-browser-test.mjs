@@ -30,14 +30,28 @@ await page.addInitScript(()=>{
  };
 });
 const resultBody={result_count:5,page_count:1,results:[
- {id:'one',title:'Allowed BY',creator:'Maker One',license:'by',source:'wikimedia',url:'https://audio.example.test/by.wav',foreign_landing_url:'https://example.test/by',duration:4},
- {id:'two',title:'Free CC0',creator:'Maker Two',license:'cc0',source:'wikimedia',url:'https://audio.example.test/cc0.wav',foreign_landing_url:'https://example.test/cc0',duration:3},
+ {id:'one',title:'Allowed BY',creator:'Maker One',license:'by',source:'wikimedia',url:'https://audio.example.test/by.wav',foreign_landing_url:'https://example.test/by',duration:4000},
+ {id:'two',title:'Free CC0',creator:'Maker Two',license:'cc0',source:'wikimedia',url:'https://audio.example.test/cc0.wav',foreign_landing_url:'https://example.test/cc0',duration:3000},
  {id:'three',title:'NonCommercial',creator:'Maker Three',license:'by-nc',source:'wikimedia',url:'https://audio.example.test/nc.wav'},
  {id:'four',title:'NoDerivatives',creator:'Maker Four',license:'by-nd',source:'wikimedia',url:'https://audio.example.test/nd.wav'},
  {id:'five',title:'Unknown',creator:'Maker Five',license:'not a license',source:'wikimedia',url:'https://audio.example.test/unknown.wav'}
 ]};
-let downloadCount=0,queryCount=0;
-await page.route('https://api.openverse.org/v1/audio/**',async route=>{queryCount++;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(resultBody)})});
+let downloadCount=0,queryCount=0,commonsCount=0,freesoundQueries=0,freesoundFilter='';
+await page.route('https://api.openverse.org/v1/audio/**',async route=>{
+ queryCount++;
+ if(new URL(route.request().url()).searchParams.get('source')==='wikimedia_audio')commonsCount++;
+ await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(resultBody)})});
+await page.route('https://freesound.org/apiv2/search/**',async route=>{
+ freesoundQueries++;
+ const request=route.request();
+ freesoundFilter=new URL(request.url()).searchParams.get('filter')||'';
+ assert.equal(request.headers().authorization,'Token test-freesound-key');
+ await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+  count:1,next:null,results:[{id:23,name:'Freesound bell',username:'Sound Maker',
+   duration:2.5,license:'Creative Commons 0',
+   previews:{'preview-hq-mp3':'https://audio.example.test/bell.mp3'}}]
+ })});
+});
 await page.route('https://audio.example.test/**',async route=>{downloadCount++;await route.fulfill({status:200,contentType:'audio/wav',headers:{'access-control-allow-origin':'*'},body:Buffer.from('RIFFdemo')})});
 try{
  await page.goto(base+'/sounds.html');
@@ -71,6 +85,7 @@ try{
  await page.getByRole('button',{name:'Search sounds'}).click();
  await page.getByText('Allowed BY').waitFor();
  assert.equal(await page.locator('.discovered-sound').count(),2,'default filters must exclude NC/ND/unknown');
+ assert.match(await page.locator('.discovered-sound').first().textContent(),/4 s/, 'Openverse milliseconds must display as seconds');
  const button=page.getByRole('button',{name:'Save original audio'}).first();
  await button.click();
  assert.equal(downloadCount,0,'network override must be opt-in');
@@ -86,6 +101,17 @@ try{
  assert.equal(await page.locator('.discovered-sound').count(),0,'changing license filters must clear stale results');
  await page.getByRole('button',{name:'Search sounds'}).click();
  await page.getByText('Free CC0').waitFor();
+ await page.locator('#discover-source').selectOption('wikimedia');
+ await page.getByRole('button',{name:'Search sounds'}).click();
+ await page.getByText('Free CC0').waitFor();
+ assert.equal(commonsCount,1,'Wikimedia searches must use Openverse source wikimedia_audio');
+ await page.locator('#discover-source').selectOption('freesound');
+ await page.locator('#discover-key').fill('test-freesound-key');
+ await page.getByRole('button',{name:'Search sounds'}).click();
+ await page.getByText('Freesound bell').waitFor();
+ assert.equal(freesoundQueries,1);
+ assert.equal(freesoundFilter,'license:"Creative Commons 0"','Freesound should filter at provider, not merely discard results locally');
+ assert.match(await page.locator('.discovered-sound').first().textContent(),/3 s/,'Freesound durations are in seconds');
  await page.getByRole('tab',{name:'Library'}).click();
  assert.equal(await page.locator('.managed-item').count(),3);
  assert.equal(await page.getByText('Creative Commons BY',{exact:false}).count()>0,true,'license must be retained');

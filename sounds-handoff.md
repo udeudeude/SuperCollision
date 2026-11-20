@@ -70,3 +70,19 @@ On the Sounds-only feature branch `sounds/backup-discover-20261119-r2`:
 6. Bring Sounds offline support to the main application's release process only after user authorizes required shared-infrastructure changes.
 
 Each iteration: examine current GitHub/main, pick high-value steps, make several changes, run regressions, self-critique, commit, verify deployment and update this handoff.
+
+
+## Sounds iteration 3: provider correctness, archive integrity, preview lifecycle
+
+Working branch: `sounds/discovery-integrity-20261119-r3`. The only intended changes are `sounds.html`, Sounds-only modules, Sounds-only tests and publisher, and this handoff. The main editor, `index.html`, shared runtime, and offline infrastructure are frozen.
+
+- `sounds-backup.mjs` now exports **version 2** archives. Each unchanged audio Blob gets a streaming CRC32 to detect accidental corruption; backups are still uncompressed and unencrypted. Import verifies every checksum before the existing atomic add-only database transaction. Version 1 backups remain readable and must not be overwritten.
+- `sounds-backup-ui.mjs` awaits checksum generation on export and explains integrity validation before restore. The checksum is **not cryptographic authentication**; tampering by someone who recomputes the checksum is not detected. Large library backups remain bounded by available device storage and export limits.
+- `sounds-discover-core.mjs` supplies testable provider specifics: Openverse duration values are **milliseconds**; Freesound's durations are seconds; the Openverse Wikimedia Commons source slug is **`wikimedia_audio`**; Freesound now gets server-side license filters when applicable; error pages returning `text/html` or `application/json` are rejected instead of being saved as sounds.
+- `sounds-page.mjs` emits a view-change event. Discover aborts pending searches on leaving the tab and pauses all active audio previews. Page exit aborts pending search requests.
+- `qa/sounds-discover-test.mjs` adds provider normalization and content-type unit tests, and `qa/sounds-browser-test.mjs` checks real browser request construction through mocked Openverse/Freesound endpoints. `qa/sounds-backup-test.mjs` covers v2 corruption detection and v1 import.
+- `.github/workflows/publish-sounds.yml` now tests discovery helpers before publisher overlay. `sounds.html` is build **2026.11.19.12** with new module cache versions.
+
+**Verification:** changes were checked for confined diff paths and committed to the Sounds feature branch. The publisher's full browser tests and promotion must be checked after merging. No claims of live source API, cross-origin behavior, physical iPhone, or native SuperCollider buffer loading: those require separate verification.
+
+**Next priorities:** (1) Inspect publish workflow and verify same Sounds blobs on `pages-build`. (2) Probe native SuperCollider virtual filesystem / buffer operations in a dedicated Sounds-only runtime harness, without replacing the SuperCollider audio engine. (3) Live remote provider verification and iPhone microphone / restore tests, subject to access. (4) Test large file archive and quota/failure cases, and add progress indicators for slow exports. (5) Only with user approval, connect standalone Sounds into the frozen main-page interface and shared offline precache.

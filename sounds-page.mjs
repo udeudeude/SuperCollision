@@ -7,6 +7,7 @@ function select(view,updateHash=true){
  for(const tab of tabs){const selected=tab.dataset.view===view;tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1}
  for(const [name,id] of Object.entries(views))document.getElementById(id).hidden=name!==view;
  if(updateHash){const url=new URL(location.href);url.hash=view;history.replaceState(history.state,'',url)}
+ document.dispatchEvent(new CustomEvent('sounds-view-changed',{detail:{view}}));
 }
 for(const tab of tabs){
  tab.addEventListener('click',()=>select(tab.dataset.view));
