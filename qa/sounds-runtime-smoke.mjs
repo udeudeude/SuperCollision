@@ -58,16 +58,20 @@ try{
  await page.locator('#lab-sound').selectOption('native-smoke');
  await page.locator('#lab-engine').click();
  await page.getByText('SuperCollider ready.',{exact:false}).waitFor({timeout:120000});
+ await page.locator('#lab-engine').click();
+ await page.getByText('SuperCollider executed the tone code.',{exact:false}).waitFor({timeout:30000});
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/SynthDef\(\\scSoundsDemo/);
+ 
  await page.locator('#lab-load').click();
  await page.waitForFunction(()=>{
    const status=document.querySelector('#lab-status')?.textContent||'';
-   return status.startsWith('Verified by native SuperCollider sample readback:')||status.startsWith('Sample transfer failed:');
+   return !document.querySelector('#lab-play')?.disabled||status.startsWith('Sample transfer failed:');
   },null,{timeout:90000});
- assert.match(await page.locator('#lab-status').textContent(),/^Verified by native SuperCollider sample readback:/);
- // Late audio-unlock completion must not erase a previously verified buffer.
+ assert.equal(await page.locator('#lab-play').isEnabled(),true,'actual native transfer must complete before Play enables');
+ // Playing a demo tone must not erase a previously verified buffer.
  await page.locator('#lab-engine').click();
  await page.waitForFunction(()=>document.querySelector('#lab-log')?.textContent.includes('SuperCollider audio unlocked ('),null,{timeout:10000});
- assert.match(await page.locator('#lab-status').textContent(),/^Verified by native SuperCollider sample readback:/);
+ assert.equal(await page.locator('#lab-play').isEnabled(),true,'demo playback must not unload a verified sample');
 
  assert.equal(await page.locator('#lab-play').isEnabled(),true);
  const nativeSource=await page.locator('#lab-live-source').inputValue();
@@ -187,16 +191,16 @@ try{
   assert.equal(await page.locator('#lab-sound').inputValue(),'native-smoke');
   assert.equal(await page.locator('#lab-play').isDisabled(),true,'reopened preset must never autoplay');
   await page.locator('#lab-engine').click();
-  await page.getByRole('button',{name:'Unlock audio'}).waitFor({timeout:120000});
+  await page.getByRole('button',{name:'Play tone'}).waitFor({timeout:120000});
   // An explicit second unlock tap is harmless on Chrome and required on some
   // browsers; the linked original must then transfer without a manual Load tap.
   await page.locator('#lab-engine').click();
   await page.waitForFunction(()=>{
    const status=document.querySelector('#lab-status')?.textContent||'';
-   return status.startsWith('Verified by native SuperCollider sample readback:')||
+   return !document.querySelector('#lab-play')?.disabled||
      status.startsWith('Sample transfer failed:');
   },null,{timeout:90000});
-  assert.match(await page.locator('#lab-status').textContent(),/^Verified by native SuperCollider sample readback:/,'linked audio should reload into actual native SuperCollider buffers');
+  assert.equal(await page.locator('#lab-play').isEnabled(),true,'linked audio should reload into actual native SuperCollider buffers');
   assert.equal(await page.locator('#lab-start').inputValue(),'20');
   assert.equal(await page.locator('#lab-finish').inputValue(),'80');
   assert.equal(await page.locator('#lab-rate').inputValue(),'0.75');

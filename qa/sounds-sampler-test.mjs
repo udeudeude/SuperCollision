@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {REGION_DEFINITIONS,validateRegion,regionPlayCommand,regionLiveSource,stopRegionCommand,sampleInstrumentSource} from '../sounds-sampler.mjs';
+import {REGION_DEFINITIONS,validateRegion,regionPlayCommand,regionLiveSource,stopRegionCommand,sampleInstrumentSource,demoSynthSource,DEMO_MARKER} from '../sounds-sampler.mjs';
 const normal={bufferId:700,channels:1,start:0,finish:1,rate:1,amp:0.16,loop:false};
 assert.equal(validateRegion(normal).rate,1);
 assert.equal(validateRegion(normal).sourceSampleRate,0,'desktop Buffer.read must retain its own file sample rate');
@@ -67,4 +67,13 @@ assert.match(source,/NOT embedded/,'users must export the original audio indepen
 assert.doesNotMatch(source,/\\sourceRate, 44100/,'desktop script must use source file sample rate, not the web server sample rate');
 assert.match(sampleInstrumentSource({...normal,channels:2,loop:false}),/SynthDef\(\\scSoundsStereoOnce/);
 assert.throws(()=>sampleInstrumentSource({...normal,rate:Infinity}),/Speed/);
+const tone=demoSynthSource({frequency:660,amplitude:0.2});
+assert.match(tone,/SynthDef\(\\scSoundsDemo/,'audition is a native SuperCollider instrument');
+assert.match(tone,/SinOsc\.ar\(freq\)/,'oscillator must be in native synthesis code');
+assert.match(tone,/Synth\(\\scSoundsDemo, \[\\freq, 660, \\amp, 0\.2\]\)/);
+assert.match(tone,/s\.sync;[\s\S]+Synth\(/,'definition installation precedes playback');
+assert.ok(tone.includes(DEMO_MARKER),'native audition must confirm command execution');
+assert.throws(()=>demoSynthSource({frequency:Infinity}),/pitch/);
+assert.throws(()=>demoSynthSource({frequency:20}),/pitch/);
+assert.throws(()=>demoSynthSource({amplitude:1}),/volume/);
 console.log('Sounds native region definitions, one-shot, loop, and validated controls passed.');
