@@ -45,7 +45,9 @@ async function refresh(){
    const origin=item.origin;
    row.append(node('small','Source: '+(origin.creator||origin.provider||'Unknown')+' · '+readableLicense(origin.license)+(origin.variant?' · '+origin.variant:'')));
    const link=safeUrl(origin.url);
-   if(link){const a=node('a','Original source');a.href=link;a.target='_blank';a.rel='noopener noreferrer';row.append(a)}
+   if(link){const a=node('a','Source page');a.href=link;a.target='_blank';a.rel='noopener noreferrer';row.append(a)}
+   const creatorLink=safeUrl(origin.creatorUrl);
+   if(creatorLink){row.append(' · ');const a=node('a','Creator profile');a.href=creatorLink;a.target='_blank';a.rel='noopener noreferrer';row.append(a)}
    const licenseLink=safeUrl(origin.licenseUrl);
    if(licenseLink){row.append(' · ');const a=node('a','License');a.href=licenseLink;a.target='_blank';a.rel='noopener noreferrer';row.append(a)}
   }

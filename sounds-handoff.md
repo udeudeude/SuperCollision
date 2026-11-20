@@ -340,3 +340,14 @@ Branch `sounds/native-rate-fidelity-r14-20261120`, scoped to standalone Sounds p
 - After merge, independently fetched Git blobs from `main` and `pages-build`; identical for all four changed Sounds production files: `sounds.html`, `sounds-lab.html`, `sounds-lab.mjs`, `sounds-sampler.mjs`. The frozen `index.html` remains identical on both branches at blob `8fb09e74d0ce655994b8091f09b5ae8782063b91`.
 - The production Git branch has published the tested Sounds source. Direct hosted Cloudflare URL inspection failed via available tools; do not claim external edge availability, Cloudflare deployment completion, desktop script execution, physical iPhone audio or real-provider CORS verification from this result.
 - **Next:** Native buffer acknowledgement/lifecycle stalls, real 44.1 kHz and 24-bit playback under target hardware, and live online provider downloads/attribution with restrictive cross-origin policies. Never modify frozen shared files or waive the compiled-engine gate.
+
+
+## Sounds iteration 15 (2026-11-20): provider provenance and truthful quality labels
+
+Strict scope: standalone Sounds only; no `index.html`, Live, Mix, shared runtime/offline, or original library records modified.
+
+- **Fix:** Openverse indexes Freesound compressed previews. Previously the Discover button misleadingly called all Openverse-indexed files "original audio". The new provider-aware normalizer marks Freesound-indexed results as compressed previews, while all other Openverse links say original quality is unverified. No source audio is transformed.
+- Saved records now retain provider, creator profile URL, exact supplied attribution, license, license URL/version, original source page, retrieval time and audio variant. Library provides a creator profile link for new records. Existing records remain intact.
+- Added pure-provider regression tests and Chrome browser test for indexed Freesound save, provenance and attribution persistence. Existing Wi-Fi default, explicit unknown-network override, cancellation and SuperCollider-only synthesis remain unchanged.
+- Standalone build **2026.11.20.11**. Check dedicated Sounds pull request including compiled-engine smoke before merging, then Git production branch parity. Actual remote provider audio and physical iPhone audio are still unverified.
+- Next: native buffer sync stalls, cross-origin live provider audio, portable backup coverage and iPhone verification.
