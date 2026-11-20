@@ -13,8 +13,15 @@ for(const change of [{start:0.8,finish:0.7},{start:0.2,finish:0.205},{start:-1},
 for(const name of ['scSoundsMonoOnce','scSoundsMonoLoop','scSoundsStereoOnce','scSoundsStereoLoop'])
   assert.ok(REGION_DEFINITIONS.includes('SynthDef(\\'+name),'Missing native instrument '+name);
 assert.equal((REGION_DEFINITIONS.match(/PlayBuf\.ar/g)||[]).length,2);
-assert.equal((REGION_DEFINITIONS.match(/BufRd\.ar/g)||[]).length,2);
+assert.equal((REGION_DEFINITIONS.match(/BufRd\.ar/g)||[]).length,4);
 assert.equal((REGION_DEFINITIONS.match(/Phasor\.ar/g)||[]).length,2);
+assert.match(REGION_DEFINITIONS,/BufSampleRate\.kr/);
+assert.match(REGION_DEFINITIONS,/seam\.cos/);
+assert.match(REGION_DEFINITIONS,/seam\.sin/);
+assert.match(REGION_DEFINITIONS,/phase - high \+ low \+ fadeFrames/);
+assert.match(REGION_DEFINITIONS,/low \+ fadeFrames, high, low \+ fadeFrames/);
+const low=300,high=4000,fade=480;
+assert.equal(high-high+low+fade,low+fade,'incoming readhead must meet outgoing reset position');
 assert.match(REGION_DEFINITIONS,/BufRateScale\.kr/);
 assert.match(REGION_DEFINITIONS,/s\.sync/);
 assert.match(stopRegionCommand,/\\gate, 0/);
