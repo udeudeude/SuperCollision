@@ -71,14 +71,15 @@ try{
 
  assert.equal(await page.locator('#lab-play').isEnabled(),true);
  const nativeSource=await page.locator('#lab-live-source').inputValue();
- assert.match(nativeSource,/SynthDef\\(\\\\scSoundsMonoOnce/,'visible code must include compiled native synthesis');
- assert.match(nativeSource,/PlayBuf\\.ar/,'native signal processing must never be hidden');
- assert.match(nativeSource,/s\\.sync/,'native code must wait for the definition before starting');
+ assert.ok(nativeSource.includes('SynthDef(')&&nativeSource.includes('scSoundsMonoOnce'),
+  'visible source must include native synthesis');
+ assert.ok(nativeSource.includes('PlayBuf.ar'),'native signal processing must never be hidden');
+ assert.ok(nativeSource.includes('s.sync'),'native code waits for the definition before starting');
  assert.equal(await page.locator('#lab-live-source').isEditable(),true);
  assert.equal(await page.locator('#lab-sync-label').textContent(),'CONTROLS MATCH CODE');
  const edited=nativeSource.replace('var frames = BufFrames.kr(bufnum);',
   'var frames = BufFrames.kr(bufnum); // playtest hand edit');
- assert.notEqual(edited,nativeSource,'test must actually modify SuperCollider code');
+ assert.notEqual(edited,nativeSource,'test must modify actual SuperCollider code');
  await page.locator('#lab-live-source').fill(edited);
  assert.match(await page.locator('#lab-sync-label').textContent(),/CODE OVERRIDE/);
  assert.equal(await page.locator('#lab-save-preset').isDisabled(),true,
