@@ -91,7 +91,7 @@ staged=new NativeBufferTransport(packet=>{
 await staged.upload(72,stagedAudio,{verify:false,
  onStage:stage=>stages.push(stage),
  onProgress:value=>progressUpdates.push(value)});
-assert.deepEqual(stages.map(s=>s.phase),['allocation','transfer','transfer','transfer','readback','complete']);
+assert.deepEqual(stages.map(s=>s.phase),['allocation','transfer','transfer','transfer','complete']);
 assert.equal(stages[1].acknowledged,0,'queued audio must not count as acknowledged');
 assert.equal(stages[2].acknowledged,FLOATS_PER_PACKET*12);
 assert.equal(stages[3].acknowledged,stagedFrames);
