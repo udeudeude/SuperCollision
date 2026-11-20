@@ -141,3 +141,12 @@ Crucial runtime finding: the compiled `scsynth.getAudioContext()` returns a **nu
 After the proven Chrome smoke succeeded, the Sounds-only pull-request workflow was tightened so real native runtime smoke is now **mandatory**, not a nonblocking diagnostic. Mandatory tests also include JavaScript syntax, licensing, discovery, original-blob backup/restore, buffer roundtrip/corruption/cancellation, and Chromium library regression. The workflow checks out the compiled runtime from `pages-build` only as test data and never alters shared runtime. The exact published revision and main/production blob parity must still be rechecked after merging PR #6.
 
 Next work: add SuperCollider-controlled sample start/end, looping, speed and envelope once playback is audibly verified; add robust production/iPhone audio unlock checks; investigate safer handling of native output context construction across browsers; preserve original samples and the main-page freeze.
+
+### Iteration 5 merged and published verification
+
+- PR [#6](https://github.com/udeudeude/SuperCollision/pull/6) squash-merged into `main` as `ec474324fdf33dd9ffb5a20eedbfd2cfed665de8`.
+- **Mandatory** Sounds-only PR workflow [44670113027](https://github.com/udeudeude/SuperCollision/actions/runs/44670113027) passed every step. Its actual compiled WebAssembly browser smoke passed: native sclang/scsynth boot, server-owned audio buffer upload and /b_getn verification, PlayBuf audition request, player-only Stop.
+- Main Sounds-only publishing workflow [44670223574](https://github.com/udeudeude/SuperCollision/actions/runs/44670223574) passed its mandatory Node/Chromium tests and overlaid only Sounds files into `pages-build`.
+- Verified byte-identical `main` / `pages-build` blobs for `sounds.html`, `sounds-lab.html`, `sounds-lab.mjs`, `sounds-buffer.mjs`. Verified `index.html` unchanged with matching blob SHA `8fb09e74d0ce655994b8091f09b5ae8782063b91` on both branches. This is **verified production-branch publication**, but the external Cloudflare website remained inaccessible from available inspection tools. A real iPhone/audio-speaker test is still required.
+- The separate general interface publishing workflow failed, but the dedicated Sounds publisher **passed**. Do not modify shared CI to address this without authorization.
+- Next highest value: real iPhone unlock and audible playback; proper native PlayBuf-based region/loop/rate controls; non-destructive sample-based instrument editor and code export; live provider testing.
