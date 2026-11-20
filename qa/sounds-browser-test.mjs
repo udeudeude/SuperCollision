@@ -101,6 +101,12 @@ try{
  await page.getByRole('button',{name:'Search sounds'}).click();
  await page.getByText('Free CC0').waitFor();
  assert.equal(await page.locator('.discovered-sound').count(),1,'CC0 preset must be enforced');
+ // HTTP success and an audio content type must not permit an HTML error to enter the library.
+ await page.route('https://audio.example.test/cc0.wav',route=>route.fulfill({
+  status:200,contentType:'audio/wav',body:'<html>Remote access denied'
+ }),{times:1});
+ await page.getByRole('button',{name:'Save original audio'}).first().click();
+ await page.getByText('The server returned an error page',{exact:false}).waitFor();
  await page.evaluate(()=>{
   const original=window.fetch.bind(window);
   window.__soundsCancelStarted=false;window.__soundsCancelCount=0;
@@ -123,6 +129,12 @@ try{
  await page.waitForFunction(()=>window.__soundsCancelCount===1);
  await page.locator('#discover-cancel-download').waitFor({state:'hidden'});
  assert.equal(downloadCount,1,'cancelled download must not transfer extra audio');
+ // Revoking the unknown-network override must stop even a stalled fetch immediately.
+ await page.getByRole('button',{name:'Save original audio'}).first().click();
+ await page.locator('#discover-cancel-download').waitFor({state:'visible'});
+ await page.locator('#discover-allow-unverified').uncheck();
+ await page.waitForFunction(()=>window.__soundsCancelCount===2);
+ await page.locator('#discover-cancel-download').waitFor({state:'hidden'});
  await page.getByRole('tab',{name:'Library'}).click();
  assert.equal(await page.locator('.managed-item').count(),3,'cancelled download must not alter saved library');
  await page.getByRole('tab',{name:'Discover'}).click();
