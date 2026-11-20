@@ -78,4 +78,50 @@ const osc=oscMessage('/synced',[i(123)]);
 const padded=new Uint8Array(osc.length+12);padded.set(osc,8);
 assert.deepEqual(read(padded.subarray(8,8+osc.length)),{address:'/synced',args:[123]});
 assert.equal(readOscReply(null),null);
+/* Confirm diagnostics describe server acknowledgements, not merely queued bytes. */
+const stagedFrames=FLOATS_PER_PACKET*12+3;
+const stagedAudio={numberOfChannels:1,length:stagedFrames,sampleRate:48000,
+ getChannelData:()=>new Float32Array(stagedFrames)};
+const stages=[],progressUpdates=[];
+let staged;
+staged=new NativeBufferTransport(packet=>{
+ const m=read(packet);
+ if(m.address==='/sync')queueMicrotask(()=>staged.receive(oscMessage('/synced',[i(m.args[0])])));
+});
+await staged.upload(72,stagedAudio,{verify:false,
+ onStage:stage=>stages.push(stage),
+ onProgress:value=>progressUpdates.push(value)});
+assert.deepEqual(stages.map(s=>s.phase),['allocation','transfer','transfer','transfer','readback','complete']);
+assert.equal(stages[1].acknowledged,0,'queued audio must not count as acknowledged');
+assert.equal(stages[2].acknowledged,FLOATS_PER_PACKET*12);
+assert.equal(stages[3].acknowledged,stagedFrames);
+assert.equal(stages.at(-1).packets,13);
+assert.equal(progressUpdates.at(-1),1);
+assert.equal(staged.active,false);
+
+/* Force missing /synced replies after allocation; no indefinite wait, and
+ * the diagnostic identifies the exact phase and unacknowledged sample count. */
+let stalledSyncs=0,stalled;
+stalled=new NativeBufferTransport(packet=>{
+ const m=read(packet);
+ if(m.address==='/sync'){
+  stalledSyncs++;
+  if(stalledSyncs===1||stalledSyncs===3)
+   queueMicrotask(()=>stalled.receive(oscMessage('/synced',[i(m.args[0])])));
+ }
+},{timeoutMs:80});
+await assert.rejects(stalled.upload(73,mono,{verify:false}),
+ /transfer failed after \d+ ms; 0 of 3 samples acknowledged \(3 sent\).*did not respond/);
+assert.equal(stalled.active,false);
+assert.equal(stalled.pending.size,0);
+let noReadback;
+noReadback=new NativeBufferTransport(packet=>{
+ const m=read(packet);
+ if(m.address==='/sync')queueMicrotask(()=>noReadback.receive(oscMessage('/synced',[i(m.args[0])])));
+},{timeoutMs:80});
+await assert.rejects(noReadback.upload(74,mono),
+ /readback failed after \d+ ms; 3 of 3 samples acknowledged/);
+assert.equal(noReadback.pendingReads.size,0,'timeout must release readback listener');
+assert.equal(noReadback.active,false);
+
 console.log('Native SuperCollider buffer transfer, readback, failure and cancellation tests passed');
