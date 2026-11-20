@@ -59,6 +59,7 @@ try{
  assert.equal(await page.locator('.sounds-library-nav [data-view="library"]').count(),1,'library must be its own primary destination');
  assert.deepEqual(await page.locator('.sounds-acquire-buttons [data-view]').evaluateAll(nodes=>nodes.map(n=>n.dataset.view)),['create','generate','import','record','discover'],'five acquisitions must be grouped separately from Library');
  assert.equal(await page.locator('#sounds-library').isVisible(),true);
+ assert.equal(await page.locator('#discover-cancel-download').isHidden(),true,'cancel download is hidden while idle');
  await page.getByRole('tab',{name:'Create'}).click();
  await page.locator('#sounds-source-name').fill('Example instrument');
  await page.locator('#sounds-source').fill('SynthDef(\\tone,{Out.ar(0,SinOsc.ar(220)*0.1)}).add;');
@@ -95,10 +96,36 @@ try{
  await button.click();
  await page.getByText('Saved Allowed BY locally.',{exact:false}).waitFor();
  assert.equal(downloadCount,1);
+ assert.equal(await page.locator('#discover-cancel-download').isHidden(),true,'completed download releases cancel control');
  await page.locator('#discover-cc0').check();
  await page.getByRole('button',{name:'Search sounds'}).click();
  await page.getByText('Free CC0').waitFor();
  assert.equal(await page.locator('.discovered-sound').count(),1,'CC0 preset must be enforced');
+ await page.evaluate(()=>{
+  const original=window.fetch.bind(window);
+  window.__soundsCancelStarted=false;window.__soundsCancelCount=0;
+  window.fetch=(url,options={})=>{
+   if(String(url).includes('/cc0.wav')){
+    window.__soundsCancelStarted=true;
+    return new Promise((_,reject)=>{
+     options.signal?.addEventListener('abort',()=>{
+      window.__soundsCancelCount++;
+      reject(new DOMException('Cancelled by user','AbortError'));
+     },{once:true});
+    });
+   }
+   return original(url,options);
+  };
+ });
+ await page.getByRole('button',{name:'Save original audio'}).first().click();
+ await page.waitForFunction(()=>window.__soundsCancelStarted===true);
+ await page.locator('#discover-cancel-download').click();
+ await page.waitForFunction(()=>window.__soundsCancelCount===1);
+ await page.locator('#discover-cancel-download').waitFor({state:'hidden'});
+ assert.equal(downloadCount,1,'cancelled download must not transfer extra audio');
+ await page.getByRole('tab',{name:'Library'}).click();
+ assert.equal(await page.locator('.managed-item').count(),3,'cancelled download must not alter saved library');
+ await page.getByRole('tab',{name:'Discover'}).click();
  await page.locator('#discover-no-attribution').check();
  assert.equal(await page.locator('.discovered-sound').count(),0,'changing license filters must clear stale results');
  await page.getByRole('button',{name:'Search sounds'}).click();
@@ -184,6 +211,20 @@ try{
  assert.equal(await page.locator('#lab-amp').inputValue(),'0.12');
  assert.equal(await page.locator('#lab-loop').isChecked(),true);
  assert.equal(await page.locator('#lab-play').isDisabled(),true,'linked presets must still require verified native transfer');
+ await page.evaluate(async soundId=>{
+  const {saveSound}=await import('/sounds-store.mjs');
+  await saveSound({id:'precise-linked-preset',name:'Precise sample instrument',source:'preset',
+   created:Date.now(),favorite:false,preset:{soundId,channels:1,start:0.231,finish:0.789,rate:0.75,amp:0.12,loop:true}});
+  await saveSound({id:'malformed-linked-preset',name:'Malformed preset',source:'preset',
+   created:Date.now(),favorite:false,preset:{soundId,channels:1,start:0.95,finish:0.3,rate:1,amp:0.12,loop:false}});
+ },linkedAudioId);
+ await page.goto(base+'/sounds-lab.html?preset=precise-linked-preset');
+ await page.waitForFunction(()=>document.querySelector('#lab-start')?.value==='23.1');
+ assert.equal(await page.locator('#lab-finish').inputValue(),'78.9','region precision must survive reopening');
+ assert.equal(await page.locator('#lab-play').isDisabled(),true,'preset must not autoplay');
+ await page.goto(base+'/sounds-lab.html?preset=malformed-linked-preset');
+ await page.getByText('Preset invalid:',{exact:false}).waitFor();
+ assert.equal(await page.locator('#lab-sound').inputValue(),'','invalid region may not select audio');
  await page.goto(base+'/sounds-lab.html?preset=missing-audio-preset');
  await page.getByText('Preset unavailable:',{exact:false}).waitFor();
  assert.equal(await page.locator('#lab-sound').inputValue(),'','missing original may not be replaced by arbitrary other audio');
