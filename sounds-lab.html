@@ -26,16 +26,45 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 #lab-log{white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;color:#b6cbb8;background:#0d1612;padding:12px;font:12px/1.4 ui-monospace,monospace}
 #lab-status{font-weight:600;min-height:28px}
 #lab-waveform{display:block;width:100%;height:116px;background:#141b16;border:1px solid #575d54;touch-action:pan-y;user-select:none;-webkit-user-select:none}
-#lab-source-bay{position:sticky;bottom:0;z-index:8;margin:0 -16px;background:#101713;border-top:3px solid #d8ae5b;padding:9px 16px 12px;box-shadow:0 -8px 24px #0009}
-#lab-source-bay .source-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
-#lab-source-bay h2{font:750 11px/1.4 ui-monospace,monospace;letter-spacing:.08em;color:#e5bc71;margin:0}
-#lab-live-source{white-space:pre;overflow:auto;max-height:116px;min-height:55px;margin:8px 0 0;padding:9px;background:#090e0b;color:#c6d8c6;font:11px/1.45 ui-monospace,monospace}
-#lab-source-bay button{min-height:30px;padding:5px 10px;font-size:11px}
-@media(min-width:800px){#lab-source-bay{margin:0 auto;max-width:760px}}
-#lab-source-bay{border:1px solid #8d805d;background:#1b211c;padding:12px;margin:12px 0 18px}#lab-source-bay .source-head{display:flex;align-items:center;justify-content:space-between;gap:8px}#lab-source-bay .source-head h2{font-size:12px;color:#e5bc71;margin:0}#lab-live-source{display:block;width:100%;min-height:118px;max-height:35dvh;resize:vertical;background:#101813;color:#d7e8d2;border:1px solid #586a59;border-radius:2px;padding:11px;font:13px/1.45 ui-monospace,monospace;tab-size:2;overflow:auto}#lab-live-source:read-only{opacity:.7}#lab-source-state{font-size:12px;margin:8px 0}#lab-reset-source{min-height:38px;font-size:12px}#lab-source-bay button{font-size:12px;min-height:38px}@media(max-width:440px){#lab-source-bay{padding:9px}#lab-live-source{font-size:12px}}#lab-sync-indicator{display:inline-flex;align-items:center;gap:8px;font:700 11px ui-monospace,monospace;letter-spacing:.06em;margin:8px 0;color:#c5c6b9}.sync-lamp{width:11px;height:11px;border-radius:50%;background:#62685e;border:1px solid #9b9e8e;box-shadow:none}#lab-source-bay[data-sync="matched"] .sync-lamp{background:#8ee2a5;border-color:#c9f3d3;box-shadow:0 0 9px #8ee2a577}#lab-source-bay[data-sync="modified"] .sync-lamp,#lab-source-bay[data-sync="pending"] .sync-lamp{background:#41443f;border-color:#73776c;box-shadow:none}#lab-source-bay[data-sync="modified"] #lab-sync-indicator,#lab-source-bay[data-sync="pending"] #lab-sync-indicator{color:#efc77d}#lab-source-bay[data-sync="pending"]{border-color:#d6a553}#lab-region-controls[data-sync="modified"],#lab-region-controls[data-sync="pending"]{opacity:.58}#lab-region-controls[data-sync="matched"]{opacity:1}#lab-apply-control:not([hidden]),#lab-keep-code:not([hidden]){display:inline-block;margin:5px 5px 5px 0}#lab-apply-control{background:#d8ae5b;color:#171918}#lab-keep-code{background:#343832;color:#f1eee4}</style>
+/* The code occupies the visible upper part of the instrument, never a
+   bottom-fixed drawer that steals the thumb-accessible control area. */
+#lab-source-bay{position:relative;bottom:auto;z-index:auto;border:2px solid #7d765f;
+ background:linear-gradient(155deg,#2b3029,#1a211b 65%);border-radius:3px;
+ padding:13px;margin:13px 0 18px;box-shadow:inset 0 1px #b3a67e33}
+#lab-source-bay .source-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#lab-source-bay .source-head h2{font:800 12px/1.4 ui-monospace,monospace;letter-spacing:.09em;
+ color:#e7bd76;margin:0}
+#lab-source-bay .muted{line-height:1.35}
+#lab-live-source{display:block;width:100%;min-height:174px;max-height:45dvh;resize:vertical;
+ background:#0c1711;color:#d1e3cf;border:1px solid #647665;border-radius:2px;
+ padding:12px;font:16px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;
+ tab-size:2;overflow:auto;overscroll-behavior:contain}
+#lab-live-source:read-only{opacity:.68}
+#lab-live-source:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
+#lab-source-bay button{min-height:40px;font-size:12px;padding:8px 12px}
+#lab-source-state{font-size:12px;line-height:1.45;margin:10px 0}
+#lab-sync-indicator{display:inline-flex;align-items:center;gap:9px;font:800 11px/1.4 ui-monospace,monospace;
+ letter-spacing:.06em;margin:12px 0 5px;color:#c4c6b7}
+.sync-lamp{width:12px;height:12px;border-radius:50%;background:#555b51;border:1px solid #989f91;box-shadow:none;flex:none}
+#lab-source-bay[data-sync="matched"] .sync-lamp{background:#8ee2a5;border-color:#c9f3d3;box-shadow:0 0 8px #8ee2a588}
+#lab-source-bay[data-sync="modified"] .sync-lamp,
+#lab-source-bay[data-sync="pending"] .sync-lamp{background:#42453e;border-color:#858777;box-shadow:none}
+#lab-source-bay[data-sync="modified"] #lab-sync-indicator,
+#lab-source-bay[data-sync="pending"] #lab-sync-indicator{color:#efc77d}
+#lab-source-bay[data-sync="pending"]{border-color:#d6a553}
+#lab-region-controls[data-sync="modified"],#lab-region-controls[data-sync="pending"]{opacity:.62}
+#lab-region-controls[data-sync="matched"]{opacity:1}
+#lab-region-controls{transition:opacity .15s ease}
+#lab-apply-control:not([hidden]),#lab-keep-code:not([hidden]){display:inline-block;margin:6px 6px 6px 0}
+#lab-apply-control{background:#d8ae5b;color:#171918}
+#lab-keep-code{background:#343832;color:#f1eee4}
+@media(max-width:440px){#lab-source-bay{padding:10px}
+ #lab-live-source{font-size:16px;min-height:164px;max-height:37dvh}
+ #lab-source-bay .source-head h2{font-size:11px}}
+</style>
 </head>
 <body>
-<header><a href="./sounds.html">← Sounds</a><h1>Native Sample Lab</h1><small>EXPERIMENTAL · 10</small></header>
+<header><a href="./sounds.html">← Sounds</a><h1>Native Sample Lab</h1><small>BUILD 2026.11.20.14</small></header>
 <main>
 <p class="muted">Experimental isolated SuperCollider playback test. Uses the same native language and synthesis engine as SuperCollision, without changing the main Code page. This is not a browser sampler or a second sound engine. Uncompressed 8/16/24/32-bit PCM, 32/64-bit floating-point and standard extensible WAVE files are read directly as sample values for SuperCollider, without resampling or editing; other formats still use compatible browser decoding for native transfer.</p>
 <section><h2>1 / Initialize SuperCollider</h2>
@@ -50,7 +79,7 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 <progress id="lab-progress" max="1" value="0" aria-label="Native buffer transfer progress"></progress>
 </section>
 <section><h2>3 / Native sample region &amp; audition</h2>
-<aside id="lab-source-bay" aria-label="Editable SuperCollider playback code"><div class="source-head"><h2>SUPERCOLLIDER / LIVE PLAYBACK CODE</h2><button type="button" id="lab-copy-source" disabled>Copy</button></div><span id="lab-sync-indicator" class="sync-indicator" role="status"><span class="sync-lamp" aria-hidden="true"></span><span id="lab-sync-label">NO SOURCE</span></span><label for="lab-live-source" class="muted">Edit the actual playback command. Changes run only when you tap Play. Moving a control regenerates the command.</label><textarea id="lab-live-source" spellcheck="false" aria-label="Editable SuperCollider playback command" readonly>Select and transfer a recording to reveal executable SuperCollider playback code.</textarea><p id="lab-source-state" class="muted" role="status">Load a sample to edit its playback code.</p><button type="button" id="lab-reset-source" disabled>Reset code from controls</button><button type="button" id="lab-apply-control" hidden>Apply control change</button><button type="button" id="lab-keep-code" hidden>Keep edited code</button></aside>
+<aside id="lab-source-bay" aria-label="Editable native SuperCollider instrument source"><div class="source-head"><h2>SUPERCOLLIDER / LIVE INSTRUMENT SOURCE</h2><button type="button" id="lab-copy-source" disabled>Copy</button></div><span id="lab-sync-indicator" class="sync-indicator" role="status"><span class="sync-lamp" aria-hidden="true"></span><span id="lab-sync-label">NO SOURCE</span></span><label for="lab-live-source" class="muted">Full, executable native SynthDef and playback code. Tap to edit; Play runs exactly this source. Control changes require your approval before replacing manual edits.</label><textarea id="lab-live-source" spellcheck="false" wrap="off" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Editable SuperCollider playback command" readonly>Select and transfer a recording to reveal executable SuperCollider playback code.</textarea><p id="lab-source-state" class="muted" role="status">Load a sample to edit its playback code.</p><button type="button" id="lab-reset-source" disabled>Reset code from controls</button><button type="button" id="lab-apply-control" hidden>Apply control change</button><button type="button" id="lab-keep-code" hidden>Keep edited code</button></aside>
 <p class="muted">Non-destructive controls for the loaded sample. Playback, region selection, speed and looping are performed by SuperCollider's native PlayBuf, BufRd and Phasor instruments, never a browser audio engine. Loop seams use a short equal-power overlap calculated by SuperCollider. Changing controls takes effect the next time you tap Play.</p>
 <p class="muted">Drag horizontally across the waveform to select a region, or use the accessible start and end sliders below. The waveform is a read-only visualization; audio processing stays in SuperCollider.</p>
 <div id="lab-region-controls" data-sync="unavailable"><canvas id="lab-waveform" role="img" aria-label="Read-only waveform with selected region highlighted; use the start and end sliders for precise adjustment"></canvas>
@@ -71,6 +100,6 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 </section>
 <section><h2>Status / diagnostics</h2><p id="lab-status" role="status" aria-live="polite">Start the native engine to begin.</p><pre id="lab-log" aria-label="SuperCollider diagnostic output"></pre></section>
 </main>
-<script type="module" src="./sounds-lab.mjs?v=12"></script>
+<script type="module" src="./sounds-lab.mjs?v=14"></script>
 </body>
 </html>
