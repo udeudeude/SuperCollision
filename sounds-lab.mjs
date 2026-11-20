@@ -218,7 +218,7 @@ engine.addEventListener('click',async()=>{
     if(typeof context?.resume!=='function')throw Error('Native SuperCollider audio context unavailable; reload and retry.');
     await context.resume();
     print('SuperCollider audio unlocked ('+context.state+').');
-    if(!controller)announce('SuperCollider audio unlocked ('+context.state+').');
+    if(!controller&&!current)announce('SuperCollider audio unlocked ('+context.state+').');
     maybeLoadLinkedPreset();
    }catch(error){announce('Audio unlock failed: '+error.message)}
    return;
