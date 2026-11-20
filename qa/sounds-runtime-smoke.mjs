@@ -24,8 +24,8 @@ const server=createServer(async(req,res)=>{
 });
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const base='http://127.0.0.1:'+server.address().port;
-const browser=await chromium.launch({headless:true,args:['--no-sandbox','--autoplay-policy=no-user-gesture-required'],...(process.env.SOUNDS_BROWSER_CHANNEL?{channel:process.env.SOUNDS_BROWSER_CHANNEL}:{})});
-const page=await browser.newPage();
+let browser=await chromium.launch({headless:true,args:['--no-sandbox','--autoplay-policy=no-user-gesture-required'],...(process.env.SOUNDS_BROWSER_CHANNEL?{channel:process.env.SOUNDS_BROWSER_CHANNEL}:{})});
+let page=await browser.newPage();
 const errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push('console: '+m.text())});
@@ -109,6 +109,63 @@ try{
  assert.match(await readFile(await script.path(),'utf-8'),/SynthDef\(\\scSoundsMonoLoop/);
  await page.locator('#lab-stop').click();
  await page.getByText('Stopped Sounds laboratory playback.',{exact:false}).waitFor();
+  const savedPresetId=await page.evaluate(async()=>{
+   const {allSounds}=await import('/sounds-store.mjs');
+   return (await allSounds()).find(item=>item.source==='preset')?.id;
+  });
+  assert.ok(savedPresetId,'sample preset should be saved before reopening');
+  // The compiled SuperCollider runtime retains native audio threads until
+  // its browser process closes. A fresh process represents opening the saved
+  // preset again and avoids testing two live scsynth servers simultaneously.
+  // Preserve exact binary source and sample preset across a fresh browser
+  // process without assuming Playwright's storageState exports IndexedDB.
+  const preserved=await page.evaluate(async()=>{
+   const {allSounds}=await import('/sounds-store.mjs');
+   return Promise.all((await allSounds()).map(async item=>{
+    const {blob,...metadata}=item;
+    return {metadata,blobBytes:blob instanceof Blob?Array.from(new Uint8Array(await blob.arrayBuffer())):null,
+     blobType:blob?.type||null};
+   }));
+  });
+  assert.ok(preserved.some(item=>item.metadata.id===savedPresetId));
+  assert.ok(preserved.some(item=>item.metadata.id==='native-smoke'&&item.blobBytes?.length));
+  await browser.close();
+  browser=await chromium.launch({headless:true,args:['--no-sandbox','--autoplay-policy=no-user-gesture-required'],...(process.env.SOUNDS_BROWSER_CHANNEL?{channel:process.env.SOUNDS_BROWSER_CHANNEL}:{})});
+  page=await browser.newPage();
+  page.on('pageerror',e=>errors.push(e.message));
+  page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push('console: '+m.text())});
+  page.on('response',response=>{if(response.status()>=400&&!response.url().endsWith('/favicon.ico'))errors.push('HTTP '+response.status()+' '+response.url())});
+  await page.goto(base+'/sounds-lab.html');
+  await page.evaluate(async records=>{
+   const {saveSound}=await import('/sounds-store.mjs');
+   for(const record of records){
+    const {metadata,blobBytes,blobType}=record;
+    await saveSound({...metadata,...(blobBytes?{blob:new Blob([new Uint8Array(blobBytes)],{type:blobType})}:{})});
+   }
+  },preserved);
+  await page.goto(base+'/sounds-lab.html?preset='+encodeURIComponent(savedPresetId));
+  await page.locator('#lab-sound option[value="native-smoke"]').waitFor({state:'attached'});
+  assert.equal(await page.locator('#lab-sound').inputValue(),'native-smoke');
+  assert.equal(await page.locator('#lab-play').isDisabled(),true,'reopened preset must never autoplay');
+  await page.locator('#lab-engine').click();
+  await page.getByRole('button',{name:'Unlock audio'}).waitFor({timeout:120000});
+  // An explicit second unlock tap is harmless on Chrome and required on some
+  // browsers; the linked original must then transfer without a manual Load tap.
+  await page.locator('#lab-engine').click();
+  await page.waitForFunction(()=>{
+   const status=document.querySelector('#lab-status')?.textContent||'';
+   return status.startsWith('Verified by native SuperCollider sample readback:')||
+     status.startsWith('Sample transfer failed:');
+  },null,{timeout:90000});
+  assert.match(await page.locator('#lab-status').textContent(),/^Verified by native SuperCollider sample readback:/,'linked audio should reload into actual native SuperCollider buffers');
+  assert.equal(await page.locator('#lab-start').inputValue(),'20');
+  assert.equal(await page.locator('#lab-finish').inputValue(),'80');
+  assert.equal(await page.locator('#lab-rate').inputValue(),'0.75');
+  assert.equal(await page.locator('#lab-loop').isChecked(),true);
+  assert.equal(await page.locator('#lab-play').isEnabled(),true);
+  await page.locator('#lab-play').click();
+  await page.getByText('Playing through native SuperCollider loop',{exact:false}).waitFor();
+  await page.locator('#lab-stop').click();
  assert.equal(errors.length,0,'No page errors: '+errors.join('; '));
  console.log('Native engine smoke passed: real sclang/scsynth boot, sample readback, native PlayBuf region and BufRd loop requests and Stop.');
 } catch(error){
