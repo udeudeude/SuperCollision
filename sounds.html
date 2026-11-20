@@ -13,7 +13,14 @@ body.is-recording{box-shadow:inset 0 0 0 6px #e44e3e}
 a{color:#e5bc71} header{display:flex;align-items:center;gap:12px;border-bottom:1px solid #67695f;padding:12px 0}
 header a{text-decoration:none;font-weight:700}header h1{font:800 1.2rem/1.2 system-ui;margin:0;letter-spacing:.06em}
 header .build{margin-left:auto;font:650 10px/1.4 ui-monospace,monospace;color:#c4c0a8;white-space:nowrap}
-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:12px 0;border-bottom:1px solid #4b514b}
+nav{display:grid;gap:11px;padding:12px 0;border-bottom:1px solid #4b514b}
+.sounds-library-nav{display:flex;align-items:center;gap:14px;border-bottom:1px solid #4b514b;padding-bottom:11px}
+.sounds-library-nav button{flex:0 0 42%;font-weight:800;text-align:left;padding-left:15px}
+.nav-description{font-size:12px;color:#b7b9ad}
+.sounds-acquire-nav{display:grid;gap:7px}
+.nav-heading{font:700 11px/1.4 ui-monospace,monospace;letter-spacing:.12em;color:#b7b9ad}
+.sounds-acquire-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.sounds-acquire-buttons button{min-width:0}
 nav button{font-size:12px;padding:8px 3px;min-height:40px}
 nav button[aria-selected="true"]{background:#d8ae5b;color:#171918;border-color:#f3d89f}
 main{padding:13px 0 28px}section{border:1px solid #545c52;padding:15px;margin-bottom:12px;min-width:0}
@@ -48,18 +55,20 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 .filter-group .check{margin:10px 0}
 .tab-intro{margin-bottom:14px}
 @media(max-width:370px){header .build{font-size:9px}header h1{font-size:1.1rem}.library-controls{grid-template-columns:minmax(0,1fr)}}
-@media(min-width:720px){nav{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media(min-width:720px){.sounds-acquire-buttons{grid-template-columns:repeat(5,minmax(0,1fr))}.sounds-library-nav button{flex-basis:180px}}
 </style>
 </head>
 <body>
-<header><a href="./index.html" aria-label="Return to Code">← Code</a><h1>SOUNDS</h1><small class="build">2026.11.19.14</small></header>
+<header><a href="./index.html" aria-label="Return to Code">← Code</a><h1>SOUNDS</h1><small class="build">2026.11.20.1</small></header>
 <nav aria-label="Sounds workspace" id="sounds-tabs">
-<button data-view="library" role="tab" aria-controls="sounds-library" aria-selected="true">Library</button>
-<button data-view="record" role="tab" aria-controls="sounds-record" aria-selected="false">Record</button>
-<button data-view="import" role="tab" aria-controls="sounds-import" aria-selected="false">Import</button>
+<div class="sounds-library-nav"><button data-view="library" role="tab" aria-controls="sounds-library" aria-selected="true">Library</button><span class="nav-description">Your collection</span></div>
+<div class="sounds-acquire-nav"><span class="nav-heading">ACQUIRE A SOUND</span><div class="sounds-acquire-buttons">
 <button data-view="create" role="tab" aria-controls="sounds-create" aria-selected="false">Create</button>
 <button data-view="generate" role="tab" aria-controls="sounds-generate" aria-selected="false">Generate</button>
+<button data-view="import" role="tab" aria-controls="sounds-import" aria-selected="false">Import</button>
+<button data-view="record" role="tab" aria-controls="sounds-record" aria-selected="false">Record</button>
 <button data-view="discover" role="tab" aria-controls="discover" aria-selected="false">Discover</button>
+</div></div>
 </nav>
 <main>
 <section id="sounds-library" role="tabpanel">
