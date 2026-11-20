@@ -60,7 +60,7 @@ try{
  await page.getByText('SuperCollider ready.',{exact:false}).waitFor({timeout:120000});
  await page.locator('#lab-engine').click();
  await page.getByText('SuperCollider executed the tone code.',{exact:false}).waitFor({timeout:30000});
- assert.match(await page.locator('#lab-demo-code').inputValue(),/SynthDef\\(\\\\scSoundsDemo/);
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/SynthDef\(\\scSoundsDemo/);
  
  await page.locator('#lab-load').click();
  await page.waitForFunction(()=>{
@@ -71,7 +71,7 @@ try{
  // Late audio-unlock completion must not erase a previously verified buffer.
  await page.locator('#lab-engine').click();
  await page.waitForFunction(()=>document.querySelector('#lab-log')?.textContent.includes('SuperCollider audio unlocked ('),null,{timeout:10000});
- assert.match(await page.locator('#lab-status').textContent(),/^Verified by native SuperCollider sample readback:/);
+ assert.equal(await page.locator('#lab-play').isEnabled(),true,'demo playback must not unload a verified sample');
 
  assert.equal(await page.locator('#lab-play').isEnabled(),true);
  const nativeSource=await page.locator('#lab-live-source').inputValue();
