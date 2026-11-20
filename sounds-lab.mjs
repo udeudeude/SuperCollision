@@ -12,6 +12,8 @@ const details=$('lab-details');
 const regionStart=$('lab-start'),regionFinish=$('lab-finish'),regionRate=$('lab-rate'),regionAmp=$('lab-amp'),regionLoop=$('lab-loop'),regionSummary=$('lab-region-summary');
 const demoCode=$('lab-demo-code'),demoPitch=$('lab-demo-pitch'),demoLevel=$('lab-demo-level'),demoReset=$('lab-demo-reset');
 const demoBay=$('lab-demo-code-bay'),demoControls=$('lab-demo-controls'),demoSyncLabel=$('lab-demo-sync-label');
+const toneName=$('lab-tone-name'),toneSave=$('lab-tone-save'),toneSaveStatus=$('lab-tone-save-status'),toneLibraryLink=$('lab-tone-library-link');
+let pendingToneId=new URL(location.href).searchParams.get('tone');
 let demoGenerated='',demoDirty=false;
 function updateDemoCode(force=false){
  demoGenerated=demoSynthSource({frequency:Number(demoPitch.value),amplitude:Number(demoLevel.value)});
@@ -31,6 +33,22 @@ demoReset.addEventListener('click',()=>{
  updateDemoCode(true);
 });
 updateDemoCode();
+toneSave.addEventListener('click',async()=>{
+ const name=toneName.value.trim().slice(0,120),source=demoCode.value;
+ if(!name){toneSaveStatus.textContent='Enter a name to save this instrument.';toneName.focus();return}
+ if(!source.trim()){toneSaveStatus.textContent='There is no SuperCollider code to save.';return}
+ if(source.length>150000){toneSaveStatus.textContent='SuperCollider code exceeds the 150,000-character library limit.';return}
+ toneSave.disabled=true;toneLibraryLink.hidden=true;toneSaveStatus.textContent='Saving instrument locally…';
+ try{
+  await saveSound({
+   id:crypto.randomUUID(),name,source:'written',created:Date.now(),favorite:false,code:source,
+   bench:{kind:'tone',frequency:Number(demoPitch.value),amplitude:Number(demoLevel.value)}
+  });
+  toneSaveStatus.textContent='Saved '+name+' to your Sounds Library. Original and edited code are preserved exactly.';
+  toneLibraryLink.hidden=false;
+ }catch(error){toneSaveStatus.textContent='Could not save instrument: '+error.message}
+ finally{toneSave.disabled=false}
+});
 const waveformCanvas=$('lab-waveform');
 const sourceView=$('lab-live-source'),copySource=$('lab-copy-source');
 const resetSource=$('lab-reset-source'),sourceState=$('lab-source-state');
@@ -248,6 +266,24 @@ async function listSounds(){
  try{
   const previousId=sound.value;
   const catalog=await allSounds();
+  if(pendingToneId){
+   const requested=pendingToneId;pendingToneId=null;
+   const item=catalog.find(entry=>entry.id===requested&&entry.bench?.kind==='tone'&&typeof entry.code==='string');
+   if(item){
+    try{
+     const frequency=item.bench.frequency,amplitude=item.bench.amplitude;
+     // Validate saved settings before touching the controls. Never automatically execute saved code.
+     demoSynthSource({frequency,amplitude});
+     demoPitch.value=String(frequency);demoLevel.value=String(amplitude);
+     updateDemoCode(true);
+     demoCode.value=item.code;demoDirty=demoCode.value!==demoGenerated;updateDemoCode();
+     toneName.value=item.name;
+     toneSaveStatus.textContent='Opened from Library. Edit, play or save a new variation.';
+     announce('Loaded '+item.name+' into the synthesizer without playing it.');
+    }catch(error){announce('Saved instrument is invalid: '+error.message)}
+   }else announce('Saved synthesizer instrument not found in this library.');
+  }
+
   entries=catalog.filter(item=>item.blob instanceof Blob).sort((a,b)=>Number(b.created||0)-Number(a.created||0));
   sound.replaceChildren(new Option('Choose a recorded or imported sound…',''));
   for(const item of entries)sound.add(new Option((item.name||'Untitled')+' · '+((item.blob.size/1024/1024).toFixed(1))+' MB',item.id));
