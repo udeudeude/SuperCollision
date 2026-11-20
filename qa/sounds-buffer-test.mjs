@@ -23,8 +23,8 @@ transport=new NativeBufferTransport(p=>{
   const message=read(p);sent.push(message);
   if(message.address==='/sync')queueMicrotask(()=>transport.receive(oscMessage('/synced',[i(message.args[0])])));
 });
-const complete=await transport.upload(42,stereo);
-assert.deepEqual(complete,{bufferId:42,frames:3,channels:2,sampleRate:48000});
+const complete=await transport.upload(42,stereo,{verify:false});
+assert.deepEqual(complete,{bufferId:42,frames:3,channels:2,sampleRate:48000,verified:false});
 assert.deepEqual(sent.map(p=>p.address),['/b_alloc','/sync','/b_setn','/sync']);
 assert.deepEqual(sent[0].args,[42,3,2]);
 transport.release(42);
@@ -37,6 +37,45 @@ const failed=new NativeBufferTransport(p=>{
  if(message.address==='/sync')queueMicrotask(()=>failed.receive(oscMessage('/fail',[{type:'s',value:'/b_alloc'},{type:'s',value:'no memory'}])));
 });
 await assert.rejects(failed.upload(56,mono),/rejected/);
-assert.equal(pending.at(-1).address,'/b_free');
+assert.equal(pending.at(-2).address,'/b_free');
+assert.equal(pending.at(-1).address,'/sync','failure cleanup must synchronize buffer release');
 assert.equal(failed.active,false);
-console.log('Native SuperCollider buffer transport tests passed');
+
+/* Native roundtrip: /b_alloc -> /b_setn -> /b_getn, with actual sample readback. */
+const native=new Float32Array(6);
+let verified;
+verified=new NativeBufferTransport(p=>{
+ const message=read(p),args=message.args;
+ if(message.address==='/b_setn')native.set(args.slice(3),args[1]);
+ if(message.address==='/sync')queueMicrotask(()=>verified.receive(oscMessage('/synced',[i(args[0])])));
+ if(message.address==='/b_getn')queueMicrotask(()=>verified.receive(oscMessage('/b_setn',[
+  i(args[0]),i(args[1]),i(args[2]),...Array.from(native.slice(args[1],args[1]+args[2]),f)
+ ])));
+});
+const result=await verified.upload(63,stereo);
+assert.equal(result.verified,true);
+assert.deepEqual(Array.from(native),[1,4,2,5,3,6]);
+assert.equal(verified.pendingReads.size,0);
+assert.equal(verified.pending.size,0);
+const corrupt=new NativeBufferTransport(p=>{
+ const m=read(p);
+ if(m.address==='/sync')queueMicrotask(()=>corrupt.receive(oscMessage('/synced',[i(m.args[0])])));
+ if(m.address==='/b_getn')queueMicrotask(()=>corrupt.receive(oscMessage('/b_setn',[
+  i(m.args[0]),i(m.args[1]),i(m.args[2]),...Array.from({length:m.args[2]},()=>f(0))
+ ])));
+});
+await assert.rejects(corrupt.upload(70,stereo),/verification failed/);
+assert.equal(corrupt.active,false);
+assert.equal(corrupt.pending.size,0);
+assert.equal(corrupt.pendingReads.size,0);
+const abortController=new AbortController();
+const waiting=new NativeBufferTransport(()=>{}, {timeoutMs:5000});
+const awaiting=waiting.sync({signal:abortController.signal});
+abortController.abort();
+await assert.rejects(awaiting,/cancelled/);
+assert.equal(waiting.pending.size,0);
+const osc=oscMessage('/synced',[i(123)]);
+const padded=new Uint8Array(osc.length+12);padded.set(osc,8);
+assert.deepEqual(read(padded.subarray(8,8+osc.length)),{address:'/synced',args:[123]});
+assert.equal(readOscReply(null),null);
+console.log('Native SuperCollider buffer transfer, readback, failure and cancellation tests passed');
