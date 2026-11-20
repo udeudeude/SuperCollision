@@ -142,6 +142,11 @@ try{
  await page.locator('.managed-item').first().waitFor();
  assert.equal(await page.locator('.managed-item').count(),3,'IndexedDB should persist across reload');
  assert.equal(queryCount>=2,true);
+ await page.goto(base+'/sounds-lab.html');
+ await page.locator('#lab-sound option').nth(1).waitFor({state:'attached'});
+ assert.ok(await page.locator('#lab-sound option').count()>=3,'laboratory should see original local audio items');
+ assert.equal(await page.locator('#lab-load').isDisabled(),true,'native transfer must wait for engine startup');
+ assert.equal(await page.locator('#lab-play').isDisabled(),true,'playback must wait for native sample transfer');
  assert.deepEqual(errors,[],'No unhandled page errors allowed');
  console.log('Sounds browser regression passed: library, source, recording, discovery, license filters and persistence');
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
