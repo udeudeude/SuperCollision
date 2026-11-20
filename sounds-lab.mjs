@@ -144,7 +144,7 @@ const BUFFER=700;
 const READY='__SC_SOUNDS_LAB_READY__',FAILED='__SC_SOUNDS_LAB_FAILED__',DEFS='__SC_SOUNDS_LAB_DEFS__',RATE='__SC_SOUNDS_LAB_RATE__:';
 const DEFINITION_SOURCE=REGION_DEFINITIONS;
 let lang=null,synth=null,transport=null,languageReady=false,serverReady=false,definitionsReady=false;
-let bootRequested=false,booting=false,bootTimeout=null,current=null,currentItemId=null,controller=null,entries=[],allocated=false;
+let bootRequested=false,booting=false,bootTimeout=null,definitionTimeout=null,installingDefinitions=false,current=null,currentItemId=null,controller=null,entries=[],allocated=false;
 let synthBootPending=false,synthBootCompleted=false,serverSampleRate=null,nativeAudioContext=null;
 function announce(t){status.textContent=t;const hint=$('lab-setup-hint');if(hint&&(/failed|unavailable|requires|error|timed out/i).test(t))hint.textContent='If this persists, open Technical details and troubleshooting at the bottom of the page.'}
 function print(t){log.textContent=(log.textContent+String(t)+'\n').slice(-10000);log.scrollTop=log.scrollHeight}
@@ -180,7 +180,7 @@ function refreshControls(){
  const hint=$('lab-setup-hint');
  if(hint){hint.textContent=!serverReady?'First startup loads native SuperCollider. After it starts, tap Play tone to hear the code above.':!definitionsReady?'SuperCollider is preparing its instruments…':'Play tone runs the visible SuperCollider source. To work with a recording, select one below.';}
  if(!serverReady&&!booting&&!lang)engine.textContent='Start SuperCollider';
- engine.disabled=booting||bootRequested||Boolean(lang&&!languageReady);
+ engine.disabled=booting||bootRequested||installingDefinitions||Boolean(lang&&!languageReady);
  if(!serverReady&&lang&&languageReady&&!bootRequested)engine.textContent='Retry server startup';
  if(serverReady&&definitionsReady)engine.textContent='Play tone';
  if(noteHint)noteHint.textContent=demoDirty?'Edited code: reset to use keys':definitionsReady?'Tap a key to play':'Choose a note, then start SuperCollider';
@@ -361,8 +361,24 @@ function requestServer(){
  catch(error){bootRequested=false;clearTimeout(bootTimeout);announce('Server request failed: '+error.message);setAudioPhase('error','SERVER STARTUP FAILED');engine.disabled=false}
 }
 function installDefinitions(){
- try{lang.runCode('("'+RATE+'" ++ s.sampleRate).postln;');lang.runCode(DEFINITION_SOURCE);announce('SuperCollider server ready. Installing native PlayBuf instruments…')}
- catch(error){announce('Could not create SuperCollider instruments: '+error.message)}
+ if(installingDefinitions||definitionsReady)return;
+ installingDefinitions=true;engine.disabled=true;engine.textContent='Preparing instruments…';
+ setAudioPhase('starting','PREPARING NATIVE INSTRUMENTS');
+ announce('SuperCollider started. Preparing its native instruments…');
+ definitionTimeout=setTimeout(()=>{
+  if(!definitionsReady){
+   installingDefinitions=false;setAudioPhase('error','INSTRUMENT SETUP TIMED OUT');
+   announce('SuperCollider started, but instrument setup stalled. Tap Retry instruments.');
+   engine.textContent='Retry instruments';refreshControls();
+  }
+ },25000);
+ try{lang.runCode('("'+RATE+'" ++ s.sampleRate).postln;');lang.runCode(DEFINITION_SOURCE)}
+ catch(error){
+  clearTimeout(definitionTimeout);installingDefinitions=false;
+  setAudioPhase('error','INSTRUMENT SETUP FAILED');
+  announce('Could not prepare SuperCollider instruments: '+error.message);
+  engine.textContent='Retry instruments';refreshControls();
+ }
 }
 async function playVisibleTone(label='tone'){
  try{
@@ -386,7 +402,7 @@ async function playVisibleTone(label='tone'){
  }
 }
 engine.addEventListener('click',async()=>{
- if(synth&&serverReady){await playVisibleTone('tone');return}
+ if(synth&&serverReady){if(!definitionsReady){installDefinitions();return}await playVisibleTone('tone');return}
  if(lang){if(languageReady&&!bootRequested){requestServer();return}announce('SuperCollider initialization is already in progress.');return}
  if(booting){announce('SuperCollider initialization is already in progress.');return}
  if(!crossOriginIsolated){setAudioPhase('error','AUDIO ENGINE BLOCKED');announce('This page lacks the isolation headers needed for native SuperCollider. Open Technical details below.');return}
@@ -410,9 +426,9 @@ engine.addEventListener('click',async()=>{
    }
    const sampleRateMatch=text.match(/__SC_SOUNDS_LAB_RATE__:(\d+(?:\.\d+)?)/);
    if(sampleRateMatch){serverSampleRate=Number(sampleRateMatch[1]);print('Native SuperCollider server sample rate: '+serverSampleRate+' Hz.');}
-   if(text.includes(DEFS)){definitionsReady=true;engine.textContent='Play tone';setAudioPhase('ready','READY · TAP A KEY OR PLAY TONE');announce('SuperCollider ready. Tap any touch key or Play tone.');refreshControls();maybeLoadLinkedPreset()}
+   if(text.includes(DEFS)){clearTimeout(definitionTimeout);installingDefinitions=false;definitionsReady=true;engine.textContent='Play tone';setAudioPhase('ready','READY · TAP A KEY OR PLAY TONE');announce('SuperCollider ready. Tap any touch key or Play tone.');refreshControls();maybeLoadLinkedPreset()}
    if(text.includes(DEMO_MARKER)&&!controller){setAudioPhase('played','SUPERCOLLIDER EXECUTED '+lastPlayedLabel.toUpperCase());announce('Native SuperCollider executed '+lastPlayedLabel+'. If silent, check phone volume and audio route.');}
-   if(/ERROR:\s|FAILURE IN SERVER/.test(text))announce('SuperCollider reported an error. Open Technical details below for the message.');
+   if(/ERROR:\s|FAILURE IN SERVER/.test(text)){setAudioPhase('error','SUPERCOLLIDER REPORTED AN ERROR');announce('SuperCollider reported an error. Open Technical details below for the message.');}
    if(text.includes(FAILED)){clearTimeout(bootTimeout);bootRequested=false;engine.textContent='Retry server startup';setAudioPhase('error','ENGINE STARTUP FAILED');announce('SuperCollider server failed to start. Tap Retry to try again.');refreshControls()}
    const cleaned=text.replaceAll(READY,'').replaceAll(FAILED,'').replaceAll(DEFS,'').trim();
    if(cleaned)print(cleaned);
