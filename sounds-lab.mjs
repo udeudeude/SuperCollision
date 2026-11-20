@@ -13,27 +13,45 @@ const regionStart=$('lab-start'),regionFinish=$('lab-finish'),regionRate=$('lab-
 const waveformCanvas=$('lab-waveform');
 const sourceView=$('lab-live-source'),copySource=$('lab-copy-source');
 const resetSource=$('lab-reset-source'),sourceState=$('lab-source-state');
-let sourceDirty=false;
+const sourceBay=$('lab-source-bay'),syncLabel=$('lab-sync-label'),regionControls=$('lab-region-controls');
+const applyControl=$('lab-apply-control'),keepCode=$('lab-keep-code');
+let sourceDirty=false,pendingControl=false;
+function syncMode(mode,label){
+ sourceBay.dataset.sync=mode;regionControls.dataset.sync=mode;syncLabel.textContent=label;
+}
 function updateSourceBay(force=false){
  if(!sourceView)return;
  if(!current||!currentItemId){
   sourceView.value='Select and transfer a recording to reveal executable SuperCollider playback code.';
   sourceView.readOnly=true;copySource.disabled=true;resetSource.disabled=true;
-  sourceDirty=false;sourceState.textContent='Load a sample to edit its playback code.';return;
+  sourceDirty=false;pendingControl=false;applyControl.hidden=true;keepCode.hidden=true;
+  syncMode('unavailable','NO SOURCE');
+  sourceState.textContent='Load a sample to edit its playback code.';return;
  }
  try{
-  if(!sourceDirty||force){
-   sourceView.value=regionPlayCommand(regionSettings());sourceDirty=false;
-   sourceState.textContent='Generated from the controls. Tap the code to edit; Play runs the displayed command.';
+  if(force||!sourceDirty){
+   sourceView.value=regionPlayCommand(regionSettings());sourceDirty=false;pendingControl=false;
+   applyControl.hidden=true;keepCode.hidden=true;
+   syncMode('matched','CONTROLS MATCH CODE');
+   sourceState.textContent='Controls and executable SuperCollider command are synchronized.';
+  }else if(pendingControl){
+   syncMode('pending','CODE OVERRIDE · CONTROL CHANGE PENDING');
+   applyControl.hidden=false;keepCode.hidden=false;
+   sourceState.textContent='The control was moved, but your edited code is preserved. Apply the control change to regenerate code, or keep your edited code.';
+  }else{
+   syncMode('modified','CODE OVERRIDE · CONTROLS NOT SYNCHRONIZED');
+   sourceState.textContent='Your edited SuperCollider command will run on Play. The dimmed controls show previous settings.';
   }
   sourceView.readOnly=false;copySource.disabled=false;resetSource.disabled=false;
  }catch(error){sourceState.textContent='Playback code unavailable: '+error.message;sourceView.readOnly=true;copySource.disabled=true}
 }
 sourceView.addEventListener('input',()=>{
  if(sourceView.readOnly)return;
- sourceDirty=true;sourceState.textContent='Custom SuperCollider command. Play will run these edits. Changing a control regenerates the command.';
+ sourceDirty=true;pendingControl=false;applyControl.hidden=true;keepCode.hidden=true;updateSourceBay();
 });
-resetSource.addEventListener('click',()=>updateSourceBay(true));
+resetSource.addEventListener('click',()=>{if(sourceDirty&&!confirm('Replace your edited SuperCollider code with the current graphical control settings?'))return;updateSourceBay(true)});
+applyControl.addEventListener('click',()=>updateSourceBay(true));
+keepCode.addEventListener('click',()=>{pendingControl=false;applyControl.hidden=true;keepCode.hidden=true;updateSourceBay()});
 copySource?.addEventListener('click',async()=>{
  if(copySource.disabled)return;
  try{await navigator.clipboard.writeText(sourceView.value);copySource.textContent='Copied';setTimeout(()=>copySource.textContent='Copy',1300)}
@@ -147,7 +165,8 @@ function updateRegionControls(changed){
  const seconds=current?current.frames/current.sampleRate:0;
  regionSummary.textContent='Region: '+start+'% to '+finish+'%'+(seconds?' ('+(seconds*start/100).toFixed(2)+'–'+(seconds*finish/100).toFixed(2)+' s)':'')+' · '+Number(regionRate.value).toFixed(2)+'× · Volume '+Math.round(Number(regionAmp.value)*100)+'% · '+(regionLoop.checked?'Loop':'One shot');
  renderWaveform();
- updateSourceBay();
+ if(changed&&sourceDirty)pendingControl=true;
+ updateSourceBay(Boolean(changed)&&!sourceDirty);
 }
 for(const [input,dimension] of [[regionStart,'start'],[regionFinish,'finish'],[regionRate,'rate'],[regionAmp,'amp'],[regionLoop,'loop']]){
  input.addEventListener('input',()=>updateRegionControls(dimension));
