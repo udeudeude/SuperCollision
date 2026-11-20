@@ -1,6 +1,6 @@
 /* Browser smoke against the ACTUAL compiled SuperCollider WebAssembly modules.
  * Read-only compiled runtime comes from pages-build; Sounds source is the PR head.
- * This tests interpreter boot, synth server, buffer readback, and PlayBuf requests.
+ * This tests interpreter boot, server buffer readback, region-controlled PlayBuf and BufRd/Phasor requests.
  * It is not a physical speaker or iPhone audio-output test. */
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
@@ -65,12 +65,18 @@ try{
   },null,{timeout:90000});
  assert.match(await page.locator('#lab-status').textContent(),/^Verified by native SuperCollider sample readback:/);
  assert.equal(await page.locator('#lab-play').isEnabled(),true);
+ await page.locator('#lab-start').evaluate(input=>{input.value='20';input.dispatchEvent(new Event('input',{bubbles:true}))});
+ await page.locator('#lab-finish').evaluate(input=>{input.value='80';input.dispatchEvent(new Event('input',{bubbles:true}))});
+ await page.locator('#lab-rate').evaluate(input=>{input.value='0.75';input.dispatchEvent(new Event('input',{bubbles:true}))});
  await page.locator('#lab-play').click();
- await page.getByText('Playing through native SuperCollider',{exact:false}).waitFor();
+ await page.getByText('Playing through native SuperCollider one shot',{exact:false}).waitFor();
+ await page.locator('#lab-loop').check();
+ await page.locator('#lab-play').click();
+ await page.getByText('Playing through native SuperCollider loop',{exact:false}).waitFor();
  await page.locator('#lab-stop').click();
  await page.getByText('Stopped Sounds laboratory playback.',{exact:false}).waitFor();
  assert.equal(errors.length,0,'No page errors: '+errors.join('; '));
- console.log('Native engine smoke passed: real sclang/scsynth boot, sample readback, PlayBuf audition request and Stop.');
+ console.log('Native engine smoke passed: real sclang/scsynth boot, sample readback, native PlayBuf region and BufRd loop requests and Stop.');
 } catch(error){
  console.error('Native runtime smoke failed:',error.message);
  console.error('Status:',await page.locator('#lab-status').textContent().catch(()=>'<unavailable>'));

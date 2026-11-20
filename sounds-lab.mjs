@@ -2,28 +2,17 @@
  * This page boots its own sclang/scsynth; main editor remains untouched. */
 import {allSounds} from './sounds-store.mjs';
 import {NativeBufferTransport} from './sounds-buffer.mjs';
+import {REGION_DEFINITIONS,regionPlayCommand,stopRegionCommand} from './sounds-sampler.mjs';
 const $=id=>document.getElementById(id);
 const status=$('lab-status'),log=$('lab-log'),sound=$('lab-sound'),engine=$('lab-engine');
 const load=$('lab-load'),play=$('lab-play'),stop=$('lab-stop'),cancel=$('lab-cancel'),progress=$('lab-progress');
 const details=$('lab-details');
+const regionStart=$('lab-start'),regionFinish=$('lab-finish'),regionRate=$('lab-rate'),regionAmp=$('lab-amp'),regionLoop=$('lab-loop'),regionSummary=$('lab-region-summary');
 const BUFFER=700;
 const READY='__SC_SOUNDS_LAB_READY__',FAILED='__SC_SOUNDS_LAB_FAILED__',DEFS='__SC_SOUNDS_LAB_DEFS__',RATE='__SC_SOUNDS_LAB_RATE__:';
-const DEFINITION_SOURCE=String.raw`(
-Routine({
-  SynthDef(\scSoundsMono, { |bufnum=0, amp=0.16, rate=1|
-    var signal=PlayBuf.ar(1,bufnum,BufRateScale.kr(bufnum)*rate,doneAction:2);
-    Out.ar(0,Pan2.ar(signal*amp));
-  }).add;
-  SynthDef(\scSoundsStereo, { |bufnum=0, amp=0.16, rate=1|
-    var signal=PlayBuf.ar(2,bufnum,BufRateScale.kr(bufnum)*rate,doneAction:2);
-    Out.ar(0,signal*amp);
-  }).add;
-  s.sync;
-  "__SC_SOUNDS_LAB_DEFS__".postln;
-}).play(SystemClock);
-)`;
+const DEFINITION_SOURCE=REGION_DEFINITIONS;
 let lang=null,synth=null,transport=null,languageReady=false,serverReady=false,definitionsReady=false;
-let bootRequested=false,booting=false,bootTimeout=null,current=null,controller=null,entries=[],allocated=false;
+let bootRequested=false,booting=false,bootTimeout=null,current=null,currentItemId=null,controller=null,entries=[],allocated=false;
 let synthBootPending=false,synthBootCompleted=false,serverSampleRate=null,nativeAudioContext=null;
 function announce(t){status.textContent=t}
 function print(t){log.textContent=(log.textContent+String(t)+'\n').slice(-10000);log.scrollTop=log.scrollHeight}
@@ -56,16 +45,32 @@ function outputSampleRate(){
  return Math.round(sampleRate);
 }
 function refreshControls(){
+ sound.disabled=!!controller;
  load.disabled=!serverReady||!definitionsReady||!sound.value||!!controller;
  play.disabled=!current||!definitionsReady||!!controller;
  stop.disabled=!serverReady;
  cancel.disabled=!controller;
 }
+function updateRegionControls(changed){
+ let start=Number(regionStart.value),finish=Number(regionFinish.value);
+ if(changed==='start'&&start>=finish){finish=Math.min(100,start+1);regionFinish.value=finish}
+ if(changed==='finish'&&finish<=start){start=Math.max(0,finish-1);regionStart.value=start}
+ const seconds=current?current.frames/current.sampleRate:0;
+ regionSummary.textContent='Region: '+start+'% to '+finish+'%'+(seconds?' ('+(seconds*start/100).toFixed(2)+'–'+(seconds*finish/100).toFixed(2)+' s)':'')+' · '+Number(regionRate.value).toFixed(2)+'× · Volume '+Math.round(Number(regionAmp.value)*100)+'% · '+(regionLoop.checked?'Loop':'One shot');
+}
+for(const [input,dimension] of [[regionStart,'start'],[regionFinish,'finish'],[regionRate,'rate'],[regionAmp,'amp'],[regionLoop,'loop']]){
+ input.addEventListener('input',()=>updateRegionControls(dimension));
+ input.addEventListener('change',()=>updateRegionControls(dimension));
+}
+updateRegionControls();
 async function listSounds(){
  try{
+  const previousId=sound.value;
   entries=(await allSounds()).filter(item=>item.blob instanceof Blob).sort((a,b)=>Number(b.created||0)-Number(a.created||0));
   sound.replaceChildren(new Option('Choose a recorded or imported sound…',''));
   for(const item of entries)sound.add(new Option((item.name||'Untitled')+' · '+((item.blob.size/1024/1024).toFixed(1))+' MB',item.id));
+  if(entries.some(item=>item.id===previousId))sound.value=previousId;
+  if(currentItemId&&!entries.some(item=>item.id===currentItemId)){current=null;currentItemId=null;progress.value=0}
   if(!entries.length)announce('No saved audio yet. Record, import or Discover a sound first.');
  }catch(error){announce('Local sound library unavailable: '+error.message)}
  refreshControls();
@@ -129,6 +134,8 @@ engine.addEventListener('click',async()=>{
  finally{booting=false;engine.disabled=false;refreshControls()}
 });
 sound.addEventListener('change',()=>{
+ if(current&&lang){try{lang.runCode(stopRegionCommand)}catch{}}
+ current=null;currentItemId=null;progress.value=0;regionStart.value=0;regionFinish.value=100;updateRegionControls();
  const item=entries.find(item=>item.id===sound.value);
  details.textContent=item?('Source: '+item.source+' · '+(item.origin?.creator||'local recording')+' · '+(item.origin?.license||'personal or unknown license')):'';
  refreshControls();
@@ -136,7 +143,7 @@ sound.addEventListener('change',()=>{
 load.addEventListener('click',async()=>{
  const item=entries.find(entry=>entry.id===sound.value);
  if(!item||!serverReady||!definitionsReady||controller)return;
- controller=new AbortController();current=null;progress.value=0;refreshControls();
+ controller=new AbortController();current=null;currentItemId=null;progress.value=0;refreshControls();
  try{
   if(item.blob.size>50*1024*1024)throw Error('Choose an audio file under 50 MB for this laboratory.');
   const context=outputContext(),sampleRate=outputSampleRate();
@@ -161,9 +168,9 @@ load.addEventListener('click',async()=>{
     signal:controller.signal,
     onProgress:ratio=>{progress.value=ratio;announce('Transferring into native SuperCollider buffer: '+Math.round(100*ratio)+'%')}
   });
-  allocated=true;
+  allocated=true;currentItemId=item.id;updateRegionControls();
   announce('Verified by native SuperCollider sample readback: '+current.frames+' frames, '+current.channels+' channel(s), '+current.sampleRate+' Hz. Ready for PlayBuf.');
- }catch(error){current=null;announce('Sample transfer failed: '+error.message)}
+ }catch(error){current=null;currentItemId=null;announce('Sample transfer failed: '+error.message)}
  finally{controller=null;refreshControls()}
 });
 cancel.addEventListener('click',()=>{controller?.abort();announce('Cancelling sample transfer and releasing the incomplete buffer…')});
@@ -171,15 +178,16 @@ play.addEventListener('click',async()=>{
  if(!current||!definitionsReady)return;
  try{
   const context=outputContext();if(typeof context?.resume==='function')await context.resume();
-  const def=current.channels===1?'scSoundsMono':'scSoundsStereo';
-  lang.runCode('~scSoundsLabPlayer.tryPerform(\\free); ~scSoundsLabPlayer = Synth(\\'+def+', [\\bufnum, '+BUFFER+', \\amp, 0.16]);');
-  announce('Playing through native SuperCollider '+def+'.');
+  const params={bufferId:BUFFER,channels:current.channels,start:Number(regionStart.value)/100,finish:Number(regionFinish.value)/100,rate:Number(regionRate.value),amp:Number(regionAmp.value),loop:regionLoop.checked};
+  const code=regionPlayCommand(params);
+  lang.runCode(code);
+  announce('Playing through native SuperCollider '+(params.loop?'loop':'one shot')+' · '+Math.round(params.start*100)+'–'+Math.round(params.finish*100)+'% · '+params.rate+'×.');
  }catch(error){announce('Playback failed: '+error.message)}
 });
 stop.addEventListener('click',()=>{
- try{lang.runCode('~scSoundsLabPlayer.tryPerform(\\free); ~scSoundsLabPlayer = nil;');announce('Stopped Sounds laboratory playback.')}
+ try{lang.runCode(stopRegionCommand);announce('Stopped Sounds laboratory playback.')}
  catch(error){announce('Could not stop native SuperCollider playback: '+error.message)}
 });
 document.addEventListener('sounds-library-changed',listSounds);
-window.addEventListener('pagehide',()=>{controller?.abort();if(lang&&serverReady){try{lang.runCode('~scSoundsLabPlayer.tryPerform(\\free);')}catch{}}if(synth&&allocated){try{transport.release(BUFFER)}catch{}}});
+window.addEventListener('pagehide',()=>{controller?.abort();if(lang&&serverReady){try{lang.runCode(stopRegionCommand)}catch{}}if(synth&&allocated){try{transport.release(BUFFER)}catch{}}});
 listSounds();
