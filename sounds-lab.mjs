@@ -33,7 +33,7 @@ function updateDemoCode(force=false){
   key.disabled=demoDirty;
   key.setAttribute('aria-pressed',String(!demoDirty&&Number(key.dataset.note)===Number(demoPitch.value)));
  }
- noteHint.textContent=demoDirty?'Edited code: reset to use keys':definitionsReady?'Tap a key to play':'Choose a note, then start SuperCollider';
+ noteHint.textContent=demoDirty?'Edited code: reset to use keys':audioPhase.dataset.phase==='ready'||audioPhase.dataset.phase==='played'?'Tap a key to play':'Choose a note, then start SuperCollider';
  demoSyncLabel.textContent=demoDirty?'CODE EDITED · CONTROLS OFF':'CONTROLS MATCH CODE';
  demoReset.textContent=demoDirty?'Restore code from controls':'Reset code from controls';
 }
@@ -411,7 +411,7 @@ engine.addEventListener('click',async()=>{
    const sampleRateMatch=text.match(/__SC_SOUNDS_LAB_RATE__:(\d+(?:\.\d+)?)/);
    if(sampleRateMatch){serverSampleRate=Number(sampleRateMatch[1]);print('Native SuperCollider server sample rate: '+serverSampleRate+' Hz.');}
    if(text.includes(DEFS)){definitionsReady=true;engine.textContent='Play tone';setAudioPhase('ready','READY · TAP A KEY OR PLAY TONE');announce('SuperCollider ready. Tap any touch key or Play tone.');refreshControls();maybeLoadLinkedPreset()}
-   if(text.includes(DEMO_MARKER)&&!controller)announce(current?'SuperCollider executed the tone. Your recording is still loaded below.':'SuperCollider executed the tone code. If silent, check your phone volume and audio output.');
+   if(text.includes(DEMO_MARKER)&&!controller){setAudioPhase('played','SUPERCOLLIDER EXECUTED '+lastPlayedLabel.toUpperCase());announce('Native SuperCollider executed '+lastPlayedLabel+'. If silent, check phone volume and audio route.');}
    if(/ERROR:\s|FAILURE IN SERVER/.test(text))announce('SuperCollider reported an error. Open Technical details below for the message.');
    if(text.includes(FAILED)){clearTimeout(bootTimeout);bootRequested=false;engine.textContent='Retry server startup';setAudioPhase('error','ENGINE STARTUP FAILED');announce('SuperCollider server failed to start. Tap Retry to try again.');refreshControls()}
    const cleaned=text.replaceAll(READY,'').replaceAll(FAILED,'').replaceAll(DEFS,'').trim();
