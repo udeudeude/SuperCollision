@@ -29,7 +29,7 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 </style>
 </head>
 <body>
-<header><a href="./sounds.html">← Sounds</a><h1>Native Sample Lab</h1><small>EXPERIMENTAL · 09</small></header>
+<header><a href="./sounds.html">← Sounds</a><h1>Native Sample Lab</h1><small>EXPERIMENTAL · 10</small></header>
 <main>
 <p class="muted">Experimental isolated SuperCollider playback test. Uses the same native language and synthesis engine as SuperCollision, without changing the main Code page. This is not a browser sampler or a second sound engine. Uncompressed 8/16/24/32-bit PCM, 32/64-bit floating-point and standard extensible WAVE files are read directly as sample values for SuperCollider, without resampling or editing; other formats still use compatible browser decoding for native transfer.</p>
 <section><h2>1 / Initialize SuperCollider</h2>
@@ -39,7 +39,7 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 <section><h2>2 / Load an existing recording</h2>
 <label for="lab-sound">Sound library</label><select id="lab-sound"><option value="">Loading local sounds…</option></select>
 <p id="lab-details" class="muted"></p>
-<p class="muted">Supported uncompressed WAVE values are read directly without browser decoding or resampling. Other formats may be decoded and resampled by the browser solely for ingestion. Audio is transferred to SuperCollider with /b_alloc and /b_setn, then checked against the server's /b_getn sample readback. Transfers can be cancelled. The diagnostics report how many samples the native server has acknowledged and distinguish allocation, transfer and readback stalls. Playback uses native SuperCollider PlayBuf. The library's original audio file is never replaced.</p>
+<p class="muted">Supported uncompressed WAVE values are read directly without browser decoding or resampling. Recordings with a different sample rate from your device retain their original timing and pitch through native SuperCollider playback-rate compensation. Other formats may be decoded and resampled by the browser solely for ingestion. Audio is transferred to SuperCollider with /b_alloc and /b_setn, then checked against the server's /b_getn sample readback. Transfers can be cancelled. The diagnostics report how many samples the native server has acknowledged and distinguish allocation, transfer and readback stalls. Playback uses native SuperCollider PlayBuf. The library's original audio file is never replaced.</p>
 <div class="actions"><button id="lab-load" class="primary" type="button" disabled>Transfer to SuperCollider</button><button id="lab-cancel" type="button" disabled>Cancel transfer</button></div>
 <progress id="lab-progress" max="1" value="0" aria-label="Native buffer transfer progress"></progress>
 </section>
@@ -64,6 +64,6 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 </section>
 <section><h2>Status / diagnostics</h2><p id="lab-status" role="status" aria-live="polite">Start the native engine to begin.</p><pre id="lab-log" aria-label="SuperCollider diagnostic output"></pre></section>
 </main>
-<script type="module" src="./sounds-lab.mjs?v=9"></script>
+<script type="module" src="./sounds-lab.mjs?v=10"></script>
 </body>
 </html>
