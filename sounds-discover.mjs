@@ -2,7 +2,7 @@
  * No service-worker or main-page changes. Audio is stored unchanged. */
 import {readableLicense,meetsLicenseFilters,openverseLicenseFilter} from './sounds-licenses.mjs';
 import {saveSound} from './sounds-store.mjs';
-import {freesoundLicenseFilter,openverseSourceFilter,durationSeconds,importedAudioMime,rejectMislabelledAudio,downloadProgressText} from './sounds-discover-core.mjs';
+import {freesoundLicenseFilter,openverseSourceFilter,durationSeconds,importedAudioMime,rejectMislabelledAudio,downloadProgressText,audioVariantFromResult} from './sounds-discover-core.mjs';
 const $=id=>document.getElementById(id);
 const form=$('discover-form'),results=$('discover-results'),status=$('discover-status');
 const source=$('discover-source'),query=$('discover-query'),licenseControls={
@@ -54,15 +54,15 @@ function providerMetadata(sound,provider){
  if(provider==='freesound'){
   const preview=httpsUrl(sound.previews?.['preview-hq-mp3']||sound.previews?.['preview-lq-mp3']);
   return {id:String(sound.id||''),name:sound.name||'Untitled Freesound audio',
-   creator:sound.username||'Creator not specified',license:sound.license||'',licenseUrl:null,
+   creator:sound.username||'Creator not specified',creatorUrl:httpsUrl('https://freesound.org/people/'+encodeURIComponent(sound.username||'')+'/'),license:sound.license||'',licenseUrl:null,
    pageUrl:httpsUrl('https://freesound.org/people/'+encodeURIComponent(sound.username||'')+'/sounds/'+sound.id+'/'),
-   audioUrl:preview,variant:'compressed preview',provider:'Freesound',source:'freesound',
+   audioUrl:preview,variant:audioVariantFromResult(sound,provider),provider:'Freesound',source:'freesound',
    duration:durationSeconds(sound.duration,'freesound'),filesize:null,attribution:null,licenseVersion:null};
  }
  return {id:String(sound.id||''),name:sound.title||'Untitled Openverse audio',
-  creator:sound.creator||'Creator not specified',license:sound.license||'',licenseVersion:sound.license_version||null,licenseUrl:httpsUrl(sound.license_url),
+  creator:sound.creator||'Creator not specified',creatorUrl:httpsUrl(sound.creator_url),license:sound.license||'',licenseVersion:sound.license_version||null,licenseUrl:httpsUrl(sound.license_url),
   pageUrl:httpsUrl(sound.foreign_landing_url)||httpsUrl(sound.url),
-  audioUrl:httpsUrl(sound.url),variant:'source audio',provider:sound.source||'Openverse',
+  audioUrl:httpsUrl(sound.url),variant:audioVariantFromResult(sound,provider),provider:sound.provider||sound.source||'Openverse',
   source:'openverse',duration:durationSeconds(sound.duration,'openverse'),filesize:Number(sound.filesize)||null,
   attribution:typeof sound.attribution==='string'?sound.attribution:null};
 }
@@ -178,7 +178,7 @@ async function addToLibrary(item,button){
   job.phase='saving';cancelDownload.disabled=true;
   await saveSound({id:crypto.randomUUID(),name:item.name.slice(0,120),source:item.source,
    created:Date.now(),mime:blob.type,blob,favorite:false,
-   origin:{provider:item.provider,id:item.id,url:item.pageUrl,creator:item.creator,
+   origin:{provider:item.provider,id:item.id,url:item.pageUrl,creator:item.creator,creatorUrl:item.creatorUrl,
     license:item.license||'Unspecified',licenseVersion:item.licenseVersion||null,licenseUrl:item.licenseUrl,
     attribution:item.attribution||null,retrievedAt:new Date().toISOString(),variant:item.variant}});
   say('Saved '+item.name+' locally. Original license and creator information retained.');
@@ -212,7 +212,7 @@ function renderResult(item){
   preview.dataset.previewAction='true';
   actions.append(preview);
   card.append(audio);
-  const save=action(item.variant==='source audio'?'Save original audio':'Save compressed preview',()=>addToLibrary(item,save));
+  const save=action(item.variant==='compressed preview'?'Save compressed preview':'Save available audio',()=>addToLibrary(item,save));
   actions.append(save);
  }
  if(item.pageUrl){const a=element('a','View source');a.href=item.pageUrl;a.target='_blank';a.rel='noopener noreferrer';actions.append(a)}

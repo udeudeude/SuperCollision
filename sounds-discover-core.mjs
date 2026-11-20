@@ -1,6 +1,11 @@
 /* Pure provider-normalization and download metadata helpers for Sounds / Discover.
  * These functions never fetch, process audio or access browser state. */
 export const COMMONS_SOURCE='wikimedia_audio';
+/* An indexed provider URL is not proof of original mastering quality. */
+export function audioVariantFromResult(sound,provider){
+ const sources=[provider,sound?.source,sound?.provider].map(x=>String(x||'').toLowerCase());
+ return sources.includes('freesound')?'compressed preview':'provider-supplied audio (original quality unverified)';
+}
 export function freesoundLicenseFilter(filters={}){
  if(filters.cc0Only||filters.noAttribution)return 'license:"Creative Commons 0"';
  if(filters.commercial)return 'license:("Attribution" OR "Creative Commons 0")';
