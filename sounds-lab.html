@@ -29,9 +29,9 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 </style>
 </head>
 <body>
-<header><a href="./sounds.html">← Sounds</a><h1>Native Sample Lab</h1><small>EXPERIMENTAL · 06</small></header>
+<header><a href="./sounds.html">← Sounds</a><h1>Native Sample Lab</h1><small>EXPERIMENTAL · 07</small></header>
 <main>
-<p class="muted">Experimental isolated SuperCollider playback test. Uses the same native language and synthesis engine as SuperCollision, without changing the main Code page. This is not a browser sampler or a second sound engine.</p>
+<p class="muted">Experimental isolated SuperCollider playback test. Uses the same native language and synthesis engine as SuperCollision, without changing the main Code page. This is not a browser sampler or a second sound engine. Uncompressed PCM WAVE files are read directly as sample values for SuperCollider, without resampling or editing; other formats still use compatible browser decoding for native transfer.</p>
 <section><h2>1 / Initialize SuperCollider</h2>
 <p class="muted">Requires cross-origin isolation and the existing compiled SuperCollider runtime. Starting may use substantial memory. An audio unlock button remains available after startup. Opening a saved preset automatically transfers its original once native audio is unlocked, but never starts playing without a separate Play tap.</p>
 <div class="actions"><button id="lab-engine" type="button" class="primary">Start native engine</button></div>
@@ -64,6 +64,6 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 </section>
 <section><h2>Status / diagnostics</h2><p id="lab-status" role="status" aria-live="polite">Start the native engine to begin.</p><pre id="lab-log" aria-label="SuperCollider diagnostic output"></pre></section>
 </main>
-<script type="module" src="./sounds-lab.mjs?v=6"></script>
+<script type="module" src="./sounds-lab.mjs?v=7"></script>
 </body>
 </html>

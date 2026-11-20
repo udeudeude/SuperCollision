@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import {readPcmWaveForNativeBuffer} from '../sounds-pcm-ingest.mjs';
+function wave({channels=2,frames=3,format=1,bits=16,rate=48000}={}){
+ const width=bits/8,bytes=new ArrayBuffer(44+channels*frames*width),v=new DataView(bytes);
+ const label=(offset,text)=>{for(let i=0;i<text.length;i++)v.setUint8(offset+i,text.charCodeAt(i))};
+ label(0,'RIFF');v.setUint32(4,bytes.byteLength-8,true);label(8,'WAVE');
+ label(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,format,true);
+ v.setUint16(22,channels,true);v.setUint32(24,rate,true);
+ v.setUint32(28,rate*channels*width,true);v.setUint16(32,channels*width,true);
+ v.setUint16(34,bits,true);label(36,'data');v.setUint32(40,frames*channels*width,true);
+ return {bytes,view:v};
+}
+const {bytes,view}=wave();
+for(let i=0;i<6;i++)view.setInt16(44+i*2,[32767,-32768,0,16384,-16384,8192][i],true);
+const sound=readPcmWaveForNativeBuffer(bytes);
+assert.equal(sound.length,3);
+assert.equal(sound.sampleRate,48000);
+assert.equal(sound.numberOfChannels,2);
+assert.deepEqual([...sound.getChannelData(0)],[32767/32768,0,-0.5]);
+assert.deepEqual([...sound.getChannelData(1)],[-1,0.5,0.25]);
+assert.throws(()=>sound.getChannelData(2),RangeError);
+assert.equal(view.getInt16(44,true),32767,'ingest must not modify original audio bytes');
+const floating=wave({channels:1,frames:2,format:3,bits:32});
+floating.view.setFloat32(44,-0.75,true);floating.view.setFloat32(48,0.125,true);
+assert.deepEqual([...readPcmWaveForNativeBuffer(floating.bytes).getChannelData(0)],[-0.75,0.125]);
+const unsupported=wave();
+new DataView(unsupported.bytes).setUint16(20,6,true);
+assert.equal(readPcmWaveForNativeBuffer(unsupported.bytes),null,'unsupported compressed WAV must fall back to native browser decode');
+assert.equal(readPcmWaveForNativeBuffer(new ArrayBuffer(4)),null,'non-WAVE content falls back unchanged');
+assert.throws(()=>readPcmWaveForNativeBuffer(bytes.slice(0,bytes.byteLength-1)),/truncated/);
+const malformed=wave();malformed.view.setUint16(32,1,true);
+assert.throws(()=>readPcmWaveForNativeBuffer(malformed.bytes),/alignment/);
+const many=wave({channels:1,frames:1});many.view.setUint32(40,1200001*2,true);
+assert.throws(()=>readPcmWaveForNativeBuffer(many.bytes),/truncated/);
+console.log('Sounds PCM WAV read-only ingestion, original bytes, invalid files and format fallback passed');
