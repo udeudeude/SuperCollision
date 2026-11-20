@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {REGION_DEFINITIONS,validateRegion,regionPlayCommand,stopRegionCommand,sampleInstrumentSource} from '../sounds-sampler.mjs';
+import {REGION_DEFINITIONS,validateRegion,regionPlayCommand,regionLiveSource,stopRegionCommand,sampleInstrumentSource} from '../sounds-sampler.mjs';
 const normal={bufferId:700,channels:1,start:0,finish:1,rate:1,amp:0.16,loop:false};
 assert.equal(validateRegion(normal).rate,1);
 assert.equal(validateRegion(normal).sourceSampleRate,0,'desktop Buffer.read must retain its own file sample rate');
@@ -35,6 +35,17 @@ assert.match(REGION_DEFINITIONS,/sourceFramesPerSecond \* 0\.012/);
 assert.match(REGION_DEFINITIONS,/sourceRate=0/,'desktop script can use native Buffer.read sample-rate metadata');
 assert.match(REGION_DEFINITIONS,/s\.sync/);
 assert.match(stopRegionCommand,/\\gate, 0/);
+const nativeEditor=regionLiveSource({...normal,start:0.2,finish:0.8,rate:0.75,loop:true,sourceSampleRate:44100});
+assert.match(nativeEditor,/^\\(\\nRoutine\\(\\{/,'live editor source must execute as a native SuperCollider Routine');
+assert.match(nativeEditor,/SynthDef\\(\\\\scSoundsMonoLoop/,'editable source must include the real synthesis graph');
+assert.match(nativeEditor,/BufRd\\.ar/,'loop processing must remain visible');
+assert.match(nativeEditor,/\\\\sourceRate, 44100/,'native source metadata must reach real playback');
+assert.ok(nativeEditor.indexOf('SynthDef(')<nativeEditor.indexOf('s.sync;') &&
+ nativeEditor.indexOf('s.sync;')<nativeEditor.indexOf('~scSoundsLabPlayer = Synth('),
+ 'native definition must load before playback starts');
+assert.doesNotMatch(nativeEditor,/Dialog\\.openPanel/,'live source must use an already transferred native buffer');
+assert.throws(()=>regionLiveSource({...normal,rate:10}),/Speed/);
+
 
 const source=sampleInstrumentSource({...normal,start:0.25,finish:0.7,rate:1.5,loop:true},{
  name:'Untrusted\nSynthDef(\\unexpected, {})',
