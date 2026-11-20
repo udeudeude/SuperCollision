@@ -214,11 +214,13 @@ try{
  const demoBeforeEdit=await page.locator('#lab-demo-code').inputValue();
  await page.locator('#lab-demo-code').fill(demoBeforeEdit.replace('SinOsc.ar(freq)','LFTri.ar(freq)'));
  assert.equal(await page.locator('#lab-demo-sync-label').textContent(),'CODE EDITED · CONTROLS OFF');
- await page.locator('#lab-demo-pitch').fill('880');
- assert.match(await page.locator('#lab-demo-code').inputValue(),/LFTri\.ar\(freq\)/,'moving controls must preserve manual code');
+ assert.equal(await page.locator('#lab-demo-pitch').isDisabled(),true,'stale sliders must not imply control over edited sound');
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/LFTri\.ar\(freq\)/,'manual source edits must remain untouched');
  assert.equal(await page.locator('#lab-demo-code-bay').getAttribute('data-sync'),'modified');
  page.once('dialog',dialog=>dialog.accept());
  await page.locator('#lab-demo-reset').click();
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/\\freq, 660/);
+ await page.locator('#lab-demo-pitch').fill('880');
  assert.match(await page.locator('#lab-demo-code').inputValue(),/\\freq, 880/);
  assert.equal(await page.locator('#lab-demo-sync-label').textContent(),'CONTROLS MATCH CODE');
   assert.equal(await page.locator('#lab-source-bay').count(),1,'the SuperCollider source bay must be permanently present');
