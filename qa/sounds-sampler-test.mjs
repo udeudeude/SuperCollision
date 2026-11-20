@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {REGION_DEFINITIONS,validateRegion,regionPlayCommand,stopRegionCommand} from '../sounds-sampler.mjs';
 const normal={bufferId:700,channels:1,start:0,finish:1,rate:1,amp:0.16,loop:false};
 assert.equal(validateRegion(normal).rate,1);
+assert.equal(validateRegion({...normal,start:0.56,finish:0.57}).finish,0.57,'one-percent regions are valid despite floating-point rounding');
 assert.match(regionPlayCommand(normal),/Synth\(\\scSoundsMonoOnce/);
 assert.match(regionPlayCommand({...normal,channels:2,loop:true,rate:0.5,start:0.2,finish:0.8}),/Synth\(\\scSoundsStereoLoop/);
 assert.match(regionPlayCommand({...normal,channels:2,loop:false}),/Synth\(\\scSoundsStereoOnce/);
