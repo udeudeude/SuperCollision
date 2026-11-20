@@ -11,7 +11,7 @@ exportButton.addEventListener('click',async()=>{
   const items=await allSounds();
   if(!items.length){say('The library is empty. There is nothing to back up.');return}
   say('Preparing '+items.length+' sounds for backup…');
-  const blob=createSoundsBackup(items),url=URL.createObjectURL(blob);
+  const blob=await createSoundsBackup(items),url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;
   a.download='SuperCollision-Sounds-'+new Date().toISOString().slice(0,10)+'.scsounds';
   document.body.append(a);a.click();a.remove();
@@ -24,7 +24,7 @@ input.addEventListener('change',async()=>{
  const file=input.files?.[0];if(!file)return;
  input.disabled=true;
  try{
-  say('Checking backup format and file lengths…');
+  say('Checking backup format and audio integrity…');
   const items=await readSoundsBackup(file);
   const existing=new Set((await allSounds()).map(item=>item.id));
   const toRestore=items.filter(item=>!existing.has(item.id));
