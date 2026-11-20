@@ -41,6 +41,7 @@ jobs:
           node source/qa/sounds-discover-test.mjs
           node source/qa/sounds-buffer-test.mjs
           node source/qa/sounds-sampler-test.mjs
+          node source/qa/sounds-waveform-test.mjs
           node source/qa/sounds-backup-test.mjs
           node --check source/qa/sounds-runtime-smoke.mjs
       - name: Install browser test dependencies
