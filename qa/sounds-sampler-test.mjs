@@ -17,5 +17,5 @@ assert.equal((REGION_DEFINITIONS.match(/BufRd\.ar/g)||[]).length,2);
 assert.equal((REGION_DEFINITIONS.match(/Phasor\.ar/g)||[]).length,2);
 assert.match(REGION_DEFINITIONS,/BufRateScale\.kr/);
 assert.match(REGION_DEFINITIONS,/s\.sync/);
-assert.match(stopRegionCommand,/\\free/);
+assert.match(stopRegionCommand,/\\gate, 0/);
 console.log('Sounds native region definitions, one-shot, loop, and validated controls passed.');
