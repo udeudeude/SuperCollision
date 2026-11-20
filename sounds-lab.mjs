@@ -54,7 +54,7 @@ function installDefinitions(){
  catch(error){announce('Could not create SuperCollider instruments: '+error.message)}
 }
 engine.addEventListener('click',async()=>{
- if(synth&&serverReady){try{await synth.getAudioContext()?.resume();announce('SuperCollider audio unlocked.')}catch(error){announce(error.message)}return}
+ if(synth&&serverReady){try{const context=synth.getAudioContext?.();if(typeof context?.resume==='function')await context.resume();else print('Audio context resume unavailable: '+(context?.constructor?.name||typeof context));announce('Native engine running. Audio output requires an unlocked Web Audio context.')}catch(error){announce(error.message)}return}
  if(lang){if(languageReady&&!bootRequested){requestServer();return}announce('SuperCollider initialization is already in progress.');return}
  if(booting){announce('SuperCollider initialization is already in progress.');return}
  if(!crossOriginIsolated){announce('The standalone SuperCollider runtime requires a cross-origin-isolated secure page. Check the hosting headers.');return}
@@ -110,7 +110,9 @@ load.addEventListener('click',async()=>{
   if(item.blob.size>50*1024*1024)throw Error('Choose an audio file under 50 MB for this laboratory.');
   const context=synth.getAudioContext();
   if(!context)throw Error('The SuperCollider server audio context is unavailable.');
-  await context.resume();
+  print('Native audio context: '+(context?.constructor?.name||typeof context)+', resume='+typeof context.resume+', decode='+typeof context.decodeAudioData+', rate='+context.sampleRate);
+  if(typeof context.resume==='function')await context.resume();
+  if(typeof context.decodeAudioData!=='function')throw Error('Native audio context has no decodeAudioData method; see diagnostic log.');
   announce('Decoding original audio for transfer, without applying sound processing…');
   const decoded=await context.decodeAudioData(await item.blob.arrayBuffer());
   if(controller.signal.aborted)throw Error('Transfer cancelled');
@@ -135,7 +137,7 @@ cancel.addEventListener('click',()=>{controller?.abort();announce('Cancelling sa
 play.addEventListener('click',async()=>{
  if(!current||!definitionsReady)return;
  try{
-  await synth.getAudioContext()?.resume();
+  const context=synth.getAudioContext?.();if(typeof context?.resume==='function')await context.resume();
   const def=current.channels===1?'scSoundsMono':'scSoundsStereo';
   lang.runCode('~scSoundsLabPlayer.tryPerform(\\free); ~scSoundsLabPlayer = Synth(\\'+def+', [\\bufnum, '+BUFFER+', \\amp, 0.16]);');
   announce('Playing through native SuperCollider '+def+'.');
