@@ -59,7 +59,12 @@ try{
  await page.locator('#lab-engine').click();
  await page.getByText('SuperCollider ready.',{exact:false}).waitFor({timeout:120000});
  await page.locator('#lab-engine').click();
- await page.getByText('SuperCollider executed the tone code.',{exact:false}).waitFor({timeout:30000});
+ await page.getByText('Native SuperCollider executed tone.',{exact:false}).waitFor({timeout:30000});
+ // A mobile-sized touch key must genuinely execute the generated source in the compiled engine.
+ await page.getByRole('button',{name:'C4, 262 hertz'}).click();
+ await page.getByText('Native SuperCollider executed C4.',{exact:false}).waitFor({timeout:30000});
+ assert.equal(await page.locator('#lab-demo-pitch').inputValue(),'262');
+ assert.match(await page.locator('#lab-demo-code').inputValue(),/\\freq, 262/);
  assert.match(await page.locator('#lab-demo-code').inputValue(),/SynthDef\(\\scSoundsDemo/);
  
  await page.locator('#lab-load').click();
