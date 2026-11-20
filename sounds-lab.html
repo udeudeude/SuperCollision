@@ -29,11 +29,11 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 </style>
 </head>
 <body>
-<header><a href="./sounds.html">← Sounds</a><h1>Native Sample Lab</h1><small>EXPERIMENTAL · 05</small></header>
+<header><a href="./sounds.html">← Sounds</a><h1>Native Sample Lab</h1><small>EXPERIMENTAL · 06</small></header>
 <main>
 <p class="muted">Experimental isolated SuperCollider playback test. Uses the same native language and synthesis engine as SuperCollision, without changing the main Code page. This is not a browser sampler or a second sound engine.</p>
 <section><h2>1 / Initialize SuperCollider</h2>
-<p class="muted">Requires cross-origin isolation and the existing compiled SuperCollider runtime. Starting may use substantial memory. An audio unlock button remains available after startup.</p>
+<p class="muted">Requires cross-origin isolation and the existing compiled SuperCollider runtime. Starting may use substantial memory. An audio unlock button remains available after startup. Opening a saved preset automatically transfers its original once native audio is unlocked, but never starts playing without a separate Play tap.</p>
 <div class="actions"><button id="lab-engine" type="button" class="primary">Start native engine</button></div>
 </section>
 <section><h2>2 / Load an existing recording</h2>
@@ -47,8 +47,8 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 <p class="muted">Non-destructive controls for the loaded sample. Playback, region selection, speed and looping are performed by SuperCollider's native PlayBuf, BufRd and Phasor instruments, never a browser audio engine. Loop seams use a short equal-power overlap calculated by SuperCollider. Changing controls takes effect the next time you tap Play.</p>
 <p class="muted">Drag horizontally across the waveform to select a region, or use the accessible start and end sliders below. The waveform is a read-only visualization; audio processing stays in SuperCollider.</p>
 <canvas id="lab-waveform" role="img" aria-label="Read-only waveform with selected region highlighted; use the start and end sliders for precise adjustment"></canvas>
-<label for="lab-start">Start of region</label><input id="lab-start" type="range" min="0" max="99" step="1" value="0">
-<label for="lab-finish">End of region</label><input id="lab-finish" type="range" min="1" max="100" step="1" value="100">
+<label for="lab-start">Start of region</label><input id="lab-start" type="range" min="0" max="99" step="0.1" value="0">
+<label for="lab-finish">End of region</label><input id="lab-finish" type="range" min="1" max="100" step="0.1" value="100">
 <label for="lab-rate">Playback speed</label><input id="lab-rate" type="range" min="0.25" max="2" step="0.05" value="1">
 <label for="lab-amp">Volume</label><input id="lab-amp" type="range" min="0" max="0.5" step="0.01" value="0.16">
 <label class="check" for="lab-loop"><input id="lab-loop" type="checkbox">Loop selected region</label>
@@ -64,6 +64,6 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 </section>
 <section><h2>Status / diagnostics</h2><p id="lab-status" role="status" aria-live="polite">Start the native engine to begin.</p><pre id="lab-log" aria-label="SuperCollider diagnostic output"></pre></section>
 </main>
-<script type="module" src="./sounds-lab.mjs?v=5"></script>
+<script type="module" src="./sounds-lab.mjs?v=6"></script>
 </body>
 </html>
