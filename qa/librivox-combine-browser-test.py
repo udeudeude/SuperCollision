@@ -52,7 +52,6 @@ with sync_playwright() as p:
   page.locator('#find-combined').click()
   page.wait_for_function("document.querySelector('#search-status').textContent.includes('confirmed LibriVox')",timeout=15000)
   assert page.locator('.result-main').count()==1,page.locator('#search-status').inner_text()
-  if width==390: page.screenshot(path='/mnt/data/supercollision-librivox/qa/combined-mobile.png')
   assert page.locator('.result-main').first.inner_text().find('MacDonald Test Book')>=0
   assert '2 matching sections' in page.locator('.result-main').first.inner_text()
   assert page.evaluate("window.calls.some(x=>x.includes('/people/peter/recordings')&&x.includes('offset=100'))"),'must page through reader credits'
