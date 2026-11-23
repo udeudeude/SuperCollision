@@ -50,25 +50,56 @@ function highlightChangedLine(previous,next){
  while(endOld>start&&endNew>start&&previous[endOld-1]===next[endNew-1]){endOld--;endNew--;}
  return escapeText(next.slice(0,start))+'<mark>'+escapeText(next.slice(start,endNew))+'</mark>'+escapeText(next.slice(endNew));
 }
+// Keep the highlighted edit visible in the editor itself. Measure the rendered
+// highlight, not a guessed line number: fonts, zoom and iPhone layout can vary.
+let codeRevealFrame=0;
+function revealChangedCode(){
+ const mark=highlightText.querySelector('mark');
+ if(!mark)return;
+ const editorBounds=demoCode.getBoundingClientRect();
+ const markBounds=mark.getBoundingClientRect();
+ if(!editorBounds.height||!markBounds.height)return;
+ const verticalMargin=Math.min(16,editorBounds.height*0.18);
+ const horizontalMargin=Math.min(16,editorBounds.width*0.07);
+ const visibleTop=editorBounds.top+verticalMargin;
+ const visibleBottom=editorBounds.bottom-verticalMargin;
+ const visibleLeft=editorBounds.left+horizontalMargin;
+ const visibleRight=editorBounds.right-horizontalMargin;
+ let deltaY=0,deltaX=0;
+ if(markBounds.top<visibleTop||markBounds.bottom>visibleBottom){
+  deltaY=(markBounds.top+markBounds.bottom-editorBounds.top-editorBounds.bottom)/2;
+ }
+ if(markBounds.left<visibleLeft||markBounds.right>visibleRight){
+  deltaX=(markBounds.left+markBounds.right-editorBounds.left-editorBounds.right)/2;
+ }
+ if(deltaY||deltaX){
+  demoCode.scrollTop=Math.max(0,Math.min(demoCode.scrollHeight-demoCode.clientHeight,demoCode.scrollTop+deltaY));
+  demoCode.scrollLeft=Math.max(0,Math.min(demoCode.scrollWidth-demoCode.clientWidth,demoCode.scrollLeft+deltaX));
+  syncHighlightScroll();
+ }
+}
 function renderCodeOverlay(previous=demoCode.value,changedLabel=''){
  const lines=demoCode.value.split('\n'),before=previous.split('\n');
- const changed=changedLabel&&previous!==demoCode.value;
- const rows=[];
+ const changed=Boolean(changedLabel&&previous!==demoCode.value);
  highlightText.innerHTML=lines.map((line,i)=>{
   const differs=changed&&line!==before[i];
-  if(differs)rows.push(i);
   return differs?highlightChangedLine(before[i]??'',line):escapeText(line);
  }).join('\n');
  highlightStatus.textContent=changed?'CHANGED · '+changedLabel:'';
  syncHighlightMetrics();
- if(rows.length){
-  const lineHeight=parseFloat(getComputedStyle(demoCode).lineHeight)||18;
-  const at=rows[0]*lineHeight;
-  if(at<demoCode.scrollTop||at>demoCode.scrollTop+demoCode.clientHeight-lineHeight*2)
-   demoCode.scrollTop=Math.max(0,at-demoCode.clientHeight*0.48);
- }
  syncHighlightScroll();
+ // Wait until the textarea has its new scroll dimensions and the rendered
+ // highlight has its final geometry. Coalesce rapid touch-drag updates.
+ if(codeRevealFrame)cancelAnimationFrame(codeRevealFrame);
+ codeRevealFrame=0;
+ if(changed&&highlightText.querySelector('mark')){
+  codeRevealFrame=requestAnimationFrame(()=>{
+   codeRevealFrame=0;
+   revealChangedCode();
+  });
+ }
 }
+
 function readToneSettings(){
  const record={};for(const [key,input]of toneInputs)record[key]=Number(input.value);
  return normalizeToneSettings(record);
