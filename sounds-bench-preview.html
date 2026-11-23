@@ -510,7 +510,7 @@ document.addEventListener('touchmove',event=>{
 #bench-sample-workspace>#bench-sample-stage{flex:1}
 #bench-sample-workspace #lab-recording{flex:0 0 auto}
 #bench-acquire-overlay{
- position:absolute!important;left:0;right:0;bottom:0;z-index:40;
+ position:absolute!important;left:0;right:0;bottom:0;z-index:70;
  margin:0!important;padding:7px!important;min-width:0;min-height:0;
  display:grid;grid-template-rows:auto minmax(0,1fr);gap:7px;
  overflow:hidden;overscroll-behavior:contain;
@@ -708,6 +708,6 @@ document.addEventListener('DOMContentLoaded',()=>{
  const initial=location.hash.slice(1);show(['play','sample','details'].includes(initial)?initial:'play');
 });
 </script><script type="module" src="./sounds-bench-engine.mjs?v=0.3.7"></script>
-<script type="module" src="./sounds-bench-acquire.mjs?v=0.3.6"></script>
+<script type="module" src="./sounds-bench-acquire.mjs?v=0.3.7"></script>
 </body>
 </html>
