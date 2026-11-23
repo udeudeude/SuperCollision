@@ -7,12 +7,14 @@ const moduleSource = await readFile(new URL('../code-selection.mjs', import.meta
 const mainPage = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 assert.match(mainPage, /<script type="module" src="\.\/code-selection\.mjs\?v=1"><\/script>/,
   'Code page must actually load the semantic selection module');
-assert.match(mainPage, /<span id="app-version" aria-label="SuperCollision version 2\.8">v2\.8<\/span>/,
-  'Code version must be visible in the top-right corner');
+assert.match(mainPage, /<small class="app-version" aria-label="Version 2\.8">v2\.8<\/small>/,
+  'Code version must appear beside the SuperCollision title');
 assert.doesNotMatch(mainPage, /BUILD 2026\.11\.19\.6|id=['"]development-version['"]/,
   'Stale Sounds BUILD badge must not appear on the Code page');
-assert.equal((mainPage.match(/id="app-version"/g) || []).length, 1,
-  'App must show exactly one global version label');
+assert.equal((mainPage.match(/class="app-version"/g) || []).length, 1,
+  'App must show exactly one inline version label');
+assert.doesNotMatch(mainPage, /id="app-version"/,
+  'Floating version indicator must be removed');
 
 const example = '(\nSynthDef(\\drone, { |freq=110|\n' +
   '    var tone = SinOsc.ar(freq, 0, 0.1);\n' +

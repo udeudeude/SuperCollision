@@ -225,11 +225,8 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 }
 .code-selection-bar #selection-close{min-width:35px;width:35px;font-size:18px;background:transparent;border-color:transparent}
 
-/* Single, unobtrusive app version, independent of the Sounds overlay. */
-#app-version{position:fixed;right:8px;top:calc(env(safe-area-inset-top) + 4px);z-index:11000;padding:3px 6px;background:#252a26ed;border:1px solid #596258;border-radius:3px;color:#e1e5dc;font:600 10px/1.2 ui-monospace,monospace;letter-spacing:.02em;pointer-events:none}
 </style>
 <link rel="stylesheet" href="./instrument-layout.css?v=39"><link rel="stylesheet" href="./performance.css?v=41"><link rel="stylesheet" href="./learning.css?v=5"><link rel="stylesheet" href="./catalog-assist.css?v=3"><link rel="stylesheet" href="./repair-ui.css?v=2"><link rel="stylesheet" href="./sound-designer.css?v=3">
-<span id="app-version" aria-label="SuperCollision version 2.8">v2.8</span>
 <header><svg class="identity-art" viewBox="0 0 48 40" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
 <g class="art art-bauhaus"><rect x="1" y="3" width="18" height="18" fill="#1f4b8f"/><circle cx="30" cy="13" r="11" fill="#bf4337"/><path d="M3 37L21 23L39 37Z" fill="#e8ae40"/></g>
 <g class="art art-blackmountain" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 4V36M14 4V36M24 4V36M34 4V36M44 4V36"/><path d="M2 11H46M2 21H46M2 31H46" stroke="#b7774f" stroke-width="4"/><path d="M4 11H14M24 21H34M14 31H24" stroke="#e9e1cf" stroke-width="5"/></g>
@@ -288,7 +285,7 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 <path d="M29 4V7M34 4V7M39 4V7M44 4V7" stroke="#91b19a" stroke-width="1"/>
 <path d="M18 33H23M18 35H21" stroke="#ffbd61" stroke-width="1"/>
 </g>
-</svg><h1>SuperCollision</h1><small>INSTRUMENT</small><div class="theme-strip"><label for="theme-choice">DESIGN</label><select id="theme-choice" aria-label="Visual design"><option value="bauhaus">Bauhaus</option><option value="blackmountain">Black Mountain</option><option value="moog">Moog</option><option value="makenoise">Make Noise</option><option value="score">Open Form</option><option value="scope">02 / Oscilloscope</option><option value="patch">Signal Atlas</option><option value="terminal">Control Room</option></select></div></header>
+</svg><h1>SuperCollision</h1><small class="app-version" aria-label="Version 2.8">v2.8</small><div class="theme-strip"><label for="theme-choice">DESIGN</label><select id="theme-choice" aria-label="Visual design"><option value="bauhaus">Bauhaus</option><option value="blackmountain">Black Mountain</option><option value="moog">Moog</option><option value="makenoise">Make Noise</option><option value="score">Open Form</option><option value="scope">02 / Oscilloscope</option><option value="patch">Signal Atlas</option><option value="terminal">Control Room</option></select></div></header>
 <main>
 <div class="panel">
 <div class="projectbar"><div class="composition-picker"><button id="project-toggle" type="button" class="secondary" aria-expanded="false" aria-controls="project-list">Composition ▾</button><div id="project-list" class="project-list" hidden role="listbox" aria-label="Saved compositions"></div></div><select id="projects" aria-label="Saved compositions" hidden></select><details class="menu" id="file-menu">
@@ -362,7 +359,7 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
       </details>
     </div>
   </details>
-</div></details></div>
+</div></details><button id="sounds-open" class="secondary sounds-nav" type="button" aria-label="Open Sounds page">SOUNDS</button></div>
 
 
 <div class="editor-frame"><div id="line-gutter" aria-hidden="true"><div id="line-inner"></div></div><div class="code-stack"><div id="activity-overlay" aria-hidden="true"></div><pre id="highlight-layer" aria-hidden="true"></pre><textarea id="code" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="SuperCollider code editor"></textarea></div><div id="code-zoom-indicator" class="code-zoom-indicator" hidden aria-live="off">CODE 100%</div>
@@ -971,10 +968,7 @@ document.addEventListener('click', function(e) {
 },true);
 </script><script>
 (function(){
- const link=document.createElement('button');link.type='button';link.textContent='SOUNDS';
- link.setAttribute('aria-label','Open sound library and microphone recorder');
- link.style.cssText='display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 12px;border:1px solid #77796f;color:inherit;text-decoration:none;font:700 11px ui-monospace,monospace;letter-spacing:.06em;margin-left:8px';
- const header=document.querySelector('header');if(header)header.append(link);
+ const link=document.querySelector('#sounds-open');
  const panel=document.createElement('section');panel.id='sounds-overlay';panel.hidden=true;
  panel.setAttribute('aria-label','Sounds library');
  panel.className='sounds-workspace';

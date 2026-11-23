@@ -2176,3 +2176,34 @@ body:is([data-theme=makenoise],[data-theme=bauhaus],[data-theme=blackmountain])
  font-family:ui-monospace,SFMono-Regular,Menlo,monospace!important;
  text-transform:none!important;letter-spacing:normal!important;
 }
+
+/* Code 2.8: title and version share the masthead; Sounds belongs with page/file
+   navigation, not beside the identity artwork or in a floating badge. */
+body>header .app-version{
+  display:inline-flex!important;align-items:center;flex:0 0 auto;
+  margin:0;color:inherit;opacity:.72;
+  font:600 10px/1.1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.02em;white-space:nowrap;
+}
+body .projectbar #sounds-open{
+  display:inline-flex;align-items:center;justify-content:center;
+  flex:0 0 auto;height:100%;min-height:0;margin:0;padding:0 9px;
+  background:transparent;color:inherit;border:1px solid currentColor;
+  border-radius:2px;opacity:.8;
+  font:700 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.025em;white-space:nowrap;
+}
+body .projectbar #sounds-open:is(:hover,:focus-visible){opacity:1}
+@media(max-width:390px){
+  body>header,body[data-theme]>header{gap:5px}
+  body>header .app-version{font-size:9px}
+  body .projectbar #sounds-open{padding:0 7px;font-size:10px}
+}
+@media(max-width:350px){
+  body>header,body[data-theme]>header{gap:4px;padding-left:2px;padding-right:2px}
+  body>header .identity-art,body[data-theme]>header .identity-art{width:24px;height:24px}
+  body>header .theme-strip select,body[data-theme]>header .theme-strip select{max-width:60px}
+  body>header h1,body[data-theme]>header h1{
+    font-size:13px!important;letter-spacing:0!important;
+  }
+}
