@@ -201,6 +201,29 @@ body[data-theme=terminal] .projectbar{margin:0;padding:4px 0;border-bottom:1px s
 body[data-theme=terminal] .projectbar button,body[data-theme=terminal] .menu>summary{background:#f4f4f1;color:#111;border:1px solid #111}
 body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 @media(max-width:390px){body[data-theme=patch] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 78px}body[data-theme=scope] .toolbar button{font-size:9px}body[data-theme=score] main>.panel:first-child{grid-template-columns:minmax(0,1fr) 65px}}
+
+/* Contextual Code selection controls: float above the software keyboard, not in the editor. */
+.code-selection-bar[hidden]{display:none!important}
+.code-selection-bar{
+  position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 8px);
+  transform:translateX(-50%);z-index:10020;display:flex;align-items:center;gap:5px;
+  max-width:calc(100vw - 16px);padding:5px;background:#242821;color:#f6f2e5;
+  border:1px solid #9a977d;border-radius:9px;box-shadow:0 6px 26px #0009;
+  font:600 12px ui-monospace,SFMono-Regular,Menlo,monospace;
+  -webkit-user-select:none;user-select:none;touch-action:manipulation
+}
+.code-selection-bar button{
+  margin:0;min-width:42px;width:42px;min-height:42px;height:42px;padding:0;
+  background:#42483d;color:#f8f5e9;border:1px solid #6b7163;border-radius:6px;
+  font:600 22px ui-monospace,monospace;line-height:1;touch-action:manipulation
+}
+.code-selection-bar button:disabled{opacity:.3}
+.code-selection-bar button:focus-visible{outline:2px solid #efcb83;outline-offset:1px}
+.code-selection-bar #selection-kind{
+  min-width:88px;max-width:126px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;text-align:center;font-size:12px
+}
+.code-selection-bar #selection-close{min-width:35px;width:35px;font-size:18px;background:transparent;border-color:transparent}
 </style>
 <link rel="stylesheet" href="./instrument-layout.css?v=39"><link rel="stylesheet" href="./performance.css?v=41"><link rel="stylesheet" href="./learning.css?v=5"><link rel="stylesheet" href="./catalog-assist.css?v=3"><link rel="stylesheet" href="./repair-ui.css?v=2"><link rel="stylesheet" href="./sound-designer.css?v=3">
 <header><svg class="identity-art" viewBox="0 0 48 40" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -261,7 +284,7 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
 <path d="M29 4V7M34 4V7M39 4V7M44 4V7" stroke="#91b19a" stroke-width="1"/>
 <path d="M18 33H23M18 35H21" stroke="#ffbd61" stroke-width="1"/>
 </g>
-</svg><h1>SuperCollision</h1><small><span class="version-prefix">INSTRUMENT / </span>2.7</small><div class="theme-strip"><label for="theme-choice">DESIGN</label><select id="theme-choice" aria-label="Visual design"><option value="bauhaus">Bauhaus</option><option value="blackmountain">Black Mountain</option><option value="moog">Moog</option><option value="makenoise">Make Noise</option><option value="score">Open Form</option><option value="scope">02 / Oscilloscope</option><option value="patch">Signal Atlas</option><option value="terminal">Control Room</option></select></div></header>
+</svg><h1>SuperCollision</h1><small><span class="version-prefix">INSTRUMENT / </span>2.8</small><div class="theme-strip"><label for="theme-choice">DESIGN</label><select id="theme-choice" aria-label="Visual design"><option value="bauhaus">Bauhaus</option><option value="blackmountain">Black Mountain</option><option value="moog">Moog</option><option value="makenoise">Make Noise</option><option value="score">Open Form</option><option value="scope">02 / Oscilloscope</option><option value="patch">Signal Atlas</option><option value="terminal">Control Room</option></select></div></header>
 <main>
 <div class="panel">
 <div class="projectbar"><div class="composition-picker"><button id="project-toggle" type="button" class="secondary" aria-expanded="false" aria-controls="project-list">Composition ▾</button><div id="project-list" class="project-list" hidden role="listbox" aria-label="Saved compositions"></div></div><select id="projects" aria-label="Saved compositions" hidden></select><details class="menu" id="file-menu">
@@ -933,6 +956,7 @@ saveButton.onclick=()=>{
  message('WAV exported · '+Math.round(r.frames/r.ac.sampleRate)+' seconds');
 };
 </script>
+<script type="module" src="./code-selection.mjs?v=1"></script>
 <script src="./instrument-layout.js?v=21"></script><script defer src="https://cloud.umami.is/script.js" data-website-id="f374a945-0ea2-41ed-8eb7-4b6ab6933f9a"></script>
 <script>
 document.addEventListener('click', function(e) {
