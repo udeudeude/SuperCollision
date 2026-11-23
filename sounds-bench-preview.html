@@ -373,7 +373,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  const library=document.createElement('section');library.innerHTML='<h2>YOUR SOUNDS</h2><p>Recordings, samples and saved instruments share the existing Sounds library.</p><div class="actions"><a href="./sounds.html#library">OPEN LIBRARY</a> <a href="./sounds.html#discover">DISCOVER RECORDINGS</a> <a href="./sounds.html#create">CREATE / GENERATE</a></div><p>Community SuperCollider instruments are the next acquisition integration. No third-party code is executed automatically.</p>';
  main.insertBefore(library,document.getElementById('lab-diagnostics'));groups.details.push(library);
  for(const group of Object.values(groups))for(const node of group)node.classList.add('bench-panel');
- function show(name){for(const [key,nodes] of Object.entries(groups))for(const node of nodes)node.hidden=key!==name;for(const b of tabs.children)b.setAttribute('aria-selected',String(b.dataset.tab===name));location.hash=name;}
+ function show(name){for(const [key,nodes] of Object.entries(groups))for(const node of nodes)node.hidden=key!==name;for(const b of tabs.children)b.setAttribute('aria-selected',String(b.dataset.tab===name));location.hash=name;window.dispatchEvent(new CustomEvent('bench-view-changed',{detail:{view:name}}));}
  show(['play','sample','details'].includes(location.hash.slice(1))?location.hash.slice(1):'play');
 });
 </script><script type="module" src="./sounds-bench-engine.mjs?v=0.3.0"></script>
