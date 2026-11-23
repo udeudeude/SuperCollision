@@ -2,7 +2,7 @@ name: Check SuperCollision IDE
 on:
   push:
     branches: [main]
-    paths: ['index.html', 'instrument-layout.css', 'instrument-layout.js', 'live-activity.mjs', 'routine-trace.mjs', 'performance-engine.mjs', 'performance-ui.mjs', 'performance.css', 'learning.mjs', 'learning.css', 'catalog-core.mjs', 'editor-assist.mjs', 'catalog-assist.css', 'sound-designer.mjs', 'sound-designer-core.mjs', 'sound-designer.css', 'qa/sound-designer-test.mjs', 'qa/osc-priority-test.mjs', 'qa/catalog-test.mjs', 'qa/learning-test.mjs', 'qa/performance-test.mjs', 'qa/live-activity-test.mjs', '.github/workflows/check-ide.yml']
+    paths: ['index.html', 'code-selection.mjs', 'qa/code-selection-test.mjs', 'qa/code-selection-browser-test.mjs', 'instrument-layout.css', 'instrument-layout.js', 'live-activity.mjs', 'routine-trace.mjs', 'performance-engine.mjs', 'performance-ui.mjs', 'performance.css', 'learning.mjs', 'learning.css', 'catalog-core.mjs', 'editor-assist.mjs', 'catalog-assist.css', 'sound-designer.mjs', 'sound-designer-core.mjs', 'sound-designer.css', 'qa/sound-designer-test.mjs', 'qa/osc-priority-test.mjs', 'qa/catalog-test.mjs', 'qa/learning-test.mjs', 'qa/performance-test.mjs', 'qa/live-activity-test.mjs', '.github/workflows/check-ide.yml']
   pull_request:
     paths: ['index.html', 'instrument-layout.css', 'instrument-layout.js', '.github/workflows/check-ide.yml']
 jobs:
@@ -37,7 +37,7 @@ jobs:
           js=Path('instrument-layout.js').read_text()
           p=Scripts()
           p.feed(html)
-          assert len(p.scripts)==4, f"Found {len(p.scripts)} inline scripts"
+          assert len(p.scripts)==6, f"Found {len(p.scripts)} inline scripts"
           for i,script in enumerate(p.scripts):
               Path(f'/tmp/supercollision-{i}.js').write_text(script)
           expected=['<header>', 'class="projectbar"', 'class="editor-frame"', 'class="toolbar"', 'class="panel console-shell"']
@@ -57,10 +57,8 @@ jobs:
               assert 'data-theme='+theme in css,theme
               assert 'art-'+theme in html,theme
           PY
-          node --check /tmp/supercollision-0.js
-          node --check /tmp/supercollision-1.js
-          node --check /tmp/supercollision-2.js
-          node --check /tmp/supercollision-3.js
+          for script in /tmp/supercollision-{0..5}.js; do node --check "$script"; done
+          node --check code-selection.mjs
           node --check instrument-layout.js
           node --check osc-priority-bridge.mjs
           node --check live-activity.mjs
@@ -87,6 +85,7 @@ jobs:
           assert manifest['display']=='standalone'
           assert Path('app-icon.svg').exists()
           PY
+          node qa/code-selection-test.mjs
           node qa/learning-test.mjs
           node qa/error-guide-test.mjs
           node qa/catalog-test.mjs
@@ -94,3 +93,8 @@ jobs:
           node qa/performance-test.mjs
           node qa/live-activity-test.mjs
           node qa/osc-priority-test.mjs
+      - name: Browser-check Code selection gestures and keyboard focus
+        run: |
+          npm install --no-save playwright@1.56.1
+          google-chrome --version
+          node qa/code-selection-browser-test.mjs
