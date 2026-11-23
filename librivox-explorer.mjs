@@ -1,5 +1,6 @@
 import {findChapterPhraseMatches, estimateChapterSeek, toggleExplorerFavorite} from './librivox-text-locator.mjs';
 import {saveSound} from './sounds-store.mjs';
+import {normalizePersonName, workHasAuthor, matchingReaderCredits, selectLibriVoxEditions, filteredSections} from './librivox-combine.mjs';
 import {extractWavFromSource,fetchRecording} from './librivox-audio-extract.mjs';
 
 // This standalone preview deliberately does not import or mutate the Sounds workspace.
@@ -14,7 +15,7 @@ const app = $('app-shell');
 const audio = $('chapter-audio');
 const state = { results: [], favorites: readLocal(FAV_KEY, []), anchors: readLocal(ANCHOR_KEY, {}), clips: readLocal(CLIP_KEY, []), work: null,
   book: null, recording: null, chapter: null, person: null, scope: 'books', showFavorites: false, matches: [], selectedMatch: -1,
-  clipStart: null, clipEnd: null, regionPreview: false, request: 0, extractRun:0, extracting:false, extractAbort:null, localFile:null, localObjectUrl:null, wavBlob:null, wavObjectUrl:null, wavName:'' };
+  clipStart: null, clipEnd: null, regionPreview: false, request: 0, sectionRequest:0, filterContext:null, extractRun:0, extracting:false, extractAbort:null, localFile:null, localObjectUrl:null, wavBlob:null, wavObjectUrl:null, wavName:'' };
 function readLocal(key, fallback) { try { const value = JSON.parse(localStorage.getItem(key)); return value && typeof value === typeof fallback ? value : fallback; } catch { return fallback; } }
 function writeLocal(key, data) { try { localStorage.setItem(key, JSON.stringify(data)); return true; } catch { return false; } }
 function el(tag, className, text) { const node = document.createElement(tag); if (className) node.className = className; if (text !== undefined) node.textContent = String(text); return node; }
@@ -30,6 +31,7 @@ function changeFavorite(type,id,label) {
   state.favorites = toggleExplorerFavorite(state.favorites,{type,id:String(id),label});
   writeLocal(FAV_KEY,state.favorites); $('favorite-count').textContent = state.favorites.length;
   if (type === 'book' && state.work?.id === id) syncFavoriteBook();
+  renderFavoriteFilterChips();
   if (state.showFavorites) renderFavorites();
 }
 function syncFavoriteBook() { const b=$('favorite-book'); if (!state.work) return; const active=selectedFavorite('book',state.work.id); b.textContent=active?'★':'☆'; b.setAttribute('aria-pressed',String(active)); b.setAttribute('aria-label',`${active?'Remove':'Add'} favorite: ${state.work.title}`); }
@@ -50,7 +52,7 @@ function renderFavorites() { const pane=$('catalog-results'); pane.replaceChildr
   if (!list.length) pane.append(el('p','status-line','No favorites yet. Star an author, reader, or book.'));
   for(const item of list) { const kind=item.type; const row=el('div','result'); const main=button('',async()=>{
     if(kind==='sample'||kind==='passage'){setStatus('Saved markers can be exported from their recording. Search the book to reopen it.');return;}
-    if(kind==='book')await loadWork(item.id); else if(kind==='reader' && /^\d+$/.test(String(item.id))) await runSearch(item.label,'readers'); else await openPerson({id:item.id,name:item.label},kind);
+    if(kind==='book')await loadWork(item.id); else await openPerson({id:item.id,name:item.label},kind);
   },'result-main'); main.append(el('span','result-pill',kind.toUpperCase()),el('strong','',item.label));
     row.append(main,starButton(item.type,item.id,item.label));pane.append(row);
   }
@@ -74,30 +76,160 @@ async function runSearch(query,scope) {
   }
 }
 async function openResult(item,kind) { if(kind==='book') await loadWork(item.id); else await openPerson(item,kind); }
+// Selecting an author or reader, including from Favorites, fills one facet without
+// clearing the other. Thus separate person searches can be combined naturally.
 async function openPerson(person,kind) {
-  state.person={...person,kind}; state.showFavorites=false; $('show-favorites').setAttribute('aria-pressed','false');
-  $('list-caption').textContent=`${kind==='reader'?'READER':'AUTHOR'} / ${person.name}`;
-  setStatus(`Looking up ${person.name}…`); $('catalog-results').replaceChildren(); showSearch();
-  try {
-    const data=kind==='reader' ? await get(`/people/${encodeURIComponent(person.id)}/recordings`,{limit:75}) : await get(`/people/${encodeURIComponent(person.id)}`,{limit:75});
-    const items=kind==='reader' ? (data.recordings||[]).map(x=>x.work).filter(Boolean) : (data.authored||[]);
-    const unique=[...new Map(items.filter(x=>x.id).map(x=>[x.id,x])).values()];
-    renderResults(unique,'book');
-    const more=kind==='reader' ? Number(data.total||0)>unique.length : Number(data.authored_total||0)>unique.length;
-    setStatus(`${unique.length} ${kind==='reader'?'recording credits':'works'} listed${more?' (first page)':''}. Select a work to check available LibriVox editions.`);
-    if(kind==='reader' && person.name.toLowerCase().includes('peter yearsley')) {
-      const note=el('p','status-line'); const link=el('a','','See all Peter Yearsley recordings on LibriVox ↗'); link.href='https://librivox.org/reader/167';link.target='_blank';link.rel='noopener noreferrer';note.append(link);$('catalog-results').prepend(note);
+  const input=$(kind==='reader'?'filter-reader':'filter-author');
+  input.value=person.name;
+  showSearch();
+  await runCombinedFilter();
+}
+function renderFavoriteFilterChips() {
+  const pane=$('favorite-filters');pane.replaceChildren();
+  for(const favorite of state.favorites.filter(x=>x.type==='author'||x.type==='reader')){
+    const type=favorite.type;
+    const b=button(`★ ${type==='author'?'AUTHOR':'READER'}: ${favorite.label}`,()=>{
+      $(type==='author'?'filter-author':'filter-reader').value=favorite.label;
+      runCombinedFilter();
+    });
+    b.title=`Use favorite ${type} as a search filter`;
+    pane.append(b);
+  }
+}
+function suggestFacet(inputId,optionsId){
+  const input=$(inputId),list=$(optionsId);let token=0,timer;
+  input.addEventListener('input',()=>{
+    clearTimeout(timer);const text=input.value.trim(),current=++token;
+    list.replaceChildren();if(text.length<2)return;
+    timer=setTimeout(async()=>{
+      try{
+        const data=await get('/people/search',{q:text,limit:25});
+        if(current!==token)return;
+        for(const person of data.results||[]){
+          if(!person?.name)continue;
+          const option=el('option');option.value=person.name;list.append(option);
+        }
+      }catch{/* Text entry and Search work without live suggestions. */}
+    },260);
+  });
+}
+async function resolveFacetPerson(name,kind) {
+  if(!name)return null;
+  const data=await get('/people/search',{q:name,limit:50});
+  const matches=(data.results||[]).filter(x=>x?.id&&x?.name);
+  const exact=matches.filter(x=>normalizePersonName(x.name)===normalizePersonName(name));
+  if(exact.length===1)return exact[0];
+  if(matches.length===1)return matches[0];
+  if(!matches.length)throw Error(`No ${kind} named "${name}" in this catalog.`);
+  throw Error(`Several people match "${name}". Enter a full ${kind} name from the suggestions.`);
+}
+// Each catalog page is fetched, not just the first 50: Peter Yearsley alone
+// has hundreds of credited recordings. We explicitly report incomplete pages.
+async function fetchAllCredits(path,key,totalKey,limit,request){
+  const all=[];let offset=0,truncated=false,total=Infinity;
+  while(offset<5000){
+    if(request!==state.request)return null;
+    const data=await get(path,{limit,offset});
+    if(request!==state.request)return null;
+    const batch=Array.isArray(data[key])?data[key]:[];
+    const count=Number(data[totalKey]);if(Number.isFinite(count)&&count>=0)total=count;
+    all.push(...batch);offset+=batch.length;
+    if(!batch.length||offset>=total||batch.length<limit)break;
+    setStatus(`Checking ${offset}${Number.isFinite(total)?' of '+total:''} credits…`);
+  }
+  if(Number.isFinite(total)&&offset<total)truncated=true;
+  return {rows:all,truncated,total};
+}
+function renderFacetResults(items,author,reader,partial){
+  const pane=$('catalog-results');pane.replaceChildren();
+  $('list-caption').textContent=author&&reader?'AUTHOR + READER MATCHES':author?'AUTHOR RECORDINGS':'READER RECORDINGS';
+  if(!items.length){
+    pane.append(el('p','status-line','No matching LibriVox recordings were confirmed. Try a different reader or author. Anthology section authors are not always indexed by the catalog.'));
+    return;
+  }
+  for(const result of items){
+    const work=result.work,row=el('div','result');
+    const main=button('',()=>loadWork(work.id,{reader,recordingIds:result.ids}),'result-main');
+    main.append(el('span','result-pill','LIBRIVOX RECORDING'),el('strong','',work.title),
+      el('small','',`${authorName(work)}${reader?' · '+reader.name:''}${result.verifiedSections!=null?' · '+result.verifiedSections+' matching section'+(result.verifiedSections===1?'':'s'):''}`));
+    row.append(main,starButton('book',work.id,work.title));pane.append(row);
+  }
+}
+async function verifyFacetedRecording(candidate,reader,verifySections){
+  const work=await get(`/works/${encodeURIComponent(candidate.work.id)}`);
+  const editions=selectLibriVoxEditions(work,reader,candidate.ids);
+  if(!editions.length)return null;
+  let found=0;
+  if(verifySections){
+    for(const r of editions){
+      const data=await get('/librivox/audiobooks',{id:r.librivox_id,extended:1});
+      const book=data.books?.[0];
+      if(book)found+=filteredSections((book.sections||[]).filter(s=>safeUrl(s.listen_url)),reader).length;
     }
-  } catch(error) { setStatus(`Could not browse ${person.name}: ${error.message}`,'error'); }
+    if(!found)return null;
+  }
+  return {work,ids:editions.map(r=>r.id),verifiedSections:verifySections?found:null};
+}
+async function runCombinedFilter(){
+  const authorNameInput=$('filter-author').value.trim(),readerNameInput=$('filter-reader').value.trim();
+  if(!authorNameInput&&!readerNameInput){setStatus('Enter an author or reader. Fill both to find their intersection.','error');return;}
+  const request=++state.request;state.showFavorites=false;$('show-favorites').setAttribute('aria-pressed','false');
+  $('catalog-results').replaceChildren();$('list-caption').textContent='FILTERING RECORDINGS';
+  setStatus('Finding matching author and reader identities…');
+  try{
+    const [author,reader]=await Promise.all([resolveFacetPerson(authorNameInput,'author'),resolveFacetPerson(readerNameInput,'reader')]);
+    if(request!==state.request)return;
+    // Reader credits provide recording IDs, essential for rejecting editions
+    // narrated by other people. Author-only searches use authorship credits.
+    let candidates=[],partial=false;
+    if(reader){
+      const pages=await fetchAllCredits(`/people/${encodeURIComponent(reader.id)}/recordings`,'recordings','total',100,request);
+      if(!pages||request!==state.request)return;
+      partial=pages.truncated;
+      const credits=matchingReaderCredits(pages.rows,author,reader),groups=new Map();
+      for(const credit of credits){
+        const id=String(credit.work.id);
+        if(!groups.has(id))groups.set(id,{work:credit.work,ids:[]});
+        groups.get(id).ids.push(credit.recording.id);
+      }
+      candidates=[...groups.values()];
+    }else{
+      const pages=await fetchAllCredits(`/people/${encodeURIComponent(author.id)}`,'authored','authored_total',500,request);
+      if(!pages||request!==state.request)return;
+      partial=pages.truncated;
+      candidates=pages.rows.filter(w=>w?.id&&workHasAuthor(w,author)).map(work=>({work,ids:null}));
+    }
+    setStatus(`Checking LibriVox editions for ${candidates.length} candidate work${candidates.length===1?'':'s'}…`);
+    // Concurrency-bounded metadata verification, no audio bytes downloaded.
+    let cursor=0,done=0,failures=0;const verified=[];
+    async function worker(){
+      while(request===state.request&&cursor<candidates.length){
+        const candidate=candidates[cursor++];
+        try{
+          const result=await verifyFacetedRecording(candidate,reader,Boolean(author&&reader));
+          if(result)verified.push(result);
+        }catch{failures++;}
+        done++;
+        if(done%10===0&&request===state.request)setStatus(`Checked ${done} of ${candidates.length} recordings…`);
+      }
+    }
+    await Promise.all(Array.from({length:Math.min(5,candidates.length)},worker));
+    if(request!==state.request)return;
+    verified.sort((a,b)=>a.work.title.localeCompare(b.work.title));
+    renderFacetResults(verified,author,reader,partial||failures>0);
+    const incomplete=partial||failures>0;
+    setStatus(`${verified.length} confirmed LibriVox work${verified.length===1?'':'s'} match${verified.length===1?'es':''} ${author?.name||'any author'} + ${reader?.name||'any reader'}.${incomplete?` Results may be incomplete (${failures} catalog checks failed${partial?', credits truncated':''}).`:''}`);
+  }catch(error){if(request!==state.request)return;setStatus(error.message,'error');}
 }
 function showLoadingWork(message) { showWork();$('work-panel').classList.remove('empty');$('empty-work').hidden=true;$('work-body').hidden=false;$('work-heading').textContent=message;$('work-byline').textContent='';$('attribution-row').replaceChildren();$('recording-select').replaceChildren();$('chapter-select').replaceChildren();$('reader-info').replaceChildren(); }
-async function loadWork(id) {
-  showLoadingWork('Loading recording…'); const request=++state.request;
+async function loadWork(id,filterContext=null) {
+  state.filterContext=filterContext;
+  showLoadingWork('Loading recording…'); const request=++state.request; ++state.sectionRequest;
   resetAudioSource();audio.pause();audio.removeAttribute('src');audio.load();state.chapter=null;state.book=null;state.work=null;
   try {
     const work=await get(`/works/${encodeURIComponent(id)}`); if(request!==state.request)return;
-    const editions=(work.recordings||[]).filter(r=>Number(r.librivox_id)>0 || safeUrl(r.links?.librivox));
-    if(!editions.length)throw new Error('No linked LibriVox recording is available for this work in the catalog mirror.');
+    const editions=selectLibriVoxEditions(work,filterContext?.reader,filterContext?.recordingIds||null);
+    if(!editions.length)throw new Error(filterContext?.reader?'No LibriVox recording credited to the selected reader is available for this work.':'No linked LibriVox recording is available for this work in the catalog mirror.');
     state.work=work; $('work-heading').textContent=work.title;$('work-byline').textContent=`${authorName(work)} · ${work.language||'Unknown language'}`;
     syncFavoriteBook(); const attrs=$('attribution-row'); attrs.replaceChildren(el('span','attrib-label','AUTHOR'));
     for(const author of work.authors||[]){const b=button(`☆ ${author.name}`,()=>changeFavorite('author',author.id,author.name),'person-chip'); b.title='Toggle author favorite';attrs.append(b);}
@@ -106,25 +238,31 @@ async function loadWork(id) {
   } catch(error) { if(request!==state.request)return; $('work-heading').textContent='Recording unavailable'; $('work-byline').textContent=error.message; $('playback-status').textContent='Unavailable'; }
 }
 async function selectRecording(index) {
-  const edition=state.editions?.[index]; if(!edition)return;state.recording=edition;
+  const edition=state.editions?.[index]; if(!edition)return;const request=++state.sectionRequest;state.recording=edition;
   $('recording-select').value=String(index);$('chapter-select').replaceChildren();$('reader-info').textContent='Loading sections…';
   try {
     if(!Number(edition.librivox_id))throw new Error('This edition does not expose a LibriVox catalog identifier.');
     const result=await get('/librivox/audiobooks',{id:edition.librivox_id,extended:1});
-    const book=(result.books||[])[0];if(!book)throw new Error('This recording is not available in the chapter feed.');
+    const book=(result.books||[])[0];if(request!==state.sectionRequest)return;
+    if(!book)throw new Error('This recording is not available in the chapter feed.');
     state.book=book;
     $('librivox-work-link').href=safeUrl(book.url_librivox) || 'https://librivox.org';
     const src=safeUrl(book.url_text_source);$('source-text-link').href=src||'https://www.gutenberg.org';
     $('source-text-link').textContent=src?'SOURCE TEXT ↗':'FIND TEXT ↗';
     $('try-source-text').disabled=!src;
-    const sections=(book.sections||[]).filter(x=>safeUrl(x.listen_url));state.sections=sections;
-    const sel=$('chapter-select');sel.replaceChildren();sections.forEach((s,i)=>{
-      const readerNames=(s.readers||[]).map(r=>r.display_name).filter(Boolean).join(', ');
-      const opt=el('option','',`${String(i+1).padStart(2,'0')} · ${s.title||'Section '+(i+1)}${readerNames?' · '+readerNames:''}`);opt.value=String(i);sel.append(opt);
+    const allSections=(book.sections||[]).filter(x=>safeUrl(x.listen_url));
+    const filterReader=state.filterContext?.reader||null;
+    const sections=filteredSections(allSections,filterReader);state.sections=sections;
+    $('section-coverage').textContent=filterReader?`${sections.length} of ${allSections.length} sections read by ${filterReader.name}`:`${sections.length} playable sections`;
+    const sel=$('chapter-select');sel.replaceChildren();sections.forEach((section,i)=>{
+      const readerNames=(section.readers||[]).map(r=>r.display_name).filter(Boolean).join(', ');
+      const sectionNo=section.section_number??String(i+1);
+      const opt=el('option','',`${String(sectionNo).padStart(2,'0')} · ${section.title||'Section '+sectionNo}${readerNames?' · '+readerNames:''}`);opt.value=String(i);sel.append(opt);
     });
-    if(!sections.length)throw new Error('No playable chapter links were provided by the catalog.');
+    sel.disabled=!sections.length;
+    if(!sections.length)throw new Error(filterReader?`This LibriVox edition has no playable sections credited to ${filterReader.name}.`:'No playable chapter links were provided by the catalog.');
     selectChapter(0);
-  } catch(error) { $('reader-info').textContent=error.message;$('playback-status').textContent='Cannot load sections'; }
+  } catch(error) { if(request!==state.sectionRequest)return; $('reader-info').textContent=error.message;$('playback-status').textContent='Cannot load sections'; }
 }
 function selectChapter(index) {
   const chapter=state.sections?.[index];if(!chapter)return;resetAudioSource();state.chapter=chapter;state.selectedMatch=-1;state.matches=[];
@@ -287,6 +425,11 @@ async function loadLinkedText() {
     $('chapter-text').value=text;$('text-guidance').textContent='Loaded linked text. If this is a complete book, copy only the chapter matching the audio before searching.';
   } catch(error) { $('text-guidance').textContent=`Could not load source text in this browser (${error.message}). Open SOURCE TEXT ↗ and paste the chapter or load a .txt file.`; }
 }
+$('combined-form').addEventListener('submit',event=>{event.preventDefault();runCombinedFilter();});
+$('combined-clear').addEventListener('click',()=>{$('filter-author').value='';$('filter-reader').value='';$('author-options').replaceChildren();$('reader-options').replaceChildren();++state.request;state.filterContext=null;$('catalog-results').replaceChildren();$('list-caption').textContent='DISCOVER';setStatus('Filters cleared. Find an author or reader to begin.');});
+$('test-combined').addEventListener('click',()=>{$('filter-author').value='George MacDonald';$('filter-reader').value='Peter Yearsley';runCombinedFilter();});
+suggestFacet('filter-author','author-options');suggestFacet('filter-reader','reader-options');
+renderFavoriteFilterChips();
 $('catalog-form').addEventListener('submit',event=>{event.preventDefault();const q=$('catalog-query').value.trim();if(q.length>=2)runSearch(q,new FormData(event.currentTarget).get('scope'));});
 $('phrase-form').addEventListener('submit',event=>{event.preventDefault();showMatches();});
 $('show-favorites').addEventListener('click',()=>{state.showFavorites=!state.showFavorites;$('show-favorites').setAttribute('aria-pressed',String(state.showFavorites));if(state.showFavorites)renderFavorites();else if($('catalog-query').value.trim())runSearch($('catalog-query').value.trim(),state.scope);else {$('catalog-results').replaceChildren();setStatus('Choose a search to begin.');$('list-caption').textContent='DISCOVER';}});
