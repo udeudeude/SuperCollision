@@ -107,18 +107,55 @@ export function describeSynthesis(site){
     nodes.push({name,rate,role,roleLabel:roles[role],
       description:descriptions.get(name)||name+' unit generator',
       arguments:args.map(v=>clip(v.replace(/\s+/g,' '))),text,line,startOffset,endOffset,
-      begin:relative,end:close,inputs:[]});
+      begin:relative,end:close,inputs:[],feeds:[]});
   }
+  const link=(from,to,reason)=>{
+    if(from===to||from.feeds.some(x=>x.at===to.begin))return;
+    from.feeds.push({to:to.name,at:to.begin,reason});
+  };
   for(const node of nodes){
     const parents=nodes.filter(other=>other!==node&&other.begin<node.begin&&other.end>node.end);
     if(parents.length){
       const parent=parents.reduce((min,next)=>
         next.end-next.begin<min.end-min.begin?next:min);
       node.inputs.push({to:parent.name,reason:'nested in its arguments'});
+      link(node,parent,'nested in');
     }
   }
-  const byRole={};for(const node of nodes)(byRole[node.role]??=[]).push(node);
-  return {site,nodes,byRole,summary:nodes.length?
+  // Source-level variable references establish additional observable
+  // dependencies. They do not prove audio-rate signal flow.
+  for(const from of nodes){
+    const preceding=mask.slice(Math.max(0,from.begin-200),from.begin);
+    const assigned=/(?:^|[;{}\n])\s*(?:var\s+)?([A-Za-z_]\w*)\s*=\s*$/.exec(preceding);
+    if(!assigned)continue;
+    const symbol=assigned[1],reference=new RegExp('\\b'+symbol+'\\b');
+    for(const to of nodes){
+      if(to===from||to.begin<from.begin)continue;
+      const args=mask.slice(to.begin+to.name.length,to.end+1);
+      // For Out, the first argument is the bus number, not an input signal.
+      const search=to.role==='output'?args.slice(args.indexOf(',')+1):args;
+      if(reference.test(search))link(from,to,'referenced by');
+    }
+  }
+  // Present dependencies before their consumers. Where no connection can
+  // be determined, retain the original source order without inventing edges.
+  const byStart=new Map(nodes.map(node=>[node.begin,node]));
+  const degree=new Map(nodes.map(node=>[node.begin,0]));
+  for(const node of nodes)for(const edge of node.feeds)
+    degree.set(edge.at,(degree.get(edge.at)||0)+1);
+  const pending=nodes.filter(node=>degree.get(node.begin)===0);
+  const ordered=[];
+  while(pending.length){
+    pending.sort((a,b)=>a.begin-b.begin);
+    const node=pending.shift();ordered.push(node);
+    for(const edge of node.feeds){
+      degree.set(edge.at,degree.get(edge.at)-1);
+      if(degree.get(edge.at)===0)pending.push(byStart.get(edge.at));
+    }
+  }
+  const display=ordered.length===nodes.length?ordered:nodes;
+  const byRole={};for(const node of display)(byRole[node.role]??=[]).push(node);
+  return {site,nodes:display,byRole,summary:nodes.length?
     nodes.length+' source-level unit generator'+(nodes.length===1?'':'s')+' identified':
     'No directly recognizable .ar/.kr/.ir calls'};
 }
