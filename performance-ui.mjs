@@ -251,10 +251,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   };
   const jumpTo=site=>{
     if(!site||site.composition!==getComposition())return;
-    const lineHeight=parseFloat(getComputedStyle(editor).lineHeight)||21;
-    editor.scrollTop=Math.max(0,(site.start-1)*lineHeight-editor.clientHeight*.32);
-    editor.dispatchEvent(new Event('scroll'));
-    editor.focus({preventScroll:true});
+    selectCode(site,site.startOffset,(site.endOffset??-1)+1,true);
   };
 
   /* Mix is an explainer. The graph is parsed source, the middle readout is
@@ -315,7 +312,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   sourceButton.addEventListener('click',()=>{
     const current=journal.definitionFor(selectedInstrument)||
       previewDefinitions.find(item=>item.name===selectedInstrument)?.site;
-    selectCode(current,current?.startOffset,current?.endOffset,true);
+    selectCode(current,current?.startOffset,(current?.endOffset??-1)+1,true);
   });
   triggerButton.addEventListener('click',()=>{
     if(selectedEvent?.site)selectCode(selectedEvent.site);
@@ -415,7 +412,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
         hint.textContent='Output waveform not available';wave.append(hint);
       }
     }
-    const active=journal.active(selectedInstrument).filter(n=>n.composition===journal.composition);
+    const active=selectedInstrument?journal.active(selectedInstrument).filter(n=>n.composition===journal.composition):[];
     const pending=[...journal.nodes.values()].filter(n=>n.composition===journal.composition&&
       n.name===selectedInstrument&&!n.confirmed&&!n.ended);
     const inspected=inspectedAt!==null?Math.min(now,inspectedAt):null;
@@ -710,7 +707,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   },{passive:true});
   panel.querySelector('#perform-axis-ticks').addEventListener('click',event=>{
     const area=event.currentTarget.getBoundingClientRect();
-    inspectedAt=journal.zero+Math.max(0,(event.clientX-area.left)/SCALE)*1000;
+    inspectedAt=Math.min(journal.timelineNow(),journal.zero+Math.max(0,(event.clientX-area.left)/SCALE)*1000);
     selectedEvent=null;setFollow(false);schedule();
   });
   scroller.addEventListener('scroll',()=>{
