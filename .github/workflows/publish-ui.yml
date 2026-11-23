@@ -125,6 +125,7 @@ jobs:
           npx playwright install --with-deps chromium
           node source/qa/lab-offline-browser-test.mjs
           node source/qa/code-selection-browser-test.mjs
+          node source/qa/header-navigation-browser-test.mjs
       - name: Commit tested production site to Pages branch
         run: |
           cd site
