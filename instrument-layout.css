@@ -2207,3 +2207,10 @@ body .projectbar #sounds-open:is(:hover,:focus-visible){opacity:1}
     font-size:13px!important;letter-spacing:0!important;
   }
 }
+
+/* Keep the MIX workbench tab usable with the wide Make Noise lettering on 320px phones. */
+body .console-bar .inspector-modes #inspector-perform,
+body[data-theme] .console-bar .inspector-modes #inspector-perform{
+  min-width:28px!important;
+  box-sizing:border-box!important;
+}
