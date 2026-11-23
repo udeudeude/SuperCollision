@@ -287,8 +287,17 @@ try{
     el=>el.style.getPropertyValue('--note-level'));
   assert.equal(noteLevel,'40%','Declared amplitude is not represented correctly');
   await lane.locator('.perform-event').first().click();
+  await page.waitForFunction(()=>
+    !document.querySelector('#perform-explain-note')?.hidden);
+  assert((await page.locator('#perform-explain-reality').textContent()).includes('240 Hz'),
+    'Tapping a note must explain its actual reported frequency in Mix');
+  assert((await page.locator('#perform-explain-reality').textContent()).includes('0.16'),
+    'Tapping a note must distinguish the code amplitude from measured audio');
+  assert(await page.locator('#perform-explain-graph').isVisible(),
+    'Investigating an event must keep its synthesis code visible');
+  await page.locator('#perform-explain-note').click();
   assert(await page.locator('.perform-note-dialog').isVisible(),
-    'Tapping an event should reveal its actual known parameters');
+    'The explicit Note Details control must reveal known event parameters');
   assert.equal(await page.locator('#perform-note-frequency').textContent(),'240 Hz');
   assert.equal(await page.locator('#perform-note-amplitude').textContent(),'0.16');
   assert((await page.locator('.perform-note-dialog').textContent()).includes('not a measured waveform'),
@@ -301,12 +310,17 @@ try{
     'Selecting an instrument must not resize or jump the timeline');
   assert(Math.abs(scoreBefore.y-scoreAfter.y)<1,
     'Selecting an instrument must not shift the timeline');
+  assert(await page.locator('#perform-explain-graph').isVisible(),
+    'Instrument selection must explain the code before presenting mixer controls');
+  assert(!(await page.locator('#perform-detail').isVisible()),
+    'Selecting a name must not replace the explanation with mixer controls');
+  await page.locator('#perform-explain-adjust').click();
   assert(await page.locator('#perform-dialog-mute').isVisible(),
-    'Mute must remain directly visible in the inspector');
+    'Mute must remain available in optional inspector controls');
   assert(await page.locator('#perform-dialog-solo').isVisible(),
-    'Solo must remain directly visible in the inspector');
+    'Solo must remain available in optional inspector controls');
   assert(await page.locator('#perform-detail').isVisible(),
-    'Selecting an instrument must show inline controls');
+    'Adjust must open inline controls without obscuring the code explanation');
   assert(await page.locator('#perform-scroller').isVisible(),
     'Inline controls must not obscure the timeline');
   assert(!(await page.locator('#perform-detail').evaluate(el=>el.matches('dialog'))),
@@ -322,6 +336,7 @@ try{
   await page.locator('#perform-dialog-close').click();
   await page.waitForTimeout(100);
   await lane.locator('.perform-name').click();
+  await page.locator('#perform-explain-adjust').click();
   assert.equal(await page.locator('#perform-dialog-gain-value').textContent(),'95%');
   await page.locator('#perform-dialog-close').click();
   assert.equal(await page.locator('#perform-follow').getAttribute('aria-pressed'),'true');
