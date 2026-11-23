@@ -194,6 +194,8 @@ function buildNoteDrawer(){
  const list=document.createElement('div');list.id='bench-frequency-list';list.setAttribute('role','group');list.setAttribute('aria-label','Select a musical frequency');
  drawer.append(heading,tuneLabel,info,list);
  shell.append(toggle,drawer);document.body.append(shell);
+ // The first view may already be Sample or Library before this module loads.
+ shell.hidden=location.hash.slice(1)!=='play';
  const panelWidth=()=>drawer.getBoundingClientRect().width||210;
  let open=false,drag=null,suppressClickUntil=0;
  function position(){
