@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#161817">
-<title>Sounds Instrument Bench · v0.2.4</title>
+<title>Sounds Instrument Bench · v0.2.5</title>
 <style>
 :root{color-scheme:dark;background:#161817;color:#eae7da;font:15px/1.5 system-ui,sans-serif}
 *{box-sizing:border-box}
@@ -209,9 +209,28 @@ document.addEventListener('DOMContentLoaded',()=>{
 #bench-sample-workspace #lab-region-controls label{margin:4px 0 0!important}
 #bench-sample-workspace #lab-region-controls canvas{height:90px!important}
 #bench-sample-workspace #lab-save-preset,#bench-sample-workspace #lab-export-preset{min-height:35px!important}
+</style><style id="sample-reconstruction-v025">
+#bench-sample-workspace{display:flex!important;flex-direction:column;gap:0!important}
+#bench-sample-workspace[hidden]{display:none!important}
+#bench-sample-workspace #lab-recording{flex:none;border:0!important;background:transparent!important;padding:5px!important;margin:0!important}
+#bench-sample-workspace #lab-recording h2{font-size:15px!important;letter-spacing:.09em!important;margin:0 0 8px!important}
+#bench-sample-workspace #lab-recording label{margin:0 0 5px!important}
+#bench-sample-workspace #lab-recording select{min-height:42px!important}
+#bench-sample-workspace #lab-recording .actions{display:flex;flex-wrap:nowrap;gap:5px;margin:8px 0!important}
+#bench-sample-workspace #lab-recording .actions button{min-width:0;flex:1;font-size:10px!important;padding:5px!important}
+#bench-sample-workspace #lab-recording #lab-cancel{flex:0 0 auto}
+#bench-sample-workspace #lab-recording #lab-progress[hidden]{display:none!important}
+#bench-sample-workspace #lab-recording #lab-progress:not([hidden]){display:block!important}
+#bench-sample-status{margin:0!important;font-size:10px!important}
+#bench-sample-stage{flex:1;min-height:120px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;text-align:center;color:#948e7d;padding:20px}
+#bench-sample-stage[hidden]{display:none!important}
+#bench-sample-stage strong{font:800 13px ui-monospace,monospace;letter-spacing:.1em;color:#c8b993}
+#bench-sample-stage span{font:12px/1.4 ui-monospace,monospace;max-width:270px}
+.bench-empty-symbol{font-size:58px;line-height:1;color:#75674f}
+#bench-sample-workspace>section:not(#lab-recording){flex:none}
 </style></head>
 <body>
-<header><a href="./index.html">← CODE</a><h1>SOUNDS / INSTRUMENT</h1><small>v0.2.4</small></header>
+<header><a href="./index.html">← CODE</a><h1>SOUNDS / INSTRUMENT</h1><small>v0.2.5</small></header>
 <main>
 <p class="lab-intro">Make a sound first. The instrument runs entirely in SuperCollider. No recording required.</p>
 <section id="lab-setup">
@@ -287,13 +306,28 @@ document.addEventListener('DOMContentLoaded',()=>{
  const groups={play:[setup],sample:[sampleWorkspace],details:[]};
  const sourceTitle=shape.querySelector('h2');if(sourceTitle)sourceTitle.textContent='SHAPE';
  const saveTitle=save.querySelector('h2');if(saveTitle)saveTitle.textContent='SAVE';
- const sampleTitle=document.createElement('h2');sampleTitle.textContent='CHOOSE A RECORDING';recording.prepend(sampleTitle);
+ const sampleTitle=document.createElement('h2');sampleTitle.textContent='SAMPLE';recording.prepend(sampleTitle);
+ const originalHeading=recording.querySelector('h2:not(:first-child)');if(originalHeading)originalHeading.remove();
+ const libraryLabel=recording.querySelector('label[for="lab-sound"]');if(libraryLabel)libraryLabel.textContent='RECORDING';
+ const engineButton=document.createElement('button');engineButton.type='button';engineButton.id='bench-sample-power';engineButton.textContent='POWER';engineButton.addEventListener('click',()=>document.getElementById('lab-engine')?.click());
+ const loadButton=document.getElementById('lab-load');loadButton.textContent='LOAD INTO INSTRUMENT';
+ const actionRow=recording.querySelector('.actions');if(actionRow)actionRow.prepend(engineButton);
+ const details=document.getElementById('lab-details');if(details)details.hidden=true;
+ const progress=document.getElementById('lab-progress');if(progress)progress.hidden=true;
+ const sampleStage=document.createElement('div');sampleStage.id='bench-sample-stage';sampleStage.setAttribute('aria-live','polite');
+ sampleStage.innerHTML='<div class="bench-empty-symbol">◌</div><strong>NO SAMPLE LOADED</strong><span>Select a recording above, power on SuperCollider, then load it.</span>';
+ recording.after(sampleStage);sampleWorkspace.append(sampleStage);
+ const source=document.getElementById('lab-live-source');
+ const loadWatch=new MutationObserver(()=>{const loaded=source.readOnly===false;sampleStage.hidden=loaded;engineButton.hidden=document.getElementById('lab-engine')?.textContent?.trim()==='Play tone';});
+ loadWatch.observe(source,{attributes:true,attributeFilter:['readonly']});
+ loadWatch.observe(document.getElementById('lab-engine'),{childList:true,subtree:true,characterData:true});
+ 
  const status=document.createElement('p');status.id='bench-sample-status';status.textContent='Choose a recording, start SuperCollider, then load it to shape and play.';recording.append(status);
  function updateSample(){
   const selected=document.getElementById('lab-sound')?.value;
   const loaded=document.getElementById('lab-live-source')?.readOnly===false;
   shape.hidden=!loaded;save.hidden=!loaded;
-  status.textContent=loaded?'Recording loaded. Shape, play and save your instrument.':selected?'Start SuperCollider and load the selected recording.':'Choose a recording from your library to begin.';
+  status.textContent=loaded?'READY TO SHAPE':selected?'SELECTED · LOAD TO CONTINUE':'SELECT A RECORDING';
  }
  const watch=new MutationObserver(updateSample);
  watch.observe(document.getElementById('lab-live-source'),{attributes:true,attributeFilter:['readonly']});
