@@ -1,4 +1,6 @@
 import {findChapterPhraseMatches, estimateChapterSeek, toggleExplorerFavorite} from './librivox-text-locator.mjs';
+import {saveSound} from './sounds-store.mjs';
+import {extractWavFromSource,fetchRecording} from './librivox-audio-extract.mjs';
 
 // This standalone preview deliberately does not import or mutate the Sounds workspace.
 // AudioSilo exposes a browser-accessible LibriVox catalogue mirror. LibriVox remains
@@ -12,7 +14,7 @@ const app = $('app-shell');
 const audio = $('chapter-audio');
 const state = { results: [], favorites: readLocal(FAV_KEY, []), anchors: readLocal(ANCHOR_KEY, {}), clips: readLocal(CLIP_KEY, []), work: null,
   book: null, recording: null, chapter: null, person: null, scope: 'books', showFavorites: false, matches: [], selectedMatch: -1,
-  clipStart: null, clipEnd: null, regionPreview: false, request: 0 };
+  clipStart: null, clipEnd: null, regionPreview: false, request: 0, extractRun:0, extracting:false, extractAbort:null, localFile:null, localObjectUrl:null, wavBlob:null, wavObjectUrl:null, wavName:'' };
 function readLocal(key, fallback) { try { const value = JSON.parse(localStorage.getItem(key)); return value && typeof value === typeof fallback ? value : fallback; } catch { return fallback; } }
 function writeLocal(key, data) { try { localStorage.setItem(key, JSON.stringify(data)); return true; } catch { return false; } }
 function el(tag, className, text) { const node = document.createElement(tag); if (className) node.className = className; if (text !== undefined) node.textContent = String(text); return node; }
@@ -91,7 +93,7 @@ async function openPerson(person,kind) {
 function showLoadingWork(message) { showWork();$('work-panel').classList.remove('empty');$('empty-work').hidden=true;$('work-body').hidden=false;$('work-heading').textContent=message;$('work-byline').textContent='';$('attribution-row').replaceChildren();$('recording-select').replaceChildren();$('chapter-select').replaceChildren();$('reader-info').replaceChildren(); }
 async function loadWork(id) {
   showLoadingWork('Loading recording…'); const request=++state.request;
-  audio.pause();audio.removeAttribute('src');audio.load();state.chapter=null;state.book=null;state.work=null;
+  resetAudioSource();audio.pause();audio.removeAttribute('src');audio.load();state.chapter=null;state.book=null;state.work=null;
   try {
     const work=await get(`/works/${encodeURIComponent(id)}`); if(request!==state.request)return;
     const editions=(work.recordings||[]).filter(r=>Number(r.librivox_id)>0 || safeUrl(r.links?.librivox));
@@ -125,7 +127,7 @@ async function selectRecording(index) {
   } catch(error) { $('reader-info').textContent=error.message;$('playback-status').textContent='Cannot load sections'; }
 }
 function selectChapter(index) {
-  const chapter=state.sections?.[index];if(!chapter)return;state.chapter=chapter;state.selectedMatch=-1;state.matches=[];
+  const chapter=state.sections?.[index];if(!chapter)return;resetAudioSource();state.chapter=chapter;state.selectedMatch=-1;state.matches=[];
   $('chapter-select').value=String(index);audio.pause();audio.src=safeUrl(chapter.listen_url);audio.load();
   const readers=$('reader-info');readers.replaceChildren(el('span','attrib-label','READ BY'));
   const people=chapter.readers||[];if(!people.length)readers.append(el('span','','Reader not identified in this chapter feed'));
@@ -160,10 +162,105 @@ function markFound() { if(state.selectedMatch<0||!state.chapter){$('text-guidanc
   state.anchors[key]=withoutNear.slice(-60);writeLocal(ANCHOR_KEY,state.anchors);
   $('text-guidance').textContent=`Verified match ${state.selectedMatch+1} at ${formatTime(audio.currentTime)}. Later estimates in this chapter will use this anchor.`;
 }
+function clearGeneratedWav() {
+  state.wavBlob=null;state.wavName='';
+  if(state.wavObjectUrl)URL.revokeObjectURL(state.wavObjectUrl);
+  state.wavObjectUrl=null;
+  const output=$('extracted-audio');output.pause();output.removeAttribute('src');output.hidden=true;
+  $('download-wav').disabled=true;
+}
+function cancelExtraction() {
+  ++state.extractRun;
+  if(state.extractAbort)state.extractAbort.abort();
+  state.extractAbort=null;state.extracting=false;
+  $('extract-progress').hidden=true;
+  clearGeneratedWav();
+}
+function resetAudioSource() {
+  cancelExtraction();
+  if(state.localObjectUrl)URL.revokeObjectURL(state.localObjectUrl);
+  state.localObjectUrl=null;state.localFile=null;
+  $('restore-stream').hidden=true;
+  $('sample-source-status').textContent='Source: online chapter';
+  $('sample-audio-file').value='';
+  $('extract-status').textContent='';
+}
+function safeFilename(value){return String(value||'sample').replace(/[\\/:*?"<>|\x00-\x1f]/g,'-').replace(/\s+/g,' ').trim().slice(0,94)||'sample';}
+function downloadWav() {
+  if(!state.wavBlob)return;
+  const href=URL.createObjectURL(state.wavBlob),a=el('a');a.href=href;a.download=state.wavName||'librivox-sample.wav';
+  document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),30000);
+}
+async function extractSelectedWav(){
+  if(state.extracting || !state.chapter || state.clipStart===null || state.clipEnd===null || state.clipEnd<=state.clipStart)return;
+  if(!state.localFile){
+    const network=navigator.connection||navigator.webkitConnection;
+    const knownWifi=network && (network.type==='wifi'||network.type==='ethernet');
+    if(!knownWifi && !$('permit-audio-download').checked){
+      $('extract-status').dataset.kind='error';
+      $('extract-status').textContent='Full-chapter transfer not approved. Confirm the connection above, or use a downloaded chapter file.';return;
+    }
+  }
+  const chapter=state.chapter,book=state.book,start=state.clipStart,end=state.clipEnd,work=state.work,local=state.localFile;
+  const run=++state.extractRun,abort=new AbortController();state.extractAbort=abort;
+  state.extracting=true;renderClip();clearGeneratedWav();
+  const status=$('extract-status'),progress=$('extract-progress');status.dataset.kind='';
+  progress.hidden=!!local;progress.removeAttribute('value');
+  status.textContent=local?'Preparing selected chapter file…':'Downloading chapter to extract selected region…';
+  let extracted;
+  try {
+    const source=local||await fetchRecording(chapter.listen_url,{signal:abort.signal,onProgress:(received,total)=>{
+      if(state.extractRun!==run)return;
+      if(total){progress.max=total;progress.value=received;}else progress.removeAttribute('value');
+      status.textContent=total?`Downloading chapter: ${Math.round(received/total*100)}%`:`Downloading chapter: ${(received/1048576).toFixed(1)} MB`;
+    }});
+    if(abort.signal.aborted||state.extractRun!==run) return;
+    progress.hidden=true;status.textContent='Extracting selected region…';
+    const Context=window.AudioContext||window.webkitAudioContext;
+    if(!Context)throw Error('This browser does not support audio decoding.');
+    const ctx=new Context();
+    try {extracted=await extractWavFromSource(source,{start,end,decodeAudioData:data=>ctx.decodeAudioData(data)});}
+    finally {await ctx.close().catch(()=>{});}
+    if(abort.signal.aborted||state.extractRun!==run||state.chapter!==chapter)return;
+    const name=safeFilename(`${work?.title||book?.title} - ${chapter.title||'Chapter'} - ${formatTime(start)}-${formatTime(end)}`);
+    const filename=name+'.wav';
+    const record={id:(globalThis.crypto?.randomUUID?.() || `librivox-${Date.now()}-${Math.random().toString(36).slice(2)}`),name,source:'librivox',created:Date.now(),favorite:false,
+      blob:extracted.blob,filename,mime:'audio/wav',license:'LibriVox recording: public domain in the United States',
+      creator:(chapter.readers||[]).map(x=>x.display_name).filter(Boolean).join(', '),
+      attribution:`${work?.title||book?.title||'LibriVox'} · ${authorName(work)} · ${(chapter.readers||[]).map(x=>x.display_name).join(', ')} · ${chapter.title||''}`,
+      origin:{service:'LibriVox',bookId:book?.id,chapterId:chapter.id,chapter:chapter.title,author:authorName(work),
+        reader:(chapter.readers||[]).map(x=>x.display_name),source_url:book?.url_librivox,
+        audio_url:chapter.listen_url,text_source:book?.url_text_source,start,end}};
+    try {await saveSound(record);}catch(error){
+      // The WAV remains available as a download when IndexedDB quota fails.
+      if(state.extractRun!==run)return;
+      state.wavBlob=extracted.blob;state.wavName=filename;
+      state.wavObjectUrl=URL.createObjectURL(extracted.blob);
+      const preview=$('extracted-audio');preview.src=state.wavObjectUrl;preview.hidden=false;
+      $('download-wav').disabled=false;
+      status.dataset.kind='error';status.textContent=`WAV extracted, but not saved to Sounds (${error.message}). Download it now.`;return;
+    }
+    if(state.extractRun!==run)return;
+    state.wavBlob=extracted.blob;state.wavName=filename;
+    state.wavObjectUrl=URL.createObjectURL(extracted.blob);
+    const preview=$('extracted-audio');preview.src=state.wavObjectUrl;preview.hidden=false;
+    $('download-wav').disabled=false;
+    status.textContent=`Saved ${(extracted.blob.size/1048576).toFixed(1)} MB WAV in Sounds. Listen here, or download a copy.`;
+  }catch(error){
+    if(abort.signal.aborted||state.extractRun!==run)return;
+    status.dataset.kind='error';
+    status.textContent=/fetch|network|Failed to fetch|Load failed/i.test(error.message)?
+      'The audio host does not allow browser downloads, or the connection failed. Download the MP3 on LibriVox and select USE CHAPTER FILE here.':
+      `Extraction failed: ${error.message}`;
+  }finally{
+    if(state.extractRun===run){state.extracting=false;state.extractAbort=null;progress.hidden=true;renderClip();}
+  }
+}
 function renderClip() {
   $('clip-summary').textContent=`IN ${state.clipStart===null?'--:--':formatTime(state.clipStart)} · OUT ${state.clipEnd===null?'--:--':formatTime(state.clipEnd)}`;
   $('preview-region').disabled=!(state.clipStart!==null && state.clipEnd!==null && state.clipEnd>state.clipStart);
   $('save-region').disabled=$('preview-region').disabled;
+  $('extract-wav').disabled=$('preview-region').disabled || state.extracting;
 }
 function saveRegion() {if(!state.chapter||state.clipStart===null||state.clipEnd===null||state.clipEnd<=state.clipStart)return;
   const id=`${state.book.id}:${state.chapter.id||state.chapter.section_number}:${state.clipStart.toFixed(2)}-${state.clipEnd.toFixed(2)}`;
@@ -172,7 +269,7 @@ function saveRegion() {if(!state.chapter||state.clipStart===null||state.clipEnd=
     phrase:state.selectedMatch<0?null:state.matches[state.selectedMatch]?.match,saved_at:new Date().toISOString()};
   state.clips=state.clips.filter(x=>x.id!==id);state.clips.push(item);writeLocal(CLIP_KEY,state.clips);
   if(!selectedFavorite('sample',id))changeFavorite('sample',id,`${item.title}: ${item.chapter} (${formatTime(item.start)}–${formatTime(item.end)})`);
-  $('clip-message').textContent='Region saved as a marker on this device. Export its metadata below; audio extraction into Sounds is not connected in this test.';
+  $('clip-message').textContent='Region marker saved. Use EXTRACT & SAVE WAV to create the actual audio file in Sounds.';
 }
 function exportMarkers() { const payload={format:'supercollision-librivox-markers',version:1,created_at:new Date().toISOString(),markers:state.clips,anchors:state.anchors};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob),link=el('a');link.href=url;link.download='supercollision-librivox-markers.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -200,13 +297,29 @@ $('chapter-select').addEventListener('change',e=>selectChapter(Number(e.target.v
 $('favorite-book').addEventListener('click',()=>{if(state.work)changeFavorite('book',state.work.id,state.work.title);});
 $('mark-position').addEventListener('click',markFound);
 document.querySelectorAll('[data-jump]').forEach(b=>b.addEventListener('click',()=>{if(!state.chapter)return;audio.currentTime=Math.max(0,Math.min(effectiveDuration()||1e10,(audio.currentTime||0)+Number(b.dataset.jump)));}));
-$('set-start').addEventListener('click',()=>{state.clipStart=audio.currentTime||0;renderClip();$('clip-message').textContent='Start position set.';});
-$('set-end').addEventListener('click',()=>{state.clipEnd=audio.currentTime||0;renderClip();$('clip-message').textContent=state.clipStart!==null&&state.clipEnd<=state.clipStart?'End must be after start.':'End position set.';});
+$('set-start').addEventListener('click',()=>{clearGeneratedWav();state.clipStart=audio.currentTime||0;renderClip();$('clip-message').textContent='Start position set.';});
+$('set-end').addEventListener('click',()=>{clearGeneratedWav();state.clipEnd=audio.currentTime||0;renderClip();$('clip-message').textContent=state.clipStart!==null&&state.clipEnd<=state.clipStart?'End must be after start.':'End position set.';});
 $('preview-region').addEventListener('click',()=>{if(state.clipStart===null||state.clipEnd<=state.clipStart)return;state.regionPreview=true;audio.currentTime=state.clipStart;audio.play().catch(()=>{$('clip-message').textContent='Audio playback was blocked. Tap the standard audio player first.';});});
 audio.addEventListener('timeupdate',()=>{if(state.regionPreview&&state.clipEnd!==null&&audio.currentTime>=state.clipEnd){audio.pause();state.regionPreview=false;audio.currentTime=state.clipStart||0;}});
 audio.addEventListener('pause',()=>{state.regionPreview=false;});
 audio.addEventListener('error',()=>{if(state.chapter)$('playback-status').textContent='Playback failed. Open recording on LibriVox for a fallback.';});
 audio.addEventListener('loadedmetadata',()=>{if(state.chapter)$('playback-status').textContent=`${formatTime(audio.duration)} · Ready`;});
+$('extract-wav').addEventListener('click',extractSelectedWav);
+$('download-wav').addEventListener('click',downloadWav);
+$('sample-audio-file').addEventListener('change',event=>{
+  const file=event.target.files?.[0];if(!file)return;
+  if(file.size>80*1024*1024){$('extract-status').dataset.kind='error';$('extract-status').textContent='Choose a chapter file no larger than 80 MB.';event.target.value='';return;}
+  cancelExtraction();if(state.localObjectUrl)URL.revokeObjectURL(state.localObjectUrl);
+  state.localFile=file;state.localObjectUrl=URL.createObjectURL(file);
+  audio.pause();audio.src=state.localObjectUrl;audio.load();
+  $('restore-stream').hidden=false;$('sample-source-status').textContent=`Source: ${file.name}`;
+  $('extract-status').dataset.kind='';$('extract-status').textContent='Local chapter file ready. Verify that it matches the selected recording, then mark the region.';
+  state.clipStart=null;state.clipEnd=null;renderClip();
+});
+$('restore-stream').addEventListener('click',()=>{
+  resetAudioSource();audio.pause();if(state.chapter)audio.src=safeUrl(state.chapter.listen_url);audio.load();
+  state.clipStart=null;state.clipEnd=null;renderClip();
+});
 $('save-region').addEventListener('click',saveRegion);
 $('export-markers').addEventListener('click',exportMarkers);
 $('text-file').addEventListener('change',async event=>{const file=event.target.files?.[0];if(!file)return;if(file.size>2500000){$('text-guidance').textContent='Choose a plain-text file smaller than 2.5 MB.';return;} $('chapter-text').value=await file.text();$('text-guidance').textContent='Text loaded. Make sure it matches the selected audio chapter.';event.target.value='';});
