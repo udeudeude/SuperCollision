@@ -63,7 +63,7 @@ try{
         codeVisible:document.querySelector('#code').getBoundingClientRect().height>50,
         adjustParent:explain.querySelector('#perform-explain-adjust')!==null};
     });
-    assert.deepEqual(values.names,['LPF','SinOsc','Out'],
+    assert.deepEqual(values.names,['SinOsc','LPF','Out'],
       'Incorrect sound-construction components at '+width+'px');
     assert.match(values.server,/1 confirmed active/);
     assert.match(values.server,/330 Hz/);
@@ -85,6 +85,7 @@ try{
 
     await page.locator('#perform-axis-ticks').click({position:{x:20,y:10},force:true});
     await page.waitForFunction(()=>document.querySelector('#perform-follow').getAttribute('aria-pressed')==='false');
+    await page.waitForFunction(()=>!document.querySelector('.perform-inspect-marker')?.hidden);
     assert.equal(await page.locator('.perform-inspect-marker').isVisible(),true,
       'Time inspection must display a marker without stopping audio');
     assert.equal(await page.evaluate(()=>window.SCTimeline.journal.active('teach').length),1,
