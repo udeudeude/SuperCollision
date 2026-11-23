@@ -158,9 +158,13 @@ function buildNoteDrawer(){
  drawer.append(heading,tuneLabel,info,list);
  document.body.append(toggle,drawer);
  function show(open){drawer.hidden=!open;toggle.hidden=open;toggle.setAttribute('aria-expanded',String(open));}
- toggle.addEventListener('click',()=>show(true));
+ toggle.addEventListener('click',()=>{render();show(true)});
  close.addEventListener('click',()=>show(false));
  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!drawer.hidden)show(false)});
+ window.addEventListener('bench-view-changed',event=>{
+  if(event.detail.view!=='play'){drawer.hidden=true;toggle.hidden=true;toggle.setAttribute('aria-expanded','false');}
+  else {drawer.hidden=true;toggle.hidden=false;toggle.setAttribute('aria-expanded','false');}
+ });
  function render(){
   currentTuning=select.value;
   const option=tuningOptions.find(t=>t.value===currentTuning);info.textContent=option.info;
