@@ -78,8 +78,8 @@ function setup(){
   try{
    await saveSound(item);
    notice.textContent='Saved; opening editable source. Nothing has been executed.';
-   window.dispatchEvent(new CustomEvent('bench-open-source',{detail:{name:item.name,code:item.code}}));
-   view('play');
+   const handoff={name:item.name,code:item.code};window.dispatchEvent(new CustomEvent('bench-open-source',{detail:handoff}));
+   if(handoff.opened)view('play');else notice.textContent='Saved to Library. Existing unsaved Play/Code edits were kept.';
   }catch(error){notice.textContent='Could not save: '+error.message}
   finally{submit.disabled=false}
  });
@@ -107,7 +107,7 @@ function setup(){
    const open=action('OPEN',()=>{
     if(item.preset?.soundId){location.href='./sounds-bench-preview.html?preset='+encodeURIComponent(item.id)+'#sample';return}
     if(item.code){
-     window.dispatchEvent(new CustomEvent('bench-open-source',{detail:{name:item.name,code:item.code}}));view('play');return;
+     const handoff={name:item.name,code:item.code,bench:item.bench};window.dispatchEvent(new CustomEvent('bench-open-source',{detail:handoff}));if(handoff.opened)view('play');return;
     }
     if(item.blob instanceof Blob){
      const select=$('lab-sound');select.value=item.id;
