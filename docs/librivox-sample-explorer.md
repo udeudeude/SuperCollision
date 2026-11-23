@@ -59,3 +59,13 @@ The user should see a sound-discovery instrument, not a conventional audiobook c
 - LibriVox API: https://librivox.org/api/info
 - 2026 catalog rate-limit announcement: https://librivox.org/2026/09/16/librivox-api-update/
 - Project Gutenberg catalog guidance: https://www.gutenberg.org/ebooks/offline_catalogs.html
+
+## Implemented: actual extracted audio (2026-11-23)
+
+- The standalone explorer now provides **EXTRACT & SAVE WAV** for a selected start/end region, audio preview, and **DOWNLOAD WAV**. This saves an actual audio Blob into the existing `supercollision-sounds-v1` IndexedDB Sounds store with chapter, reader, author, source URL, timestamps, and attribution, not just metadata markers.
+- MP3 frame scanning decodes a small window near the selection, with preroll for the bit reservoir. Export is 16-bit PCM WAV with a short anti-click fade. Maximum selection is 180 seconds and maximum source transfer is 80 MiB; an unrecognized large file is rejected rather than decoding arbitrarily long recordings into memory.
+- Optional remote full-chapter downloads are Wi-Fi-first: if the browser cannot verify Wi-Fi, explicit transfer approval is required. LibriVox audio hosts may not allow cross-origin downloads even if audio playback works. Users can download a chapter through LibriVox and supply that local audio file instead.
+- If the Sounds IndexedDB write fails (such as a quota limit), the decoded WAV remains available for manual download, and the interface explicitly reports that Sounds was **not** saved.
+- User-selectable sample region markers and JSON exports still work independently.
+- Regression checks: Node tests for MPEG frame parsing, WAV headers, and limits; Chromium end-to-end with real encoded MP3 validating saved Blob, playback, download, chapter switching, and network permission at 896×414 and 390×844. Safari and real remote-host testing remain pending.
+- This release only updates isolated LibriVox files on the published `pages-build` branch. It does not alter the active Sounds redesign or Code page.
