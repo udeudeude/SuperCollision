@@ -199,7 +199,10 @@ function buildNoteDrawer(){
  function position(){
   const rect=demoBay.getBoundingClientRect();
   // The handle is aligned with the code bay, not the centre of the screen.
-  shell.style.top=Math.max(48,Math.round(rect.top+4))+'px';
+  const top=Math.max(48,Math.round(rect.top+4));
+  shell.style.top=top+'px';
+  // Keep the drawer a manageable height; its notes scroll internally.
+  shell.style.height=Math.max(125,Math.min(440,window.innerHeight-top-12))+'px';
  }
  function show(next){
   open=Boolean(next);
