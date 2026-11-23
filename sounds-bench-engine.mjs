@@ -199,6 +199,27 @@ function buildNoteDrawer(){
 buildNoteDrawer();
 toneVisuals=installToneVisuals({container:demoControls,inputs:toneInputs,controls:toneControls,isLocked:()=>demoDirty});
 updateDemoCode();
+window.addEventListener('bench-open-source',event=>{
+ const item=event.detail||{},code=item.code,name=item.name;
+ if(typeof code!=='string'||!code.trim()||code.length>150000)return;
+ if(demoDirty&&demoCode.value!==code&&!confirm('Replace unsaved edits in Play/Code? The current custom code will not be saved automatically.'))return;
+ const previous=demoCode.value;
+ try{
+  if(item.bench?.kind==='tone'){
+   const settings={frequency:item.bench.frequency,amplitude:item.bench.amplitude,...(item.bench.toneSettings||{})};
+   setToneSettings(settings);updateDemoCode(true);
+   if(item.bench.tuning)window.benchSetTuning?.(item.bench.tuning);
+  }
+  demoCode.value=code;
+  demoDirty=demoCode.value!==demoGenerated;
+  updateDemoCode();
+  if(typeof name==='string')toneName.value=name.slice(0,120);
+  renderCodeOverlay(previous,'OPENED SOURCE');
+  event.detail.opened=true;
+  toneSaveStatus.textContent='Editable source opened from Library. It has not been executed.';
+  announce('Loaded '+(name||'instrument')+' for review without playing it.');
+ }catch(error){announce('Could not open source: '+error.message)}
+});
 toneSave.addEventListener('click',async()=>{
  const name=toneName.value.trim().slice(0,120),source=demoCode.value;
  if(!name){toneSaveStatus.textContent='Enter a name to save this instrument.';toneName.focus();return}
