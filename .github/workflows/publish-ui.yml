@@ -135,5 +135,17 @@ jobs:
             echo "Production site is already current"
           else
             git commit -m "Publish tested offline SuperCollision frontend"
-            git push origin HEAD:pages-build
+            # Sounds publishes to this same branch independently. Never force-push
+            # or overwrite its files when it wins a concurrent publication race.
+            for attempt in 1 2 3 4 5; do
+              if git push origin HEAD:pages-build; then
+                echo "UI published without discarding concurrent Sounds changes."
+                exit 0
+              fi
+              echo "Production advanced during UI publishing; rebasing UI-only commit (attempt $attempt)."
+              git fetch --no-tags --depth=50 origin pages-build
+              git rebase origin/pages-build
+            done
+            echo "Could not publish after five safe non-force retries."
+            exit 1
           fi
