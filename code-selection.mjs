@@ -128,7 +128,13 @@ export function selectionCandidates(source, start, end = start) {
   for (let i = 0; i < mask.length; i++) {
     const ch = mask[i];
     if (OPEN[ch]) {
-      frames.push({ last: i + 1, open: ch });
+      let last = i + 1;
+      if (ch === '{') {
+        // SuperCollider function headers use |arguments| before the first body statement.
+        const args = mask.slice(last).match(/^\s*\|[^|]*\|/);
+        if (args) last += args[0].length;
+      }
+      frames.push({ last, open: ch });
     } else if (CLOSE[ch]) {
       if (frames.length > 1 && frames[frames.length - 1].open === CLOSE[ch]) {
         frames.pop();
