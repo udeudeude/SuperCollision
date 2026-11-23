@@ -9,6 +9,8 @@ js=js.replace("import {findChapterPhraseMatches, estimateChapterSeek, toggleExpl
 extractor=(root/'librivox-audio-extract.mjs').read_text().replace('export const ','const ').replace('export function ','function ').replace('export async function ','async function ')
 store=(root/'sounds-store.mjs').read_text().replace('export const ','const ').replace('export async function ','async function ')
 js=js.replace("import {saveSound} from './sounds-store.mjs';",store)
+combo=(root/'librivox-combine.mjs').read_text().replace('export function ','function ')
+js=js.replace("import {normalizePersonName, workHasAuthor, matchingReaderCredits, selectLibriVoxEditions, filteredSections} from './librivox-combine.mjs';",combo)
 js=js.replace("import {extractWavFromSource,fetchRecording} from './librivox-audio-extract.mjs';",extractor)
 assert 'import {' not in js
 html=html.replace('<link rel="stylesheet" href="./librivox-explorer.css">',f'<style>\n{css}\n</style>')
