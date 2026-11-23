@@ -49,6 +49,7 @@ function setup(){
   }
   const labels={acquire:'SOUND METHODS',record:'RECORD AUDIO',import:'IMPORT AUDIO',code:'IMPORT INSTRUMENT'};
   $('bench-acquire-title').textContent=labels[name]||'SOUND METHODS';
+  $('bench-acquire-back').textContent=location.hash.slice(1)==='sample'?'← BACK TO SAMPLES':'← BACK TO INSTRUMENT';
   overlay.hidden=false;
  }
  $('bench-acquire-back').addEventListener('click',closeOverlay);
@@ -56,7 +57,7 @@ function setup(){
  const controls={
   write:()=>{closeOverlay();view('play')},generate:()=>legacy('generate'),record:()=>show('record'),import:()=>show('import'),
   'discover-audio':()=>legacy('discover'),
-  'discover-code':()=>{show('code');$('acquire-community-sources').hidden=false},
+  'discover-code':()=>{show('code');$('acquire-community-sources').hidden=false;$('bench-acquire-title').textContent='DISCOVER INSTRUMENTS'},
   'import-code':()=>{show('code');$('acquire-community-sources').hidden=true}
  };
  overlay.querySelectorAll('[data-action]').forEach(b=>b.addEventListener('click',controls[b.dataset.action]));
