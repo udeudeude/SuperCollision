@@ -6,6 +6,7 @@ import {readPcmWaveForNativeBuffer} from './sounds-pcm-ingest.mjs';
 import {REGION_DEFINITIONS,regionPlayCommand,regionLiveSource,stopRegionCommand,sampleInstrumentSource,validateRegion,DEMO_MARKER} from './sounds-sampler.mjs';
 import {waveformPeaks,waveformDragRegion} from './sounds-waveform.mjs';
 import {demoSynthSource,toneControls,toneDefaults,normalizeToneSettings,tuningOptions,notesForTuning} from './sounds-bench-tone.mjs';
+import {installToneVisuals} from './sounds-bench-visuals.mjs';
 const $=id=>document.getElementById(id);
 const status=$('lab-status'),log=$('lab-log'),sound=$('lab-sound'),engine=$('lab-engine');
 const load=$('lab-load'),play=$('lab-play'),stop=$('lab-stop'),cancel=$('lab-cancel'),progress=$('lab-progress');
@@ -106,6 +107,7 @@ for(const control of toneControls){
  input.id=label.htmlFor;input.value=String(toneDefaults[control.key]);
  field.append(input);demoControls.append(field);toneInputs.set(control.key,input);
 }
+let toneVisuals=null;
 function updateDemoCode(force=false,changedKey=''){
  const previous=demoCode.value;
  demoGenerated=demoSynthSource(readToneSettings());
@@ -123,6 +125,7 @@ function updateDemoCode(force=false,changedKey=''){
  demoSyncLabel.textContent=demoDirty?'CUSTOM CODE · CONTROLS OFF':'CONTROLS MATCH CODE';
  demoReset.textContent=demoDirty?'Restore from controls':'Reset code from controls';
  renderCodeOverlay(previous,changedKey&&toneFields[changedKey]?.name||'');
+ toneVisuals?.render();
 }
 demoCode.addEventListener('input',()=>{
  demoDirty=demoCode.value!==demoGenerated;
@@ -194,6 +197,7 @@ function buildNoteDrawer(){
  window.benchSetTuning=tuning=>{if(tuningOptions.some(t=>t.value===tuning)){select.value=tuning;render()}};
 }
 buildNoteDrawer();
+toneVisuals=installToneVisuals({container:demoControls,inputs:toneInputs,controls:toneControls,isLocked:()=>demoDirty});
 updateDemoCode();
 toneSave.addEventListener('click',async()=>{
  const name=toneName.value.trim().slice(0,120),source=demoCode.value;
