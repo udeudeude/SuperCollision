@@ -353,6 +353,10 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     const graphWidth=Math.min(24000,Math.max(500,Math.ceil(timespan*SCALE)));
     rowsEl.style.setProperty('--track-width',graphWidth+'px');
     const tickEl=panel.querySelector('#perform-axis-ticks');
+    const playhead=tickEl.querySelector('.perform-now')||document.createElement('span');
+    const inspectMark=tickEl.querySelector('.perform-inspect-marker')||document.createElement('span');
+    playhead.className='perform-now';playhead.setAttribute('aria-hidden','true');
+    inspectMark.className='perform-inspect-marker';inspectMark.setAttribute('aria-hidden','true');
     if(timespan!==lastTickSpan){
       const ticks=[];
       for(let seconds=0;seconds<=timespan&&seconds<1500;seconds+=10){
@@ -361,14 +365,20 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
         ticks.push(tick);
       }
       tickEl.style.width=graphWidth+'px';
-      tickEl.replaceChildren(...ticks);
+      tickEl.replaceChildren(...ticks,playhead,inspectMark);
       lastTickSpan=timespan;
     }
+    playhead.style.left=Math.max(0,Math.min(graphWidth,(t-journal.zero)/1000*SCALE))+'px';
+    inspectMark.hidden=inspectedAt===null;
+    if(inspectedAt!==null)
+      inspectMark.style.left=Math.max(0,Math.min(graphWidth,(inspectedAt-journal.zero)/1000*SCALE))+'px';
     const events=journal.eventsForCurrent(),byName=new Map();
-    // Scan historical notes once, retaining only notes near the viewport.
-    // A fixed octave reference avoids rescanning/repositioning every old
-    // note whenever a new pitch arrives.
-    const pitchBounds=new Map();
+    // Fixed pitch reference: the same note never jumps to a different height
+    // when unrelated notes enter or leave the visible timeline.
+    const pitchPosition=hz=>{
+      if(!Number.isFinite(hz)||hz<=0)return .5;
+      return Math.max(0,Math.min(1,(69+12*Math.log2(hz/440)-24)/84));
+    };
     const viewWidth=Math.max(250,scroller.clientWidth);
     const viewLeft=follow&&(!pointerStart||!pointerStart.horizontal)
       ?Math.max(0,graphWidth-scroller.clientWidth):scroller.scrollLeft;
@@ -379,12 +389,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       if(end<minX||start>maxX)continue;
       if(!byName.has(ev.name))byName.set(ev.name,[]);
       byName.get(ev.name).push(ev);
-      const hz=ev.params?.freq;
-      if(Number.isFinite(hz)&&hz>0){
-        const p=Math.log2(hz),b=pitchBounds.get(ev.name)||{lo:p,hi:p};
-        b.lo=Math.min(b.lo,p);b.hi=Math.max(b.hi,p);
-        pitchBounds.set(ev.name,b);
-      }
+
     }
     for(const row of rows){
       const dom=lastRows.get(row.name);
@@ -410,16 +415,15 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
         // Finished notes are immutable. Avoid rebuilding thousands of
         // historic bar styles and labels every 350ms during long pieces.
         const endSignature=String(e.end);
-        const boundsKey=JSON.stringify(pitchBounds.get(row.name)||null);
+        const boundsKey='midi-24-108';
         if(e.end===null||bar.dataset.renderedEnd!==endSignature||bar.dataset.pitchBounds!==boundsKey){
           bar.dataset.pitchBounds=boundsKey;
           bar.dataset.renderedEnd=endSignature;
           bar.classList.toggle('perform-running',e.end===null&&!stopped);
           bar.style.left=Math.max(0,start*SCALE)+'px';
           bar.style.width=width+'px';
-          const pitchHz=e.params?.freq,bounds=pitchBounds.get(row.name);
-          const pitch=Number.isFinite(pitchHz)&&pitchHz>0&&bounds?
-            (Math.log2(pitchHz)-bounds.lo)/Math.max(1,bounds.hi-bounds.lo):.5;
+          const pitchHz=e.params?.freq;
+          const pitch=pitchPosition(pitchHz);
           bar.style.top=(2+Math.round((1-pitch)*11))+'px';
           bar.classList.toggle('perform-pitch-known',Number.isFinite(pitchHz)&&pitchHz>0);
           bar.querySelector('.perform-event-label').textContent=width>=72 &&
@@ -435,6 +439,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
           bar.title=row.name+' · '+when+' · '+duration+' seconds'+hz+amp;
           bar.setAttribute('aria-label',bar.title);
         }
+        bar.setAttribute('aria-pressed',String(e===selectedEvent));
         bars.push(bar);
       }
       for(const [ev,bar] of dom.bars)if(!used.has(ev)){
@@ -447,6 +452,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     summary.textContent=rows.length+' instruments · '+events.length+' notes'+
       (stopped?' · Stopped':'');
     panel.classList.toggle('perform-stopped',stopped);
+    renderExplainer(allRows,events,t);
     const right=Math.max(0,scroller.scrollWidth-scroller.clientWidth);
     if(follow&&(!pointerStart||!pointerStart.horizontal)){
       if(Math.abs(scroller.scrollLeft-right)>1)scroller.scrollLeft=right;
@@ -472,6 +478,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   followBtn.addEventListener('click',()=>{
     // Returning to live is a direct, persistent choice, not a toggle.
     setFollow(true);
+    inspectedAt=null;selectedEvent=null;
     pointerStart=null;
     scroller.scrollLeft=Math.max(0,scroller.scrollWidth-scroller.clientWidth);
     schedule();
@@ -511,6 +518,11 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
       horizontalIntentUntil=performance.now()+700;
     }
   },{passive:true});
+  panel.querySelector('#perform-axis-ticks').addEventListener('click',event=>{
+    const area=event.currentTarget.getBoundingClientRect();
+    inspectedAt=journal.zero+Math.max(0,(event.clientX-area.left)/SCALE)*1000;
+    selectedEvent=null;setFollow(false);schedule();
+  });
   scroller.addEventListener('scroll',()=>{
     rowsEl.style.setProperty('--perform-scroll-x',scroller.scrollLeft+'px');
     // Vertical scrolling and automatic follow movement do not pause live.
