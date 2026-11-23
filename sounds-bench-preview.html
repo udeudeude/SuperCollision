@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#161817">
-<title>Sounds Instrument Bench · v0.3.4</title>
+<title>Sounds Instrument Bench · v0.3.5</title>
 <style>
 :root{color-scheme:dark;background:#161817;color:#eae7da;font:15px/1.5 system-ui,sans-serif}
 *{box-sizing:border-box}
@@ -382,9 +382,101 @@ document.addEventListener('gesturechange',event=>{
 document.addEventListener('touchmove',event=>{
  if(event.touches.length>1&&!event.target?.closest?.('#lab-demo-code-bay'))event.preventDefault();
 },{capture:true,passive:false});
-</script></head>
+</script><style id="compact-musical-notes-drawer-v035">
+/* Only the sliding shell moves. Its small handle stays exposed both ways. */
+#bench-notes-shell{
+ --bench-note-width:min(212px,calc(100vw - 43px));
+ position:fixed;
+ z-index:50;
+ right:max(0px,env(safe-area-inset-right));
+ top:120px;
+ width:var(--bench-note-width);
+ height:440px;
+ max-height:calc(100dvh - 70px);
+ transform:translateX(100%);
+ transition:transform .22s cubic-bezier(.21,.76,.27,1);
+ overflow:visible;
+ pointer-events:none;
+}
+#bench-notes-shell[hidden]{display:none!important}
+#bench-notes-shell.bench-notes-open{transform:translateX(0)}
+#bench-notes-toggle{
+ position:absolute!important;
+ top:2px!important;
+ left:-34px!important;
+ right:auto!important;
+ z-index:2!important;
+ width:34px!important;
+ min-width:34px!important;
+ height:39px!important;
+ min-height:39px!important;
+ max-height:39px!important;
+ padding:2px!important;
+ margin:0!important;
+ display:flex!important;
+ align-items:center!important;
+ justify-content:center!important;
+ writing-mode:horizontal-tb!important;
+ letter-spacing:0!important;
+ line-height:1!important;
+ font:800 22px/1 Georgia,serif!important;
+ border:2px solid #e0b76c!important;
+ border-radius:3px 0 0 3px!important;
+ background:#dfb668!important;
+ color:#1d211a!important;
+ box-shadow:-2px 2px 7px #0007;
+ touch-action:none!important;
+ user-select:none;
+ -webkit-user-select:none;
+ pointer-events:auto!important;
+ cursor:grab;
+}
+#bench-notes-toggle:active{cursor:grabbing}
+#bench-notes-drawer{
+ position:absolute!important;
+ inset:0!important;
+ top:0!important;right:0!important;bottom:0!important;left:0!important;
+ width:100%!important;
+ height:100%!important;
+ max-height:none!important;
+ padding:8px!important;
+ margin:0!important;
+ z-index:1!important;
+ display:grid!important;
+ grid-template-rows:auto auto auto minmax(0,1fr)!important;
+ gap:6px!important;
+ overflow:hidden!important;
+ border:2px solid #b79a69!important;
+ border-radius:0 0 0 3px!important;
+ background:#20251f!important;
+ box-shadow:-8px 6px 13px #0009!important;
+ pointer-events:none;
+}
+#bench-notes-shell.bench-notes-open #bench-notes-drawer{pointer-events:auto}
+#bench-notes-heading{font-size:12px!important;min-height:22px}
+#bench-notes-drawer label{font-size:9px!important;letter-spacing:.02em!important;min-width:0}
+#bench-tuning{min-height:32px!important;width:100%!important;font-size:11px!important;padding:4px!important}
+#bench-tuning-note{font-size:10px!important;line-height:1.3!important}
+#bench-frequency-list{min-height:0!important;overflow-y:auto!important;overscroll-behavior:contain!important;gap:3px!important}
+#bench-frequency-list .bench-frequency-item{
+ min-height:33px!important;
+ padding:5px 6px!important;
+ gap:5px!important;
+ font-size:10px!important;
+}
+#bench-frequency-list .bench-frequency-item>span{min-width:0}
+#bench-frequency-list .bench-frequency-item>span:last-child{
+ font-size:10px!important;
+ flex:none!important;
+ white-space:nowrap!important;
+}
+#bench-frequency-list .bench-frequency-item small{font-size:9px!important}
+@media(prefers-reduced-motion:reduce){
+ #bench-notes-shell{transition:none!important}
+}
+</style></head>
 <body>
-<header><a href="./index.html">← CODE</a><h1>SOUNDS / INSTRUMENT</h1><small>v0.3.4</small></header>
+<header><a href="./index.html">← CODE</a><h1>SOUNDS / INSTRUMENT</h1><small>v0.3.5</small></header>
 <main>
 <p class="lab-intro">Make a sound first. The instrument runs entirely in SuperCollider. No recording required.</p>
 <section id="lab-setup">
@@ -486,7 +578,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  window.addEventListener('bench-open-view',event=>{if(['play','sample','details'].includes(event.detail?.view))show(event.detail.view)});
  show(['play','sample','details'].includes(location.hash.slice(1))?location.hash.slice(1):'play');
 });
-</script><script type="module" src="./sounds-bench-engine.mjs?v=0.3.4"></script>
+</script><script type="module" src="./sounds-bench-engine.mjs?v=0.3.5"></script>
 <script type="module" src="./sounds-bench-acquire.mjs?v=0.3.3"></script>
 </body>
 </html>
