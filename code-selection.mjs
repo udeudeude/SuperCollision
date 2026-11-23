@@ -161,12 +161,16 @@ export function selectionCandidates(source, start, end = start) {
     const containing = regions
       .filter(r => r.kind === 'Statement' && r.from <= from && r.to >= to)
       .sort((a, b) => a.to - a.from - (b.to - b.from))[0];
-    if (containing) { from = containing.from; to = containing.to; }
+    // Only absorb a surrounding statement when it assigns this instrument.
+    // A Pbind nested inside Pdef must remain its own selectable unit.
+    if (containing && /=\s*$/.test(mask.slice(containing.from, from))) {
+      from = containing.from; to = containing.to;
+    }
     add(from, to, 'Instrument');
   }
   if (length) add(0, length, 'Composition');
 
-  const priority = { Composition: 12, Instrument: 11, Statement: 10,
+  const priority = { Instrument: 13, Composition: 12, Statement: 10,
     Block: 9, Array: 8, Group: 7, Expression: 6, Word: 5, String: 4, Comment: 3 };
   const unique = new Map();
   for (const region of regions) {
