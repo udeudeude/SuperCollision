@@ -69,3 +69,14 @@ The user should see a sound-discovery instrument, not a conventional audiobook c
 - User-selectable sample region markers and JSON exports still work independently.
 - Regression checks: Node tests for MPEG frame parsing, WAV headers, and limits; Chromium end-to-end with real encoded MP3 validating saved Blob, playback, download, chapter switching, and network permission at 896×414 and 390×844. Safari and real remote-host testing remain pending.
 - This release only updates isolated LibriVox files on the published `pages-build` branch. It does not alter the active Sounds redesign or Code page.
+
+## Implemented: independent author AND reader facets (2026-11-23)
+
+- The LibriVox Explorer preview now makes author and reader independent editable filters in the principal search area; both fields are combined with AND semantics. The old broad search remains available behind **Other search**.
+- Name suggestions come from the public catalogue; favorite authors and readers become reusable filter chips, and selecting an author or reader in the general catalogue populates its facet without discarding the other one.
+- Results are verified against the **specific LibriVox recording** credited to the chosen reader, rather than picking a different recording of the same book. For combined filters the app checks the extended chapter feed before reporting a matching section count.
+- When opening a result, the recording picker excludes other-reader editions and the chapter picker lists only sections explicitly credited to the chosen reader. The original section numbering is preserved and a visible count shows e.g. 2 of 3 sections.
+- Reader credits are fetched across paginated results (not merely the first page), and catalog/verification failures and truncated searches are flagged rather than silently presented as exhaustive.
+- Tests now cover a 101-credit paginated reader, two different authors, multiple editions, mixed chapter readers, missing/ambiguous identity and reusable favorites; browsers at 896×414 and 390×844. Previously implemented WAV extraction was retested and remains operational.
+
+**Known catalogue limitation:** AudioSilo's LibriVox section feed provides reader identity but does not supply section-level **author** attribution in mixed-author anthologies. The AND intersection therefore verifies works credited to the selected author, and it cannot guarantee finding that author's individual stories within a book catalogued as *Various*. An empty result is an empty result from this index, not proof no such LibriVox audio exists. Do not imply complete anthology section-author coverage until an appropriate index is available.
