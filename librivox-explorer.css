@@ -2,3 +2,25 @@
 @media(max-width:740px){.topbar{min-height:45px;padding:5px 8px;padding-top:calc(5px + env(safe-area-inset-top))}.topbar h1{font-size:13px}.preview-note{font-size:9px}.app-shell{display:block;padding:5px;overflow:hidden}.discovery-panel,.work-panel{height:100%}.app-shell.show-work .discovery-panel{display:none}.app-shell:not(.show-work) .work-panel{display:none}.mobile-back{display:block;margin:-4px 0 8px}.mobile-back button{border:0;min-height:34px;background:transparent;color:#d8bc7f;padding:4px 0;font:800 11px ui-monospace,monospace}.work-body{padding:9px;gap:9px}.work-label h2{font-size:18px}.player{padding:8px;gap:8px}.clip-buttons button{font-size:10px}}
 @media(max-width:380px){.topbar h1 small{display:none}.quick-searches button{font-size:10px}.scope-picker span{font-size:10px}.jump-actions button{font-size:10px}.text-heading a{font-size:9px}}
 @media(max-height:500px) and (min-width:741px){.panel-top{padding-top:8px}.panel-top h2{font-size:16px}.empty-state{padding:10px}.spectrum{font-size:22px}.work-body{padding:8px;gap:7px}}
+
+/* LibriVox WAV extraction shares SuperCollision's existing Sounds audio library. */
+.extract-bay{border-top:1px solid var(--line);padding-top:9px;display:grid;gap:8px;min-width:0}
+.extract-actions{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:5px}
+.extract-actions button{font:800 11px ui-monospace,monospace;padding:8px 5px;min-width:0}
+.extract-controls{display:flex;flex-wrap:wrap;align-items:center;gap:7px;min-width:0}
+.upload-audio{display:inline-flex;position:relative;align-items:center;justify-content:center;border:1px solid #8d7857;background:#30352e;color:var(--ink);font:750 11px ui-monospace,monospace;min-height:38px;padding:7px 9px;cursor:pointer}
+.upload-audio:focus-within{outline:2px solid #ffe0a3;outline-offset:2px}
+.upload-audio input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+#restore-stream{min-height:38px;font-size:10px;padding:7px}
+#sample-source-status{font-size:11px;color:var(--soft);overflow-wrap:anywhere}
+.transfer-permission{display:flex;align-items:flex-start;gap:8px;color:#d6c6a8;font-size:12px;line-height:1.35;cursor:pointer}
+.transfer-permission input{width:18px;height:18px;accent-color:var(--gold);flex:none;margin:1px 0}
+.extract-hint{font-size:11px;color:var(--soft);line-height:1.4}
+#extract-progress{height:8px;width:100%;accent-color:var(--gold)}
+#extract-status{font-size:12px;color:#d7c595;overflow-wrap:anywhere}
+#extract-status[data-kind="error"]{color:#eca999}
+#extracted-audio{height:39px}
+@media(max-width:380px){.extract-actions button{font-size:10px}}
+/* Search results must remain reachable on short landscape phone screens. */
+.discovery-panel{display:block}
+.sources-footnote{margin-top:8px}
