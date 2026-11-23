@@ -8,7 +8,7 @@ const INSTRUMENTS = new Set([
 ]);
 
 function scanSource(source) {
-  const mask = [...source];
+  const mask = source.split('');
   const pairs = [];
   const strings = [];
   const comments = [];
@@ -252,9 +252,9 @@ export function installCodeSelection(editor = document.querySelector('#code')) {
   function apply(region, push = true) {
     if (!region) return;
     const previous = selection();
-    if (!history.length ||
+    if (push && (!history.length ||
         history[history.length - 1].from !== previous.from ||
-        history[history.length - 1].to !== previous.to) {
+        history[history.length - 1].to !== previous.to)) {
       history = [{ ...previous, kind: classify(previous.from, previous.to) }];
     }
     const top = editor.scrollTop, left = editor.scrollLeft;
