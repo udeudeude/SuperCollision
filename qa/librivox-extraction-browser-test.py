@@ -4,16 +4,17 @@ from pathlib import Path
 import json,base64,subprocess,shutil
 root=Path(__file__).resolve().parent.parent
 html=(root/'librivox-explorer.html').read_text().replace('<link rel="stylesheet" href="./librivox-explorer.css">', '<style>'+ (root/'librivox-explorer.css').read_text()+'</style>').replace('<script type="module" src="./librivox-explorer.mjs"></script>','')
-js=(root/'librivox-explorer.mjs').read_text();text=(root/'librivox-text-locator.mjs').read_text();audio_source=(root/'librivox-audio-extract.mjs').read_text()
+js=(root/'librivox-explorer.mjs').read_text();text=(root/'librivox-text-locator.mjs').read_text();audio_source=(root/'librivox-audio-extract.mjs').read_text();combo_source=(root/'librivox-combine.mjs').read_text()
 assert "import {saveSound}" in js
 js='\n'.join(line for line in js.split('\n') if not line.startswith('import '))
 text=text.replace('export function','function')
+combo_source=combo_source.replace('export function','function')
 audio_source=audio_source.replace('export const','const').replace('export async function','async function').replace('export function','function')
-full_js=text+'\n'+audio_source+'\n'+'''async function saveSound(item){window.savedAudio.push(item); if(window.failSave)throw Error('Storage quota');}'''+js
+full_js=text+'\n'+combo_source+'\n'+audio_source+'\n'+'''async function saveSound(item){window.savedAudio.push(item); if(window.failSave)throw Error('Storage quota');}'''+js
 book={'id':'phantastes','title':'Phantastes','authors':[{'id':'george-macdonald','name':'George MacDonald'}], 'language':'English'}
 work={**book,'recordings':[{'id':'librivox-1','librivox_id':321,'narrators':[{'id':167,'name':'Peter Yearsley'}], 'chapter_count':2}]}
 feed={'books':[{'id':'321','title':'Phantastes','url_librivox':'https://librivox.org/phantastes-by-george-macdonald/', 'url_text_source':'https://www.gutenberg.org/ebooks/325', 'sections':[{'id':'12','section_number':'1','title':'Chapter One','playtime':'00:12','listen_url':'https://archive.org/download/phantastes/01.mp3','readers':[{'reader_id':'167','display_name':'Peter Yearsley'}]},{'id':'13','section_number':'2','title':'Chapter Two','playtime':'00:12','listen_url':'https://archive.org/download/phantastes/02.mp3','readers':[{'reader_id':'167','display_name':'Peter Yearsley'}]}]}]}
-mock_records={ '/works/search':{'results':[book]},'/people/search':{'results':[{'id':'167','name':'Peter Yearsley'}]},'/people/167/recordings':{'recordings':[{'work':book}],'total':1},'/works/phantastes':work,'/librivox/audiobooks':feed}
+mock_records={ '/works/search':{'results':[book]},'/people/search':{'results':[{'id':'167','name':'Peter Yearsley'}]},'/people/167/recordings':{'recordings':[{'work':book,'recording':work['recordings'][0]}],'total':1},'/works/phantastes':work,'/librivox/audiobooks':feed}
 fixture=root/'qa/sample-12s.mp3'
 if not fixture.is_file():
  if not shutil.which('ffmpeg'): raise SystemExit('ffmpeg is required to generate the real MP3 test fixture')
