@@ -71,7 +71,7 @@ try{
     assert.ok(values.timeline.height>=50,'Time evidence must remain visible at '+width+'px: '+JSON.stringify(values));
     assert.ok(values.explain.bottom<=values.timeline.top+2,'Explorer overlaps timeline at '+width+'px');
     assert.ok(values.codeVisible&&values.adjustParent,'Code and optional controls missing');
-    await page.locator('.perform-explain-node').filter({hasText:'SinOsc'}).click();
+    await page.getByRole('button',{name:/Sine-wave oscillator, line 3/}).click();
     const selection=await page.evaluate(()=>{
       const editor=document.querySelector('#code');
       return {selected:editor.value.slice(editor.selectionStart,editor.selectionEnd),
