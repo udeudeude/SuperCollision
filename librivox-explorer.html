@@ -18,8 +18,18 @@
     <div class="panel-top">
       <div class="eyebrow">SOUNDS / RECORDINGS / DISCOVER</div>
       <h2 id="discover-heading">Find a voice. Find a phrase.</h2>
-      <p>Search public-domain recordings by title, author, or reader.</p>
+      <p>Combine an author and reader to find matching recordings and sections.</p>
     </div>
+    <form id="combined-form" class="combined-form" autocomplete="off" aria-label="Combine author and reader filters">
+      <div class="combined-head"><span class="eyebrow">COMBINE FILTERS</span><button id="combined-clear" type="button">CLEAR</button></div>
+      <div class="combined-inputs">
+        <label for="filter-author">AUTHOR<input id="filter-author" name="author" list="author-options" type="search" placeholder="e.g. George MacDonald" autocomplete="off"><datalist id="author-options"></datalist></label>
+        <label for="filter-reader">READER<input id="filter-reader" name="reader" list="reader-options" type="search" placeholder="e.g. Peter Yearsley" autocomplete="off"><datalist id="reader-options"></datalist></label>
+      </div>
+      <div id="favorite-filters" class="favorite-filters" aria-label="Favorite authors and readers"></div>
+      <div class="combined-actions"><button class="primary" type="submit" id="find-combined">FIND MATCHING RECORDINGS</button><span>Both filters must match the same recording.</span></div>
+    </form>
+    <details class="catalog-disclosure" id="catalog-disclosure"><summary>OTHER SEARCH: BOOK, AUTHOR OR READER</summary>
     <form id="catalog-form" class="catalog-form">
       <label for="catalog-query" class="sr-only">Search LibriVox</label>
       <div class="query-row"><input id="catalog-query" name="q" type="search" placeholder="Title, author, or reader…" autocomplete="off" required minlength="2"><button class="primary" type="submit">SEARCH</button></div>
@@ -29,7 +39,9 @@
         <label><input type="radio" name="scope" value="authors"><span>AUTHORS</span></label>
       </fieldset>
     </form>
+    </details>
     <div class="quick-searches" aria-label="Suggested searches">
+      <button type="button" id="test-combined">MacDonald + Yearsley</button>
       <button type="button" data-quick="George MacDonald" data-scope="authors">George MacDonald</button>
       <button type="button" data-quick="Peter Yearsley" data-scope="readers">Peter Yearsley</button>
       <button type="button" data-quick="Phantastes" data-scope="books">Phantastes</button>
@@ -55,6 +67,7 @@
       <div class="attribution-row" id="attribution-row"></div>
       <div class="recording-picker"><label for="recording-select">RECORDING / EDITION</label><select id="recording-select"></select></div>
       <div class="chapter-picker"><label for="chapter-select">CHAPTER / SECTION</label><select id="chapter-select"></select></div>
+      <div id="section-coverage" class="section-coverage" aria-live="polite"></div>
       <div id="reader-info" class="reader-info"></div>
       <div class="player" id="player">
         <div class="player-heading"><span class="eyebrow">AUDIO</span><span id="playback-status">Choose a chapter</span></div>
