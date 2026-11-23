@@ -19,29 +19,48 @@ const sources=[
  {name:'Quarks directory',url:'https://github.com/supercollider-quarks/quarks',detail:'SuperCollider extensions and packages. Many require capabilities not available in this browser.'}
 ];
 function setup(){
- const pane=$('bench-library-workspace');if(!pane)return;
+ const pane=$('bench-library-workspace'),overlay=$('bench-acquire-overlay');if(!pane||!overlay)return;
  pane.innerHTML="<div class=\"acquire-topline\">\n <strong id=\"acquire-heading\">ACQUIRE / SOUNDS</strong>\n \n</div>\n<div id=\"acquire-collection\" class=\"acquire-page\" hidden>\n <div class=\"acquire-searchbar\">\n  <input id=\"acquire-search\" type=\"search\" placeholder=\"Find sounds or creators\" aria-label=\"Search library\">\n  <select id=\"acquire-filter\" aria-label=\"Filter saved sounds\">\n   <option value=\"all\">ALL SOUNDS</option><option value=\"instrument\">INSTRUMENTS</option><option value=\"sample\">SAMPLES</option><option value=\"hybrid\">HYBRIDS</option>\n  </select>\n </div>\n <div id=\"acquire-list\" aria-live=\"polite\"></div>\n <p class=\"acquire-footnote\">Saved on this device. Back up important sounds before clearing browser data.</p>\n <a class=\"acquire-utility-link\" href=\"./sounds.html#library\">BACKUP / RESTORE / MANAGE</a>\n</div>\n<div id=\"acquire-overview\" class=\"acquire-page\" hidden>\n <section class=\"acquire-category\" aria-labelledby=\"acquire-instruments-title\">\n  <h2 id=\"acquire-instruments-title\">01 / INSTRUMENTS &amp; CODE</h2>\n  <div class=\"acquire-choices\">\n   <button type=\"button\" data-action=\"write\"><strong>CREATE</strong><small>Write or shape a SuperCollider instrument</small></button>\n   <button type=\"button\" data-action=\"generate\"><strong>GENERATE</strong><small>Describe a sound to generate code</small></button>\n   <button type=\"button\" data-action=\"discover-code\"><strong>DISCOVER</strong><small>Find community SuperCollider instruments</small></button>\n   <button type=\"button\" data-action=\"import-code\"><strong>IMPORT</strong><small>Open a .scd file or paste source</small></button>\n  </div>\n </section>\n <section class=\"acquire-category\" aria-labelledby=\"acquire-samples-title\">\n  <h2 id=\"acquire-samples-title\">02 / RECORDINGS &amp; SAMPLES</h2>\n  <div class=\"acquire-choices\">\n   <button type=\"button\" data-action=\"record\"><strong>RECORD</strong><small>Capture microphone or other audio input</small></button>\n   <button type=\"button\" data-action=\"discover-audio\"><strong>DISCOVER</strong><small>Find licensed online audio recordings</small></button>\n   <button type=\"button\" data-action=\"import\"><strong>IMPORT</strong><small>Add existing audio files</small></button>\n  </div>\n </section>\n</div>\n<div id=\"acquire-record\" class=\"acquire-page acquire-detail\" hidden>\n <div class=\"acquire-detail-head\"><button type=\"button\" class=\"acquire-back\">‹ ACQUIRE</button><strong>RECORD AUDIO</strong></div>\n <label for=\"name\">NAME</label><input id=\"name\" type=\"text\" maxlength=\"120\" placeholder=\"New recording\">\n <label class=\"acquire-check\" for=\"mic-ready\"><input id=\"mic-ready\" type=\"checkbox\"> ENABLE MICROPHONE</label>\n <button id=\"start\" type=\"button\" disabled aria-pressed=\"false\">● HOLD TO RECORD</button>\n <progress id=\"level\" value=\"0\" max=\"1\" aria-label=\"Microphone input level\"></progress>\n <p id=\"status\" role=\"status\" aria-live=\"polite\">Enable microphone, then hold Record. Release to save.</p>\n</div>\n<div id=\"acquire-import\" class=\"acquire-page acquire-detail\" hidden>\n <div class=\"acquire-detail-head\"><button type=\"button\" class=\"acquire-back\">‹ ACQUIRE</button><strong>IMPORT AUDIO</strong></div>\n <label for=\"import\">CHOOSE AUDIO FILES</label>\n <input id=\"import\" type=\"file\" accept=\"audio/*,.wav,.flac,.aiff,.ogg,.m4a,.mp3\" multiple>\n <p id=\"acquire-import-status\" role=\"status\" aria-live=\"polite\">Select one or more files. Originals are preserved.</p>\n</div>\n<div id=\"acquire-code\" class=\"acquire-page acquire-detail\" hidden>\n <div class=\"acquire-detail-head\"><button type=\"button\" class=\"acquire-back\">‹ ACQUIRE</button><strong>SUPERCOLLIDER INSTRUMENTS</strong></div>\n <div id=\"acquire-community-sources\">\n  <div class=\"acquire-subhead\">COMMUNITY COLLECTIONS</div>\n  <div id=\"acquire-community-links\"></div>\n  <p class=\"acquire-footnote\">Verify the license, original author, and required Quarks. Public code is not necessarily licensed for reuse or compatible with browser SuperCollider.</p>\n </div>\n <form id=\"acquire-code-form\">\n  <div class=\"acquire-subhead\">IMPORT SOURCE FOR REVIEW</div>\n  <div class=\"acquire-two-inputs\">\n   <label>INSTRUMENT NAME<input id=\"acquire-code-name\" type=\"text\" maxlength=\"120\" placeholder=\"Discovered instrument\" required></label>\n   <label>OPEN .SCD / .TXT<input id=\"acquire-code-file\" type=\"file\" accept=\".scd,.txt,text/plain\"></label>\n  </div>\n  <label>SUPERCOLLIDER CODE<textarea id=\"acquire-code-source\" spellcheck=\"false\" autocorrect=\"off\" autocapitalize=\"off\" placeholder=\"Paste SynthDef or playable SuperCollider code\" required></textarea></label>\n  <div class=\"acquire-two-inputs\">\n   <label>CREATOR / AUTHOR<input id=\"acquire-code-author\" type=\"text\" maxlength=\"160\" placeholder=\"As credited at source\"></label>\n   <label>LICENSE<input id=\"acquire-code-license\" type=\"text\" maxlength=\"160\" placeholder=\"Verify at source\"></label>\n  </div>\n  <label>SOURCE LINK<input id=\"acquire-code-url\" type=\"url\" maxlength=\"800\" placeholder=\"https://...\"></label>\n  <button type=\"submit\">SAVE AND OPEN CODE</button>\n  <p id=\"acquire-code-status\" role=\"status\" aria-live=\"polite\">Imported code is not executed until you explicitly play it.</p>\n </form>\n</div>";
  const pages={collection:$('acquire-collection'),acquire:$('acquire-overview'),record:$('acquire-record'),import:$('acquire-import'),code:$('acquire-code')};
- let active='acquire',token=0;
+ // The saved collection remains in Library. Creation and import tools are
+ // temporarily shown over the instrument workspace that invoked them.
+ for(const key of ['acquire','record','import','code'])overlay.append(pages[key]);
+ let active='collection',token=0;
  function microphoneOff(){
   const ready=$('mic-ready');
   if(ready.checked){ready.checked=false;ready.dispatchEvent(new Event('change',{bubbles:true}))}
  }
+ function closeOverlay(){
+  if(active==='record')microphoneOff();
+  overlay.hidden=true;active='collection';
+  for(const key of ['acquire','record','import','code'])pages[key].hidden=true;
+ }
  function show(name){
+  if(name==='collection'){
+   closeOverlay();pages.collection.hidden=false;
+   $('acquire-heading').textContent='YOUR SOUNDS';
+   void refresh();return;
+  }
   if(active==='record'&&name!=='record')microphoneOff();
   active=name;
-  for(const [key,page]of Object.entries(pages)){page.hidden=key!==name;if(!page.hidden)page.scrollTop=0}
-  $('acquire-heading').textContent=name==='collection'?'YOUR SOUNDS':'ACQUIRE / SOUNDS';
-  if(name==='collection')void refresh();
+  for(const key of ['acquire','record','import','code']){
+   pages[key].hidden=key!==name;
+   if(key===name)pages[key].scrollTop=0;
+  }
+  const labels={acquire:'SOUND METHODS',record:'RECORD AUDIO',import:'IMPORT AUDIO',code:'IMPORT INSTRUMENT'};
+  $('bench-acquire-title').textContent=labels[name]||'SOUND METHODS';
+  $('bench-acquire-back').textContent=location.hash.slice(1)==='sample'?'← BACK TO SAMPLES':'← BACK TO INSTRUMENT';
+  overlay.hidden=false;
  }
- pane.querySelectorAll('.acquire-back').forEach(b=>b.addEventListener('click',()=>show('acquire')));
+ $('bench-acquire-back').addEventListener('click',closeOverlay);
+ overlay.querySelectorAll('.acquire-back').forEach(b=>b.addEventListener('click',closeOverlay));
  const controls={
-  write:()=>view('play'),generate:()=>legacy('generate'),record:()=>show('record'),import:()=>show('import'),
+  write:()=>{closeOverlay();view('play')},generate:()=>legacy('generate'),record:()=>show('record'),import:()=>show('import'),
   'discover-audio':()=>legacy('discover'),
-  'discover-code':()=>{show('code');$('acquire-community-sources').hidden=false},
+  'discover-code':()=>{show('code');$('acquire-community-sources').hidden=false;$('bench-acquire-title').textContent='DISCOVER INSTRUMENTS'},
   'import-code':()=>{show('code');$('acquire-community-sources').hidden=true}
  };
- pane.querySelectorAll('[data-action]').forEach(b=>b.addEventListener('click',controls[b.dataset.action]));
+ overlay.querySelectorAll('[data-action]').forEach(b=>b.addEventListener('click',controls[b.dataset.action]));
  for(const entry of sources){
   const row=create('div','acquire-provider');
   const a=create('a','',entry.name);a.href=entry.url;a.target='_blank';a.rel='noopener noreferrer';
@@ -96,7 +115,7 @@ function setup(){
   }).sort((a,b)=>Number(b.created||0)-Number(a.created||0));
   list.replaceChildren();
   if(!matching.length){
-   list.append(create('p','acquire-empty',items.length?'No matching sounds.':'Your library is empty. Choose + ACQUIRE to add a sound.'));
+   list.append(create('p','acquire-empty',items.length?'No matching sounds.':'Your library is empty. Use Instruments & Code or Recordings & Samples to make or find one.'));
    return;
   }
   for(const item of matching){
@@ -125,17 +144,17 @@ function setup(){
   void refresh();
   if(active==='import')$('acquire-import-status').textContent='Audio added to Library. Open COLLECTION to use it.';
  });
- window.addEventListener('bench-library-open',()=>show('collection'));
+ window.addEventListener('bench-library-open',()=>view('details'));
  window.addEventListener('bench-view-changed',event=>{
   if(event.detail.view==='details')show('collection');
-  else if(event.detail.view==='acquire')show('acquire');
-  else if(active==='record')microphoneOff();
+  else closeOverlay();
  });
  window.addEventListener('bench-acquire-action',event=>{
   const name=event.detail?.action;
   if(Object.hasOwn(controls,name))controls[name]();
  });
- show(location.hash.slice(1)==='details'?'collection':'acquire');
+ // First render is always a working instrument. The Library is prepared but hidden.
+ show('collection');
  // Bind the existing production microphone and audio-import module to its original
  // element IDs. This keeps native recording/storage behavior unchanged.
  import('./sounds-library.mjs?v=2').catch(error=>{
