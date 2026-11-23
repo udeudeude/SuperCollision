@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#161817">
-<title>Sounds Instrument Bench · v0.3.1</title>
+<title>Sounds Instrument Bench · v0.3.2</title>
 <style>
 :root{color-scheme:dark;background:#161817;color:#eae7da;font:15px/1.5 system-ui,sans-serif}
 *{box-sizing:border-box}
@@ -308,9 +308,51 @@ document.addEventListener('DOMContentLoaded',()=>{
  #lab-setup{grid-template-rows:minmax(90px,.8fr) minmax(170px,1.5fr) auto auto auto auto!important}
 }
 @media(max-height:670px){#lab-setup{grid-template-rows:minmax(80px,.7fr) minmax(150px,1.6fr) auto auto auto auto!important}}
+</style><style id="sounds-acquisition-v032">
+#bench-library-workspace{display:grid!important;grid-template-rows:auto minmax(0,1fr);gap:6px;overflow:hidden!important;padding:8px!important}
+#bench-library-workspace[hidden],#bench-library-workspace [hidden]{display:none!important}
+.acquire-topline{display:flex;align-items:center;justify-content:space-between;gap:5px;border-bottom:1px solid #887456;padding-bottom:6px;font:800 11px ui-monospace,monospace}
+.acquire-mode-tabs{display:flex;gap:4px}
+.acquire-mode-tabs button{min-height:30px;padding:5px;font:800 10px ui-monospace,monospace;background:#252a23;color:#ecdec8;border:1px solid #867452}
+.acquire-mode-tabs button.current{background:#d8ae5b;color:#211c15}
+#bench-library-workspace>.acquire-page{overflow-y:auto;overscroll-behavior:contain;min-height:0;padding:2px}
+#bench-library-workspace .acquire-category{padding:8px!important;margin:0 0 8px!important;border:1px solid #756e58;background:#20261f}
+#bench-library-workspace .acquire-category h2{font:800 11px ui-monospace,monospace;color:#e7c17f;letter-spacing:.06em;margin:0 0 7px!important}
+.acquire-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.acquire-choices button{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;min-width:0;min-height:62px;padding:6px 8px;border:1px solid #83785d;background:#32372e;color:#eee3cb;text-align:left}
+.acquire-choices button strong{font:800 12px ui-monospace,monospace}
+.acquire-choices button small{font:10px/1.25 ui-monospace,monospace;color:#c5c5b5}
+.acquire-detail-head{display:flex;align-items:center;gap:9px;margin:0 0 9px;color:#e5c284;font:800 12px ui-monospace,monospace}
+.acquire-detail-head button{min-height:28px;padding:4px 7px;font:800 11px ui-monospace,monospace}
+#bench-library-workspace .acquire-detail label{display:block;margin:8px 0 4px;font:700 10px ui-monospace,monospace;color:#cbbd9c}
+#bench-library-workspace .acquire-detail input:not([type=checkbox]),#bench-library-workspace .acquire-detail textarea{width:100%;max-width:100%;min-width:0;padding:7px;border:1px solid #736950;background:#262e26;color:#eee4d0;font:13px ui-monospace,monospace}
+#bench-library-workspace .acquire-detail input[type=file]{font-size:11px!important}
+#bench-library-workspace .acquire-detail textarea{height:21dvh;min-height:90px;max-height:200px;resize:vertical}
+#bench-library-workspace .acquire-two-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#bench-library-workspace .acquire-check{display:flex!important;align-items:center;gap:7px}
+#bench-library-workspace .acquire-check input{width:19px;height:19px;accent-color:#e5bc71}
+#bench-library-workspace #start{width:100%;min-height:74px;background:#b49a60;color:#1e1e19;font:900 15px ui-monospace,monospace;touch-action:none}
+body.is-recording #bench-library-workspace #start{background:#bb4b3c;color:white}
+#bench-library-workspace #level{width:100%;height:9px;accent-color:#d8ae5b;margin:7px 0}
+#bench-library-workspace .acquire-detail p,#bench-library-workspace .acquire-footnote{font:11px/1.4 ui-monospace,monospace;color:#abb4a8;margin:8px 0}
+#bench-library-workspace .acquire-subhead{font:800 11px ui-monospace,monospace;color:#e5c284;margin:10px 0 5px}
+.acquire-provider{padding:7px 4px;border-bottom:1px solid #5a6658;display:flex;flex-direction:column;gap:4px}
+.acquire-provider a{color:#e7bc76;font:800 12px ui-monospace,monospace}
+.acquire-provider small{font:10px/1.4 ui-monospace,monospace;color:#bec6b9}
+#acquire-code-form{border-top:1px solid #5e695f;margin-top:10px}
+#acquire-code-form button[type=submit]{min-height:40px;background:#d8ae5b;color:#1c1f1a;width:100%;font:900 12px ui-monospace,monospace;margin-top:8px}
+.acquire-searchbar{display:grid;grid-template-columns:minmax(0,1fr) 105px;gap:5px;margin-bottom:7px}
+.acquire-searchbar input,.acquire-searchbar select{min-width:0;width:100%;min-height:34px;padding:5px;border:1px solid #656f60;background:#242a25;color:#eee4ca;font:11px ui-monospace,monospace}
+.acquire-entry{display:flex;align-items:center;justify-content:space-between;gap:7px;border:1px solid #5c6a5a;background:#222a22;padding:8px 6px;margin-bottom:5px}
+.acquire-entry-meta{display:flex;flex-direction:column;gap:4px;min-width:0}
+.acquire-entry-meta strong{font:800 12px ui-monospace,monospace;color:#eee1cb;overflow-wrap:anywhere}
+.acquire-entry-meta small{font:10px ui-monospace,monospace;color:#aeb7ac;overflow-wrap:anywhere}
+.acquire-open{min-height:32px;padding:6px 9px;font:800 11px ui-monospace,monospace;background:#dbc17f;color:#161e16;flex:none}
+.acquire-empty{padding:22px 8px;color:#aeb6a8;font:12px ui-monospace,monospace}
+#bench-library-workspace .acquire-utility-link{font:800 11px ui-monospace,monospace;color:#edbc76}
 </style></head>
 <body>
-<header><a href="./index.html">← CODE</a><h1>SOUNDS / INSTRUMENT</h1><small>v0.3.1</small></header>
+<header><a href="./index.html">← CODE</a><h1>SOUNDS / INSTRUMENT</h1><small>v0.3.2</small></header>
 <main>
 <p class="lab-intro">Make a sound first. The instrument runs entirely in SuperCollider. No recording required.</p>
 <section id="lab-setup">
@@ -405,12 +447,14 @@ document.addEventListener('DOMContentLoaded',()=>{
   const b=document.createElement('button');b.type='button';b.textContent=label;b.dataset.tab=name;b.addEventListener('click',()=>show(name));tabs.append(b);
  }
  main.insertBefore(tabs,setup);
- const library=document.createElement('section');library.innerHTML='<h2>YOUR SOUNDS</h2><p>Recordings, samples and saved instruments share the existing Sounds library.</p><div class="actions"><a href="./sounds.html#library">OPEN LIBRARY</a> <a href="./sounds.html#discover">DISCOVER RECORDINGS</a> <a href="./sounds.html#create">CREATE / GENERATE</a></div><p>Community SuperCollider instruments are the next acquisition integration. No third-party code is executed automatically.</p>';
+ const library=document.createElement('section');library.id='bench-library-workspace';
  main.insertBefore(library,document.getElementById('lab-diagnostics'));groups.details.push(library);
  for(const group of Object.values(groups))for(const node of group)node.classList.add('bench-panel');
  function show(name){for(const [key,nodes] of Object.entries(groups))for(const node of nodes)node.hidden=key!==name;for(const b of tabs.children)b.setAttribute('aria-selected',String(b.dataset.tab===name));location.hash=name;window.dispatchEvent(new CustomEvent('bench-view-changed',{detail:{view:name}}));}
+ window.addEventListener('bench-open-view',event=>{if(['play','sample','details'].includes(event.detail?.view))show(event.detail.view)});
  show(['play','sample','details'].includes(location.hash.slice(1))?location.hash.slice(1):'play');
 });
-</script><script type="module" src="./sounds-bench-engine.mjs?v=0.3.1"></script>
+</script><script type="module" src="./sounds-bench-engine.mjs?v=0.3.2"></script>
+<script type="module" src="./sounds-bench-acquire.mjs?v=0.3.2"></script>
 </body>
 </html>
