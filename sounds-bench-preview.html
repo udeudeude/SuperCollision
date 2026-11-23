@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#161817">
+<title>Sounds Instrument Bench · Playtest</title>
+<style>
+:root{color-scheme:dark;background:#161817;color:#eae7da;font:15px/1.5 system-ui,sans-serif}
+*{box-sizing:border-box}
+body{max-width:760px;margin:0 auto;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom);min-height:100dvh}
+header{padding:18px 0;border-bottom:1px solid #515a51;display:flex;justify-content:space-between;align-items:center;gap:15px}
+h1{font-size:1.18rem;letter-spacing:.06em;margin:0}h2{font-size:1.05rem;margin:0 0 10px}
+a{color:#e5bc71}p{margin:8px 0 14px}.muted{color:#b5b8aa;font-size:13px}
+section{border:1px solid #575d54;margin:14px 0;padding:16px}
+label{font-weight:650;display:block;margin:12px 0 6px}
+select,button,input[type=text]{border:1px solid #858776;border-radius:2px;background:#252a26;color:#f5f0e6;padding:11px;font:16px system-ui}
+select,input[type=text]{width:100%}button{font-weight:750;min-height:48px}button.primary{background:#d8ae5b;color:#161817}
+button:disabled{opacity:.42}.actions{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
+progress{width:100%;height:16px;accent-color:#d8ae5b}
+input[type=range]{display:block;width:100%;min-height:42px;accent-color:#d8ae5b;touch-action:pan-y}
+input[type=checkbox]{width:23px;height:23px;accent-color:#d8ae5b}
+label.check{display:flex;align-items:center;gap:12px}.check input{flex:0 0 auto}
+input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
+#lab-log{white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;color:#b6cbb8;background:#0d1612;padding:12px;font:12px/1.4 ui-monospace,monospace}
+#lab-status{font-weight:600;min-height:28px}
+#lab-waveform{display:block;width:100%;height:116px;background:#141b16;border:1px solid #575d54;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+/* Code stays at the visible top of the instrument while the lower
+   touch controls scroll. Never attach the editor to the bottom edge. */
+#lab-source-bay{position:sticky;top:env(safe-area-inset-top);bottom:auto;z-index:5;border:2px solid #7d765f;
+ background:linear-gradient(155deg,#2b3029,#1a211b 65%);border-radius:3px;
+ padding:13px;margin:13px 0 18px;box-shadow:inset 0 1px #b3a67e33}
+#lab-source-bay .source-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#lab-source-bay .source-head h2{font:800 12px/1.4 ui-monospace,monospace;letter-spacing:.09em;
+ color:#e7bd76;margin:0}
+#lab-source-bay .muted{line-height:1.35}
+#lab-live-source{display:block;width:100%;min-height:174px;max-height:45dvh;resize:vertical;
+ background:#0c1711;color:#d1e3cf;border:1px solid #647665;border-radius:2px;
+ padding:12px;font:16px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;
+ tab-size:2;overflow:auto;overscroll-behavior:contain}
+#lab-live-source:read-only{opacity:.68}
+#lab-live-source:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
+#lab-source-bay button{min-height:40px;font-size:12px;padding:8px 12px}
+#lab-source-state{font-size:12px;line-height:1.45;margin:10px 0}
+#lab-sync-indicator{display:inline-flex;align-items:center;gap:9px;font:800 11px/1.4 ui-monospace,monospace;
+ letter-spacing:.06em;margin:12px 0 5px;color:#c4c6b7}
+.sync-lamp{width:12px;height:12px;border-radius:50%;background:#555b51;border:1px solid #989f91;box-shadow:none;flex:none}
+#lab-source-bay[data-sync="matched"] .sync-lamp{background:#8ee2a5;border-color:#c9f3d3;box-shadow:0 0 8px #8ee2a588}
+#lab-source-bay[data-sync="modified"] .sync-lamp,
+#lab-source-bay[data-sync="pending"] .sync-lamp{background:#42453e;border-color:#858777;box-shadow:none}
+#lab-source-bay[data-sync="modified"] #lab-sync-indicator,
+#lab-source-bay[data-sync="pending"] #lab-sync-indicator{color:#efc77d}
+#lab-source-bay[data-sync="pending"]{border-color:#d6a553}
+#lab-region-controls[data-sync="modified"],#lab-region-controls[data-sync="pending"]{opacity:.62}
+#lab-region-controls[data-sync="matched"]{opacity:1}
+#lab-region-controls{transition:opacity .15s ease}
+#lab-apply-control:not([hidden]),#lab-keep-code:not([hidden]){display:inline-block;margin:6px 6px 6px 0}
+#lab-apply-control{background:#d8ae5b;color:#171918}
+#lab-keep-code{background:#343832;color:#f1eee4}
+@media(max-width:440px){#lab-source-bay{padding:10px}
+ #lab-live-source{font-size:16px;min-height:164px;max-height:37dvh}
+ #lab-source-bay .source-head h2{font-size:11px}}
+#lab-setup{margin-top:12px}#lab-setup .actions{gap:8px}#lab-setup .actions button{flex:1 1 180px}#lab-status{color:#e5bc71;font-size:14px;line-height:1.4;margin:10px 0}#lab-diagnostics{border-top:1px solid #515a51;padding:15px 0;margin:12px 0}#lab-diagnostics summary{cursor:pointer;color:#e5bc71;font-weight:700}#lab-setup-hint{font-size:12px}.lab-intro{font-size:14px;line-height:1.45;color:#d3d5c9;margin:8px 0 14px}header{padding:10px 0;gap:10px}header a{white-space:nowrap}header h1{font-size:1.02rem}header small{font-size:11px}/* Keep recording code visible above its reachable controls. */#lab-setup progress{height:9px}@media(max-width:440px){section{padding:12px}header{align-items:center}header small{font-size:10px}}
+.section-kicker{font:700 11px/1.4 ui-monospace,monospace;letter-spacing:.12em;color:#e3bf7a;margin-bottom:9px}
+#lab-setup{border-color:#938263;background:linear-gradient(155deg,#252921,#171b18)}
+#lab-setup h2{font-size:1.23rem;letter-spacing:.015em}
+#lab-demo-code-bay{position:sticky;top:env(safe-area-inset-top);z-index:6;border:1px solid #627361;background:#101813;padding:10px;box-shadow:0 6px 15px #0007}
+.demo-code-head{display:flex;justify-content:space-between;gap:8px;align-items:center;color:#e5bc71;font:700 11px/1.5 ui-monospace,monospace}
+#lab-demo-sync{display:inline-flex;gap:6px;align-items:center;font:700 10px/1.3 ui-monospace,monospace;color:#b9d4bd}
+.demo-lamp{width:11px;height:11px;border-radius:50%;background:#8ee2a5;box-shadow:0 0 7px #8ee2a577;flex:none}
+#lab-demo-code-bay[data-sync="modified"] .demo-lamp{background:#444b41;box-shadow:none;border:1px solid #8b9083}
+#lab-demo-code-bay[data-sync="modified"] #lab-demo-sync{color:#f0c783}
+#lab-demo-code{display:block;width:100%;min-height:166px;max-height:29dvh;resize:vertical;border:1px solid #536c56;border-radius:2px;background:#09110c;color:#d6e6d1;padding:10px;font:16px/1.4 ui-monospace,monospace;tab-size:2;overflow:auto}
+#lab-demo-code-bay label{margin:7px 0;font-weight:450}
+#lab-demo-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;transition:opacity .15s ease;margin-top:8px}
+#lab-demo-controls[data-sync="modified"]{opacity:.45}
+.demo-param label{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:13px}
+.demo-param output{font:700 12px ui-monospace,monospace;color:#e5bc71}
+#lab-setup .actions{margin-top:6px}
+#lab-setup .actions button.primary{flex:1 1 50%}
+#lab-demo-reset{font-size:12px;flex:1 1 38%}
+#lab-setup-hint{font-size:12px;margin-top:0}
+#lab-recording{border-color:#505b51}
+#lab-recording progress:indeterminate{opacity:.7}
+@media(max-width:400px){#lab-demo-controls{gap:8px}#lab-demo-code{max-height:27dvh}#lab-setup .actions button{padding:11px 7px}#lab-setup h2{font-size:1.15rem}}
+#lab-setup .tone-save-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px;margin-top:4px}#lab-setup .tone-save-row label{font:700 10px/1.4 ui-monospace,monospace;letter-spacing:.06em;color:#cdbb90;margin:0}#lab-tone-name{font:16px system-ui;margin-top:4px;width:100%;min-width:0}#lab-tone-save{font-size:13px;min-height:46px}#lab-tone-save-status{margin:6px 0;min-height:0}#lab-tone-library-link:not([hidden]){display:inline-block;margin:0 0 9px;font-size:13px}@media(max-width:400px){#lab-setup .tone-save-row{grid-template-columns:1fr}#lab-tone-save{width:100%}}
+.note-console{margin:10px 0 9px;border:1px solid #746a51;padding:9px 10px 11px;background:linear-gradient(#303228,#1b201a);border-radius:3px}
+.note-console-head{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#e5bc71;font:700 11px/1.3 ui-monospace,monospace;letter-spacing:.05em;margin:0 0 10px}
+#lab-note-hint{color:#b9bcae;font:400 11px/1.3 system-ui;text-align:right;letter-spacing:0}
+.note-keys{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.note-keys button{min-width:0;min-height:54px;touch-action:manipulation;border:1px solid #868b78;border-bottom:4px solid #6f7568;border-radius:4px;background:linear-gradient(#ebe1c7,#c0b59d);color:#232923;font:800 19px/1 ui-monospace,monospace;transition:background .08s,transform .08s;user-select:none;-webkit-user-select:none}
+.note-keys button small{font-size:11px;padding-left:2px}
+.note-keys button[aria-pressed="true"]{background:linear-gradient(#e0b75e,#b9853d);border-color:#ffdc8c;border-bottom-color:#85602e;box-shadow:0 0 0 1px #6f5b38}
+.note-keys button:active:not(:disabled){transform:translateY(2px);border-bottom-width:2px}
+.note-keys button:disabled{opacity:.30;filter:grayscale(.6)}
+#lab-audio-phase{display:flex;align-items:center;gap:8px;font:700 11px/1.4 ui-monospace,monospace;letter-spacing:.04em;color:#c1c5b7;margin:6px 0 9px}
+.phase-lamp{flex:none;width:11px;height:11px;border:1px solid #8b9080;border-radius:50%;background:#555a4e}
+#lab-audio-phase[data-phase="starting"] .phase-lamp{background:#e4b35c;box-shadow:0 0 6px #d6a95166}
+#lab-audio-phase[data-phase="ready"] .phase-lamp,#lab-audio-phase[data-phase="played"] .phase-lamp{background:#8ee2a5;box-shadow:0 0 7px #8ee2a577}
+#lab-audio-phase[data-phase="error"] .phase-lamp{background:#d98579;box-shadow:0 0 6px #d9857966}
+#lab-setup[data-sync="modified"] .note-console{border-color:#626657}
+@media(min-width:560px){.note-keys{grid-template-columns:repeat(8,minmax(0,1fr))}}
+@media(max-height:550px){#lab-demo-code-bay{position:relative;top:auto}}
+</style>
+<style>
+:root{--gold:#d8ae5b}body{max-width:none;padding:env(safe-area-inset-top) 9px env(safe-area-inset-bottom);background:#171917;color:#e9dfc8;font-family:ui-monospace,monospace}header{background:#302820;border:3px solid #826b4d;padding:9px 12px;margin:3px 0 8px;position:relative}header h1{font:800 17px ui-monospace,monospace;letter-spacing:.07em}header a{color:#e8d8b9}header small{font-size:9px}main{max-width:900px;margin:auto}.lab-intro,.section-kicker,#lab-setup-hint,#lab-recording>p,.muted:not(label):not(#lab-status):not(#lab-source-state):not(#lab-tone-save-status),#lab-recording h2{display:none!important}section{margin:0 0 8px;padding:9px;border:2px solid #665c49;background:#20231f}#lab-setup>h2{display:none}#lab-setup{display:flex;flex-direction:column;gap:6px}#lab-demo-code-bay{order:1;position:relative!important;top:auto!important;margin:0!important;padding:7px!important;box-shadow:none!important;background:#151d19!important}#lab-demo-code-bay label{display:none!important}#lab-demo-code{min-height:125px!important;height:24dvh!important;max-height:240px!important;font-size:12px!important;background:#101a15!important}#lab-demo-controls{order:2;display:grid;grid-template-columns:1fr 1fr;gap:10px}#lab-demo-controls .demo-param{min-width:0}#lab-demo-controls input{width:100%}.note-console{order:3;margin:0;padding:7px}.note-console-head{margin-bottom:5px}.note-keys{grid-template-columns:repeat(8,minmax(0,1fr));gap:3px}.note-keys button{min-height:47px;font-size:15px;padding:3px 0}#lab-setup>.actions{order:4;margin:0;display:flex;gap:5px}#lab-engine{flex:1}#lab-demo-reset{font-size:10px;max-width:40%}#lab-audio-phase{order:5;margin:0}#lab-status{order:6;margin:0;font-size:11px;min-height:0}#lab-setup>.tone-save-row{order:7;margin:0;display:grid;grid-template-columns:1fr auto;gap:5px}#lab-tone-name{min-width:0}#lab-tone-save{min-width:90px}#lab-tone-save-status,#lab-tone-library-link{order:8}#lab-recording{padding:10px}#lab-recording label{margin:0 0 6px}#lab-recording .actions{margin:5px 0}#lab-recording progress{height:5px}#lab-source-bay{position:relative!important;top:auto!important;bottom:auto!important;max-height:none!important;margin:0 0 8px!important;padding:7px!important}#lab-live-source{min-height:110px!important;height:22dvh!important;font-size:12px!important}#lab-waveform{height:110px!important}#lab-region-controls{display:grid;grid-template-columns:1fr 1fr;column-gap:12px}#lab-region-controls canvas,#lab-region-summary{grid-column:1/-1}#lab-region-controls label{font-size:11px}#lab-region-controls input{min-width:0}#lab-diagnostics{margin:10px 0}.bench-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:0 0 8px}.bench-tabs button{background:#292c27;border:2px solid #817256;color:#eee1c5;min-height:43px;font:800 12px ui-monospace,monospace;letter-spacing:.06em}.bench-tabs button[aria-selected=true]{background:#d8ae5b;color:#201b13}.bench-panel[hidden]{display:none!important}#lab-setup{border-color:#8b7755}@media(max-width:390px){header h1{font-size:14px}.note-keys button{font-size:13px}.note-keys button small{font-size:9px}#lab-demo-controls{gap:5px}}
+</style></head>
+<body>
+<header><a href="./index.html">← CODE</a><h1>SOUNDS / INSTRUMENT</h1><small>PLAYTEST 01</small></header>
+<main>
+<p class="lab-intro">Make a sound first. The instrument runs entirely in SuperCollider. No recording required.</p>
+<section id="lab-setup">
+<div class="section-kicker">01 / SYNTHESIZER</div><h2>Hear SuperCollider</h2>
+<div id="lab-demo-code-bay" data-sync="matched">
+ <div class="demo-code-head"><strong>LIVE CODE</strong><span id="lab-demo-sync" role="status"><span class="demo-lamp" aria-hidden="true"></span><span id="lab-demo-sync-label">CONTROLS MATCH CODE</span></span></div>
+ <label for="lab-demo-code" class="muted">This is the actual code that produces the tone. Tap to edit.</label>
+ <textarea id="lab-demo-code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" aria-label="Editable SuperCollider synthesizer code">Loading SuperCollider code…</textarea>
+</div>
+<div id="lab-demo-controls" data-sync="matched">
+ <div class="demo-param"><label for="lab-demo-pitch">Pitch <output id="lab-demo-pitch-value" for="lab-demo-pitch">440 Hz</output></label><input id="lab-demo-pitch" type="range" min="150" max="1000" step="1" value="440"></div>
+ <div class="demo-param"><label for="lab-demo-level">Volume <output id="lab-demo-level-value" for="lab-demo-level">16%</output></label><input id="lab-demo-level" type="range" min="0.05" max="0.25" step="0.01" value="0.16"></div>
+</div>
+<div class="note-console" aria-label="Playable native SuperCollider notes">
+ <div class="note-console-head"><strong>TOUCH KEYS</strong><span id="lab-note-hint">Choose a note, then start SuperCollider</span></div>
+ <div id="lab-note-keys" class="note-keys" role="group" aria-label="One-octave native SuperCollider touch keys">
+  <button type="button" data-note="262" data-label="C4" aria-label="C4, 262 hertz" aria-pressed="false">C<small>4</small></button>
+  <button type="button" data-note="294" data-label="D4" aria-label="D4, 294 hertz" aria-pressed="false">D<small>4</small></button>
+  <button type="button" data-note="330" data-label="E4" aria-label="E4, 330 hertz" aria-pressed="false">E<small>4</small></button>
+  <button type="button" data-note="349" data-label="F4" aria-label="F4, 349 hertz" aria-pressed="false">F<small>4</small></button>
+  <button type="button" data-note="392" data-label="G4" aria-label="G4, 392 hertz" aria-pressed="false">G<small>4</small></button>
+  <button type="button" data-note="440" data-label="A4" aria-label="A4, 440 hertz" aria-pressed="false">A<small>4</small></button>
+  <button type="button" data-note="494" data-label="B4" aria-label="B4, 494 hertz" aria-pressed="false">B<small>4</small></button>
+  <button type="button" data-note="523" data-label="C5" aria-label="C5, 523 hertz" aria-pressed="false">C<small>5</small></button>
+ </div>
+</div>
+<div class="actions"><button id="lab-engine" type="button" class="primary">Start SuperCollider</button><button id="lab-demo-reset" type="button">Reset code from controls</button></div>
+<div id="lab-audio-phase" data-phase="idle" role="status" aria-live="polite"><span class="phase-lamp" aria-hidden="true"></span><span id="lab-audio-phase-label">ENGINE NOT STARTED</span></div>
+<div class="tone-save-row"><label for="lab-tone-name">INSTRUMENT NAME<input id="lab-tone-name" type="text" value="First tone" maxlength="120" autocomplete="off"></label><button id="lab-tone-save" type="button">Save code to Library</button></div><p id="lab-tone-save-status" class="muted" role="status" aria-live="polite"></p><a href="./sounds.html" id="lab-tone-library-link" hidden>Open Sounds Library</a>
+<p id="lab-status" role="status" aria-live="polite">Ready. Start SuperCollider, then tap Play tone.</p>
+<p id="lab-setup-hint" class="muted">First startup loads the native sound engine. When Play tone appears, tap it to hear the displayed code.</p>
+</section>
+<section id="lab-recording">
+<div class="section-kicker">02 / SOURCE AUDIO</div><h2>Or use a recording</h2>
+<label for="lab-sound">Your Sounds library</label><select id="lab-sound"><option value="">Loading saved sounds…</option></select>
+<p id="lab-details" class="muted"></p>
+<div class="actions"><button id="lab-load" type="button" disabled>Load selected sound</button><button id="lab-cancel" type="button" disabled>Cancel loading</button></div>
+<progress id="lab-progress" max="1" value="0" aria-label="Sample loading progress"></progress>
+<p class="muted">No recordings? Return to <a href="./sounds.html">Sounds</a> to record, import or discover one.</p>
+</section>
+<section><h2>3 / Shape your recording</h2>
+<aside id="lab-source-bay" aria-label="Editable native SuperCollider instrument source"><div class="source-head"><h2>SUPERCOLLIDER / LIVE INSTRUMENT SOURCE</h2><button type="button" id="lab-copy-source" disabled>Copy</button></div><span id="lab-sync-indicator" class="sync-indicator" role="status"><span class="sync-lamp" aria-hidden="true"></span><span id="lab-sync-label">NO SOURCE</span></span><label for="lab-live-source" class="muted">Full, executable native SynthDef and playback code. Tap to edit; Play runs exactly this source. Control changes require your approval before replacing manual edits.</label><textarea id="lab-live-source" spellcheck="false" wrap="off" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Editable SuperCollider playback command" readonly>Select and transfer a recording to reveal executable SuperCollider playback code.</textarea><p id="lab-source-state" class="muted" role="status">Load a sample to edit its playback code.</p><button type="button" id="lab-reset-source" disabled>Reset code from controls</button><button type="button" id="lab-apply-control" hidden>Apply control change</button><button type="button" id="lab-keep-code" hidden>Keep edited code</button></aside>
+<p class="muted">Non-destructive controls for the loaded sample. Playback, region selection, speed and looping are performed by SuperCollider's native PlayBuf, BufRd and Phasor instruments, never a browser audio engine. Loop seams use a short equal-power overlap calculated by SuperCollider. Changing controls takes effect the next time you tap Play.</p>
+<p class="muted">Drag horizontally across the waveform to select a region, or use the accessible start and end sliders below. The waveform is a read-only visualization; audio processing stays in SuperCollider.</p>
+<div id="lab-region-controls" data-sync="unavailable"><canvas id="lab-waveform" role="img" aria-label="Read-only waveform with selected region highlighted; use the start and end sliders for precise adjustment"></canvas>
+<label for="lab-start">Start of region</label><input id="lab-start" type="range" min="0" max="99" step="0.1" value="0">
+<label for="lab-finish">End of region</label><input id="lab-finish" type="range" min="1" max="100" step="0.1" value="100">
+<label for="lab-rate">Playback speed</label><input id="lab-rate" type="range" min="0.25" max="2" step="0.05" value="1">
+<label for="lab-amp">Volume</label><input id="lab-amp" type="range" min="0" max="0.5" step="0.01" value="0.16">
+<label class="check" for="lab-loop"><input id="lab-loop" type="checkbox">Loop selected region</label>
+<p class="muted" id="lab-region-summary" aria-live="polite">Region: 0% to 100% · 1× · Volume 16% · One shot</p>
+</div><p class="muted">Native equal-power loop crossfades reduce boundary clicks; difficult sources can still produce audible artifacts. Stop releases only this laboratory player. Source audio is never overwritten.</p>
+<div class="actions"><button id="lab-play" class="primary" type="button" disabled>Play sample</button><button id="lab-stop" type="button" disabled>Stop</button></div>
+</section>
+<section><h2>4 / Save your instrument</h2>
+<p class="muted">Save the selected region, speed, loop and volume as a Library preset referencing the original recording. No audio is duplicated or modified. Export an editable .scd script to use with desktop SuperCollider; export the original audio separately from Library, then choose it when the script asks for a file.</p>
+<label for="lab-preset-name">Instrument name</label><input id="lab-preset-name" type="text" maxlength="120" placeholder="e.g. Reedy loop instrument">
+<div class="actions"><button id="lab-save-preset" class="primary" type="button" disabled>Save preset to Library</button><button id="lab-export-preset" type="button" disabled>Export SuperCollider .scd</button></div>
+<p class="muted">Only a verified native buffer can become a preset. A missing or deleted source recording will not be silently replaced.</p>
+</section>
+<details id="lab-diagnostics"><summary>Technical details and troubleshooting</summary><p class="muted">The native SuperCollider engine loads and verifies sample buffers. WAVE files are read directly when supported; other formats may require decoding for transfer. Your original sound is never altered.</p><pre id="lab-log" aria-label="SuperCollider diagnostic output"></pre></details>
+</main>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+ const main=document.querySelector('main'),setup=document.getElementById('lab-setup'),recording=document.getElementById('lab-recording');
+ const sections=[...main.querySelectorAll(':scope > section')];
+ const tabs=document.createElement('nav');tabs.className='bench-tabs';tabs.setAttribute('aria-label','Instrument workspace');
+ const groups={play:[setup],sample:[recording,sections[2],sections[3]],details:[]};
+ for(const [name,label] of [['play','PLAY / CODE'],['sample','SAMPLE'],['details','LIBRARY']]){
+  const b=document.createElement('button');b.type='button';b.textContent=label;b.dataset.tab=name;b.addEventListener('click',()=>show(name));tabs.append(b);
+ }
+ main.insertBefore(tabs,setup);
+ const library=document.createElement('section');library.innerHTML='<h2>YOUR SOUNDS</h2><p>Recordings, samples and saved instruments share the existing Sounds library.</p><div class="actions"><a href="./sounds.html#library">OPEN LIBRARY</a> <a href="./sounds.html#discover">DISCOVER RECORDINGS</a> <a href="./sounds.html#create">CREATE / GENERATE</a></div><p>Community SuperCollider instruments are the next acquisition integration. No third-party code is executed automatically.</p>';
+ main.insertBefore(library,document.getElementById('lab-diagnostics'));groups.details.push(library);
+ for(const group of Object.values(groups))for(const node of group)node.classList.add('bench-panel');
+ function show(name){for(const [key,nodes] of Object.entries(groups))for(const node of nodes)node.hidden=key!==name;for(const b of tabs.children)b.setAttribute('aria-selected',String(b.dataset.tab===name));location.hash=name;}
+ show(['play','sample','details'].includes(location.hash.slice(1))?location.hash.slice(1):'play');
+});
+</script><script type="module" src="./sounds-lab.mjs?v=18"></script>
+</body>
+</html>
