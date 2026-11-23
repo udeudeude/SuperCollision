@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#161817">
-<title>Sounds Instrument Bench · v0.3.3</title>
+<title>Sounds Instrument Bench · v0.3.4</title>
 <style>
 :root{color-scheme:dark;background:#161817;color:#eae7da;font:15px/1.5 system-ui,sans-serif}
 *{box-sizing:border-box}
@@ -359,9 +359,32 @@ body.is-recording #bench-library-workspace #start{background:#bb4b3c;color:white
 #acquire-collection .acquire-searchbar{grid-template-columns:minmax(0,1fr) 121px}
 #acquire-collection #acquire-filter{width:121px;font-size:10px}
 @media(max-width:360px){#acquire-collection .acquire-searchbar{grid-template-columns:minmax(0,1fr) 111px}#acquire-collection #acquire-filter{width:111px;font-size:9px}}
-</style></head>
+</style><style id="sounds-viewport-gesture-lock-v034">
+/* Match the main Code page: taps, document scrolling and keyboard focus must
+   not magnify the entire application. Code has its own pinch-to-resize gesture. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
+body,button,select,input,textarea,summary{touch-action:manipulation}
+#lab-demo-code-bay,#bench-code-stack,#lab-demo-code{
+ touch-action:pan-x pan-y!important;
+ overscroll-behavior:contain;
+}
+#lab-demo-code{overflow-x:auto!important;overflow-y:auto!important}
+</style>
+<script>
+/* WebKit may still emit native page gesture events even with the viewport
+   restriction. Preserve the existing two-finger Code-only zoom handler. */
+document.addEventListener('gesturestart',event=>{
+ if(!event.target?.closest?.('#lab-demo-code-bay'))event.preventDefault();
+},{capture:true,passive:false});
+document.addEventListener('gesturechange',event=>{
+ if(!event.target?.closest?.('#lab-demo-code-bay'))event.preventDefault();
+},{capture:true,passive:false});
+document.addEventListener('touchmove',event=>{
+ if(event.touches.length>1&&!event.target?.closest?.('#lab-demo-code-bay'))event.preventDefault();
+},{capture:true,passive:false});
+</script></head>
 <body>
-<header><a href="./index.html">← CODE</a><h1>SOUNDS / INSTRUMENT</h1><small>v0.3.3</small></header>
+<header><a href="./index.html">← CODE</a><h1>SOUNDS / INSTRUMENT</h1><small>v0.3.4</small></header>
 <main>
 <p class="lab-intro">Make a sound first. The instrument runs entirely in SuperCollider. No recording required.</p>
 <section id="lab-setup">
