@@ -335,6 +335,8 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     element('perform-node-title',node.name);
     element('perform-node-description',node.description);
     element('perform-node-args',node.arguments.slice(0,2).join(' · '));
+    if(node.feeds?.length)
+      element('perform-node-links',node.feeds.map(edge=>'→ '+edge.to+' ('+edge.reason+')').join(' · '));
     b.addEventListener('click',()=>{
       for(const old of graph.querySelectorAll('[aria-pressed=true]'))old.setAttribute('aria-pressed','false');
       b.setAttribute('aria-pressed','true');
