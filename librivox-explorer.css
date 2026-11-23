@@ -24,3 +24,25 @@
 /* Search results must remain reachable on short landscape phone screens. */
 .discovery-panel{display:block}
 .sources-footnote{margin-top:8px}
+
+/* Independent, composable author and reader filters. One record must satisfy both. */
+.combined-form{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:10px 12px 11px;background:#262820;display:grid;gap:8px}
+.combined-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.combined-head button{font:700 10px ui-monospace,monospace;min-height:30px;padding:4px 9px;background:transparent;color:var(--soft)}
+.combined-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.combined-inputs label{min-width:0;font:800 10px ui-monospace,monospace;letter-spacing:.08em;color:#dbbd85;display:grid;gap:5px}
+.combined-inputs input{width:100%;min-width:0;max-width:100%;min-height:41px;font:14px system-ui;padding:7px 9px;border:1px solid #746b55;color:var(--ink);background:#171c19}
+.combined-inputs input:focus-visible{outline:2px solid #f1cb82}
+.combined-actions{display:grid;grid-template-columns:auto minmax(0,1fr);gap:9px;align-items:center}
+.combined-actions button{font:800 11px ui-monospace,monospace;padding:7px 10px;min-height:40px}
+.combined-actions span{font:11px/1.4 system-ui;color:var(--soft)}
+.favorite-filters{display:flex;gap:5px;flex-wrap:wrap}
+.favorite-filters:empty{display:none}
+.favorite-filters button{min-height:30px;padding:3px 8px;font:11px system-ui;border-color:#756d5d;background:#34352b;color:#e9d7b1}
+.section-coverage{color:#dfbd7c;font:700 12px/1.45 ui-monospace,monospace}
+@media(max-width:450px){.combined-actions{grid-template-columns:1fr}.combined-actions button{width:100%}.combined-inputs{grid-template-columns:1fr}}
+
+.catalog-disclosure{border-bottom:1px solid var(--line)}
+.catalog-disclosure>summary{padding:10px 13px;min-height:39px;cursor:pointer;font:700 11px ui-monospace,monospace;letter-spacing:.035em;color:#cbb88f;list-style-position:inside;background:#22261f}
+.catalog-disclosure[open]>summary{color:#eed39b;border-bottom:1px solid #555748}
+.catalog-disclosure .catalog-form{padding:10px 12px}
