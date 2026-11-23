@@ -60,7 +60,17 @@
         <div class="player-heading"><span class="eyebrow">AUDIO</span><span id="playback-status">Choose a chapter</span></div>
         <audio id="chapter-audio" controls preload="none" playsinline></audio>
         <div class="jump-actions" aria-label="Audio navigation"><button type="button" data-jump="-30">−30s</button><button type="button" data-jump="-5">−5s</button><button id="mark-position" type="button" title="Mark the correct time for selected text match">✓ FOUND HERE</button><button type="button" data-jump="5">+5s</button><button type="button" data-jump="30">+30s</button></div>
-        <div class="clip-tools"><div class="clip-heading"><span class="eyebrow">SAMPLE REGION</span><span id="clip-summary">Set start and end while listening</span></div><div class="clip-buttons"><button type="button" id="set-start">[ IN</button><button type="button" id="set-end">OUT ]</button><button type="button" id="preview-region">▶ REGION</button><button type="button" id="save-region" class="primary-outline">☆ SAVE</button></div><div id="clip-message" role="status" aria-live="polite"></div></div>
+        <div class="clip-tools"><div class="clip-heading"><span class="eyebrow">SAMPLE REGION</span><span id="clip-summary">Set start and end while listening</span></div><div class="clip-buttons"><button type="button" id="set-start">[ IN</button><button type="button" id="set-end">OUT ]</button><button type="button" id="preview-region">▶ REGION</button><button type="button" id="save-region" class="primary-outline">☆ SAVE</button></div><div id="clip-message" role="status" aria-live="polite"></div>
+          <div class="extract-bay" aria-label="Extract selected audio">
+            <div class="extract-actions"><button type="button" id="extract-wav" class="primary">✂ EXTRACT &amp; SAVE WAV</button><button type="button" id="download-wav" disabled>↓ DOWNLOAD WAV</button></div>
+            <div class="extract-controls"><label class="upload-audio" for="sample-audio-file">USE CHAPTER FILE<input id="sample-audio-file" type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a"></label><button id="restore-stream" type="button" hidden>USE ONLINE RECORDING</button><span id="sample-source-status">Source: online chapter</span></div>
+            <label class="transfer-permission"><input id="permit-audio-download" type="checkbox"> Permit downloading the full chapter on this connection</label>
+            <p class="extract-hint">Wi-Fi first. Browser cannot always detect cellular; online extraction requires your approval. If the host blocks downloads, get its audio file from LibriVox and choose USE CHAPTER FILE. Files you extract are stored locally in Sounds.</p>
+            <progress id="extract-progress" max="1" value="0" hidden></progress>
+            <audio id="extracted-audio" aria-label="Listen to extracted WAV" controls hidden preload="none"></audio>
+            <div id="extract-status" role="status" aria-live="polite"></div>
+          </div>
+        </div>
       </div>
       <div class="text-bay">
         <div class="text-heading"><div><div class="eyebrow">TEXT LOCATOR</div><p>Read the chapter. Find a phrase. Jump to an <strong>approximate</strong> audio position.</p></div><a id="source-text-link" href="https://www.gutenberg.org/" target="_blank" rel="noopener noreferrer">SOURCE TEXT ↗</a></div>
