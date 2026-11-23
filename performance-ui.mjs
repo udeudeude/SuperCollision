@@ -256,6 +256,196 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     editor.dispatchEvent(new Event('scroll'));
     editor.focus({preventScroll:true});
   };
+
+  /* Mix is an explainer. The graph is parsed source, the middle readout is
+     reported server activity, and the wave legend is never sampled audio. */
+  const codeStack=editor.closest('.code-stack');
+  const spotlight=document.createElement('div');
+  spotlight.className='mix-code-spotlight';spotlight.hidden=true;
+  codeStack?.append(spotlight);
+  const codeLine=()=>parseFloat(getComputedStyle(editor).lineHeight)||21;
+  const lineForOffset=offset=>(editor.value.slice(0,offset).match(/\n/g)||[]).length+1;
+  function positionSpotlight(){
+    if(!codeFocus)return;
+    const top=12+(codeFocus.line-1)*codeLine()-editor.scrollTop;
+    spotlight.hidden=top+codeLine()<0||top>editor.clientHeight;
+    spotlight.style.top=top+'px';
+    const gutter=panel.ownerDocument.querySelector('#line-inner');
+    for(const item of gutter?.querySelectorAll('.mix-code-line')||[])
+      item.classList.remove('mix-code-line');
+    if(codeFocus.line<=6000)
+      gutter?.children[codeFocus.line-1]?.classList.add('mix-code-line');
+  }
+  editor.addEventListener('scroll',positionSpotlight,{passive:true});
+  editor.addEventListener('input',schedule,{passive:true});
+  function selectCode(site,start=site?.startOffset,end=site?.endOffset,showCode=false){
+    if(!site||!sourceIsCurrent(site,editor.value)){
+      focus.textContent='Editor has changed since this code ran. Source mapping is unavailable.';
+      return false;
+    }
+    if(!Number.isInteger(start)||!Number.isInteger(end)||end<start)return false;
+    const line=lineForOffset(start);
+    codeFocus={line,start,end};
+    editor.scrollTop=Math.max(0,12+(line-1)*codeLine()-editor.clientHeight*.28);
+    editor.setSelectionRange(start,end);
+    editor.dispatchEvent(new Event('scroll'));
+    positionSpotlight();
+    focus.textContent='CODE · line '+line+' · selected '+Math.max(1,end-start)+' characters';
+    if(showCode){
+      window.setSuperCollisionView?.('code');
+      editor.focus({preventScroll:true});
+      editor.setSelectionRange(start,end);
+    }
+    return true;
+  }
+  function selectVoice(name,event=null){
+    selectedInstrument=name;
+    selectedEvent=event;
+    inspectedAt=event?.start??null;
+    if(event)setFollow(false);
+    mixDialog.hidden=true;mixDialog.classList.remove('perform-sound-mode');
+    panel.classList.remove('perform-has-selection');
+    for(const [key,dom] of lastRows)dom.lane.classList.toggle('perform-selected',key===name);
+    schedule();
+  }
+  voiceSelect.addEventListener('change',()=>selectVoice(voiceSelect.value));
+  adjustButton.addEventListener('click',()=>{
+    if(selectedInstrument)openMix(selectedInstrument);
+  });
+  sourceButton.addEventListener('click',()=>{
+    const current=journal.definitionFor(selectedInstrument)||
+      previewDefinitions.find(item=>item.name===selectedInstrument)?.site;
+    selectCode(current,current?.startOffset,current?.endOffset,true);
+  });
+  triggerButton.addEventListener('click',()=>{
+    if(selectedEvent?.site)selectCode(selectedEvent.site);
+  });
+  noteButton.addEventListener('click',()=>{
+    if(selectedEvent)showNote(selectedInstrument,selectedEvent,journal.timelineNow());
+  });
+  const nodeElement=(node,site)=>{
+    const b=document.createElement('button');
+    b.className='perform-explain-node';b.type='button';
+    b.title='Find '+node.name+'.'+node.rate+' in code · line '+node.line+'\n'+node.text;
+    b.setAttribute('aria-pressed','false');
+    b.setAttribute('aria-label',node.description+', line '+node.line+'. Show matching code.');
+    b.dataset.sourceStart=String(node.startOffset);
+    const element=(cls,value)=>{
+      const span=document.createElement('span');span.className=cls;span.textContent=value;
+      b.append(span);
+    };
+    element('perform-node-role',node.roleLabel+' · '+node.rate.toUpperCase());
+    element('perform-node-title',node.name);
+    element('perform-node-description',node.description);
+    element('perform-node-args',node.arguments.slice(0,2).join(' · '));
+    b.addEventListener('click',()=>{
+      for(const old of graph.querySelectorAll('[aria-pressed=true]'))old.setAttribute('aria-pressed','false');
+      b.setAttribute('aria-pressed','true');
+      selectCode(site,node.startOffset,node.endOffset);
+    });
+    return b;
+  };
+  function renderExplainer(allRows,events,now){
+    if(previewText!==editor.value){
+      previewText=editor.value;previewDefinitions=sourcePreview(previewText);
+      graphSignature=''; // Editor code might not be the evaluated code.
+    }
+    const entries=new Map();
+    const hasRuntimeAnonymous=allRows.some(row=>/^temp__/.test(row.name)&&journal.definitionFor(row.name));
+    for(const item of previewDefinitions){
+      if(item.name==='Anonymous .play'&&hasRuntimeAnonymous)continue;
+      entries.set(item.name,item.name);
+    }
+    for(const row of allRows)
+      entries.set(row.name,/^temp__/.test(row.name)&&journal.definitionFor(row.name)?
+        'Anonymous .play ('+row.name+')':row.name);
+    const signature=[...entries.keys()].join('\0');
+    if(voiceSignature!==signature){
+      const opts=[...entries].map(([key,label])=>{
+        const o=document.createElement('option');o.value=key;o.textContent=label;return o;
+      });
+      voiceSelect.replaceChildren(...opts);voiceSignature=signature;
+    }
+    if(!entries.has(selectedInstrument)){
+      selectedInstrument=allRows.find(row=>row.active>0)?.name||
+        [...entries.keys()][0]||null;
+      selectedEvent=null;inspectedAt=null;
+    }
+    voiceSelect.disabled=!entries.size;
+    if(selectedInstrument)voiceSelect.value=selectedInstrument;
+    const row=allRows.find(r=>r.name===selectedInstrument);
+    const executed=journal.definitionFor(selectedInstrument);
+    const site=executed||previewDefinitions.find(item=>item.name===selectedInstrument)?.site||null;
+    const evidence=executed?'LAST EVALUATED CODE':'CODE ON SCREEN · NOT VERIFIED AS RUN';
+    const described=describeSynthesis(site);
+    const key=String(selectedInstrument)+'\0'+String(site?.text)+'\0'+evidence;
+    if(graphSignature!==key){
+      graphSignature=key;
+      const children=described.nodes.map(node=>nodeElement(node,site));
+      if(!children.length){
+        const hint=document.createElement('div');hint.className='perform-explain-empty';
+        hint.textContent=site?
+          'No recognizable sound-generating calls in this definition. This is a source reading, not a compiled signal graph.':
+          'Run some code, or select an instrument, to explore its sound construction.';
+        children.push(hint);
+      }
+      graph.replaceChildren(...children);
+      focus.textContent=evidence+' · '+described.summary+'. Tap a component to see its code.';
+      const preview=previewWaveform(described.nodes);
+      wave.replaceChildren();
+      if(preview){
+        const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+        svg.setAttribute('viewBox','0 0 240 58');
+        svg.setAttribute('role','img');
+        svg.setAttribute('aria-label',preview.description+' shape, schematic only, not measured output');
+        const baseline=document.createElementNS('http://www.w3.org/2000/svg','line');
+        baseline.setAttribute('x1','0');baseline.setAttribute('x2','240');
+        baseline.setAttribute('y1','29');baseline.setAttribute('y2','29');
+        baseline.setAttribute('stroke','currentColor');baseline.setAttribute('opacity','.23');
+        const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+        path.setAttribute('d',preview.path);path.setAttribute('fill','none');
+        path.setAttribute('stroke','currentColor');path.setAttribute('stroke-width','2');
+        svg.append(baseline,path);
+        const label=document.createElement('span');label.className='perform-wave-label';
+        const title=document.createElement('strong');title.textContent=preview.shape.toUpperCase();
+        const note=document.createElement('small');note.textContent='schematic only';
+        label.append(title,note);wave.append(svg,label);
+      }else{
+        const hint=document.createElement('span');hint.className='perform-wave-label';
+        hint.textContent='Output waveform not available';wave.append(hint);
+      }
+    }
+    const active=journal.active(selectedInstrument).filter(n=>n.composition===journal.composition);
+    const pending=[...journal.nodes.values()].filter(n=>n.composition===journal.composition&&
+      n.name===selectedInstrument&&!n.confirmed&&!n.ended);
+    const inspected=inspectedAt!==null?Math.min(now,inspectedAt):null;
+    const atTime=inspected===null?null:snapshotAt(events,inspected,selectedInstrument);
+    const last=selectedEvent?.composition===journal.composition?selectedEvent:
+      events.filter(e=>e.name===selectedInstrument).at(-1);
+    const latest=last?.params||active.at(-1)?.params||null;
+    const freq=Number.isFinite(latest?.freq)?Math.round(latest.freq)+' Hz':'frequency unreported';
+    const amp=Number.isFinite(latest?.amp)?' · coded amplitude '+Number(latest.amp.toPrecision(3)):'';
+    const headline=inspected!==null?
+      'AT '+formatWhen((inspected-journal.zero)/1000)+' · '+atTime.length+' confirmed-start events':
+      journal.stoppedAt!==null?'TIMELINE STOPPED':
+      active.length+' confirmed active · '+pending.length+' requested';
+    const context=last?
+      freq+amp+' · '+(last.status==='requested'?'awaiting server':last.status):
+      (site?'No note reported yet.':'No definition or server note mapped.');
+    const head=document.createElement('strong');head.textContent=headline;
+    const sub=document.createElement('span');sub.textContent=context;
+    reality.replaceChildren(head,sub);
+    explain.style.setProperty('--voice-color',row?'var(--voice-'+row.slot+')':'var(--perform-border)');
+    adjustButton.disabled=!row;
+    sourceButton.disabled=!site||!sourceIsCurrent(site,editor.value);
+    const trigger=selectedEvent?.site;
+    triggerButton.hidden=!trigger||trigger.kind!=='trigger';
+    noteButton.hidden=!selectedEvent;
+    for(const el of graph.querySelectorAll('.perform-explain-node')){
+      el.disabled=!site||!sourceIsCurrent(site,editor.value);
+    }
+  }
+
   function button(label,title,onClick,disabled=false){
     const b=document.createElement('button');b.type='button';b.textContent=label;
     b.title=title;b.disabled=disabled;b.addEventListener('click',onClick);return b;
