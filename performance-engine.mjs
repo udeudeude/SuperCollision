@@ -32,7 +32,7 @@ const sourceLine=src=>src.split('\n').length;
 export class PerformanceJournal{
   constructor({now=()=>performance.now(),onChange=()=>{},send=()=>{}}={}){
     this.now=now;this.onChange=onChange;this.send=send;
-    this.nodes=new Map();this.events=[];this.defs=new Map();this.states=new Map();
+    this.nodes=new Map();this.events=[];this.defs=new Map();this.triggers=new Map();this.anonymous=null;this.states=new Map();
     this.zero=now();this.composition=null;this.source='';this.enabled=true;
     this.stoppedAt=null;
     this._unknown=0;this._replies=0;
@@ -48,12 +48,28 @@ export class PerformanceJournal{
     this.stoppedAt=null;
     this.setSource(name,whole);
     const index=indexSource(whole),end=start+sourceLine(submitted)-1;
+    const included=site=>site.start>=start&&site.end<=end;
+    const owns=site=>({...site,composition:name,snapshot:whole});
+    for(const [key,ranges] of index.triggers){
+      const found=ranges.filter(included);
+      if(found.length===1)this.triggers.set(key,owns(found[0]));
+      else this.triggers.delete(key); // Never guess which trigger scheduled a note.
+    }
+    const anonymous=index.anonymous.filter(included);
+    this.anonymous=anonymous.length===1?owns(anonymous[0]):null;
     for(const [key,site] of index.defs){
       if(site.start<start||site.end>end)continue;
       this.defs.set(key,{name:key,params:numericParameters(site.text),
         site:{...site,composition:name,snapshot:whole}});
     }
     this.changed();
+  }
+  definitionFor(name){
+    const named=this.defs.get(name)?.site;
+    if(named&&named.composition===this.composition)return named;
+    if(/^temp__/.test(name)&&this.anonymous?.composition===this.composition)
+      return this.anonymous;
+    return null;
   }
   stateFor(name){
     if(!this.states.has(name))this.states.set(name,{gain:1,muted:false,solo:false,controls:{}});
@@ -125,10 +141,12 @@ export class PerformanceJournal{
     }
     this.stoppedAt=null;
     const t=this.now(),owner=def?.site?.composition||this.composition||'unmapped';
-    const site=def?.site||null;
+    const definition=this.definitionFor(name);
+    const trigger=this.triggers.get(name);
+    const site=(trigger?.composition===owner?trigger:null)||definition;
     const prior=this.nodes.get(id);if(prior&&!prior.ended)this._end(id,t);
     const event={id,name,composition:owner,request:t,start:null,end:null,
-      params:{...params},slot:this.colorSlot(name),site,
+      params:{...params},slot:this.colorSlot(name),site,definition,
       status:'requested',kind:'synth'};
     this.nodes.set(id,{...event,confirmed:false,ended:false,originalAmp:finite(params.amp)?params.amp:null});
     this.events.push(event);this._prune();this.changed();

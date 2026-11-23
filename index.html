@@ -393,6 +393,25 @@ body[data-theme=terminal] .console-shell{border-top:0;padding-top:4px}
     <button id="perform-reset" type="button" title="Restore original levels and clear mute and solo (does not change sound parameters)" aria-label="Restore original levels and clear mute and solo">↺ LEVELS</button>
     <button id="perform-help" type="button" title="Explain Mix controls and timeline" aria-label="Help with Mix controls">?</button>
   </div>
+  <section id="perform-explain" class="perform-explain" aria-label="How SuperCollider code becomes sound">
+    <div class="perform-explain-head">
+      <strong>HOW THE CODE MAKES SOUND</strong>
+      <select id="perform-explain-voice" aria-label="Choose instrument to examine"></select>
+      <button type="button" id="perform-explain-adjust" title="Optional mute, solo, level and parameter controls">ADJUST</button>
+    </div>
+    <div class="perform-explain-legend" aria-label="Evidence levels"><span>1 · CODE <small>read from source</small></span><span>2 · SERVER <small>observed</small></span><span>3 · SOUND <small>illustrative, not measured</small></span></div>
+    <div id="perform-explain-graph" class="perform-explain-graph" aria-label="Recognized synthesis components"></div>
+    <div class="perform-explain-bottom">
+      <div id="perform-explain-reality" class="perform-explain-reality" role="status" aria-live="off"></div>
+      <div id="perform-explain-wave" class="perform-explain-wave"></div>
+    </div>
+    <div class="perform-explain-foot">
+      <span id="perform-explain-focus" aria-live="polite">Select a component to locate its code.</span>
+      <button type="button" id="perform-explain-trigger" hidden>WHY DID IT START?</button>
+      <button type="button" id="perform-explain-code">VIEW CODE</button>
+      <button type="button" id="perform-explain-note" hidden>NOTE DETAILS</button>
+    </div>
+  </section>
   <div class="perform-scroller" id="perform-scroller">
     <div class="perform-axis"><div class="perform-axis-label">INSTRUMENTS</div><div id="perform-axis-ticks" class="perform-axis-ticks"></div></div>
     <div class="perform-rows" id="perform-rows"></div>
@@ -591,7 +610,7 @@ renderProjects();document.addEventListener('visibilitychange',()=>{if(document.v
 </script>
 <script type="module">
 import {createLiveActivityUI} from "./live-activity.mjs?v=24";
-import {createPerformanceUI} from "./performance-ui.mjs?v=31";
+import {createPerformanceUI} from "./performance-ui.mjs?v=32";
 import {encodeOsc} from "./performance-engine.mjs?v=25";
 import {createPriorityOscBridge} from "./osc-priority-bridge.mjs?v=1";
 import {createLearning} from "./learning.mjs?v=5";

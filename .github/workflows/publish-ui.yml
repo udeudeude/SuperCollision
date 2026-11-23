@@ -59,7 +59,7 @@ jobs:
           names = [
               "index.html", "_headers",
               "instrument-layout.css", "instrument-layout.js", "live-activity.mjs",
-              "routine-trace.mjs", "performance-engine.mjs", "performance-ui.mjs",
+              "routine-trace.mjs", "performance-engine.mjs", "performance-ui.mjs", "mix-explain.mjs",
               "performance.css", "learning.mjs", "learning.css", "catalog-core.mjs",
               "editor-assist.mjs", "code-selection.mjs", "error-guide.mjs", "repair-ui.mjs", "repair-ui.css",
               "catalog-assist.css", "osc-priority-bridge.mjs",
@@ -90,9 +90,11 @@ jobs:
           node --check source/live-activity.mjs
           node --check source/performance-engine.mjs
           node --check source/performance-ui.mjs
+          node --check source/mix-explain.mjs
           node --check source/qa/lab-offline-browser-test.mjs
           node source/qa/offline-policy-test.mjs
           node source/qa/performance-test.mjs
+          node source/qa/mix-explain-test.mjs
           python3 - <<'PY'
           from pathlib import Path
           import json
@@ -126,12 +128,13 @@ jobs:
           node source/qa/lab-offline-browser-test.mjs
           node source/qa/code-selection-browser-test.mjs
           node source/qa/header-navigation-browser-test.mjs
+          node source/qa/mix-explain-browser-test.mjs
       - name: Commit tested production site to Pages branch
         run: |
           cd site
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/fonts/ index.html _headers instrument-layout.css instrument-layout.js code-selection.mjs live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs performance.css learning.mjs learning.css catalog-core.mjs editor-assist.mjs error-guide.mjs repair-ui.mjs repair-ui.css catalog-assist.css osc-priority-bridge.mjs sound-designer.mjs sound-designer-core.mjs sound-designer.css lab-offline.mjs lab-sw.js lab-composition-vault.mjs offline-cache-policy.mjs language-catalog.json manifest.webmanifest app-icon.svg apple-touch-icon.png app-icon-192.png app-icon-512.png lab-offline-assets.json
+          git add assets/fonts/ index.html _headers instrument-layout.css instrument-layout.js code-selection.mjs live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs mix-explain.mjs performance.css learning.mjs learning.css catalog-core.mjs editor-assist.mjs error-guide.mjs repair-ui.mjs repair-ui.css catalog-assist.css osc-priority-bridge.mjs sound-designer.mjs sound-designer-core.mjs sound-designer.css lab-offline.mjs lab-sw.js lab-composition-vault.mjs offline-cache-policy.mjs language-catalog.json manifest.webmanifest app-icon.svg apple-touch-icon.png app-icon-192.png app-icon-512.png lab-offline-assets.json
           if git diff --cached --quiet; then
             echo "Production site is already current"
           else
