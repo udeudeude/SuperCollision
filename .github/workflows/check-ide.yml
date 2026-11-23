@@ -2,7 +2,7 @@ name: Check SuperCollision IDE
 on:
   push:
     branches: [main]
-    paths: ['index.html', 'code-selection.mjs', 'qa/code-selection-test.mjs', 'qa/code-selection-browser-test.mjs', 'instrument-layout.css', 'instrument-layout.js', 'live-activity.mjs', 'routine-trace.mjs', 'performance-engine.mjs', 'performance-ui.mjs', 'performance.css', 'learning.mjs', 'learning.css', 'catalog-core.mjs', 'editor-assist.mjs', 'catalog-assist.css', 'sound-designer.mjs', 'sound-designer-core.mjs', 'sound-designer.css', 'qa/sound-designer-test.mjs', 'qa/osc-priority-test.mjs', 'qa/catalog-test.mjs', 'qa/learning-test.mjs', 'qa/performance-test.mjs', 'qa/live-activity-test.mjs', '.github/workflows/check-ide.yml']
+    paths: ['index.html', 'code-selection.mjs', 'qa/code-selection-test.mjs', 'qa/code-selection-browser-test.mjs', 'qa/header-navigation-browser-test.mjs', 'instrument-layout.css', 'instrument-layout.js', 'live-activity.mjs', 'routine-trace.mjs', 'performance-engine.mjs', 'performance-ui.mjs', 'performance.css', 'learning.mjs', 'learning.css', 'catalog-core.mjs', 'editor-assist.mjs', 'catalog-assist.css', 'sound-designer.mjs', 'sound-designer-core.mjs', 'sound-designer.css', 'qa/sound-designer-test.mjs', 'qa/osc-priority-test.mjs', 'qa/catalog-test.mjs', 'qa/learning-test.mjs', 'qa/performance-test.mjs', 'qa/live-activity-test.mjs', '.github/workflows/check-ide.yml']
   pull_request:
     paths: ['index.html', 'instrument-layout.css', 'instrument-layout.js', '.github/workflows/check-ide.yml']
 jobs:
@@ -98,3 +98,4 @@ jobs:
           npm install --no-save playwright@1.56.1
           google-chrome --version
           node qa/code-selection-browser-test.mjs
+          node qa/header-navigation-browser-test.mjs
