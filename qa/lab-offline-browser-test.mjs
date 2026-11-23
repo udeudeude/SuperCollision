@@ -339,7 +339,11 @@ try{
   await page.locator('#perform-explain-adjust').click();
   assert.equal(await page.locator('#perform-dialog-gain-value').textContent(),'95%');
   await page.locator('#perform-dialog-close').click();
-  assert.equal(await page.locator('#perform-follow').getAttribute('aria-pressed'),'true');
+  assert.equal(await page.locator('#perform-follow').getAttribute('aria-pressed'),'false',
+    'Selecting a historical note should pause Follow for deliberate inspection');
+  await page.locator('#perform-follow').click();
+  assert.equal(await page.locator('#perform-follow').getAttribute('aria-pressed'),'true',
+    'Return to Live must resume the newest musical events');
   const verticalStayedFollowing=await page.locator('#perform-scroller').evaluate(sc=>{
     const e=(type,x,y)=>sc.dispatchEvent(new PointerEvent(type,{
       bubbles:true,pointerId:7,isPrimary:true,clientX:x,clientY:y
