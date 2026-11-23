@@ -61,7 +61,7 @@ jobs:
               "instrument-layout.css", "instrument-layout.js", "live-activity.mjs",
               "routine-trace.mjs", "performance-engine.mjs", "performance-ui.mjs",
               "performance.css", "learning.mjs", "learning.css", "catalog-core.mjs",
-              "editor-assist.mjs", "error-guide.mjs", "repair-ui.mjs", "repair-ui.css",
+              "editor-assist.mjs", "code-selection.mjs", "error-guide.mjs", "repair-ui.mjs", "repair-ui.css",
               "catalog-assist.css", "osc-priority-bridge.mjs",
               "sound-designer.mjs", "sound-designer-core.mjs", "sound-designer.css",
               "lab-offline.mjs", "lab-sw.js", "lab-composition-vault.mjs",
@@ -84,6 +84,8 @@ jobs:
           node --check source/lab-sw.js
           node --check source/lab-offline.mjs
           node --check source/lab-composition-vault.mjs
+          node --check source/code-selection.mjs
+          node source/qa/code-selection-test.mjs
           node --check source/instrument-layout.js
           node --check source/live-activity.mjs
           node --check source/performance-engine.mjs
@@ -110,6 +112,8 @@ jobs:
               assert p.is_file() and p.stat().st_size == item["bytes"]
           page = (site / "index.html").read_text()
           assert "<title>SuperCollision |" in page
+          assert 'src="./code-selection.mjs?v=1"' in page
+          assert (site / 'code-selection.mjs').is_file()
           assert 'id="workspace-divider"' in page
           assert 'id="live-panel-resizer"' in page
           assert 'src="./lab-offline.mjs"' in page
@@ -125,7 +129,7 @@ jobs:
           cd site
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/fonts/ index.html _headers instrument-layout.css instrument-layout.js live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs performance.css learning.mjs learning.css catalog-core.mjs editor-assist.mjs error-guide.mjs repair-ui.mjs repair-ui.css catalog-assist.css osc-priority-bridge.mjs sound-designer.mjs sound-designer-core.mjs sound-designer.css lab-offline.mjs lab-sw.js lab-composition-vault.mjs offline-cache-policy.mjs language-catalog.json manifest.webmanifest app-icon.svg apple-touch-icon.png app-icon-192.png app-icon-512.png lab-offline-assets.json
+          git add assets/fonts/ index.html _headers instrument-layout.css instrument-layout.js code-selection.mjs live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs performance.css learning.mjs learning.css catalog-core.mjs editor-assist.mjs error-guide.mjs repair-ui.mjs repair-ui.css catalog-assist.css osc-priority-bridge.mjs sound-designer.mjs sound-designer-core.mjs sound-designer.css lab-offline.mjs lab-sw.js lab-composition-vault.mjs offline-cache-policy.mjs language-catalog.json manifest.webmanifest app-icon.svg apple-touch-icon.png app-icon-192.png app-icon-512.png lab-offline-assets.json
           if git diff --cached --quiet; then
             echo "Production site is already current"
           else
