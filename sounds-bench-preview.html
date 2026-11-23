@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#161817">
-<title>Sounds Instrument Bench · v0.2.2</title>
+<title>Sounds Instrument Bench · v0.2.3</title>
 <style>
 :root{color-scheme:dark;background:#161817;color:#eae7da;font:15px/1.5 system-ui,sans-serif}
 *{box-sizing:border-box}
@@ -147,9 +147,52 @@ const input=document.createElement('input');input.type='range';input.min='29';in
 input.addEventListener('input',()=>{zoom.firstChild.textContent=input.value+'%';document.documentElement.style.setProperty('--bench-code-size',(12*Number(input.value)/100)+'px')});
 zoom.append(input);head.append(zoom);
 });
-</script><style>header small{font-size:10px!important;opacity:.72;font-weight:500;letter-spacing:.02em;white-space:nowrap}</style></head>
+</script><style>header small{font-size:10px!important;opacity:.72;font-weight:500;letter-spacing:.02em;white-space:nowrap}</style><style>
+#lab-demo-code-bay{touch-action:pan-x pan-y!important;overscroll-behavior:contain}
+#lab-demo-code{touch-action:pan-x pan-y!important;-webkit-text-size-adjust:none!important;text-size-adjust:none!important}
+#lab-demo-code-bay .bench-zoom{display:none!important}
+#bench-pinch-indicator{position:absolute;right:8px;top:8px;z-index:20;pointer-events:none;background:#141b17;color:#f2d59c;border:1px solid #a88b54;padding:4px 7px;font:700 10px monospace}
+#bench-pinch-indicator[hidden]{display:none!important}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+ const frame=document.getElementById('lab-demo-code-bay'),editor=document.getElementById('lab-demo-code');
+ if(!frame||!editor)return;
+ const MAX=14,MIN=4,key='supercollision-sounds-code-font-px-v1';
+ const indicator=document.createElement('span');indicator.id='bench-pinch-indicator';indicator.hidden=true;frame.append(indicator);
+ let font=MAX,pinch=null;
+ const clamp=x=>Math.max(MIN,Math.min(MAX,x));
+ function save(){try{localStorage.setItem(key,String(font))}catch{}}
+ function apply(value,focus){
+  if(!Number.isFinite(value))return;
+  const next=Math.round(clamp(value)*10)/10,old=font,rect=editor.getBoundingClientRect();
+  const px=focus?focus.startX-rect.left:rect.width/2,py=focus?focus.startY-rect.top:rect.height/2;
+  const x=focus?focus.currentX-rect.left:px,y=focus?focus.currentY-rect.top:py;
+  const ratio=next/(focus?focus.startFont:old);
+  const scrollX=focus?focus.scrollLeft:editor.scrollLeft,scrollY=focus?focus.scrollTop:editor.scrollTop;
+  font=next;editor.style.setProperty('font-size',next+'px','important');
+  editor.style.setProperty('line-height',next*1.5+'px','important');
+  editor.scrollLeft=Math.max(0,8+(scrollX+px-8)*ratio-x);
+  editor.scrollTop=Math.max(0,12+(scrollY+py-12)*ratio-y);
+  indicator.textContent='CODE '+Math.round(next/MAX*100)+'%';
+ }
+ const distance=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+ const middle=(a,b)=>({x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2});
+ function begin(a,b){const m=middle(a,b);pinch={kind:'touch',startFont:font,dist:Math.max(1,distance(a,b)),startX:m.x,startY:m.y,scrollLeft:editor.scrollLeft,scrollTop:editor.scrollTop};indicator.hidden=false}
+ function finish(){if(!pinch)return;pinch=null;indicator.hidden=true;save()}
+ frame.addEventListener('touchstart',e=>{if(e.touches.length===2&&!pinch)begin(e.touches[0],e.touches[1])},{passive:true});
+ frame.addEventListener('touchmove',e=>{if(e.touches.length!==2)return;if(!pinch)begin(e.touches[0],e.touches[1]);if(pinch.kind!=='touch')return;e.preventDefault();const m=middle(e.touches[0],e.touches[1]);apply(pinch.startFont*distance(e.touches[0],e.touches[1])/pinch.dist,{...pinch,currentX:m.x,currentY:m.y})},{passive:false});
+ frame.addEventListener('touchend',e=>{if(e.touches.length<2)finish()},{passive:true});
+ frame.addEventListener('touchcancel',finish,{passive:true});
+ frame.addEventListener('gesturestart',e=>{e.preventDefault();if(!pinch){pinch={kind:'gesture',startFont:font,startX:e.clientX,startY:e.clientY,scrollLeft:editor.scrollLeft,scrollTop:editor.scrollTop};indicator.hidden=false}},{passive:false});
+ frame.addEventListener('gesturechange',e=>{e.preventDefault();if(pinch?.kind==='gesture')apply(pinch.startFont*e.scale,{...pinch,currentX:e.clientX,currentY:e.clientY})},{passive:false});
+ frame.addEventListener('gestureend',e=>{e.preventDefault();if(pinch?.kind==='gesture')finish()},{passive:false});
+ try{const saved=Number(localStorage.getItem(key));if(saved>=MIN&&saved<=MAX)font=saved}catch{}
+ apply(font);
+});
+</script></head>
 <body>
-<header><a href="./index.html">← CODE</a><h1>SOUNDS / INSTRUMENT</h1><small>v0.2.2</small></header>
+<header><a href="./index.html">← CODE</a><h1>SOUNDS / INSTRUMENT</h1><small>v0.2.3</small></header>
 <main>
 <p class="lab-intro">Make a sound first. The instrument runs entirely in SuperCollider. No recording required.</p>
 <section id="lab-setup">
