@@ -42,7 +42,7 @@ export function installToneVisuals({container,inputs,controls,isLocked}) {
  const controlByKey=new Map(controls.map(c=>[c.key,c]));
  const hiddenBin=document.createElement('div');hiddenBin.id='bench-visual-inputs';hiddenBin.hidden=true;
  container.append(hiddenBin);
- const visualKeys=['waveform','pulseWidth','cutoff','resonance','attack','release','vibratoHz','vibratoDepth','echoMix','detune'];
+ const visualKeys=['frequency','waveform','pulseWidth','cutoff','resonance','attack','release','vibratoHz','vibratoDepth','echoMix','detune'];
  for(const key of visualKeys){
   const field=inputs.get(key)?.closest('.demo-param');
   if(field){field.hidden=true;hiddenBin.append(field)}
@@ -262,8 +262,31 @@ export function installToneVisuals({container,inputs,controls,isLocked}) {
   update:p=>({detune:-25+50*p.x}),
   keyboard:key=>key==='ArrowLeft'?{detune:value('detune')-0.5}:key==='ArrowRight'?{detune:value('detune')+0.5}:null
  },'Detune: left/right in cents');
- // Pitch and level remain compact native sliders as the most precise continuous controls.
- for(const key of ['frequency','amplitude']){
+ // Logarithmic frequency ruler: touch an octave region for a continuous pitch,
+ // or use the persistent NOTES drawer for exact named frequencies.
+ const pitch=card('PITCH','Drag across octaves. Use NOTES for exact named pitches.',true);
+ const pitchCanvas=surface(pitch.section,'bench-pitch-canvas');
+ pitchCanvas.setAttribute('aria-label','Logarithmic frequency ruler from 25 to 8000 hertz.');
+ const frequencyX=hz=>Math.log(hz/25)/Math.log(8000/25);
+ drawable(pitchCanvas,(ctx,w,h)=>{
+  ctx.fillStyle=paper;ctx.fillRect(0,0,w,h);
+  const mid=h/2;trace(ctx,[[7,mid],[w-7,mid]],dim,1);
+  ctx.font='9px monospace';
+  for(let octave=0;octave<7;octave++){
+   const hz=55*Math.pow(2,octave),x=7+(w-14)*frequencyX(hz);
+   if(x<9||x>w-11)continue;
+   ctx.strokeStyle=grid;ctx.beginPath();ctx.moveTo(x,4);ctx.lineTo(x,h-10);ctx.stroke();
+   ctx.fillStyle=dim;ctx.fillText('A'+(octave+1),Math.max(4,x-7),h-3);
+  }
+  const x=7+(w-14)*frequencyX(value('frequency'));
+  trace(ctx,[[x,5],[x,h-12]],ink,1.7);dot(ctx,x,mid,ink,4);
+ });
+ pointerSurface(pitchCanvas,{
+  update:p=>({frequency:25*Math.pow(8000/25,p.x)}),
+  keyboard:key=>key==='ArrowLeft'?{frequency:value('frequency')/Math.pow(2,1/12)}:key==='ArrowRight'?{frequency:value('frequency')*Math.pow(2,1/12)}:null
+ },'Pitch by octave, left or right arrows to move one semitone');
+ // Level stays an ordinary fader: it is a good direct amplitude control.
+ for(const key of ['amplitude']){
   const field=inputs.get(key)?.closest('.demo-param');
   if(field){field.classList.add('bench-compact-control');container.insertBefore(field,hiddenBin)}
  }
@@ -274,9 +297,10 @@ export function installToneVisuals({container,inputs,controls,isLocked}) {
    ENVELOPE:value('attack').toFixed(2)+'s / '+value('release').toFixed(2)+'s',
    VIBRATO:value('vibratoHz').toFixed(1)+' Hz / '+value('vibratoDepth').toFixed(2)+' st',
    ECHO:Math.round(value('echoMix')*100)+'% WET',
-   DETUNE:value('detune').toFixed(1)+' ¢'
+   DETUNE:value('detune').toFixed(1)+' ¢',
+   PITCH:value('frequency').toFixed(2)+' Hz'
   };
-  for(const c of [osc,filter,env,vib,echo,detune])c.reading.textContent=output[c.section.querySelector('strong').textContent];
+  for(const c of [osc,filter,env,vib,echo,detune,pitch])c.reading.textContent=output[c.section.querySelector('strong').textContent];
   for(const draw of drawings)draw();
  }
  function waveformNames(){return ['SINE','TRIANGLE','SAW','PULSE'][value('waveform')]+(value('waveform')===3?' · PW '+Math.round(value('pulseWidth')*100)+'%':'')}
