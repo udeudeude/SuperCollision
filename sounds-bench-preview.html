@@ -105,7 +105,49 @@ input:focus-visible{outline:3px solid #eac77a;outline-offset:3px}
 </style>
 <style>
 :root{--gold:#d8ae5b}body{max-width:none;padding:env(safe-area-inset-top) 9px env(safe-area-inset-bottom);background:#171917;color:#e9dfc8;font-family:ui-monospace,monospace}header{background:#302820;border:3px solid #826b4d;padding:9px 12px;margin:3px 0 8px;position:relative}header h1{font:800 17px ui-monospace,monospace;letter-spacing:.07em}header a{color:#e8d8b9}header small{font-size:9px}main{max-width:900px;margin:auto}.lab-intro,.section-kicker,#lab-setup-hint,#lab-recording>p,.muted:not(label):not(#lab-status):not(#lab-source-state):not(#lab-tone-save-status),#lab-recording h2{display:none!important}section{margin:0 0 8px;padding:9px;border:2px solid #665c49;background:#20231f}#lab-setup>h2{display:none}#lab-setup{display:flex;flex-direction:column;gap:6px}#lab-demo-code-bay{order:1;position:relative!important;top:auto!important;margin:0!important;padding:7px!important;box-shadow:none!important;background:#151d19!important}#lab-demo-code-bay label{display:none!important}#lab-demo-code{min-height:125px!important;height:24dvh!important;max-height:240px!important;font-size:12px!important;background:#101a15!important}#lab-demo-controls{order:2;display:grid;grid-template-columns:1fr 1fr;gap:10px}#lab-demo-controls .demo-param{min-width:0}#lab-demo-controls input{width:100%}.note-console{order:3;margin:0;padding:7px}.note-console-head{margin-bottom:5px}.note-keys{grid-template-columns:repeat(8,minmax(0,1fr));gap:3px}.note-keys button{min-height:47px;font-size:15px;padding:3px 0}#lab-setup>.actions{order:4;margin:0;display:flex;gap:5px}#lab-engine{flex:1}#lab-demo-reset{font-size:10px;max-width:40%}#lab-audio-phase{order:5;margin:0}#lab-status{order:6;margin:0;font-size:11px;min-height:0}#lab-setup>.tone-save-row{order:7;margin:0;display:grid;grid-template-columns:1fr auto;gap:5px}#lab-tone-name{min-width:0}#lab-tone-save{min-width:90px}#lab-tone-save-status,#lab-tone-library-link{order:8}#lab-recording{padding:10px}#lab-recording label{margin:0 0 6px}#lab-recording .actions{margin:5px 0}#lab-recording progress{height:5px}#lab-source-bay{position:relative!important;top:auto!important;bottom:auto!important;max-height:none!important;margin:0 0 8px!important;padding:7px!important}#lab-live-source{min-height:110px!important;height:22dvh!important;font-size:12px!important}#lab-waveform{height:110px!important}#lab-region-controls{display:grid;grid-template-columns:1fr 1fr;column-gap:12px}#lab-region-controls canvas,#lab-region-summary{grid-column:1/-1}#lab-region-controls label{font-size:11px}#lab-region-controls input{min-width:0}#lab-diagnostics{margin:10px 0}.bench-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:0 0 8px}.bench-tabs button{background:#292c27;border:2px solid #817256;color:#eee1c5;min-height:43px;font:800 12px ui-monospace,monospace;letter-spacing:.06em}.bench-tabs button[aria-selected=true]{background:#d8ae5b;color:#201b13}.bench-panel[hidden]{display:none!important}#lab-setup{border-color:#8b7755}@media(max-width:390px){header h1{font-size:14px}.note-keys button{font-size:13px}.note-keys button small{font-size:9px}#lab-demo-controls{gap:5px}}
-</style></head>
+</style><style id="fixed-frame-revision">
+html,body{height:100%;height:100dvh;max-height:100dvh;overflow:hidden!important;overscroll-behavior:none}
+body{display:grid;grid-template-rows:auto minmax(0,1fr);gap:5px;padding:calc(env(safe-area-inset-top) + 3px) 7px calc(env(safe-area-inset-bottom) + 3px)!important;margin:0!important;width:100%;max-width:none!important}
+header{min-height:0;margin:0!important;padding:5px 9px!important;flex-shrink:0}
+main{height:100%;min-height:0;min-width:0;max-width:none;width:100%;display:grid;grid-template-rows:auto minmax(0,1fr);gap:5px;overflow:hidden;padding:0!important}
+.bench-tabs{margin:0!important;min-height:0}
+.bench-tabs button{min-height:34px!important;padding:5px 2px!important}
+main>section.bench-panel{min-height:0;max-height:100%;height:100%;overflow-y:auto;overscroll-behavior:contain;margin:0!important;scrollbar-width:thin}
+main>section.bench-panel[hidden]{display:none!important}
+#lab-setup{overflow:hidden!important;display:grid!important;grid-template-rows:minmax(95px,1fr) auto auto auto auto auto auto;gap:4px!important}
+#lab-setup[hidden]{display:none!important}
+#lab-demo-code-bay{min-height:0!important;overflow:hidden;display:flex;flex-direction:column}
+#lab-demo-code{flex:1;min-height:0!important;height:auto!important;max-height:none!important;resize:none!important;overflow:auto!important;font-size:var(--bench-code-size,12px)!important;line-height:1.35!important}
+#lab-demo-controls{min-height:0;gap:5px!important}
+#lab-demo-controls .demo-param{margin:0!important;padding:0!important}
+#lab-demo-controls label{margin:0!important;font-size:10px!important}
+#lab-demo-controls input{margin:0!important;min-height:22px!important}
+.note-console{min-height:0}
+.note-console-head{margin:0 0 3px!important}
+.note-keys button{min-height:37px!important}
+#lab-setup>.actions button{min-height:33px!important;padding:4px 7px!important}
+#lab-setup>.tone-save-row label{margin:0!important;font-size:10px}
+#lab-tone-name{margin:2px 0 0!important;padding:5px!important;font-size:12px!important;min-height:29px!important}
+#lab-tone-save{min-height:32px!important;padding:4px!important}
+#lab-tone-save-status,#lab-tone-library-link{display:none!important}
+#lab-status{font-size:10px!important;max-height:28px;overflow:auto}
+#lab-audio-phase{font-size:10px!important}
+#lab-recording{overflow-y:auto!important}
+#lab-diagnostics{display:none!important}
+.bench-zoom{display:flex;align-items:center;gap:5px;margin-left:auto;color:#d8ae5b;font:700 10px ui-monospace,monospace}
+.bench-zoom input{width:75px;accent-color:#d8ae5b}
+@media(max-height:650px){#lab-setup{grid-template-rows:minmax(65px,1fr) auto auto auto auto auto auto}.note-keys button{min-height:29px!important}.note-console-head{display:none!important}#lab-setup>.tone-save-row{display:none!important}}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+const head=document.querySelector('#lab-demo-code-bay .demo-code-head');
+if(!head)return;
+const zoom=document.createElement('label');zoom.className='bench-zoom';zoom.textContent='100%';
+const input=document.createElement('input');input.type='range';input.min='29';input.max='100';input.value='100';input.setAttribute('aria-label','Code scale, 29 to 100 percent');
+input.addEventListener('input',()=>{zoom.firstChild.textContent=input.value+'%';document.documentElement.style.setProperty('--bench-code-size',(12*Number(input.value)/100)+'px')});
+zoom.append(input);head.append(zoom);
+});
+</script></head>
 <body>
 <header><a href="./index.html">← CODE</a><h1>SOUNDS / INSTRUMENT</h1><small>PLAYTEST 01</small></header>
 <main>
