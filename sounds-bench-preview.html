@@ -567,7 +567,23 @@ document.addEventListener('DOMContentLoaded',()=>{
  const details=document.getElementById('lab-details');if(details)details.hidden=true;
  const progress=document.getElementById('lab-progress');if(progress)progress.hidden=true;
  const sampleStage=document.createElement('div');sampleStage.id='bench-sample-stage';sampleStage.setAttribute('aria-live','polite');
- sampleStage.innerHTML='<div class="bench-empty-symbol">◌</div><strong>NO SAMPLE LOADED</strong><span>Select a recording above, power on SuperCollider, then load it.</span>';
+ sampleStage.innerHTML='<div class="bench-empty-symbol">◌</div><strong>NO SAMPLE LOADED</strong><span>Select a recording above to shape it, or acquire another.</span>';
+ const acquireChoices=document.createElement('div');acquireChoices.className='bench-sample-acquire';
+ const acquireMessage=document.createElement('p');acquireMessage.textContent='Bring audio into Sounds:';
+ const acquireActions=document.createElement('div');acquireActions.className='bench-sample-acquire-actions';
+ for(const [label,action] of [['RECORD','record'],['DISCOVER','discover-audio'],['IMPORT','import']]){
+  const button=document.createElement('button');button.type='button';button.textContent=label;
+  button.addEventListener('click',()=>{
+   show('acquire');
+   window.dispatchEvent(new CustomEvent('bench-acquire-action',{detail:{action}}));
+  });
+  acquireActions.append(button);
+ }
+ const allMethods=document.createElement('button');allMethods.className='bench-sample-more';
+ allMethods.type='button';allMethods.textContent='ALL ACQUISITION METHODS';
+ allMethods.addEventListener('click',()=>show('acquire'));
+ acquireChoices.append(acquireMessage,acquireActions,allMethods);
+ sampleStage.append(acquireChoices);
  recording.after(sampleStage);sampleWorkspace.append(sampleStage);
  const source=document.getElementById('lab-live-source');
  const loadWatch=new MutationObserver(()=>{const loaded=source.readOnly===false;sampleStage.hidden=loaded;engineButton.hidden=document.getElementById('lab-engine')?.textContent?.trim()==='Play tone';});
@@ -576,14 +592,28 @@ document.addEventListener('DOMContentLoaded',()=>{
  
  const status=document.createElement('p');status.id='bench-sample-status';status.textContent='Choose a recording, start SuperCollider, then load it to shape and play.';recording.append(status);
  function updateSample(){
-  const selected=document.getElementById('lab-sound')?.value;
+  const selector=document.getElementById('lab-sound');
+  const selected=selector?.value;
+  const hasRecordings=Boolean(selector?.options?.length>1);
   const loaded=document.getElementById('lab-live-source')?.readOnly===false;
   shape.hidden=!loaded;save.hidden=!loaded;
-  status.textContent=loaded?'READY TO SHAPE':selected?'SELECTED · LOAD TO CONTINUE':'SELECT A RECORDING';
+  sampleStage.querySelector('strong').textContent=!hasRecordings?'NO RECORDINGS YET':'NO SAMPLE LOADED';
+  sampleStage.querySelector('span').textContent=!hasRecordings
+   ?'Record, discover or import audio to start building a sample instrument.'
+   :selected?'Power on SuperCollider and load the selected recording.'
+   :'Select a recording above, or add another recording.';
+  acquireMessage.textContent=hasRecordings?'ACQUIRE ANOTHER RECORDING':'CHOOSE HOW TO ACQUIRE AUDIO';
+  const controls=recording.querySelector('.actions');if(controls)controls.hidden=!selected;
+  acquireChoices.hidden=loaded;
+  sampleStage.hidden=loaded;
+  status.textContent=loaded?'READY TO SHAPE':selected?'SELECTED · LOAD TO CONTINUE':hasRecordings?'CHOOSE A RECORDING':'NO RECORDINGS IN LIBRARY';
  }
  const watch=new MutationObserver(updateSample);
  watch.observe(document.getElementById('lab-live-source'),{attributes:true,attributeFilter:['readonly']});
- document.getElementById('lab-sound')?.addEventListener('change',updateSample);
+ const recordingSelector=document.getElementById('lab-sound');
+ recordingSelector?.addEventListener('change',updateSample);
+ if(recordingSelector)new MutationObserver(updateSample).observe(recordingSelector,{childList:true,subtree:false});
+ document.addEventListener('sounds-library-changed',updateSample);
  updateSample();
  for(const [name,label] of [['play','PLAY / CODE'],['sample','SAMPLE'],['acquire','ACQUIRE'],['details','LIBRARY']]){
   const b=document.createElement('button');b.type='button';b.textContent=label;b.dataset.tab=name;b.addEventListener('click',()=>show(name));tabs.append(b);
