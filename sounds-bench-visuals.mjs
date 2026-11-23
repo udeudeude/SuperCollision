@@ -179,12 +179,12 @@ export function installToneVisuals({container,inputs,controls,isLocked}) {
   }
   trace(ctx,points);
   const x=margin+innerW*Math.log(value('cutoff')/80)/Math.log(150);
-  const y=margin+innerH*clamp(value('resonance'),0,1);
+  const y=margin+innerH*clamp(1-(value('resonance')-0.05)/0.9,0,1);
   ctx.setLineDash([2,3]);trace(ctx,[[x,0],[x,h]],dim,1);ctx.setLineDash([]);
   dot(ctx,x,clamp(y,6,h-7));
  });
  pointerSurface(filterCanvas,{
-  update:p=>({cutoff:80*Math.pow(150,p.x),resonance:0.05+0.9*p.y}),
+  update:p=>({cutoff:80*Math.pow(150,p.x),resonance:0.05+0.9*(1-p.y)}),
   keyboard:key=>key==='ArrowLeft'?{cutoff:value('cutoff')/1.07}:key==='ArrowRight'?{cutoff:value('cutoff')*1.07}:key==='ArrowUp'?{resonance:value('resonance')-0.025}:{resonance:value('resonance')+0.025}
  },'Filter: left/right cutoff, up/down resonance');
  // Percussive envelope: editable attack peak and release tail, two independent time-compressed segments.
