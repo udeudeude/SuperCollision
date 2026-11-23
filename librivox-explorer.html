@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#171917">
+<title>LibriVox Explorer · SuperCollision</title>
+<link rel="stylesheet" href="./librivox-explorer.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="back-link" href="./sounds.html" aria-label="Back to Sounds">‹ <span>SOUNDS</span></a>
+  <h1>LIBRIVOX <small>EXPLORER</small></h1>
+  <span class="preview-note">TEST APP</span>
+</header>
+<main class="app-shell" id="app-shell">
+  <section class="discovery-panel" aria-labelledby="discover-heading" id="discovery-panel">
+    <div class="panel-top">
+      <div class="eyebrow">SOUNDS / RECORDINGS / DISCOVER</div>
+      <h2 id="discover-heading">Find a voice. Find a phrase.</h2>
+      <p>Search public-domain recordings by title, author, or reader.</p>
+    </div>
+    <form id="catalog-form" class="catalog-form">
+      <label for="catalog-query" class="sr-only">Search LibriVox</label>
+      <div class="query-row"><input id="catalog-query" name="q" type="search" placeholder="Title, author, or reader…" autocomplete="off" required minlength="2"><button class="primary" type="submit">SEARCH</button></div>
+      <fieldset class="scope-picker" aria-label="Search in"><legend class="sr-only">Search in</legend>
+        <label><input type="radio" name="scope" value="books" checked><span>BOOKS</span></label>
+        <label><input type="radio" name="scope" value="readers"><span>READERS</span></label>
+        <label><input type="radio" name="scope" value="authors"><span>AUTHORS</span></label>
+      </fieldset>
+    </form>
+    <div class="quick-searches" aria-label="Suggested searches">
+      <button type="button" data-quick="George MacDonald" data-scope="authors">George MacDonald</button>
+      <button type="button" data-quick="Peter Yearsley" data-scope="readers">Peter Yearsley</button>
+      <button type="button" data-quick="Phantastes" data-scope="books">Phantastes</button>
+    </div>
+    <div class="list-head"><div class="eyebrow" id="list-caption">DISCOVER</div><button id="show-favorites" class="text-button" type="button" aria-pressed="false">☆ FAVORITES <span id="favorite-count">0</span></button></div>
+    <div class="status-line" id="search-status" role="status" aria-live="polite">Choose a search to begin.</div>
+    <div id="catalog-results" class="catalog-results" aria-live="polite"></div>
+    <div class="sources-footnote">Catalog discovery: <a href="https://meta.audiosilo.app/docs/api/" target="_blank" rel="noopener noreferrer">AudioSilo Meta</a> (LibriVox mirror). <a id="search-librivox" href="https://librivox.org/search" target="_blank" rel="noopener noreferrer">Search LibriVox directly ↗</a></div>
+  </section>
+  <section class="work-panel empty" id="work-panel" aria-labelledby="work-heading">
+    <div class="mobile-back"><button type="button" id="back-to-search">‹ BACK TO SEARCH</button></div>
+    <div class="empty-state" id="empty-work">
+      <div class="spectrum" aria-hidden="true">▁ ▂ ▄ ▇ ▅ ▃ ▆ ▂ ▄ ▁</div>
+      <h2>Listen, locate, extract.</h2>
+      <p>Choose a recording to see its chapters. Search a matching text, jump near a phrase, and mark the part you want.</p>
+      <div class="feature-steps"><span>01 FIND</span><span>02 LISTEN</span><span>03 LOCATE</span><span>04 EXTRACT</span></div>
+    </div>
+    <div class="work-body" id="work-body" hidden>
+      <div class="work-heading-row">
+        <div class="work-label"><div class="eyebrow">SELECTED RECORDING</div><h2 id="work-heading"></h2><p id="work-byline"></p></div>
+        <button id="favorite-book" class="star-button" aria-label="Favorite book" aria-pressed="false" title="Favorite book">☆</button>
+      </div>
+      <div class="attribution-row" id="attribution-row"></div>
+      <div class="recording-picker"><label for="recording-select">RECORDING / EDITION</label><select id="recording-select"></select></div>
+      <div class="chapter-picker"><label for="chapter-select">CHAPTER / SECTION</label><select id="chapter-select"></select></div>
+      <div id="reader-info" class="reader-info"></div>
+      <div class="player" id="player">
+        <div class="player-heading"><span class="eyebrow">AUDIO</span><span id="playback-status">Choose a chapter</span></div>
+        <audio id="chapter-audio" controls preload="none" playsinline></audio>
+        <div class="jump-actions" aria-label="Audio navigation"><button type="button" data-jump="-30">−30s</button><button type="button" data-jump="-5">−5s</button><button id="mark-position" type="button" title="Mark the correct time for selected text match">✓ FOUND HERE</button><button type="button" data-jump="5">+5s</button><button type="button" data-jump="30">+30s</button></div>
+        <div class="clip-tools"><div class="clip-heading"><span class="eyebrow">SAMPLE REGION</span><span id="clip-summary">Set start and end while listening</span></div><div class="clip-buttons"><button type="button" id="set-start">[ IN</button><button type="button" id="set-end">OUT ]</button><button type="button" id="preview-region">▶ REGION</button><button type="button" id="save-region" class="primary-outline">☆ SAVE</button></div><div id="clip-message" role="status" aria-live="polite"></div></div>
+      </div>
+      <div class="text-bay">
+        <div class="text-heading"><div><div class="eyebrow">TEXT LOCATOR</div><p>Read the chapter. Find a phrase. Jump to an <strong>approximate</strong> audio position.</p></div><a id="source-text-link" href="https://www.gutenberg.org/" target="_blank" rel="noopener noreferrer">SOURCE TEXT ↗</a></div>
+        <div class="text-toolbar"><label class="upload-text">LOAD .TXT<input id="text-file" type="file" accept=".txt,text/plain"></label><button id="try-source-text" type="button">LOAD LINKED TEXT</button><button id="clear-text" type="button">CLEAR</button></div>
+        <label class="sr-only" for="chapter-text">Paste chapter text here</label><textarea id="chapter-text" spellcheck="false" placeholder="Paste the chapter text here, or load a .txt file. The text must correspond to the selected audio section for estimates to be useful."></textarea>
+        <form id="phrase-form"><label class="sr-only" for="phrase-query">Search within chapter text</label><div class="query-row"><input id="phrase-query" type="search" placeholder="Find exact words in this text…" required><button type="submit" class="primary">FIND</button></div></form>
+        <div id="text-guidance" class="text-hint" role="status" aria-live="polite">Matches are based on the text you provide; estimates are not synchronized transcripts.</div>
+        <div id="phrase-results" class="phrase-results"></div>
+      </div>
+      <div class="footer-links"><a id="librivox-work-link" href="https://librivox.org" target="_blank" rel="noopener noreferrer">OPEN ON LIBRIVOX ↗</a><button id="export-markers" type="button">EXPORT MARKERS (.JSON)</button></div>
+    </div>
+  </section>
+</main>
+<script type="module" src="./librivox-explorer.mjs"></script>
+</body>
+</html>
