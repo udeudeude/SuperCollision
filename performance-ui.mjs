@@ -2,6 +2,7 @@
  * user-requested /n_set control messages. Never modifies SuperCollider source.
  */
 import {PerformanceJournal} from './performance-engine.mjs';
+import {describeSynthesis,previewWaveform,snapshotAt,formatWhen,sourcePreview,sourceIsCurrent} from './mix-explain.mjs';
 export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChange=()=>{}}){
   const scroller=panel.querySelector('#perform-scroller');
   const rowsEl=panel.querySelector('#perform-rows');
@@ -73,6 +74,19 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   const paramRange=mixDialog.querySelector('#perform-dialog-param-range');
   const paramOutput=mixDialog.querySelector('#perform-dialog-param-value');
   let selectedInstrument=null;
+  let selectedEvent=null,inspectedAt=null,previewText='',previewDefinitions=[];
+  let graphSignature='',voiceSignature='',codeFocus=null;
+  const explain=panel.querySelector('#perform-explain');
+  const voiceSelect=explain.querySelector('#perform-explain-voice');
+  const graph=explain.querySelector('#perform-explain-graph');
+  const reality=explain.querySelector('#perform-explain-reality');
+  const wave=explain.querySelector('#perform-explain-wave');
+  const focus=explain.querySelector('#perform-explain-focus');
+  const adjustButton=explain.querySelector('#perform-explain-adjust');
+  const triggerButton=explain.querySelector('#perform-explain-trigger');
+  const sourceButton=explain.querySelector('#perform-explain-code');
+  const noteButton=explain.querySelector('#perform-explain-note');
+  focus.classList.add('perform-explain-focus');
   let showSoundParameters=false;
   const controlRange=(name,key)=>{
     const original=journal.defs.get(name)?.params?.[key],saved=journal.stateFor(name).controls[key];
@@ -174,7 +188,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   });
   mixDialog.querySelector('#perform-dialog-close').textContent='Back to Mix';
   mixDialog.querySelector('#perform-dialog-close').addEventListener('click',()=>{
-    selectedInstrument=null;mixDialog.hidden=true;
+    mixDialog.hidden=true;
     mixDialog.classList.remove('perform-sound-mode');
     panel.classList.remove('perform-has-selection');
     for(const dom of lastRows.values())dom.lane.classList.remove('perform-selected');
@@ -272,7 +286,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
     // Compact overview: select an instrument to reveal its controls.
     title.title='Select '+r.name+' to adjust its sound';
     title.setAttribute('aria-label','Select '+r.name+' controls');
-    title.addEventListener('click',()=>openMix(r.name));
+    title.addEventListener('click',()=>selectVoice(r.name));
     actions.append(mute,solo,level);
     controls.append(title,info,actions);
     const track=document.createElement('div');track.className='perform-track';
@@ -281,9 +295,8 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
   };
   function updateLanes(rows){
     const names=new Set(rows.map(r=>r.name));
-    if(selectedInstrument&&!names.has(selectedInstrument)){
-      selectedInstrument=null;mixDialog.hidden=true;
-      mixDialog.classList.remove('perform-sound-mode');
+    if(selectedInstrument&&!names.has(selectedInstrument)&&!mixDialog.hidden){
+      mixDialog.hidden=true;mixDialog.classList.remove('perform-sound-mode');
       panel.classList.remove('perform-has-selection');
     }
     for(const [name,dom] of lastRows){
@@ -391,7 +404,7 @@ export function createPerformanceUI({panel,editor,getComposition,sendOsc,onChang
           const caption=document.createElement('span');caption.className='perform-event-label';
           caption.setAttribute('aria-hidden','true');
           bar.append(level,caption);
-          bar.addEventListener('click',()=>showNote(row.name,e,journal.timelineNow()));
+          bar.addEventListener('click',()=>selectVoice(row.name,e));
           dom.bars.set(e,bar);
         }
         // Finished notes are immutable. Avoid rebuilding thousands of
