@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#161817">
-<title>Sounds Instrument Bench · Playtest</title>
+<title>Sounds Instrument Bench · v0.2.2</title>
 <style>
 :root{color-scheme:dark;background:#161817;color:#eae7da;font:15px/1.5 system-ui,sans-serif}
 *{box-sizing:border-box}
@@ -147,9 +147,9 @@ const input=document.createElement('input');input.type='range';input.min='29';in
 input.addEventListener('input',()=>{zoom.firstChild.textContent=input.value+'%';document.documentElement.style.setProperty('--bench-code-size',(12*Number(input.value)/100)+'px')});
 zoom.append(input);head.append(zoom);
 });
-</script></head>
+</script><style>header small{font-size:10px!important;opacity:.72;font-weight:500;letter-spacing:.02em;white-space:nowrap}</style></head>
 <body>
-<header><a href="./index.html">← CODE</a><h1>SOUNDS / INSTRUMENT</h1><small>PLAYTEST 01</small></header>
+<header><a href="./index.html">← CODE</a><h1>SOUNDS / INSTRUMENT</h1><small>v0.2.2</small></header>
 <main>
 <p class="lab-intro">Make a sound first. The instrument runs entirely in SuperCollider. No recording required.</p>
 <section id="lab-setup">
