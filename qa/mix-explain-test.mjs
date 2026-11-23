@@ -19,14 +19,20 @@ const code=[
 const indexed=indexSource(code),site=indexed.defs.get('lesson');
 assert.ok(site);
 const result=describeSynthesis(site);
-assert.deepEqual(result.nodes.map(n=>n.name),['LPF','SinOsc','EnvGen','Out']);
-assert.deepEqual(result.nodes.map(n=>n.role),['filter','source','envelope','output']);
-assert.equal(result.nodes[1].rate,'ar');
-assert.ok(result.nodes[1].inputs.some(x=>x.to==='LPF'),
+assert.deepEqual(result.nodes.map(n=>n.name),['SinOsc','LPF','EnvGen','Out'],
+  'Source components must precede their verified consumers');
+assert.deepEqual(result.nodes.map(n=>n.role),['source','filter','envelope','output']);
+assert.equal(result.nodes[0].rate,'ar');
+assert.ok(result.nodes[0].inputs.some(x=>x.to==='LPF'),
   'Nested SinOsc must explicitly identify its direct destination');
-assert.equal(code.slice(result.nodes[1].startOffset,result.nodes[1].endOffset),
+assert.ok(result.nodes[0].feeds.some(x=>x.to==='LPF'&&x.reason==='nested in'));
+assert.ok(result.nodes[1].feeds.some(x=>x.to==='Out'&&x.reason==='referenced by'),
+  'Variable assignment sig must connect filter to output without inventing an edge');
+assert.ok(result.nodes[2].feeds.some(x=>x.to==='Out'&&x.reason==='referenced by'),
+  'Envelope contribution must be traced through its variable');
+assert.equal(code.slice(result.nodes[0].startOffset,result.nodes[0].endOffset),
   'SinOsc.ar(freq, 0, amp)','Exact source offsets need to navigate working code');
-assert.equal(result.nodes[1].line,3);
+assert.equal(result.nodes[0].line,3);
 assert.equal(result.nodes.at(-1).line,7);
 assert.equal(result.byRole.filter[0].name,'LPF');
 assert.equal(previewWaveform(result.nodes)?.shape,'sine');
