@@ -174,15 +174,18 @@ demoReset.addEventListener('click',()=>{
  updateDemoCode(true);
 });
 function buildNoteDrawer(){
+ const shell=document.createElement('div');shell.id='bench-notes-shell';shell.className='bench-notes-closed';
  const toggle=document.createElement('button');toggle.type='button';toggle.id='bench-notes-toggle';
- toggle.textContent='NOTES';toggle.setAttribute('aria-expanded','false');
+ toggle.textContent='♫';toggle.setAttribute('aria-label','Open musical notes and frequencies');
+ toggle.setAttribute('title','Musical notes and frequencies');
+ toggle.setAttribute('aria-expanded','false');
  toggle.setAttribute('aria-controls','bench-notes-drawer');
- const drawer=document.createElement('aside');drawer.id='bench-notes-drawer';drawer.hidden=true;
+ const drawer=document.createElement('aside');drawer.id='bench-notes-drawer';
  drawer.setAttribute('aria-label','Frequency and tuning browser');
+ drawer.setAttribute('aria-hidden','true');drawer.inert=true;
  const heading=document.createElement('div');heading.id='bench-notes-heading';
  const title=document.createElement('strong');title.textContent='FREQUENCIES';
- const close=document.createElement('button');close.type='button';close.textContent='×';close.setAttribute('aria-label','Close frequencies');
- heading.append(title,close);
+ heading.append(title);
  const tuneLabel=document.createElement('label');tuneLabel.textContent='TUNING / PITCH SYSTEM';
  const select=document.createElement('select');select.id='bench-tuning';
  for(const t of tuningOptions)select.add(new Option(t.label,t.value));
@@ -190,15 +193,69 @@ function buildNoteDrawer(){
  const info=document.createElement('p');info.id='bench-tuning-note';
  const list=document.createElement('div');list.id='bench-frequency-list';list.setAttribute('role','group');list.setAttribute('aria-label','Select a musical frequency');
  drawer.append(heading,tuneLabel,info,list);
- document.body.append(toggle,drawer);
- function show(open){drawer.hidden=!open;toggle.hidden=open;toggle.setAttribute('aria-expanded',String(open));}
- toggle.addEventListener('click',()=>{render();show(true)});
- close.addEventListener('click',()=>show(false));
- document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!drawer.hidden)show(false)});
- window.addEventListener('bench-view-changed',event=>{
-  if(event.detail.view!=='play'){drawer.hidden=true;toggle.hidden=true;toggle.setAttribute('aria-expanded','false');}
-  else {drawer.hidden=true;toggle.hidden=false;toggle.setAttribute('aria-expanded','false');}
+ shell.append(toggle,drawer);document.body.append(shell);
+ const panelWidth=()=>drawer.getBoundingClientRect().width||210;
+ let open=false,drag=null,suppressClickUntil=0;
+ function position(){
+  const rect=demoBay.getBoundingClientRect();
+  // The handle is aligned with the code bay, not the centre of the screen.
+  shell.style.top=Math.max(48,Math.round(rect.top+4))+'px';
+ }
+ function show(next){
+  open=Boolean(next);
+  shell.style.transition='';shell.style.transform='';
+  shell.classList.toggle('bench-notes-open',open);
+  shell.classList.toggle('bench-notes-closed',!open);
+  toggle.setAttribute('aria-expanded',String(open));
+  toggle.setAttribute('aria-label',(open?'Close':'Open')+' musical notes and frequencies');
+  drawer.setAttribute('aria-hidden',String(!open));drawer.inert=!open;
+  if(open){position();render()}
+ }
+ toggle.addEventListener('click',()=>{
+  if(performance.now()<suppressClickUntil)return;
+  show(!open);
  });
+ toggle.addEventListener('pointerdown',event=>{
+  if(event.pointerType==='mouse'&&event.button!==0)return;
+  drag={id:event.pointerId,x:event.clientX,startOpen:open,moved:false};
+  try{toggle.setPointerCapture(event.pointerId)}catch{}
+ });
+ toggle.addEventListener('pointermove',event=>{
+  if(!drag||event.pointerId!==drag.id)return;
+  const distance=event.clientX-drag.x;
+  if(!drag.moved&&Math.abs(distance)<7)return;
+  drag.moved=true;
+  event.preventDefault();
+  const width=panelWidth();
+  const displaced=Math.max(0,Math.min(width,(drag.startOpen?0:width)+distance));
+  shell.style.transition='none';
+  shell.style.transform='translateX('+displaced+'px)';
+ });
+ toggle.addEventListener('pointerup',event=>{
+  if(!drag||event.pointerId!==drag.id)return;
+  const last=drag;drag=null;
+  if(last.moved){
+   // Left pulls open; right pushes closed. The same handle always works.
+   const delta=event.clientX-last.x;
+   suppressClickUntil=performance.now()+450;
+   if(Math.abs(delta)>25)show(delta<0);
+   else show(last.startOpen);
+  }
+  try{if(toggle.hasPointerCapture(event.pointerId))toggle.releasePointerCapture(event.pointerId)}catch{}
+ });
+ toggle.addEventListener('pointercancel',()=>{
+  if(drag){const wasOpen=drag.startOpen;drag=null;show(wasOpen)}
+ });
+ document.addEventListener('keydown',event=>{if(event.key==='Escape'&&open)show(false)});
+ window.addEventListener('bench-view-changed',event=>{
+  const visible=event.detail.view==='play';
+  if(!visible)show(false);
+  shell.hidden=!visible;
+  if(visible)requestAnimationFrame(position);
+ });
+ window.addEventListener('resize',position,{passive:true});
+ window.visualViewport?.addEventListener('resize',position,{passive:true});
+ requestAnimationFrame(position);
  function render(){
   currentTuning=select.value;
   const option=tuningOptions.find(t=>t.value===currentTuning);info.textContent=option.info;
