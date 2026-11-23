@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#161817">
-<title>Sounds Instrument Bench · v0.3.6</title>
+<title>Sounds Instrument Bench · v0.3.7</title>
 <style>
 :root{color-scheme:dark;background:#161817;color:#eae7da;font:15px/1.5 system-ui,sans-serif}
 *{box-sizing:border-box}
@@ -492,9 +492,72 @@ document.addEventListener('touchmove',event=>{
 #bench-sample-stage .bench-sample-acquire .bench-sample-more{min-height:28px!important;background:#343a30;color:#e4c68b;border:1px solid #726b51;font:700 10px ui-monospace,monospace;padding:5px 8px}
 #lab-recording .actions[hidden]{display:none!important}
 @media(max-width:355px){.bench-tabs{gap:3px!important}.bench-tabs button{font-size:9px!important;letter-spacing:0!important}}
+</style><style id="three-workspace-restructuring-v037">
+/* The two sound-producing tabs open their actual workspaces. All other
+   acquisition tools are immediately available without a fourth main tab. */
+.bench-tabs{display:grid!important;grid-template-columns:1fr 1fr .78fr!important;gap:5px!important}
+.bench-tabs button{font:800 11px/1.15 ui-monospace,monospace!important;min-width:0;min-height:42px!important;padding:4px 2px!important;white-space:normal!important;letter-spacing:.015em!important}
+.bench-tabs button span{display:block}
+.bench-method-bar{display:grid;grid-template-columns:minmax(85px,1.18fr) repeat(3,minmax(0,1fr));gap:4px;align-items:stretch;min-height:38px;flex:none}
+.bench-method-current{display:flex;align-items:center;justify-content:center;background:#544532;color:#f1ce8e;border:1px solid #8f7955;text-align:center;padding:4px 3px;min-width:0;font:800 10px/1.2 ui-monospace,monospace;letter-spacing:0}
+.bench-method-bar button{border:1px solid #81745a;border-radius:1px;background:#343a32;color:#e8d9b8;min-height:37px!important;min-width:0;padding:4px 2px!important;font:800 10px/1.25 ui-monospace,monospace!important;letter-spacing:0!important}
+.bench-method-bar button:active{background:#d8ae5b;color:#211c15}
+#lab-setup{grid-template-rows:auto minmax(97px,.95fr) minmax(140px,1.6fr) auto auto auto auto!important;gap:5px!important}
+#lab-setup>.bench-method-bar{order:0}
+#bench-sample-workspace>.bench-method-bar{order:0;flex:0 0 auto;margin:0 0 5px}
+#bench-sample-workspace{display:flex!important;flex-direction:column!important}
+#bench-sample-workspace[hidden]{display:none!important}
+#bench-sample-workspace>#bench-sample-stage{flex:1}
+#bench-sample-workspace #lab-recording{flex:0 0 auto}
+#bench-acquire-overlay{
+ position:absolute!important;left:0;right:0;bottom:0;z-index:40;
+ margin:0!important;padding:7px!important;min-width:0;min-height:0;
+ display:grid;grid-template-rows:auto minmax(0,1fr);gap:7px;
+ overflow:hidden;overscroll-behavior:contain;
+ border:2px solid #b59b69;background:#1b221c;box-shadow:0 8px 22px #000c
+}
+#bench-acquire-overlay[hidden],#bench-acquire-overlay [hidden]{display:none!important}
+main{position:relative!important}
+#bench-acquire-head{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:32px;border-bottom:1px solid #74694f;padding-bottom:6px}
+#bench-acquire-back{min-height:30px!important;padding:5px 8px!important;font:800 10px ui-monospace,monospace!important;white-space:nowrap;background:#d8ae5b;color:#201c16}
+#bench-acquire-title{font:800 12px ui-monospace,monospace;color:#e5c487;text-align:right;letter-spacing:.03em}
+#bench-acquire-overlay>.acquire-page{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:1px}
+#bench-acquire-overlay>.acquire-page[hidden]{display:none!important}
+#bench-acquire-overlay .acquire-category{margin:0 0 7px!important;padding:8px!important;border:1px solid #766c54;background:#21271f}
+#bench-acquire-overlay .acquire-detail-head{display:none!important}
+#bench-acquire-overlay .acquire-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+#bench-acquire-overlay .acquire-choices button{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:8px;background:#32372e;color:#eadecc;font:800 11px ui-monospace,monospace;min-height:59px;border:1px solid #776e55;text-align:left}
+#bench-acquire-overlay .acquire-choices button small{font:10px/1.3 ui-monospace,monospace}
+#bench-acquire-overlay .acquire-subhead{font-size:11px}
+#bench-acquire-overlay .acquire-check{display:flex!important;align-items:center;gap:8px}
+#bench-acquire-overlay .acquire-check input{width:19px;height:19px}
+#bench-acquire-overlay label{font:700 11px ui-monospace,monospace;color:#c5b99c}
+#bench-acquire-overlay input:not([type=checkbox]),#bench-acquire-overlay textarea{min-width:0;max-width:100%;width:100%;padding:7px!important;background:#262e26;color:#eee4d0;border:1px solid #736950;font:13px ui-monospace,monospace}
+#bench-acquire-overlay textarea{height:22dvh;min-height:92px;max-height:225px}
+#bench-acquire-overlay .acquire-two-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#bench-acquire-overlay #start{width:100%;min-height:72px;background:#b49a60;color:#1e1e19;touch-action:none;font:900 14px ui-monospace,monospace}
+body.is-recording #bench-acquire-overlay #start{background:#bb4b3c;color:#fff}
+#bench-acquire-overlay #level{width:100%;height:9px}
+#bench-acquire-overlay #acquire-code-form button[type=submit]{width:100%;background:#d8ae5b;color:#1c1f1a;min-height:40px;font:900 12px ui-monospace,monospace}
+#bench-acquire-overlay .acquire-provider{display:flex;flex-direction:column;gap:3px;border-bottom:1px solid #647263;padding:8px 4px}
+#bench-acquire-overlay .acquire-provider a{color:#e5c487;font:800 12px ui-monospace,monospace}
+#bench-acquire-overlay .acquire-provider small{font:10px/1.4 ui-monospace,monospace}
+#bench-acquire-overlay .acquire-page p{font:11px/1.4 ui-monospace,monospace;color:#b1b7aa}
+#bench-library-workspace .acquire-topline strong{font-size:12px}
+#bench-library-workspace{display:grid!important;grid-template-rows:auto minmax(0,1fr)!important}
+#bench-library-workspace[hidden]{display:none!important}
+@media(max-width:370px){
+ .bench-method-bar{grid-template-columns:minmax(75px,1.08fr) repeat(3,minmax(0,1fr));gap:3px}
+ .bench-method-current{font-size:9px!important}
+ .bench-method-bar button{font-size:9px!important}
+ .bench-tabs button{font-size:10px!important}
+}
+@media(max-height:680px){
+ #lab-setup{grid-template-rows:auto minmax(78px,.8fr) minmax(128px,1.5fr) auto auto auto auto!important}
+}
 </style></head>
 <body>
-<header><a href="./index.html">← CODE</a><h1>SOUNDS / INSTRUMENT</h1><small>v0.3.6</small></header>
+<header><a href="./index.html">← CODE</a><h1>SOUNDS / INSTRUMENT</h1><small>v0.3.7</small></header>
 <main>
 <p class="lab-intro">Make a sound first. The instrument runs entirely in SuperCollider. No recording required.</p>
 <section id="lab-setup">
@@ -556,6 +619,22 @@ document.addEventListener('DOMContentLoaded',()=>{
  const shape=sections[2],save=sections[3];
  sampleWorkspace.append(recording,shape,save);
  const groups={play:[setup],sample:[sampleWorkspace],details:[]};
+ // Every acquisition path belongs to one of the two working environments.
+ // Library is a destination, never an acquisition menu.
+ const methods=(parent,heading,items)=>{
+  const bar=document.createElement('div');bar.className='bench-method-bar';
+  const label=document.createElement('strong');label.className='bench-method-current';label.textContent=heading;bar.append(label);
+  for(const [title,action] of items){
+   const button=document.createElement('button');button.type='button';button.textContent=title;
+   button.setAttribute('aria-label',title+(heading==='CREATE / PLAY'?' SuperCollider instrument':' recording'));
+   button.dataset.acquireAction=action;
+   button.addEventListener('click',()=>window.dispatchEvent(new CustomEvent('bench-acquire-action',{detail:{action}})));
+   bar.append(button);
+  }
+  parent.prepend(bar);return bar;
+ };
+ methods(setup,'CREATE / PLAY',[['GENERATE','generate'],['DISCOVER','discover-code'],['IMPORT','import-code']]);
+ methods(sampleWorkspace,'MAKE INSTRUMENT',[['RECORD','record'],['DISCOVER','discover-audio'],['IMPORT','import']]);
  const sourceTitle=shape.querySelector('h2');if(sourceTitle)sourceTitle.textContent='SHAPE';
  const saveTitle=save.querySelector('h2');if(saveTitle)saveTitle.textContent='SAVE';
  const sampleTitle=document.createElement('h2');sampleTitle.textContent='SAMPLE';recording.prepend(sampleTitle);
@@ -568,22 +647,6 @@ document.addEventListener('DOMContentLoaded',()=>{
  const progress=document.getElementById('lab-progress');if(progress)progress.hidden=true;
  const sampleStage=document.createElement('div');sampleStage.id='bench-sample-stage';sampleStage.setAttribute('aria-live','polite');
  sampleStage.innerHTML='<div class="bench-empty-symbol">◌</div><strong>NO SAMPLE LOADED</strong><span>Select a recording above to shape it, or acquire another.</span>';
- const acquireChoices=document.createElement('div');acquireChoices.className='bench-sample-acquire';
- const acquireMessage=document.createElement('p');acquireMessage.textContent='Bring audio into Sounds:';
- const acquireActions=document.createElement('div');acquireActions.className='bench-sample-acquire-actions';
- for(const [label,action] of [['RECORD','record'],['DISCOVER','discover-audio'],['IMPORT','import']]){
-  const button=document.createElement('button');button.type='button';button.textContent=label;
-  button.addEventListener('click',()=>{
-   show('acquire');
-   window.dispatchEvent(new CustomEvent('bench-acquire-action',{detail:{action}}));
-  });
-  acquireActions.append(button);
- }
- const allMethods=document.createElement('button');allMethods.className='bench-sample-more';
- allMethods.type='button';allMethods.textContent='ALL ACQUISITION METHODS';
- allMethods.addEventListener('click',()=>show('acquire'));
- acquireChoices.append(acquireMessage,acquireActions,allMethods);
- sampleStage.append(acquireChoices);
  recording.after(sampleStage);sampleWorkspace.append(sampleStage);
  const source=document.getElementById('lab-live-source');
  const loadWatch=new MutationObserver(()=>{const loaded=source.readOnly===false;sampleStage.hidden=loaded;engineButton.hidden=document.getElementById('lab-engine')?.textContent?.trim()==='Play tone';});
@@ -599,12 +662,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   shape.hidden=!loaded;save.hidden=!loaded;
   sampleStage.querySelector('strong').textContent=!hasRecordings?'NO RECORDINGS YET':'NO SAMPLE LOADED';
   sampleStage.querySelector('span').textContent=!hasRecordings
-   ?'Record, discover or import audio to start building a sample instrument.'
+   ?'Record, discover or import above. Then shape audio into a playable instrument.'
    :selected?'Power on SuperCollider and load the selected recording.'
-   :'Select a recording above, or add another recording.';
-  acquireMessage.textContent=hasRecordings?'ACQUIRE ANOTHER RECORDING':'CHOOSE HOW TO ACQUIRE AUDIO';
+   :'Choose a saved recording above, or record, discover or import another.';
   const controls=recording.querySelector('.actions');if(controls)controls.hidden=!selected;
-  acquireChoices.hidden=loaded;
   sampleStage.hidden=loaded;
   status.textContent=loaded?'READY TO SHAPE':selected?'SELECTED · LOAD TO CONTINUE':hasRecordings?'CHOOSE A RECORDING':'NO RECORDINGS IN LIBRARY';
  }
@@ -615,18 +676,38 @@ document.addEventListener('DOMContentLoaded',()=>{
  if(recordingSelector)new MutationObserver(updateSample).observe(recordingSelector,{childList:true,subtree:false});
  document.addEventListener('sounds-library-changed',updateSample);
  updateSample();
- for(const [name,label] of [['play','PLAY / CODE'],['sample','SAMPLE'],['acquire','ACQUIRE'],['details','LIBRARY']]){
-  const b=document.createElement('button');b.type='button';b.textContent=label;b.dataset.tab=name;b.addEventListener('click',()=>show(name));tabs.append(b);
+ for(const [name,lines] of [['play',['INSTRUMENTS','& CODE']],['sample',['RECORDINGS','& SAMPLES']],['details',['LIBRARY']]]){
+  const b=document.createElement('button');b.type='button';
+  b.setAttribute('aria-label',lines.join(' '));
+  for(const line of lines){const part=document.createElement('span');part.textContent=line;b.append(part)}
+  b.dataset.tab=name;b.addEventListener('click',()=>show(name));tabs.append(b);
  }
  main.insertBefore(tabs,setup);
  const library=document.createElement('section');library.id='bench-library-workspace';
  main.insertBefore(library,document.getElementById('lab-diagnostics'));groups.details.push(library);
+ const acquisition=document.createElement('section');acquisition.id='bench-acquire-overlay';acquisition.hidden=true;
+ acquisition.setAttribute('aria-label','Sound acquisition tools');
+ const acquireHead=document.createElement('div');acquireHead.id='bench-acquire-head';
+ const acquireBack=document.createElement('button');acquireBack.id='bench-acquire-back';acquireBack.type='button';acquireBack.textContent='← BACK TO INSTRUMENT';
+ const acquireTitle=document.createElement('strong');acquireTitle.id='bench-acquire-title';acquireTitle.textContent='ACQUIRE SOUND';
+ acquireHead.append(acquireBack,acquireTitle);acquisition.append(acquireHead);main.append(acquisition);
+ function positionAcquisition(){
+  acquisition.style.top=Math.round(tabs.getBoundingClientRect().bottom-main.getBoundingClientRect().top+5)+'px';
+ }
+ window.addEventListener('resize',positionAcquisition,{passive:true});
+ window.visualViewport?.addEventListener('resize',positionAcquisition,{passive:true});
+ positionAcquisition();
  for(const group of Object.values(groups))for(const node of group)node.classList.add('bench-panel');
- function show(name){const workspace=(name==='acquire'||name==='details')?'details':name;for(const [key,nodes] of Object.entries(groups))for(const node of nodes)node.hidden=key!==workspace;for(const b of tabs.children)b.setAttribute('aria-selected',String(b.dataset.tab===name));location.hash=name;window.dispatchEvent(new CustomEvent('bench-view-changed',{detail:{view:name}}));}
- window.addEventListener('bench-open-view',event=>{if(['play','sample','acquire','details'].includes(event.detail?.view))show(event.detail.view)});
- show(['play','sample','acquire','details'].includes(location.hash.slice(1))?location.hash.slice(1):'acquire');
+ function show(name){
+  for(const [key,nodes] of Object.entries(groups))for(const node of nodes)node.hidden=key!==name;
+  for(const b of tabs.children)b.setAttribute('aria-selected',String(b.dataset.tab===name));
+  location.hash=name;window.dispatchEvent(new CustomEvent('bench-view-changed',{detail:{view:name}}));
+}
+ window.addEventListener('bench-open-view',event=>{if(['play','sample','details'].includes(event.detail?.view))show(event.detail.view)});
+ // Earlier preview links used #acquire; take those into the appropriate instrument workspace.
+ const initial=location.hash.slice(1);show(['play','sample','details'].includes(initial)?initial:'play');
 });
-</script><script type="module" src="./sounds-bench-engine.mjs?v=0.3.5"></script>
+</script><script type="module" src="./sounds-bench-engine.mjs?v=0.3.7"></script>
 <script type="module" src="./sounds-bench-acquire.mjs?v=0.3.6"></script>
 </body>
 </html>
