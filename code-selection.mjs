@@ -331,7 +331,7 @@ export function installCodeSelection(editor = document.querySelector('#code')) {
     }
   }
   editor.addEventListener('click', event => {
-    if (performance.now() - touchedAt < 800) return;
+    if (touchedAt && performance.now() - touchedAt < 800) return;
     if (event.detail === 2 || event.detail === 3) {
       const offset = editor.selectionStart;
       requestAnimationFrame(() => selectTap(event.detail === 2 ? 'Word' : 'Statement', offset));
