@@ -375,3 +375,47 @@ body.is-recording #bench-acquire-footer #start{
  font:700 10px/1.4 ui-monospace,monospace;
  color:var(--sc-soft);overflow-wrap:anywhere;
 }
+
+/* The old seven-row grid allotted the largest space to a secondary key
+   console after the acquisition row moved. Prioritize editable code + visuals. */
+#lab-setup{
+ grid-template-rows:minmax(112px,1.1fr) minmax(140px,1.5fr)
+  auto auto auto auto auto!important;
+ align-content:stretch!important;
+ min-height:0!important;
+}
+#lab-setup #lab-demo-code-bay{
+ min-height:100px!important;max-height:none!important;
+}
+#lab-setup #lab-demo-controls{
+ min-height:100px!important;overflow-y:auto!important;
+}
+#lab-setup>.actions{
+ display:flex;justify-content:flex-end;
+}
+#lab-setup #lab-demo-reset{
+ min-height:29px!important;max-width:none!important;
+ font:750 10px/1.2 ui-monospace,monospace!important;
+ background:var(--sc-plate)!important;
+ color:var(--sc-soft)!important;
+}
+#lab-setup #lab-tone-name{font-size:16px!important}
+#lab-setup .tone-save-row{grid-template-columns:minmax(0,1fr)!important}
+#lab-setup #lab-tone-save-status:not(:empty){
+ position:static!important;max-height:30px;
+}
+#bench-bottom-dock .bench-method-bar{
+ grid-template-columns:repeat(3,minmax(0,1fr))!important;
+}
+body[data-sc-surface] .bench-tabs>button[aria-selected=true]{
+ border:2px solid var(--sc-selected)!important;
+ background:var(--sc-plate)!important;
+ color:var(--sc-ink)!important;
+ box-shadow:inset 0 3px 0 var(--sc-selected)!important;
+}
+@media(max-height:650px){
+ #lab-setup{
+  grid-template-rows:minmax(80px,1fr) minmax(108px,1.4fr)
+   auto auto auto auto auto!important;
+ }
+}
