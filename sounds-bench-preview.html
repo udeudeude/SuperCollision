@@ -125,7 +125,7 @@ document.addEventListener('touchmove',event=>{
 document.addEventListener('DOMContentLoaded',()=>{
  const main=document.querySelector('main'),setup=document.getElementById('lab-setup'),recording=document.getElementById('lab-recording');
  const sections=[...main.querySelectorAll(':scope > section')];
- const tabs=document.createElement('nav');tabs.className='bench-tabs';tabs.setAttribute('aria-label','Instrument workspace');
+ const tabs=document.createElement('nav');tabs.className='bench-tabs';tabs.setAttribute('aria-label','Sound workspaces');tabs.setAttribute('role','tablist');
  const sampleWorkspace=document.createElement('section');
  sampleWorkspace.id='bench-sample-workspace';sampleWorkspace.className='bench-panel';
  main.insertBefore(sampleWorkspace,recording);
@@ -224,7 +224,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   const b=document.createElement('button');b.type='button';
   b.setAttribute('aria-label',lines.join(' '));
   for(const line of lines){const part=document.createElement('span');part.textContent=line;b.append(part)}
-  b.dataset.tab=name;b.addEventListener('click',()=>show(name));tabs.append(b);
+  b.dataset.tab=name;b.setAttribute('role','tab');b.id='bench-tab-'+name;
+  b.setAttribute('aria-controls',name==='play'?'lab-setup':name==='sample'?'bench-sample-workspace':'bench-library-workspace');
+  b.addEventListener('click',()=>show(name));tabs.append(b);
  }
  main.insertBefore(tabs,setup);
  const library=document.createElement('section');library.id='bench-library-workspace';
@@ -241,13 +243,35 @@ document.addEventListener('DOMContentLoaded',()=>{
  window.addEventListener('resize',positionAcquisition,{passive:true});
  window.visualViewport?.addEventListener('resize',positionAcquisition,{passive:true});
  positionAcquisition();
- for(const group of Object.values(groups))for(const node of group)node.classList.add('bench-panel');
+ for(const [name,group] of Object.entries(groups))for(const node of group){
+  node.classList.add('bench-panel');
+  node.setAttribute('role','tabpanel');
+  node.setAttribute('aria-labelledby','bench-tab-'+name);
+ }
+ tabs.addEventListener('keydown',event=>{
+  if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+  const items=[...tabs.children];
+  const index=items.indexOf(document.activeElement);
+  if(index<0)return;
+  const next=event.key==='Home'?0:event.key==='End'?items.length-1:
+   (index+(event.key==='ArrowRight'?1:-1)+items.length)%items.length;
+  event.preventDefault();
+  items[next].focus();show(items[next].dataset.tab);
+ });
  function show(name){
   for(const [key,nodes] of Object.entries(groups))for(const node of nodes)node.hidden=key!==name;
-  for(const b of tabs.children)b.setAttribute('aria-selected',String(b.dataset.tab===name));
-  location.hash=name;window.dispatchEvent(new CustomEvent('bench-view-changed',{detail:{view:name}}));
+  for(const b of tabs.children){
+   const selected=b.dataset.tab===name;
+   b.setAttribute('aria-selected',String(selected));
+   b.tabIndex=selected?0:-1;
+  }
+  if(location.hash!=='#'+name)location.hash=name;window.dispatchEvent(new CustomEvent('bench-view-changed',{detail:{view:name}}));
 }
  window.addEventListener('bench-open-view',event=>{if(['play','sample','details'].includes(event.detail?.view))show(event.detail.view)});
+ window.addEventListener('hashchange',()=>{
+  const name=location.hash.slice(1);
+  if(['play','sample','details'].includes(name) && tabs.querySelector('[aria-selected="true"]')?.dataset.tab!==name)show(name);
+ });
  // Earlier preview links used #acquire; take those into the appropriate instrument workspace.
  const initial=location.hash.slice(1);show(['play','sample','details'].includes(initial)?initial:'play');
 });
