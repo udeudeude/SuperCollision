@@ -62,7 +62,40 @@ try{
  assert.equal(await page.locator('.sounds-library-nav [data-view="library"]').count(),1,'library must be its own primary destination');
  assert.deepEqual(await page.locator('.sounds-acquire-buttons [data-view]').evaluateAll(nodes=>nodes.map(n=>n.dataset.view)),['create','generate','import','record','discover'],'five acquisitions must be grouped separately from Library');
  assert.equal(await page.locator('#sounds-library').isVisible(),true);
+ assert.equal(await page.locator('.library-lab-link').isVisible(),true,'Sample Lab entry is visible');
+ assert.equal(await page.locator('#sounds-backup').evaluate(el=>el.open),false,'backup tools start collapsed');
+ assert.equal(await page.locator('#sounds-backup summary').evaluate(el=>getComputedStyle(el).cursor),'pointer','backup disclosure signals interactivity');
+ assert.equal(await page.locator('#sounds-backup summary').evaluate(el=>[...document.styleSheets].some(sheet=>[...sheet.cssRules].some(rule=>rule.selectorText?.includes('summary:focus-visible')&&rule.style.outlineWidth==='3px'))),true,'disclosure controls have a visible keyboard focus rule');
  assert.equal(await page.locator('#discover-cancel-download').isHidden(),true,'cancel download is hidden while idle');
+ // Import feedback must be visible in Import itself, even when some files fail.
+ // Record's status lives in a hidden workspace and cannot report Import results.
+ await page.getByRole('tab',{name:'Import'}).click();
+ await page.locator('#import').setInputFiles([
+  {name:'good-recording.wav',mimeType:'audio/wav',buffer:Buffer.from('RIFFdemoWAVE')},
+  {name:'not-a-recording.txt',mimeType:'text/plain',buffer:Buffer.from('not audio')}
+ ]);
+ await page.waitForFunction(()=>document.querySelector('#import-status')?.textContent?.includes('Imported 1 of 2 files.'));
+ assert.equal(await page.locator('#import-status').isVisible(),true,'import results must appear in the active workspace');
+ assert.equal(await page.locator('#status').isVisible(),false,'record status is hidden and must not be reused for imports');
+ assert.match(await page.locator('#import-status').textContent(),/1 failed/);
+ assert.equal(await page.locator('#import-failures li').count(),1);
+ assert.match(await page.locator('#import-failures li').first().textContent(),/not-a-recording\.txt: Unrecognized audio format/);
+ await page.locator('#import').setInputFiles([
+  {name:'another-recording.wav',mimeType:'audio/wav',buffer:Buffer.from('RIFFdemoWAVE')}
+ ]);
+ await page.waitForFunction(()=>document.querySelector('#import-status')?.textContent==='Imported 1 audio file into the library.');
+ assert.equal(await page.locator('#import-failures').isHidden(),true,'a later successful batch must clear previous failures');
+ await page.getByRole('tab',{name:'Library'}).click();
+ for(const name of ['good-recording.wav','another-recording.wav']){
+  const imported=page.locator('.managed-item').filter({hasText:name});
+  await imported.waitFor();
+  page.once('dialog',dialog=>dialog.accept());
+  await imported.locator('details.managed-more > summary').click();
+  await imported.getByRole('button',{name:'Delete'}).click();
+  await imported.waitFor({state:'detached'});
+ }
+ assert.equal(await page.locator('.managed-item').count(),0,'import test must leave the library unchanged');
+
  await page.getByRole('tab',{name:'Create'}).click();
  await page.locator('#sounds-source-name').fill('Example instrument');
  await page.locator('#sounds-source').fill('SynthDef(\\tone,{Out.ar(0,SinOsc.ar(220)*0.1)}).add;');
@@ -84,8 +117,42 @@ try{
  await page.locator('#start').dispatchEvent('pointerup',{pointerId:1,button:0,isPrimary:true});
  await page.getByText('Saved recording locally',{exact:false}).waitFor();
  await page.getByRole('tab',{name:'Library'}).click();
- await page.getByText('Recording',{exact:false}).first().waitFor();
+ await page.locator('.managed-item').filter({hasText:'Recording'}).first().waitFor();
  assert.equal(await page.locator('.managed-item').count(),2);
+ // Favorites, renaming, and a matching search must not tear down an audible preview.
+ // The media element and its object URL must remain the SAME, not restart at zero.
+ const recordingRow=page.locator('.managed-item:has(audio)').first();
+ assert.equal(await recordingRow.locator('audio').isVisible(),true,'audio remains immediately playable');
+ assert.equal(await recordingRow.locator('.managed-more').evaluate(el=>el.open),false,'management starts collapsed');
+ const originalAudioUrl=await recordingRow.locator('audio').evaluate(element=>{
+  window.__qaLibraryAudioElement=element;
+  return element.src;
+ });
+ await recordingRow.getByRole('button',{name:'☆ Favorite'}).click();
+ await recordingRow.getByRole('button',{name:'★ Favorite'}).waitFor();
+ assert.equal(await recordingRow.locator('audio').evaluate(el=>el===window.__qaLibraryAudioElement),true,
+  'favoriting must preserve the active audio element');
+ page.once('dialog',dialog=>dialog.accept('Retitled recording'));
+ await recordingRow.locator('details.managed-more > summary').click();
+  await recordingRow.getByRole('button',{name:'Rename'}).click();
+ await recordingRow.getByText('Retitled recording',{exact:true}).waitFor();
+ assert.equal(await recordingRow.locator('audio').evaluate(el=>el===window.__qaLibraryAudioElement),true,
+  'renaming must preserve the active audio element');
+ await page.locator('#sounds-search').fill('Retitled');
+ await page.getByText('1 matching sound',{exact:true}).waitFor();
+ assert.equal(await recordingRow.locator('audio').evaluate(el=>el===window.__qaLibraryAudioElement),true,
+  'matching searches must preserve the active audio element');
+ assert.equal(await recordingRow.locator('audio').getAttribute('src'),originalAudioUrl,
+  'metadata refresh must retain the original media object URL');
+ await page.locator('#sounds-search').fill('');
+ await page.getByText('2 matching sounds',{exact:true}).waitFor();
+ await recordingRow.getByRole('button',{name:'★ Favorite'}).click();
+ await recordingRow.getByRole('button',{name:'☆ Favorite'}).waitFor();
+ const recordingName=await page.evaluate(async()=>{
+  const {allSounds}=await import('./sounds-store.mjs');
+  return (await allSounds()).find(item=>item.blob instanceof Blob)?.name;
+ });
+ assert.equal(recordingName,'Retitled recording','favoriting after rename may not restore stale metadata');
  await page.getByRole('tab',{name:'Discover'}).click();
  await page.locator('#discover-query').fill('bells');
  await page.getByRole('button',{name:'Search sounds'}).click();
@@ -180,12 +247,14 @@ try{
  assert.equal(await page.getByText('Creative Commons BY',{exact:false}).count()>0,true,'license must be retained');
  const instrumentRow=page.locator('.managed-item').filter({hasText:'Example instrument'});
  const sourceDownloadPromise=page.waitForEvent('download');
- await instrumentRow.getByRole('button',{name:'Export .scd'}).click();
+ await instrumentRow.locator('details.managed-more > summary').click();
+  await instrumentRow.getByRole('button',{name:'Export .scd'}).click();
  const sourceDownload=await sourceDownloadPromise;
  assert.match(sourceDownload.suggestedFilename(),/\.scd$/);
  assert.match(await readFile(await sourceDownload.path(),'utf-8'),/SynthDef/,'source export must be unmodified');
  const backupDownloadPromise=page.waitForEvent('download');
- await page.locator('#sounds-backup-export').click();
+ await page.locator('#sounds-backup > summary').click();
+  await page.locator('#sounds-backup-export').click();
  const backupDownload=await backupDownloadPromise;
  assert.match(backupDownload.suggestedFilename(),/\.scsounds$/);
  const backupBytes=await readFile(await backupDownload.path());
@@ -392,6 +461,139 @@ try{
  assert.equal(await page.locator('#lab-demo-code').inputValue(),editedTone);
  assert.equal(await page.locator('#lab-demo-controls').getAttribute('data-sync'),'modified','custom code must visibly extinguish controls');
  assert.equal(await page.locator('#lab-engine').textContent(),'Start SuperCollider');
+ // A microphone must not remain active when its workspace is hidden.
+ // Exercise both an in-flight permission prompt and an active recording in
+ // isolated browser storage so existing library-count assertions stay useful.
+ const micContext=await browser.newContext({viewport:{width:390,height:844}});
+ const micPage=await micContext.newPage();
+ const micErrors=[];
+ micPage.on('pageerror',error=>micErrors.push(error.message));
+ await micPage.addInitScript(()=>{
+  window.__micState={opened:0,closed:0,recorderStops:0,permissionPending:false,grant:null};
+  const makeStream=()=>{
+   window.__micState.opened++;
+   const track={stop(){window.__micState.closed++},addEventListener(){}};
+   return {getTracks:()=>[track],getAudioTracks:()=>[track]};
+  };
+  Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{
+   getUserMedia:()=>window.__micState.permissionPending?
+    new Promise(resolve=>{window.__micState.grant=()=>resolve(makeStream())}):
+    Promise.resolve(makeStream())
+  }});
+  window.MediaRecorder=class{
+   static isTypeSupported(){return true}
+   constructor(){this.state='inactive';this.mimeType='audio/webm'}
+   start(){this.state='recording'}
+   stop(){
+    this.state='inactive';window.__micState.recorderStops++;
+    this.ondataavailable?.({data:new Blob(['captured audio'],{type:'audio/webm'})});
+    queueMicrotask(()=>this.onstop?.());
+   }
+  };
+ });
+ await micPage.goto(base+'/sounds.html#record');
+ await micPage.evaluate(()=>window.__micState.permissionPending=true);
+ await micPage.locator('#mic-ready').check();
+ await micPage.getByText('Requesting microphone permission',{exact:false}).waitFor();
+ await micPage.getByRole('tab',{name:'Create'}).click();
+ await micPage.evaluate(()=>window.__micState.grant());
+ await micPage.waitForFunction(()=>window.__micState.closed===1);
+ assert.equal(await micPage.locator('#mic-ready').isChecked(),false,'late permission must not re-enable hidden microphone');
+ assert.equal(await micPage.locator('#start').isDisabled(),true);
+ await micPage.getByRole('tab',{name:'Record'}).click();
+ await micPage.evaluate(()=>window.__micState.permissionPending=false);
+ await micPage.locator('#mic-ready').check();
+ await micPage.getByText('Microphone ready.',{exact:false}).waitFor();
+ await micPage.locator('#start').dispatchEvent('pointerdown',{pointerId:7,button:0,isPrimary:true});
+ assert.equal(await micPage.locator('body').evaluate(el=>el.classList.contains('is-recording')),true);
+ // Programmatic tab activation avoids the held pointer capturing the click.
+ await micPage.evaluate(()=>document.querySelector('#sounds-tabs [data-view="library"]').click());
+ await micPage.waitForFunction(()=>window.__micState.recorderStops===1&&window.__micState.closed===2);
+ await micPage.locator('.managed-item').filter({hasText:'Recording'}).waitFor();
+ assert.equal(await micPage.locator('.managed-item').count(),1,'workspace exit must save the recorded clip once');
+ assert.equal(await micPage.locator('body').evaluate(el=>el.classList.contains('is-recording')),false);
+ await micPage.getByRole('tab',{name:'Record'}).click();
+ assert.equal(await micPage.locator('#mic-ready').isChecked(),false);
+ assert.equal(await micPage.locator('#start').isDisabled(),true);
+ await micPage.locator('#mic-ready').check();
+ await micPage.getByText('Microphone ready.',{exact:false}).waitFor();
+ await micPage.getByRole('tab',{name:'Generate'}).click();
+ await micPage.waitForFunction(()=>window.__micState.closed===3);
+ assert.equal(await micPage.locator('#mic-ready').isChecked(),false,'idle microphone also closes on workspace exit');
+ assert.deepEqual(micErrors,[],'No unhandled microphone lifecycle errors');
+ await micContext.close();
+
+  // A revision must use the edited draft, and in-flight responses must not discard later edits.
+  const FENCE=String.fromCharCode(96).repeat(3);
+  const generatedCode='(\nSynthDef(\\draftA, { Out.ar(0, SinOsc.ar(220) * 0.1) }).add;\n)';
+  const revisedCode='(\nSynthDef(\\draftB, { Out.ar(0, LFTri.ar(220) * 0.1) }).add;\n)';
+  const proposalCode='(\nSynthDef(\\draftC, { Out.ar(0, Pulse.ar(220) * 0.1) }).add;\n)';
+  const aiRequests=[];
+  let delayNext=false,releaseDelayed,markStarted;
+  const started=new Promise(resolve=>{markStarted=resolve});
+  await page.route('https://openrouter.ai/api/v1/chat/completions',async route=>{
+   if(route.request().method()==='OPTIONS'){
+    await route.fulfill({status:204,headers:{'access-control-allow-origin':'*',
+     'access-control-allow-headers':'*','access-control-allow-methods':'POST, OPTIONS'}});
+    return;
+   }
+   aiRequests.push(route.request().postDataJSON());
+   if(delayNext){
+    delayNext=false;markStarted();
+    await new Promise(resolve=>{releaseDelayed=resolve});
+   }
+   const responseCode=[generatedCode,revisedCode,proposalCode][aiRequests.length-1];
+   await route.fulfill({status:200,contentType:'application/json',
+    headers:{'access-control-allow-origin':'*'},
+    body:JSON.stringify({model:'cohere/north-mini-code:free',
+     choices:[{finish_reason:'stop',message:{content:FENCE+'supercollider\n'+responseCode+'\n'+FENCE}}]})});
+  });
+  await page.goto(base+'/sounds.html#generate');
+  await page.locator('#sounds-ai-key').fill('test-key-not-valid');
+  await page.locator('#sounds-ai-prompt').fill('A hollow reed tone');
+  await page.locator('#sounds-ai-generate').click();
+  await page.locator('#sounds-ai-code').waitFor({state:'visible'});
+  assert.equal(await page.locator('#sounds-ai-code').inputValue(),generatedCode);
+  const editedDraft=generatedCode.replace('SinOsc.ar(220)','LFTri.ar(330)')+'\n// My timbre edits';
+  await page.locator('#sounds-ai-code').fill(editedDraft+'\n)');
+  assert.match(await page.locator('#sounds-ai-review').textContent(),/Blocker: Mismatched/,
+   'review warnings must track code edits');
+  await page.locator('#sounds-ai-code').fill(editedDraft);
+  assert.doesNotMatch(await page.locator('#sounds-ai-review').textContent(),/Blocker:/,
+   'repairing source must clear stale warnings');
+  await page.locator('#sounds-ai-revision').fill('Keep my modulation and add soft distortion');
+  await page.locator('#sounds-ai-revise').click();
+  await page.waitForFunction(()=>document.querySelector('#sounds-ai-code')?.value.includes('draftB'));
+  assert.equal(aiRequests.length,2);
+  assert.match(aiRequests[1].messages[1].content,/LFTri\.ar\(330\)/,'revision must use edited code');
+  assert.match(aiRequests[1].messages[1].content,/My timbre edits/,'user additions must reach the model');
+  await page.locator('#sounds-ai-prompt').fill('A different unsent prompt');
+  await page.locator('#sounds-ai-save').click();
+  await page.getByText('Saved generated SuperCollider source',{exact:false}).waitFor();
+  const savedAi=await page.evaluate(async()=>{
+   const {allSounds}=await import('/sounds-store.mjs');
+   return (await allSounds()).find(item=>item.source==='generated');
+  });
+  assert.equal(savedAi.name,'A hollow reed tone','saving must use the description sent with the model request');
+  assert.equal(savedAi.generator.description,'A hollow reed tone','provenance must match the request');
+  await page.locator('#sounds-ai-prompt').fill('A hollow reed tone');
+  await page.locator('#sounds-ai-revision').fill('Try a pulse-wave variation');
+  delayNext=true;
+  await page.locator('#sounds-ai-revise').click();
+  await started;
+  const duringGeneration=revisedCode+'\n// Kept while model replies';
+  await page.locator('#sounds-ai-code').fill(duringGeneration);
+  releaseDelayed();
+  await page.locator('#sounds-ai-proposal').waitFor({state:'visible'});
+  assert.equal(await page.locator('#sounds-ai-code').inputValue(),duringGeneration,
+   'late responses may not overwrite edits made during generation');
+  assert.equal(await page.locator('#sounds-ai-proposed-code').inputValue(),proposalCode);
+  assert.equal(await page.locator('#sounds-ai-generate').isDisabled(),true,
+   'a pending proposal must be resolved before another request');
+  await page.locator('#sounds-ai-apply-proposal').click();
+  assert.equal(await page.locator('#sounds-ai-code').inputValue(),proposalCode,
+   'explicit consent replaces the current draft');
+  assert.equal(await page.locator('#sounds-ai-proposal').isHidden(),true);
   assert.deepEqual(errors,[],'No unhandled page errors allowed');
  console.log('Sounds browser regression passed: library, source, recording, discovery, license filters and persistence');
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}

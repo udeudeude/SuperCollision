@@ -1,0 +1,93 @@
+# LibriVox Sample Explorer: isolated SuperCollision Sounds feature
+
+Status: design and technical contract (2026-11-23). This branch is intentionally **not** wired into production `sounds.html`, `index.html`, or the separately evolving Sounds Instrument Bench.
+
+## Placement
+
+Sounds > Recordings & Samples > Discover > **LibriVox**.
+
+The user should see a sound-discovery instrument, not a conventional audiobook catalog. Search, audition, locate words, trim a sample, save it, and return to Sounds without losing work. Keep the Code page untouched.
+
+## Search and favorites
+
+- One prominent search field. Search catalog by title and author; show clearly named author, reader, language, and genre filters wherever underlying data supports them.
+- Readers are attached to individual sections, not necessarily entire books. A book with several readers must show correct per-chapter credits.
+- Favorite **authors**, **readers**, **books**, **passages**, and **extracted samples** independently, using stable catalog identifiers where provided; names are display labels, not identity keys.
+- First-class acceptance cases: author George MacDonald and reader Peter Yearsley. A favorite reader is a browse/filter action, not only an inert bookmark.
+- Do not imply LibriVox provides full-text phrase search or arbitrary voice-quality search. These require separate indexes.
+
+## Text-guided phrase location
+
+1. Open a recording and associate it with matching source text (prefer the exact edition and chapter; inspect book text-source links and suitable public-domain editions; allow correction where needed).
+2. Searching a phrase returns every occurrence with surrounding text, preserving original text and highlighting the match.
+3. Select an occurrence to jump near the corresponding point in **that chapter's** audio. A first estimate is the phrase's fraction of the relevant chapter text multiplied by chapter duration. Visibly label this **Approximate**, not synchronized. Do not misleadingly use the fraction of an entire novel to seek a single chapter.
+4. Show the text and audio controls together; scrolling the text must not disrupt playback or selection. Provide jump back/forward, play/pause, and audio region handles.
+5. When the user identifies an actual timestamp, store a local text/audio anchor for that book edition + recording section. Interpolate between verified anchors to improve later estimates. Distinguish estimates from verified positions.
+6. If the source text is mismatched, chapter mapping fails, or no text exists, report this and offer manual reading/navigation, not false precision.
+7. Once selected, save a non-destructive region and its original work, author, reader, chapter, source URL, attribution, license and timing metadata to the existing Sounds storage format. Never silently replace the original recording.
+
+## Implementation boundaries
+
+- Own new feature modules, such as `librivox-*.mjs`, an isolated preview, and dedicated tests. Avoid edits to `index.html`, `sounds.html`, `sounds-bench-preview.html`, and `sounds-bench-*.mjs` until integration.
+- Reuse existing sample store and native sample-region workflow **at integration time**, rather than creating a second permanent sample collection.
+- **Reader search parity with LibriVox's own website is a requirement**, not a nice-to-have. The website's general and advanced searches both support reader name, and reader pages enumerate that person's recordings (e.g. Peter Yearsley: https://librivox.org/reader/167). The public audiobooks API does not document a reader search parameter, so investigate catalog search integration, reader-page indexing or a responsibly cached independent reader index. Never silently substitute a partial reader filter for comprehensive search. Use stable reader IDs and correct section-level credits.
+- Use LibriVox's documented catalog feed and per-section metadata (request `extended=1` when needed). The audiobooks API supports author/title/genre queries, but its search parameters do not match the full website's search features.
+- As of 2026-09-26, LibriVox limits feed requests to at most 500 items. Avoid bulk crawling on each page open, and respect its server load. Prefer cached, incremental indexes if broad reader searching is implemented.
+- Verify cross-origin browser access and audio decoding/range support on a real deployed preview, especially iPhone Safari. An HTML audio element playing a remote file does **not** guarantee downloadable/croppable bytes are accessible to browser JavaScript. Provide a safe fallback and label any unavailable extraction.
+- Do not fetch optional audio or large text automatically over cellular. Streaming previews initiated by a user should be clear, and offline acquisition should respect the project's Wi-Fi-first policy.
+- Treat LibriVox audio as United States public domain, while preserving bibliographic provenance and accounting for jurisdictions or associated texts with different rights.
+
+## Delivery and collision prevention
+
+1. Implement and test text matching, estimated seeking, anchor correction, and favorites as pure/reusable modules on this branch.
+2. Build an independently testable LibriVox search + text + player preview that proves catalog connectivity, exact reader attribution, source-text matching, and mobile interactions. Verify production-relevant network permissions, error cases and accessibility.
+3. Add clip extraction and write via the existing Sounds library abstraction when that integration contract stabilizes.
+4. Only after the Sounds redesign's current branch has landed, rebase this isolated feature, add the **LibriVox** discovery entry point to Sounds, run full checks, and merge. Coordinate with the Sounds thread before touching shared files.
+
+## Release gates
+
+- Author MacDonald finds actual works; reader Yearsley is favoritable and retrievable, with section-level attribution correct.
+- Search multiple text occurrences, jump approximately within the correct chapter, correct an anchor and observe improved estimates.
+- Mobile layout keeps the target sentence and nearby audio controls visible without page zoom or accidental loss of selection.
+- Audio audition and clip boundaries do not inadvertently start/stop another Sounds instrument.
+- Favorites persist across reloads and can be exported/restored in the existing Sounds backup once integrated.
+- Network and decoding failures are explicit. No fabricated playability, coverage, exact-sync claims, or successful clip saves.
+- The main Code page remains unchanged; current Sounds work continues independently.
+
+## References
+
+- LibriVox API: https://librivox.org/api/info
+- 2026 catalog rate-limit announcement: https://librivox.org/2026/09/16/librivox-api-update/
+- Project Gutenberg catalog guidance: https://www.gutenberg.org/ebooks/offline_catalogs.html
+
+## Implemented: actual extracted audio (2026-11-23)
+
+- The standalone explorer now provides **EXTRACT & SAVE WAV** for a selected start/end region, audio preview, and **DOWNLOAD WAV**. This saves an actual audio Blob into the existing `supercollision-sounds-v1` IndexedDB Sounds store with chapter, reader, author, source URL, timestamps, and attribution, not just metadata markers.
+- MP3 frame scanning decodes a small window near the selection, with preroll for the bit reservoir. Export is 16-bit PCM WAV with a short anti-click fade. Maximum selection is 180 seconds and maximum source transfer is 80 MiB; an unrecognized large file is rejected rather than decoding arbitrarily long recordings into memory.
+- Optional remote full-chapter downloads are Wi-Fi-first: if the browser cannot verify Wi-Fi, explicit transfer approval is required. LibriVox audio hosts may not allow cross-origin downloads even if audio playback works. Users can download a chapter through LibriVox and supply that local audio file instead.
+- If the Sounds IndexedDB write fails (such as a quota limit), the decoded WAV remains available for manual download, and the interface explicitly reports that Sounds was **not** saved.
+- User-selectable sample region markers and JSON exports still work independently.
+- Regression checks: Node tests for MPEG frame parsing, WAV headers, and limits; Chromium end-to-end with real encoded MP3 validating saved Blob, playback, download, chapter switching, and network permission at 896×414 and 390×844. Safari and real remote-host testing remain pending.
+- This release only updates isolated LibriVox files on the published `pages-build` branch. It does not alter the active Sounds redesign or Code page.
+
+## Implemented: independent author AND reader facets (2026-11-23)
+
+- The LibriVox Explorer preview now makes author and reader independent editable filters in the principal search area; both fields are combined with AND semantics. The old broad search remains available behind **Other search**.
+- Name suggestions come from the public catalogue; favorite authors and readers become reusable filter chips, and selecting an author or reader in the general catalogue populates its facet without discarding the other one.
+- Results are verified against the **specific LibriVox recording** credited to the chosen reader, rather than picking a different recording of the same book. For combined filters the app checks the extended chapter feed before reporting a matching section count.
+- When opening a result, the recording picker excludes other-reader editions and the chapter picker lists only sections explicitly credited to the chosen reader. The original section numbering is preserved and a visible count shows e.g. 2 of 3 sections.
+- Reader credits are fetched across paginated results (not merely the first page), and catalog/verification failures and truncated searches are flagged rather than silently presented as exhaustive.
+- Tests now cover a 101-credit paginated reader, two different authors, multiple editions, mixed chapter readers, missing/ambiguous identity and reusable favorites; browsers at 896×414 and 390×844. Previously implemented WAV extraction was retested and remains operational.
+
+**Known catalogue limitation:** AudioSilo's LibriVox section feed provides reader identity but does not supply section-level **author** attribution in mixed-author anthologies. The AND intersection therefore verifies works credited to the selected author, and it cannot guarantee finding that author's individual stories within a book catalogued as *Various*. An empty result is an empty result from this index, not proof no such LibriVox audio exists. Do not imply complete anthology section-author coverage until an appropriate index is available.
+
+## Mobile usability correction (2026-11-23)
+
+User screenshots on iPhone revealed a confusing juxtaposition of two independent searches, a stale Conan Doyle result while the combined author and reader filters were empty, and an offscreen horizontally panned work view.
+
+- **Primary path:** one author/reader search, optionally either filter alone, or both with AND semantics. Older title/catalog search is secondary and positioned *after* the current results rather than between filters and results. Result scope is always explicit; starting a combined search closes and clears the unrelated title search.
+- **Reader accountability:** the work view says either "Showing only sections read by [reader]" or "Browsing all readers", distinguishing filtered from unfiltered editions.
+- **Progressive controls:** selected chapter playback first, text phrase navigation second, sample extraction in an expandable third section. "FOUND HERE" appears only after a text match is selected; download-source options appear only when opened or when confirmation is needed.
+- **Phone stability:** all interactive text inputs and selects use at least 16-pixel font size to prevent Safari's automatic focus zoom, all panes constrain horizontal overflow, touch gestures favor vertical scrolling, and a new asset-version query avoids stale cached scripts.
+- **Verification:** Chromium touch-mode tests passed for 390x844, 414x896, 896x414 and 768x640; tested a prior stale "Doyle" catalog search replaced by the correct MacDonald + Yearsley intersection, chapter-level reader filtering, staged sample controls, no horizontal overflow, WAV extraction and download. Native iPhone Safari and live remote catalog/download behavior require follow-up.
+- Only isolated LibriVox files were updated on `pages-build`; the central Code and Sounds interfaces remain unchanged.

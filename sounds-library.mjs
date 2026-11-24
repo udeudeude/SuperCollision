@@ -3,6 +3,7 @@
 import {saveSound} from './sounds-store.mjs';
 const $=id=>document.getElementById(id);
 const status=$('status'),hold=$('start'),ready=$('mic-ready'),level=$('level'),importer=$('import');
+const importStatus=$('import-status'),importFailures=$('import-failures');
 let stream=null,recorder=null,meter=null,meterTimer=null,audioContext=null;
 let micRequest=0,activePointer=null,keyboardDown=false,stopping=false;
 function say(message){status.textContent=message}
@@ -118,17 +119,53 @@ hold.addEventListener('keyup',event=>{
 });
 hold.addEventListener('blur',()=>{if(keyboardDown){keyboardDown=false;stopRecording()}});
 importer.addEventListener('change',async event=>{
- const files=[...event.target.files];importer.disabled=true;
+ const files=[...event.target.files];
+ if(!files.length)return;
+ importer.disabled=true;
  let imported=0;
- for(const file of files){
-  try{
-   if(!file.type.startsWith('audio/')&&!/\.(wav|mp3|m4a|aac|aiff|flac|ogg|opus)$/i.test(file.name))throw Error('Unrecognized audio format');
-   await saveSound({id:crypto.randomUUID(),name:file.name.slice(0,120),source:'imported',
-    created:Date.now(),mime:file.type||'application/octet-stream',blob:file,favorite:false});
-   imported++;
-  }catch(error){say('Failed to import '+file.name+': '+error.message)}
+ const failures=[];
+ importFailures.replaceChildren();
+ importFailures.hidden=true;
+ try{
+  for(const [index,file] of files.entries()){
+   importStatus.textContent='Importing '+(index+1)+' of '+files.length+': '+file.name;
+   try{
+    if(!file.type.startsWith('audio/')&&!/\.(wav|mp3|m4a|aac|aiff|flac|ogg|opus)$/i.test(file.name))throw Error('Unrecognized audio format');
+    await saveSound({id:crypto.randomUUID(),name:file.name.slice(0,120),source:'imported',
+     created:Date.now(),mime:file.type||'application/octet-stream',blob:file,favorite:false});
+    imported++;
+   }catch(error){
+    failures.push({name:file.name,reason:error?.message||String(error)});
+   }
+  }
+ }finally{
+  importer.value='';
+  importer.disabled=false;
  }
- importer.value='';importer.disabled=false;
- if(imported)say('Imported '+imported+' audio file'+(imported===1?'':'s')+' into the library.');
+ if(failures.length){
+  importStatus.textContent='Imported '+imported+' of '+files.length+' files. '+failures.length+
+   ' failed; see the files not imported below.';
+  for(const failure of failures){
+   const row=document.createElement('li');
+   row.textContent=failure.name+': '+failure.reason;
+   importFailures.append(row);
+  }
+  importFailures.hidden=false;
+ }else{
+  importStatus.textContent='Imported '+imported+' audio file'+(imported===1?'':'s')+' into the library.';
+ }
+});
+/* Leaving Record must never leave a live microphone behind a different
+ * workspace. Stop capture before stopping tracks so MediaRecorder can flush
+ * its final data; a pending permission response is invalidated by closeMic. */
+document.addEventListener('sounds-view-changed',event=>{
+ if(event.detail?.view==='record'||(!ready.checked&&!stream&&!recorder))return;
+ const wasRecording=recorder?.state==='recording';
+ if(wasRecording)stopRecording();
+ activePointer=null;keyboardDown=false;
+ closeMic();
+ say(wasRecording?
+  'Recording ended when you left Record. Saving locally…':
+  'Microphone off. Return to Record to enable it again.');
 });
 window.addEventListener('pagehide',()=>{if(recorder?.state==='recording')stopRecording();closeMic()});
