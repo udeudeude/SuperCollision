@@ -6,11 +6,17 @@ import {extractWavFromSource,fetchRecording} from './librivox-audio-extract.mjs'
 // Standalone and in-Sounds modes share the same LibriVox catalog and sound store.
 // AudioSilo exposes a browser-accessible LibriVox catalogue mirror. LibriVox remains
 // the recording source; no optional audio or book text is fetched automatically.
-const EMBEDDED=new URLSearchParams(location.search).get('embedded')==='1' && window.parent!==window;
+// A verified HTML document can run inside srcdoc to bypass stale navigation
+// fallbacks. frameElement carries the embedded flag when the URL is about:srcdoc.
+const EMBEDDED=window.parent!==window && (
+ new URLSearchParams(location.search).get('embedded')==='1' ||
+ window.frameElement?.dataset.scEmbedded==='true'
+);
+const COMMUNICATION_ORIGIN=new URL(document.baseURI).origin;
 if(EMBEDDED)document.documentElement.classList.add('embedded-surface');
 function sendToSounds(type,soundId,name){
  if(!EMBEDDED||typeof soundId!=='string'||!soundId)return;
- window.parent.postMessage({type,soundId,name:name||'LibriVox recording'},location.origin);
+ window.parent.postMessage({type,soundId,name:name||'LibriVox recording'},COMMUNICATION_ORIGIN);
 }
 const API = 'https://meta.audiosilo.app/api/v1';
 const FAV_KEY = 'supercollision:librivox:favorites:v1';
@@ -20,7 +26,7 @@ const $ = id => document.getElementById(id);
 const app = $('app-shell');
 const audio = $('chapter-audio');
 window.addEventListener('message',event=>{
- if(!EMBEDDED||event.source!==window.parent||event.origin!==location.origin)return;
+ if(!EMBEDDED||event.source!==window.parent||event.origin!==COMMUNICATION_ORIGIN)return;
  if(event.data?.type==='sc-sampler-pause'){
   audio.pause();
   $('extracted-audio').pause();
@@ -455,7 +461,7 @@ async function extractSelectedWav(){
     const bytes=extracted.blob.size;
     const size=bytes<1048576?(bytes/1024).toFixed(1)+' KB':(bytes/1048576).toFixed(1)+' MB';
     const use=$('use-in-sounds');
-    use.href='./sounds-bench-preview.html?v=0.5.0&sound='+encodeURIComponent(record.id)+'#sample';
+    use.href='./sounds-bench-preview.html?v=0.5.1&sound='+encodeURIComponent(record.id)+'#sample';
     use.hidden=false;
     sendToSounds('sc-librivox-audio-saved',record.id,record.name);
     status.textContent='Saved '+size+' audio sample to Sounds. Open it there to shape and play it.';
