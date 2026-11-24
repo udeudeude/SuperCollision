@@ -42,7 +42,7 @@ const audio = $('chapter-audio');
  const player=$('player');if(player)workDock.append(player);
  const markControls=document.querySelector('.clip-buttons');
  if(markControls)workDock.append(markControls);
- for(const id of ['clip-summary','extract-wav','extract-progress','extracted-audio','extract-status','use-in-sounds']){
+ for(const id of ['clip-summary','extract-options','extract-wav','extract-progress','extracted-audio','extract-status','use-in-sounds']){
   const control=$(id);if(control)workDock.append(control);
  }
  const backToSearch=$('back-to-search');if(backToSearch)workDock.append(backToSearch);
