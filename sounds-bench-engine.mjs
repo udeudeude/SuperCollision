@@ -406,7 +406,7 @@ let bootRequested=false,booting=false,bootTimeout=null,definitionTimeout=null,in
 let requestedSampleId=null;
 let synthBootPending=false,synthBootCompleted=false,serverSampleRate=null,nativeAudioContext=null;
 function sampleActivity(message,loading){window.dispatchEvent(new CustomEvent('bench-sample-activity',{detail:{message,loading}}))}
-function announce(t){status.textContent=t;const hint=$('lab-setup-hint');if(hint&&(/failed|unavailable|requires|error|timed out/i).test(t))hint.textContent='If this persists, open Technical details and troubleshooting at the bottom of the page.'}
+function announce(t){status.textContent=t;if(requestedSampleId&&(/failed|unavailable|requires|error|timed out|blocked/i).test(t))sampleActivity(t,false);const hint=$('lab-setup-hint');if(hint&&(/failed|unavailable|requires|error|timed out/i).test(t))hint.textContent='If this persists, open Technical details and troubleshooting at the bottom of the page.'}
 function print(t){log.textContent=(log.textContent+String(t)+'\n').slice(-10000);log.scrollTop=log.scrollHeight}
 /* The compiled scsynth getter can return a numerical handle instead of the
  * actual Web Audio context. Observe its own context constructor, never create
