@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#161817">
-<title>SuperCollision Sounds · v0.3.8</title>
+<title>SuperCollision Sounds · v0.3.9</title>
 <style>
 :root{color-scheme:dark;background:#161817;color:#eae7da;font:15px/1.5 system-ui,sans-serif}
 *{box-sizing:border-box}
@@ -566,9 +566,136 @@ body.is-recording #bench-acquire-overlay #start{background:#bb4b3c;color:#fff}
 #bench-sample-workspace #lab-recording .actions[hidden]{display:none!important}
 #bench-sample-workspace #lab-cancel{font-size:11px!important;min-height:28px!important}
 #bench-sample-status{display:block!important;margin:5px 0 0!important;color:#b4a98f;font:10px/1.35 ui-monospace,monospace;overflow-wrap:anywhere}
+</style><style id="integrated-generation-discovery-v039">
+/* Search and generation are real tools inside the fixed Sounds workspace,
+   not redirects to the older standalone Sounds page. */
+#bench-acquire-overlay .bench-remote-panel{
+ padding:2px 4px 20px!important;min-height:0!important;
+ overflow-y:auto!important;overscroll-behavior:contain!important;
+ scrollbar-width:thin;background:transparent!important;border:0!important;
+}
+#bench-acquire-overlay .bench-remote-panel[hidden]{display:none!important}
+#bench-acquire-overlay .bench-tool-intro{
+ margin:3px 0 9px;color:#e4bf81;font:800 11px/1.3 ui-monospace,monospace;
+ letter-spacing:.05em;border-bottom:1px solid #675b46;padding-bottom:6px
+}
+#bench-acquire-overlay .bench-remote-panel label{
+ display:block;color:#d8c7a6;font:750 11px/1.3 ui-monospace,monospace;
+ margin:9px 0 4px;min-width:0
+}
+#bench-acquire-overlay .bench-remote-panel select,
+#bench-acquire-overlay .bench-remote-panel input:not([type=checkbox]),
+#bench-acquire-overlay .bench-remote-panel textarea{
+ display:block;width:100%!important;min-width:0;max-width:100%;
+ background:#293228;color:#f1e7d0;border:1px solid #827352;
+ border-radius:2px;padding:8px!important;font:16px/1.25 ui-monospace,monospace
+}
+#bench-acquire-overlay .bench-remote-panel select{min-height:38px}
+#bench-acquire-overlay .bench-remote-panel input:not([type=checkbox]){min-height:38px}
+#bench-acquire-overlay #sounds-ai-prompt{min-height:86px!important;height:17dvh;resize:vertical}
+#bench-acquire-overlay #sounds-ai-code{min-height:130px;height:24dvh;resize:vertical}
+#bench-acquire-overlay #sounds-ai-revision{min-height:58px;height:11dvh;resize:vertical}
+#bench-acquire-overlay .bench-remote-provider{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0}
+#bench-acquire-overlay .bench-remote-provider label{min-width:0;margin:7px 0 0}
+#bench-acquire-overlay #sounds-ai-key-box{margin:5px 0;min-width:0}
+#bench-acquire-overlay #sounds-ai-key-box a,
+#bench-acquire-overlay #discover-key-box a{display:inline-block;color:#e1bf81;font:11px ui-monospace,monospace;margin:5px 0}
+#bench-acquire-overlay .bench-remote-primary{
+ display:inline-flex;align-items:center;justify-content:center;min-height:39px;
+ border:1px solid #e1c07e!important;background:#d8ae5b!important;
+ color:#20231b!important;padding:7px 9px!important;
+ font:900 11px/1.2 ui-monospace,monospace!important;letter-spacing:.025em!important;
+ text-align:center
+}
+#bench-acquire-overlay #sounds-ai-generate{width:100%;margin:10px 0 2px}
+#bench-acquire-overlay .bench-remote-panel button:not(.bench-remote-primary){
+ min-height:32px;padding:6px 8px;font:800 10px/1.25 ui-monospace,monospace;
+ border:1px solid #796f57;background:#31392f;color:#eaddc1
+}
+#bench-acquire-overlay .bench-remote-panel button:disabled{opacity:.42!important}
+#bench-acquire-overlay .bench-remote-panel p,
+#bench-acquire-overlay .bench-remote-note{font:11px/1.4 ui-monospace,monospace;color:#c3bfae;margin:7px 0}
+#bench-acquire-overlay #sounds-generate-status,
+#bench-acquire-overlay #discover-status{
+ margin:9px 0!important;padding:7px!important;background:#293128;
+ border-left:3px solid #bda06c;color:#e8d9b7!important;
+ font:11px/1.35 ui-monospace,monospace!important;overflow-wrap:anywhere
+}
+#bench-acquire-overlay .bench-remote-actions{
+ display:flex;flex-wrap:wrap;align-items:stretch;gap:5px;margin:7px 0
+}
+#bench-acquire-overlay .bench-remote-actions button{min-width:0;flex:1}
+#bench-acquire-overlay #bench-ai-open{flex:1.4}
+#bench-acquire-overlay .bench-remote-review{
+ white-space:pre-wrap;overflow-wrap:anywhere;max-height:95px;overflow-y:auto;
+ border:1px solid #626b5c;background:#171f19;color:#b5cdb4;
+ font:10px/1.35 ui-monospace,monospace;padding:6px;margin:5px 0
+}
+#bench-acquire-overlay .bench-remote-review:empty{display:none}
+#bench-acquire-overlay .bench-discover-search{
+ display:grid;grid-template-columns:minmax(0,1fr) 77px;gap:6px;align-items:end
+}
+#bench-acquire-overlay .bench-discover-search label{margin:0}
+#bench-acquire-overlay .bench-discover-search button{height:38px;min-height:38px!important}
+#bench-acquire-overlay .bench-remote-options{
+ margin:8px 0;padding:5px 7px;border:1px solid #676b57;background:#222a23
+}
+#bench-acquire-overlay .bench-remote-options summary{
+ padding:5px 1px;color:#e5c586;font:800 10px/1.35 ui-monospace,monospace;
+ cursor:pointer;touch-action:manipulation
+}
+#bench-acquire-overlay .bench-remote-options[open] summary{border-bottom:1px solid #545e50;margin-bottom:6px}
+#bench-acquire-overlay .bench-remote-checks{
+ border:0!important;padding:2px 0!important;margin:0!important;min-width:0
+}
+#bench-acquire-overlay .bench-remote-checks legend{font:750 10px ui-monospace,monospace;color:#b4bfb0}
+#bench-acquire-overlay .bench-remote-checks label,
+#bench-acquire-overlay .bench-network-override{
+ display:flex!important;align-items:flex-start;gap:7px;margin:7px 0;
+ color:#d7d9c9;font:11px/1.35 ui-monospace,monospace
+}
+#bench-acquire-overlay .bench-remote-checks input,
+#bench-acquire-overlay .bench-network-override input{
+ width:18px;height:18px;min-width:18px;flex:0 0 auto;accent-color:#dfb96e
+}
+#bench-acquire-overlay #discover-results{display:flex;flex-direction:column;gap:7px;min-height:0}
+#bench-acquire-overlay .discovered-sound{
+ border:1px solid #68745d;background:#242c24;padding:9px;margin:0;min-width:0
+}
+#bench-acquire-overlay .discovered-sound>strong{
+ display:block;font:800 12px/1.3 ui-monospace,monospace;color:#f0e7cc;overflow-wrap:anywhere
+}
+#bench-acquire-overlay .discovered-sound>small{
+ display:block;font:10px/1.35 ui-monospace,monospace;color:#b7bfae;overflow-wrap:anywhere;margin:5px 0
+}
+#bench-acquire-overlay .discovered-sound .actions{
+ display:flex;flex-wrap:wrap;gap:5px;margin:5px 0
+}
+#bench-acquire-overlay .discovered-sound .actions>*{
+ min-width:0;flex:1;min-height:30px;padding:6px;
+ font:800 10px/1.3 ui-monospace,monospace;text-align:center
+}
+#bench-acquire-overlay .discovered-sound .actions a{
+ display:flex;align-items:center;justify-content:center;color:#e0b97b;
+ border:1px solid #756d55;background:#2d342b;overflow-wrap:anywhere
+}
+#bench-acquire-overlay .discovered-sound audio{display:block;width:100%;height:38px;margin:5px 0}
+#bench-acquire-overlay .discovered-sound audio[hidden]{display:none!important}
+#bench-acquire-overlay #bench-discover-saved{
+ padding:8px;margin:8px 0;border:1px solid #bba36e;background:#283327;
+ display:flex;align-items:center;gap:8px;justify-content:space-between
+}
+#bench-acquire-overlay #bench-discover-saved[hidden]{display:none!important}
+#bench-acquire-overlay #bench-discover-saved strong{font:800 10px ui-monospace,monospace;color:#d9c99d}
+#bench-acquire-overlay #bench-discover-saved button{flex:0 1 auto;min-width:105px}
+@media(max-width:380px){
+ #bench-acquire-overlay .bench-remote-provider{gap:4px}
+ #bench-acquire-overlay #bench-ai-open{flex:1 1 100%}
+ #bench-acquire-overlay .bench-remote-panel label{font-size:10px}
+}
 </style></head>
 <body>
-<header><a href="./index.html">← CODE</a><h1>SOUNDS</h1><small>v0.3.8</small></header>
+<header><a href="./index.html">← CODE</a><h1>SOUNDS</h1><small>v0.3.9</small></header>
 <main>
 <p class="lab-intro">Make a sound first. The instrument runs entirely in SuperCollider. No recording required.</p>
 <section id="lab-setup">
@@ -737,6 +864,6 @@ document.addEventListener('DOMContentLoaded',()=>{
  const initial=location.hash.slice(1);show(['play','sample','details'].includes(initial)?initial:'play');
 });
 </script><script type="module" src="./sounds-bench-engine.mjs?v=0.3.8"></script>
-<script type="module" src="./sounds-bench-acquire.mjs?v=0.3.7"></script>
+<script type="module" src="./sounds-bench-acquire.mjs?v=0.3.9"></script>
 </body>
 </html>
