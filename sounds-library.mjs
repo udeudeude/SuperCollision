@@ -69,7 +69,9 @@ function closeMic(){
 }
 function activateMeter(){
  try{
-  audioContext=new AudioContext();
+  const Context=window.AudioContext||window.webkitAudioContext;
+  if(!Context)throw Error('Browser audio analysis unavailable');
+  audioContext=new Context();
   const analyser=audioContext.createAnalyser();
   analyser.fftSize=1024;
   const source=audioContext.createMediaStreamSource(stream);
@@ -87,7 +89,14 @@ function activateMeter(){
    }
    drawMic(data);updateTime();
   },120);
- }catch{stopMeter()}
+ }catch(error){
+  void stopMeter().then(()=>{
+   if(stream&&ready.checked){
+    if(monitorLevel)monitorLevel.textContent='MONITOR UNAVAILABLE';
+    setMonitorHint('Microphone access succeeded, but live waveform monitoring is unavailable. You can still record.');
+   }
+  });
+ }
 }
 ready.addEventListener('change',async()=>{
  if(!ready.checked){if(recorder&&recorder.state==='recording')stopRecording();closeMic();setMonitorHint('Enable microphone to see the live input.');say('Microphone off.');return}
