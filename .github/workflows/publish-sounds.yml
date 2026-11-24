@@ -63,6 +63,7 @@ jobs:
           node source/qa/librivox-text-locator.test.mjs
           node --check source/qa/sounds-runtime-smoke.mjs
           python3 source/qa/sounds-release-test.py
+          python3 source/qa/sounds-preview-workflow-test.py
       - name: Install browser and audio test dependencies
         run: |
           set -euo pipefail
@@ -102,6 +103,15 @@ jobs:
         env:
           SOUNDS_BROWSER_CHANNEL: chrome
         run: node source/qa/sounds-runtime-smoke.mjs
+      - name: Publish a tested compiled preview without touching production
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.base.ref == 'main'
+        env:
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          bash source/scripts/publish_sounds_preview.sh site "$SOURCE_BRANCH" "$SOURCE_SHA" "$PR_NUMBER"
       - name: Publish one complete release, safely retrying concurrent advances
         if: github.event_name != 'pull_request'
         run: |
