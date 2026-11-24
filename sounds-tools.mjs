@@ -148,7 +148,12 @@ async function refresh(){
  if(!countNode){
   countNode=node('p');countNode.className='muted';view.prepend(countNode);
  }
- countNode.textContent=items.length+' matching sound'+(items.length===1?'':'s');
+ countNode.textContent=items.length
+  ?items.length+' matching sound'+(items.length===1?'':'s')
+  :query?'No sounds match that search. Try fewer words.'
+  :kind==='favorite'?'No favorites yet. Use the ☆ Favorite action on a sound to keep it close.'
+  :kind!=='all'?'No sounds in this category. Change the filter or add something new.'
+  :'Your Library is empty. Record or import audio, discover a sound, or generate an instrument to begin.';
  // Keep surviving audio elements in the document, instead of revoking their URLs
  // and restarting playback whenever the library refreshes.
  const visible=new Set();
