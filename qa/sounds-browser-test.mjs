@@ -115,7 +115,7 @@ try{
  await page.locator('#start').dispatchEvent('pointerup',{pointerId:1,button:0,isPrimary:true});
  await page.getByText('Saved recording locally',{exact:false}).waitFor();
  await page.getByRole('tab',{name:'Library'}).click();
- await page.getByText('Recording',{exact:false}).first().waitFor();
+ await page.locator('.managed-item').filter({hasText:'Recording'}).first().waitFor();
  assert.equal(await page.locator('.managed-item').count(),2);
  // Favorites, renaming, and a matching search must not tear down an audible preview.
  // The media element and its object URL must remain the SAME, not restart at zero.
