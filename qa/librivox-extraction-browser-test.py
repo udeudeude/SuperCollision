@@ -90,8 +90,10 @@ with sync_playwright() as p:
   assert page.locator('#download-wav').is_disabled()
   page.wait_for_function('document.querySelector("#chapter-audio").readyState>=1',timeout=9000)
   page.evaluate('document.querySelector("#chapter-audio").currentTime=1')
+  page.wait_for_function('''()=>{const a=document.querySelector("#chapter-audio");return a.currentTime>=0.9&&!a.seeking;}''',timeout=9000)
   page.locator('#set-start').click()
   page.evaluate('document.querySelector("#chapter-audio").currentTime=2')
+  page.wait_for_function('''()=>{const a=document.querySelector("#chapter-audio");return a.currentTime>=1.9&&!a.seeking;}''',timeout=9000)
   page.locator('#set-end').click()
   readiness=page.evaluate('''()=>({start:state.clipStart,end:state.clipEnd,ready:state.audioLoaded,readyState:document.querySelector('#chapter-audio').readyState,currentTime:document.querySelector('#chapter-audio').currentTime,status:document.querySelector('#clip-message').textContent})''')
   assert page.locator('#extract-wav').is_enabled(),f'Extraction unavailable after loading chapter metadata: {readiness}'
