@@ -494,7 +494,20 @@ suggestFacet('filter-author','author-options');suggestFacet('filter-reader','rea
 renderFavoriteFilterChips();
 $('catalog-form').addEventListener('submit',event=>{event.preventDefault();const q=$('catalog-query').value.trim();if(q.length>=2)runSearch(q,new FormData(event.currentTarget).get('scope'));});
 $('phrase-form').addEventListener('submit',event=>{event.preventDefault();showMatches();});
-$('show-favorites').addEventListener('click',()=>{state.showFavorites=!state.showFavorites;$('show-favorites').setAttribute('aria-pressed',String(state.showFavorites));if(state.showFavorites)renderFavorites();else if($('catalog-query').value.trim())runSearch($('catalog-query').value.trim(),state.scope);else {$('catalog-results').replaceChildren();setStatus('Choose a search to begin.');$('list-caption').textContent='DISCOVER';}});
+$('show-favorites').addEventListener('click',()=>{
+ state.showFavorites=!state.showFavorites;
+ $('show-favorites').setAttribute('aria-pressed',String(state.showFavorites));
+ if(state.showFavorites){renderFavorites();return}
+ if($('filter-author').value.trim()||$('filter-reader').value.trim()){
+  setSearchMode('people');runCombinedFilter();
+ }else if($('catalog-query').value.trim()){
+  setSearchMode('title');runSearch($('catalog-query').value.trim(),state.scope);
+ }else{
+  $('catalog-results').replaceChildren();
+  $('list-caption').textContent='DISCOVER';
+  setStatus('Choose an author, reader or title to begin.');
+ }
+});
 document.querySelectorAll('[data-quick]').forEach(b=>b.addEventListener('click',()=>{showSearch();runSearch(b.dataset.quick,b.dataset.scope);}));
 $('back-to-search').addEventListener('click',showSearch);
 $('recording-select').addEventListener('change',e=>selectRecording(Number(e.target.value)));
