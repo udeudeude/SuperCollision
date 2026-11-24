@@ -902,3 +902,22 @@ body.is-recording #bench-acquire-overlay #start{background:#bb4b3c;color:#fff}
  .bench-original-head{display:block}
  .bench-original-head small{display:block;margin-top:3px}
 }
+
+/* A selected original is the content, not a giant empty black instrument. */
+#bench-sample-workspace>#bench-sample-stage{
+ flex:0 0 auto!important;min-height:0!important;
+ align-items:flex-start!important;justify-content:flex-start!important;
+ text-align:left!important;gap:5px!important;
+ margin:5px 3px!important;padding:10px 12px!important;
+ background:var(--sc-plate,#302820)!important;
+ border-left:3px solid var(--sc-selected,#b89a64)!important;
+}
+#bench-sample-workspace #bench-sample-stage span{
+ max-width:100%!important;overflow-wrap:anywhere;
+}
+#bench-sample-stage .bench-empty-symbol{display:none!important}
+#bench-sample-stage[data-state=error] .bench-empty-symbol{
+ display:flex!important;width:28px;height:28px;min-height:28px;
+ font-size:18px!important;
+}
+#bench-sample-workspace #bench-sample-stage[hidden]{display:none!important}
