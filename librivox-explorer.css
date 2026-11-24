@@ -120,3 +120,76 @@ input,textarea,select,input[type="search"],.combined-inputs input{font-size:16px
 }
 
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+
+/* Sounds / LibriVox v0.4.0 | same selected-state and primary-action grammar.
+   The mode control reports the search method; the gold-filled button starts
+   an actual search or saves an actual recording. */
+.librivox-search-modes{
+ display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px 9px 7px;
+ border-bottom:1px solid #4f594e;margin-bottom:3px;
+}
+.librivox-search-modes button{
+ min-width:0;min-height:38px;padding:6px 4px;
+ background:#2a312b;color:#d7d6c9;border:2px solid #596659;
+ font:800 11px/1.15 ui-monospace,monospace;letter-spacing:.015em;
+}
+.librivox-search-modes button[aria-pressed="true"]{
+ background:#353629;color:#f1d08f;border-color:#e2b96f;
+ box-shadow:inset 0 -3px 0 #ad8648;
+}
+.librivox-search-modes button[aria-pressed="false"]{border-color:#596659}
+#combined-form[hidden],#catalog-disclosure[hidden]{display:none!important}
+#catalog-disclosure{padding:8px 10px;margin:3px 9px 7px;border:1px solid #665c49;background:#242820}
+#catalog-disclosure[open]{display:block}
+#catalog-disclosure>summary{display:none!important}
+#catalog-disclosure .catalog-form{padding:3px!important;margin:0}
+#catalog-disclosure .scope-picker{margin:7px 0 4px}
+#catalog-disclosure [data-quick]{min-height:32px;font:11px/1.2 ui-monospace,monospace;margin:3px}
+#combined-form{margin:3px 9px 7px;padding:9px}
+#combined-form .combined-head{font-size:10px!important}
+#combined-form #find-combined{background:#d8ae5b;color:#201c17;border-color:#e8c783}
+#search-status[data-kind="error"]{color:#ebaba1}
+#show-favorites[aria-pressed="true"]{
+ color:#f0d18f!important;border-color:#dbb66e!important;background:#3f3928!important;
+}
+.result-star[aria-pressed="true"],.person-chip[aria-pressed="true"]{
+ color:#f3d499!important;background:#454431!important;border-color:#dcb573!important;
+}
+.topbar{border-bottom:2px solid #726249;background:#302820}
+.topbar h1{color:#eddfbf;font:800 14px/1.1 ui-monospace,monospace;letter-spacing:.055em}
+.topbar .back-link{color:#e4cc9c}
+.topbar .preview-note{color:#c4af8a;font:700 9px ui-monospace,monospace}
+#clip-message{font:11px/1.4 ui-monospace,monospace;color:#b9bcb0;overflow-wrap:anywhere}
+#save-region{
+ background:#2d352c!important;color:#e6c98e!important;border:1px solid #a4885e!important;
+ font-weight:750!important
+}
+#extract-wav{
+ background:#d8ae5b!important;color:#222017!important;
+ border:1px solid #f0d391!important;font-weight:900!important
+}
+#download-wav{background:#2b342d!important;color:#ead8b4!important}
+#extract-wav:disabled,#download-wav:disabled{opacity:.4!important}
+.use-in-sounds{
+ display:flex;align-items:center;justify-content:center;
+ min-height:42px;padding:9px 12px;margin:9px 0 3px;
+ border:1px solid #e3c17e;border-radius:2px;
+ background:#d8ae5b;color:#231e16;text-decoration:none;
+ text-align:center;font:900 12px/1.25 ui-monospace,monospace;letter-spacing:.02em;
+}
+.use-in-sounds[hidden]{display:none!important}
+.sample-editor>summary{background:#2c322a;color:#edcf94;border-bottom:1px solid #6c614a}
+#extract-status:not(:empty){border-left:3px solid #ad955e;padding-left:8px}
+#extract-status[data-kind="error"]{border-color:#c77769}
+@media(max-width:740px){
+ .topbar{gap:8px!important}
+ .topbar .back-link{font-size:11px!important;white-space:nowrap}
+ .topbar h1{font-size:12px!important}
+ .librivox-search-modes{gap:4px}
+ .librivox-search-modes button{font-size:10px!important;min-height:35px}
+ .sample-editor .clip-buttons{gap:5px}
+}
+@media(max-width:375px){
+ .topbar h1 small{display:none}
+ .librivox-search-modes button{font-size:9px!important}
+}
