@@ -55,6 +55,7 @@ with sync_playwright() as p:
   page.locator('.result-main').first.click()
   page.wait_for_function("document.querySelector('#chapter-select').options.length === 2")
   assert page.locator('#extract-wav').is_disabled()
+  page.locator('#sample-editor > summary').click()  # The extraction stage is intentionally collapsed until needed.
   page.locator('#sample-audio-file').set_input_files(str(root/'qa/sample-12s.mp3'))
   page.wait_for_function('document.querySelector("#chapter-audio").readyState>=1')
   page.evaluate('document.querySelector("#chapter-audio").currentTime=3')
@@ -81,6 +82,7 @@ with sync_playwright() as p:
   assert filename.endswith('.wav'),filename
   # New selection must invalidate previous download, rather than exporting stale audio.
   page.locator('#chapter-select').select_option('1')
+  page.locator('#sample-editor > summary').click()  # Chapter change resets the extraction stage.
   assert page.locator('#chapter-audio').get_attribute('src') is None
   page.locator('#permit-preview-stream').check()
   page.locator('#load-chapter-audio').click()
