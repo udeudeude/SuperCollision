@@ -392,6 +392,67 @@ try{
  assert.equal(await page.locator('#lab-demo-code').inputValue(),editedTone);
  assert.equal(await page.locator('#lab-demo-controls').getAttribute('data-sync'),'modified','custom code must visibly extinguish controls');
  assert.equal(await page.locator('#lab-engine').textContent(),'Start SuperCollider');
+ // A microphone must not remain active when its workspace is hidden.
+ // Exercise both an in-flight permission prompt and an active recording in
+ // isolated browser storage so existing library-count assertions stay useful.
+ const micContext=await browser.newContext({viewport:{width:390,height:844}});
+ const micPage=await micContext.newPage();
+ const micErrors=[];
+ micPage.on('pageerror',error=>micErrors.push(error.message));
+ await micPage.addInitScript(()=>{
+  window.__micState={opened:0,closed:0,recorderStops:0,permissionPending:false,grant:null};
+  const makeStream=()=>{
+   window.__micState.opened++;
+   const track={stop(){window.__micState.closed++},addEventListener(){}};
+   return {getTracks:()=>[track],getAudioTracks:()=>[track]};
+  };
+  Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{
+   getUserMedia:()=>window.__micState.permissionPending?
+    new Promise(resolve=>{window.__micState.grant=()=>resolve(makeStream())}):
+    Promise.resolve(makeStream())
+  }});
+  window.MediaRecorder=class{
+   static isTypeSupported(){return true}
+   constructor(){this.state='inactive';this.mimeType='audio/webm'}
+   start(){this.state='recording'}
+   stop(){
+    this.state='inactive';window.__micState.recorderStops++;
+    this.ondataavailable?.({data:new Blob(['captured audio'],{type:'audio/webm'})});
+    queueMicrotask(()=>this.onstop?.());
+   }
+  };
+ });
+ await micPage.goto(base+'/sounds.html#record');
+ await micPage.evaluate(()=>window.__micState.permissionPending=true);
+ await micPage.locator('#mic-ready').check();
+ await micPage.getByText('Requesting microphone permission',{exact:false}).waitFor();
+ await micPage.getByRole('tab',{name:'Create'}).click();
+ await micPage.evaluate(()=>window.__micState.grant());
+ await micPage.waitForFunction(()=>window.__micState.closed===1);
+ assert.equal(await micPage.locator('#mic-ready').isChecked(),false,'late permission must not re-enable hidden microphone');
+ assert.equal(await micPage.locator('#start').isDisabled(),true);
+ await micPage.getByRole('tab',{name:'Record'}).click();
+ await micPage.evaluate(()=>window.__micState.permissionPending=false);
+ await micPage.locator('#mic-ready').check();
+ await micPage.getByText('Microphone ready.',{exact:false}).waitFor();
+ await micPage.locator('#start').dispatchEvent('pointerdown',{pointerId:7,button:0,isPrimary:true});
+ assert.equal(await micPage.locator('body').evaluate(el=>el.classList.contains('is-recording')),true);
+ // Programmatic tab activation avoids the held pointer capturing the click.
+ await micPage.evaluate(()=>document.querySelector('#sounds-tabs [data-view="library"]').click());
+ await micPage.waitForFunction(()=>window.__micState.recorderStops===1&&window.__micState.closed===2);
+ await micPage.locator('.managed-item').filter({hasText:'Recording'}).waitFor();
+ assert.equal(await micPage.locator('.managed-item').count(),1,'workspace exit must save the recorded clip once');
+ assert.equal(await micPage.locator('body').evaluate(el=>el.classList.contains('is-recording')),false);
+ await micPage.getByRole('tab',{name:'Record'}).click();
+ assert.equal(await micPage.locator('#mic-ready').isChecked(),false);
+ assert.equal(await micPage.locator('#start').isDisabled(),true);
+ await micPage.locator('#mic-ready').check();
+ await micPage.getByText('Microphone ready.',{exact:false}).waitFor();
+ await micPage.getByRole('tab',{name:'Generate'}).click();
+ await micPage.waitForFunction(()=>window.__micState.closed===3);
+ assert.equal(await micPage.locator('#mic-ready').isChecked(),false,'idle microphone also closes on workspace exit');
+ assert.deepEqual(micErrors,[],'No unhandled microphone lifecycle errors');
+ await micContext.close();
   assert.deepEqual(errors,[],'No unhandled page errors allowed');
  console.log('Sounds browser regression passed: library, source, recording, discovery, license filters and persistence');
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}

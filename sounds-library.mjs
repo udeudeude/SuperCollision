@@ -131,4 +131,17 @@ importer.addEventListener('change',async event=>{
  importer.value='';importer.disabled=false;
  if(imported)say('Imported '+imported+' audio file'+(imported===1?'':'s')+' into the library.');
 });
+/* Leaving Record must never leave a live microphone behind a different
+ * workspace. Stop capture before stopping tracks so MediaRecorder can flush
+ * its final data; a pending permission response is invalidated by closeMic. */
+document.addEventListener('sounds-view-changed',event=>{
+ if(event.detail?.view==='record'||(!ready.checked&&!stream&&!recorder))return;
+ const wasRecording=recorder?.state==='recording';
+ if(wasRecording)stopRecording();
+ activePointer=null;keyboardDown=false;
+ closeMic();
+ say(wasRecording?
+  'Recording ended when you left Record. Saving locally…':
+  'Microphone off. Return to Record to enable it again.');
+});
 window.addEventListener('pagehide',()=>{if(recorder?.state==='recording')stopRecording();closeMic()});
