@@ -23,7 +23,8 @@ permissions:
   contents: write
 concurrency:
   group: supercollision-pages-publish
-  cancel-in-progress: true
+  # The Sounds publisher shares this lane and must never be cancelled mid-release.
+  cancel-in-progress: false
 jobs:
   publish:
     runs-on: ubuntu-24.04
