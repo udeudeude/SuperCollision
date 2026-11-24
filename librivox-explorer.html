@@ -3,26 +3,30 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
+<meta content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" name="viewport"/>
 <meta content="#171917" name="theme-color"/>
 <title>LibriVox Explorer · SuperCollision</title>
-<link href="./librivox-explorer.css?v=20261123-ux2" rel="stylesheet"/>
+<link href="./librivox-explorer.css?v=0.4.0" rel="stylesheet"/>
 </head>
 <body>
 <header class="topbar">
-<a aria-label="Back to Sounds" class="back-link" href="./sounds.html">‹ <span>SOUNDS</span></a>
+<a aria-label="Back to Recordings and Samples in Sounds" class="back-link" href="./sounds-bench-preview.html#sample">‹ <span>SOUNDS</span></a>
 <h1>LIBRIVOX <small>EXPLORER</small></h1>
-<span class="preview-note">TEST APP</span>
+<span class="preview-note">v0.4.0</span>
 </header>
 <main class="app-shell" id="app-shell">
 <section aria-labelledby="discover-heading" class="discovery-panel" id="discovery-panel">
 <div class="panel-top">
 <div class="eyebrow">LIBRIVOX / SOUNDS</div>
 <h2 id="discover-heading">Find a recording</h2>
-<p>Filter by author, reader, or both. Then choose a chapter to listen to.</p>
+<p>Search by title, or filter by author and reader together.</p>
+</div>
+<div class="librivox-search-modes" role="group" aria-label="Choose a way to search">
+ <button id="search-by-people" type="button" aria-pressed="true">AUTHOR / READER</button>
+ <button id="search-by-title" type="button" aria-pressed="false">BOOK TITLE</button>
 </div>
 <form aria-label="Combine author and reader filters" autocomplete="off" class="combined-form" id="combined-form">
-<div class="combined-head"><span class="eyebrow">SEARCH RECORDINGS</span><button id="combined-clear" type="button">CLEAR</button></div>
+<div class="combined-head"><span class="eyebrow">AUTHOR + READER FILTERS</span><button id="combined-clear" type="button">CLEAR</button></div>
 <div class="combined-inputs">
 <label for="filter-author">AUTHOR<input autocomplete="off" id="filter-author" list="author-options" name="author" placeholder="e.g. George MacDonald" type="search"/><datalist id="author-options"></datalist></label>
 <label for="filter-reader">READER<input autocomplete="off" id="filter-reader" list="reader-options" name="reader" placeholder="e.g. Peter Yearsley" type="search"/><datalist id="reader-options"></datalist></label>
@@ -32,9 +36,7 @@
 <button class="example-link" id="test-combined" type="button">Try: MacDonald + Yearsley</button></form>
 
 
-<div class="list-head"><div class="eyebrow" id="list-caption">DISCOVER</div><button aria-pressed="false" class="text-button" id="show-favorites" type="button">☆ FAVORITES <span id="favorite-count">0</span></button></div><p aria-live="polite" class="active-filters" id="active-filters" role="status">No filters selected</p>
-<div aria-live="polite" class="status-line" id="search-status" role="status">Choose a search to begin.</div>
-<div aria-live="polite" class="catalog-results" id="catalog-results"></div><details class="catalog-disclosure" id="catalog-disclosure"><summary>Search for a book title or browse the catalog</summary>
+<details class="catalog-disclosure" id="catalog-disclosure" hidden><summary>SEARCH BOOKS, READERS &amp; AUTHORS</summary>
 <form class="catalog-form" id="catalog-form">
 <label class="sr-only" for="catalog-query">Search LibriVox</label>
 <div class="query-row"><input autocomplete="off" id="catalog-query" minlength="2" name="q" placeholder="Title, author, or reader…" required="" type="search"/><button class="primary" type="submit">SEARCH</button></div>
@@ -45,6 +47,9 @@
 </fieldset>
 </form>
 <button data-quick="George MacDonald" data-scope="authors" type="button">George MacDonald</button><button data-quick="Peter Yearsley" data-scope="readers" type="button">Peter Yearsley</button><button data-quick="Phantastes" data-scope="books" type="button">Phantastes</button></details>
+<div class="list-head"><div class="eyebrow" id="list-caption">DISCOVER</div><button aria-pressed="false" class="text-button" id="show-favorites" type="button">☆ FAVORITES <span id="favorite-count">0</span></button></div><p aria-live="polite" class="active-filters" id="active-filters" role="status">No filters selected</p>
+<div aria-live="polite" class="status-line" id="search-status" role="status">Choose a search to begin.</div>
+<div aria-live="polite" class="catalog-results" id="catalog-results"></div>
 <div class="sources-footnote">Catalog discovery: <a href="https://meta.audiosilo.app/docs/api/" rel="noopener noreferrer" target="_blank">AudioSilo Meta</a> (LibriVox mirror). <a href="https://librivox.org/search" id="search-librivox" rel="noopener noreferrer" target="_blank">Search LibriVox directly ↗</a></div>
 </section>
 <section aria-labelledby="work-heading" class="work-panel empty" id="work-panel">
@@ -78,21 +83,22 @@
 <form id="phrase-form"><label class="sr-only" for="phrase-query">Search within chapter text</label><div class="query-row"><input id="phrase-query" placeholder="Find exact words in this text…" required="" type="search"/><button class="primary" type="submit">FIND</button></div></form>
 <div aria-live="polite" class="text-hint" id="text-guidance" role="status">Matches are based on the text you provide; estimates are not synchronized transcripts.</div>
 <div class="phrase-results" id="phrase-results"></div>
-</div><details class="sample-editor" id="sample-editor"><summary>3  ·  EXTRACT AUDIO SAMPLE</summary><div class="clip-tools"><div class="clip-heading"><span class="eyebrow">SAMPLE REGION</span><span id="clip-summary">Set start and end while listening</span></div><div class="clip-buttons"><button id="set-start" type="button">[ IN</button><button id="set-end" type="button">OUT ]</button><button id="preview-region" type="button">▶ REGION</button><button class="primary-outline" id="save-region" type="button">SAVE MARKER</button></div><div aria-live="polite" id="clip-message" role="status"></div>
+</div><details class="sample-editor" id="sample-editor"><summary>3 / MAKE AN AUDIO SAMPLE</summary><div class="clip-tools"><div class="clip-heading"><span class="eyebrow">SAMPLE REGION</span><span id="clip-summary">Set start and end while listening</span></div><div class="clip-buttons"><button id="set-start" type="button">[ IN</button><button id="set-end" type="button">OUT ]</button><button id="preview-region" type="button">▶ REGION</button><button class="primary-outline" id="save-region" type="button">BOOKMARK REGION</button></div><div aria-live="polite" id="clip-message" role="status">Bookmark saves the start and end positions. Extract &amp; Save creates an actual audio file.</div>
 <div aria-label="Extract selected audio" class="extract-bay">
-<details class="extract-options" id="extract-options"><summary>Audio file / download options</summary><div class="extract-controls"><label class="upload-audio" for="sample-audio-file">USE CHAPTER FILE<input accept="audio/*,.mp3,.wav,.ogg,.m4a" id="sample-audio-file" type="file"/></label><button hidden="" id="restore-stream" type="button">USE ONLINE RECORDING</button><span id="sample-source-status">Source: online chapter</span></div><label class="transfer-permission"><input id="permit-audio-download" type="checkbox"/> Permit downloading the full chapter on this connection</label><p class="extract-hint">Wi-Fi first. Browser cannot always detect cellular; online extraction requires your approval. If the host blocks downloads, get its audio file from LibriVox and choose USE CHAPTER FILE. Files you extract are stored locally in Sounds.</p></details><div class="extract-actions"><button class="primary" id="extract-wav" type="button">✂ EXTRACT &amp; SAVE WAV</button><button disabled="" id="download-wav" type="button">↓ DOWNLOAD WAV</button></div>
+<details class="extract-options" id="extract-options"><summary>AUDIO SOURCE / DOWNLOAD PERMISSION</summary><div class="extract-controls"><label class="upload-audio" for="sample-audio-file">USE CHAPTER FILE<input accept="audio/*,.mp3,.wav,.ogg,.m4a" id="sample-audio-file" type="file"/></label><button hidden="" id="restore-stream" type="button">USE ONLINE RECORDING</button><span id="sample-source-status">Source: online chapter</span></div><label class="transfer-permission"><input id="permit-audio-download" type="checkbox"/> Permit downloading the full chapter on this connection</label><p class="extract-hint">Wi-Fi first. Browser cannot always detect cellular; online extraction requires your approval. If the host blocks downloads, get its audio file from LibriVox and choose USE CHAPTER FILE. Files you extract are stored locally in Sounds.</p></details><div class="extract-actions"><button class="primary" id="extract-wav" type="button">✂ EXTRACT &amp; SAVE AUDIO</button><button disabled="" id="download-wav" type="button">↓ DOWNLOAD COPY</button></div>
 
 
 
 <progress hidden="" id="extract-progress" max="1" value="0"></progress>
 <audio aria-label="Listen to extracted WAV" controls="" hidden="" id="extracted-audio" preload="none"></audio>
 <div aria-live="polite" id="extract-status" role="status"></div>
+<a id="use-in-sounds" class="use-in-sounds" href="./sounds-bench-preview.html#sample" hidden>OPEN SAMPLE IN SOUNDS ›</a>
 </div>
 </div></details>
-<div class="footer-links"><a href="https://librivox.org" id="librivox-work-link" rel="noopener noreferrer" target="_blank">OPEN ON LIBRIVOX ↗</a><button id="export-markers" type="button">EXPORT MARKERS (.JSON)</button></div>
+<div class="footer-links"><a href="https://librivox.org" id="librivox-work-link" rel="noopener noreferrer" target="_blank">OPEN ON LIBRIVOX ↗</a><button id="export-markers" type="button">EXPORT BOOKMARKS</button></div>
 </div>
 </section>
 </main>
-<script src="./librivox-explorer.mjs?v=20261123-ux2" type="module"></script>
+<script src="./librivox-explorer.mjs?v=0.4.0" type="module"></script>
 </body>
 </html>
