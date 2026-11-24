@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#161817">
-<title>SuperCollision Sounds · v0.6.0</title>
+<title>SuperCollision Sounds · v0.6.1</title>
 <link rel="stylesheet" href="./sounds-workspace.css?v=0.6.0">
 <link rel="stylesheet" href="./sound-surfaces-design.css?v=0.5.0">
 <link rel="stylesheet" href="./sounds-reach.css?v=0.6.0">
@@ -71,7 +71,7 @@ document.addEventListener('touchmove',event=>{
 },{capture:true,passive:false});
 </script></head>
 <body>
-<header><a href="./index.html">← CODE</a><h1>SOUNDS</h1><small>v0.6.0</small></header>
+<header><a href="./index.html">← CODE</a><h1>SOUNDS</h1><small>v0.6.1</small></header>
 <main>
 <p class="lab-intro">Make a sound first. The instrument runs entirely in SuperCollider. No recording required.</p>
 <section id="lab-setup">
@@ -189,8 +189,18 @@ document.addEventListener('DOMContentLoaded',()=>{
  playDock.append(playActions);
  const engineControl=document.getElementById('lab-engine');
  const saveCodeControl=document.getElementById('lab-tone-save');
+ const stopCodeControl=document.createElement('button');
+ stopCodeControl.type='button';stopCodeControl.id='lab-tone-stop';
+ stopCodeControl.textContent='■ STOP';stopCodeControl.disabled=true;
+ stopCodeControl.setAttribute('aria-label','Stop all native SuperCollider playback in Sounds');
+ stopCodeControl.addEventListener('click',()=>window.dispatchEvent(new CustomEvent('bench-stop-all-audio')));
  if(engineControl)playActions.append(engineControl);
- if(saveCodeControl)playActions.append(saveCodeControl);
+ playActions.append(stopCodeControl);
+ if(saveCodeControl){
+  saveCodeControl.textContent='SAVE CODE';
+  saveCodeControl.setAttribute('aria-label','Save the current SuperCollider instrument code to Library');
+  playActions.append(saveCodeControl);
+ }
  for(const id of ['lab-play','lab-stop','lab-save-preset']){
   const control=document.getElementById(id);if(control)sampleControls.append(control);
  }
@@ -362,7 +372,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  }).observe(phaseLabel,{childList:true,characterData:true,subtree:true});
  window.dispatchEvent(new CustomEvent('bench-layout-ready'));
 });
-</script><script type="module" src="./sounds-bench-engine.mjs?v=0.6.0"></script>
-<script type="module" src="./sounds-bench-acquire.mjs?v=0.6.0"></script>
+</script><script type="module" src="./sounds-bench-engine.mjs?v=0.6.1"></script>
+<script type="module" src="./sounds-bench-acquire.mjs?v=0.6.1"></script>
 </body>
 </html>
