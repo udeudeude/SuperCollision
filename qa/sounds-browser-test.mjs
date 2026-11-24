@@ -62,6 +62,8 @@ try{
  assert.equal(await page.locator('.sounds-library-nav [data-view="library"]').count(),1,'library must be its own primary destination');
  assert.deepEqual(await page.locator('.sounds-acquire-buttons [data-view]').evaluateAll(nodes=>nodes.map(n=>n.dataset.view)),['create','generate','import','record','discover'],'five acquisitions must be grouped separately from Library');
  assert.equal(await page.locator('#sounds-library').isVisible(),true);
+ assert.equal(await page.locator('.library-lab-link').isVisible(),true,'Sample Lab entry is visible');
+ assert.equal(await page.locator('#sounds-backup').evaluate(el=>el.open),false,'backup tools start collapsed');
  assert.equal(await page.locator('#discover-cancel-download').isHidden(),true,'cancel download is hidden while idle');
  // Import feedback must be visible in Import itself, even when some files fail.
  // Record's status lives in a hidden workspace and cannot report Import results.
@@ -86,6 +88,7 @@ try{
   const imported=page.locator('.managed-item').filter({hasText:name});
   await imported.waitFor();
   page.once('dialog',dialog=>dialog.accept());
+  await imported.locator('details.managed-more > summary').click();
   await imported.getByRole('button',{name:'Delete'}).click();
   await imported.waitFor({state:'detached'});
  }
@@ -117,6 +120,8 @@ try{
  // Favorites, renaming, and a matching search must not tear down an audible preview.
  // The media element and its object URL must remain the SAME, not restart at zero.
  const recordingRow=page.locator('.managed-item:has(audio)').first();
+ assert.equal(await recordingRow.locator('audio').isVisible(),true,'audio remains immediately playable');
+ assert.equal(await recordingRow.locator('.managed-more').evaluate(el=>el.open),false,'management starts collapsed');
  const originalAudioUrl=await recordingRow.locator('audio').evaluate(element=>{
   window.__qaLibraryAudioElement=element;
   return element.src;
@@ -126,7 +131,8 @@ try{
  assert.equal(await recordingRow.locator('audio').evaluate(el=>el===window.__qaLibraryAudioElement),true,
   'favoriting must preserve the active audio element');
  page.once('dialog',dialog=>dialog.accept('Retitled recording'));
- await recordingRow.getByRole('button',{name:'Rename'}).click();
+ await recordingRow.locator('details.managed-more > summary').click();
+  await recordingRow.getByRole('button',{name:'Rename'}).click();
  await recordingRow.getByText('Retitled recording',{exact:true}).waitFor();
  assert.equal(await recordingRow.locator('audio').evaluate(el=>el===window.__qaLibraryAudioElement),true,
   'renaming must preserve the active audio element');
@@ -239,12 +245,14 @@ try{
  assert.equal(await page.getByText('Creative Commons BY',{exact:false}).count()>0,true,'license must be retained');
  const instrumentRow=page.locator('.managed-item').filter({hasText:'Example instrument'});
  const sourceDownloadPromise=page.waitForEvent('download');
- await instrumentRow.getByRole('button',{name:'Export .scd'}).click();
+ await instrumentRow.locator('details.managed-more > summary').click();
+  await instrumentRow.getByRole('button',{name:'Export .scd'}).click();
  const sourceDownload=await sourceDownloadPromise;
  assert.match(sourceDownload.suggestedFilename(),/\.scd$/);
  assert.match(await readFile(await sourceDownload.path(),'utf-8'),/SynthDef/,'source export must be unmodified');
  const backupDownloadPromise=page.waitForEvent('download');
- await page.locator('#sounds-backup-export').click();
+ await page.locator('#sounds-backup > summary').click();
+  await page.locator('#sounds-backup-export').click();
  const backupDownload=await backupDownloadPromise;
  assert.match(backupDownload.suggestedFilename(),/\.scsounds$/);
  const backupBytes=await readFile(await backupDownload.path());

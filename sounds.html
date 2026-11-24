@@ -46,9 +46,35 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 #status,#discover-status,#sounds-tools-status,#sounds-generate-status{min-height:24px;overflow-wrap:anywhere}
 .library-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,160px);gap:8px;align-items:end}
 .library-controls label{margin-top:0}
-.managed-item,.discovered-sound{border-top:1px solid #575d54;padding:13px 0;min-width:0}
+.managed-item{background:#20251f;border:1px solid #515a50;border-left:3px solid #a48a57;padding:13px 14px;margin:10px 0;min-width:0}
+.discovered-sound{border-top:1px solid #575d54;padding:13px 0;min-width:0}
 .managed-item strong,.discovered-sound strong,.managed-item small,.discovered-sound small{display:block;overflow-wrap:anywhere}
 .managed-item audio,.discovered-sound audio{display:block;width:100%;margin:9px 0}
+.library-headline{display:grid;grid-template-columns:minmax(0,1fr) minmax(175px,240px);align-items:center;gap:12px;margin-bottom:13px}
+.library-headline p{margin-bottom:0}
+.library-lab-link{display:flex;flex-direction:column;justify-content:center;gap:3px;min-height:58px;padding:10px 12px;border:1px solid #8f7a52;color:#ecd09c;text-decoration:none;background:#292b23}
+.library-lab-link span{font-size:11px;color:#c0b9a7}
+.managed-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.managed-identity{min-width:0;flex:1}
+.managed-identity strong{font-size:15px;line-height:1.3}
+.managed-identity small{margin-top:3px}
+.managed-favorite{flex:0 0 auto;min-height:44px;color:#e9c785;background:transparent;border-color:#666751}
+.managed-favorite[aria-pressed="true"]{background:#4b4027;border-color:#d9ae5b}
+.managed-primary-actions{margin:9px 0 3px}
+.managed-source{margin:8px 0;border:1px solid #48544b;background:#181e1a}
+.managed-source>summary{color:#ddc18d;font-size:12px;padding:10px 11px;cursor:pointer;min-height:44px}
+.managed-source .saved-code{margin:0;border-top:1px solid #48544b;max-height:300px}
+.managed-more{border-top:1px solid #48544b;margin-top:10px;padding-top:3px}
+.managed-more>summary{cursor:pointer;min-height:44px;padding:11px 0;color:#c3c6b5;font-size:12px;font-weight:700}
+.managed-more[open]>summary{color:#edd09b}
+.managed-secondary-actions{margin:4px 0 2px;gap:7px}
+.managed-secondary-actions button{background:#292e28;font-weight:600}
+.managed-secondary-actions button:last-child{border-color:#855b57;color:#efb6ae}
+.library-backup{border:1px solid #525a4e;margin-top:18px}
+.library-backup>summary{cursor:pointer;padding:14px;min-height:50px;font-weight:700;color:#e2c18a}
+.library-backup[open]>summary{border-bottom:1px solid #525a4e}
+.library-backup-body{padding:12px 14px 16px}
+@media(max-width:520px){.library-headline{grid-template-columns:minmax(0,1fr)}.library-lab-link{min-height:50px}.managed-item{padding:11px 10px}}
 .discovered-sound audio[hidden]{display:none!important}
 .saved-code{margin:8px 0;background:#10151d;color:#e4e6e8;max-height:210px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:10px;font:12px/1.5 ui-monospace,monospace}
 .filter-group{border:1px solid #52594e;margin:12px 0;padding:12px}
@@ -73,23 +99,22 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 </nav>
 <main>
 <section id="sounds-library" role="tabpanel">
-<h2>Sound library</h2>
-<p class="muted">One collection for recordings, imports, SuperCollider source, generated instruments and discovered sounds. Files stay on this device. Export important items to Files before clearing website data.</p>
-<div class="filter-group"><h2>Native SuperCollider sample lab</h2><p class="muted">Load a saved recording into native SuperCollider, including direct read-only 8/16/24/32-bit PCM and floating-point WAVE samples, verify its buffer, then audition non-destructive start/end regions, playback speed, volume, waveform region selection and crossfaded looping through SuperCollider. Experimental, isolated from Code, and preserves your original sound.</p><a href="./sounds-lab.html?build=2026112010">Open sample region and loop laboratory</a></div>
+<div class="library-headline"><div><h2>Your sounds</h2><p class="muted">Listen to saved audio, revisit instruments, and find what you need. Your library stays on this device.</p></div>
+<a class="library-lab-link" href="./sounds-lab.html?build=2026112010"><strong>Open Sample Lab</strong><span>Shape regions and loops in native SuperCollider</span></a></div>
 <div class="library-controls">
 <div><label for="sounds-search">Find a sound</label><input id="sounds-search" type="search" placeholder="Name, creator, license…"></div>
 <div><label for="sounds-filter">Type</label><select id="sounds-filter"><option value="all">Everything</option><option value="favorite">Favorites</option><option value="recorded">Recordings</option><option value="imported">Imports</option><option value="written">Written code</option><option value="generated">Generated</option><option value="preset">Sample presets</option><option value="openverse">Openverse</option><option value="freesound">Freesound</option><option value="librivox">LibriVox</option></select></div>
 </div>
 <div id="sounds-managed-list" aria-live="polite"></div>
-<div class="filter-group" id="sounds-backup">
-<h2>Back up your entire library</h2>
+<details class="library-backup" id="sounds-backup"><summary>Back up or restore your library</summary>
+<div class="library-backup-body"><h2>Keep an independent copy</h2>
 <p class="muted">Export every sound, original recording, imported audio file, source code, license, attribution and favorite. The .scsounds backup is uncompressed and contains your private recordings; keep it somewhere safe outside browser storage.</p>
 <button id="sounds-backup-export" type="button">Export complete library</button>
 <label for="sounds-backup-import">Restore from a SuperCollision Sounds backup</label>
 <input id="sounds-backup-import" type="file" accept=".scsounds,application/octet-stream">
 <p class="muted">Restore adds missing sounds only. Existing sound identifiers are never overwritten. Restores are all-or-nothing. New backups include per-recording corruption checks; older backups still open.</p>
 <p id="sounds-backup-status" role="status" aria-live="polite"></p>
-</div>
+</div></details>
 </section>
 <section id="sounds-record" role="tabpanel" hidden>
 <h2>Record audio</h2>

@@ -32,3 +32,11 @@ This is a durable decision record for small, independent, testable improvements.
 - **Further:** examine performance-friendly auditioning of multiple sounds and intentional removal of a playing filtered row.
 
 Scope: Sounds and LibriVox interface files, regression tests and this charter. No changes to the Code page, sound engine, stored schema or offline/cellular download default.
+
+## Library-first design review (2026-11-24, isolated candidate)
+
+- Remove the long technical sample laboratory introduction that competed with the user's saved sounds. Keep a direct Sample Lab link by the collection heading.
+- Prioritize listening, source editing, and favorites on each sound card. Rename, export, attribution, and delete live under an accessible More options disclosure. Retain visible provenance and a source-code disclosure.
+- Move full-library backup controls into an accessible disclosure, without changing data or backups.
+- Next: physical iPhone Safari review of density, navigation, audio controls and touch targets; then integrate LibriVox search into Sounds without duplicating its functionality.
+- Do not rerun the consistently failing direct-source Cloudflare check. This branch is neither deployed nor device-tested.

@@ -32,10 +32,12 @@ function rowSignature(item,audioIds){
 function createRow(item,audioIds,signature){
   const entry={item,signature,url:null};
   const row=node('article');row.className='managed-item';entry.row=row;
-  const nameNode=node('strong',item.name||'Untitled');entry.nameNode=nameNode;row.append(nameNode);
+  const heading=node('div');heading.className='managed-heading';
+  const identity=node('div');identity.className='managed-identity';
+  const nameNode=node('strong',item.name||'Untitled');entry.nameNode=nameNode;
   const date=new Date(item.created||0),dateText=Number.isNaN(+date)?'Unknown date':date.toLocaleString();
   const meta=node('small',(item.source||'unknown')+' · '+dateText);
-  row.append(meta);
+  identity.append(nameNode,meta);heading.append(identity);row.append(heading);
   if(item.origin){
    const origin=item.origin;
    row.append(node('small','Source: '+(origin.creator||origin.provider||'Unknown')+' · '+readableLicense(origin.license)+(origin.variant?' · '+origin.variant:'')));
@@ -50,18 +52,26 @@ function createRow(item,audioIds,signature){
    row.append(node('small',audioIds.has(item.preset.soundId)?'Native SuperCollider sample preset · source audio available':'Sample preset · ORIGINAL AUDIO MISSING. Restore the source recording from a backup.'));
   }
   if(item.code){
-   const codePreview=node('pre',item.code);codePreview.className='saved-code';row.append(codePreview);
+   const sourceDetails=node('details');sourceDetails.className='managed-source';
+   sourceDetails.append(node('summary','View SuperCollider source'));
+   const codePreview=node('pre',item.code);codePreview.className='saved-code';sourceDetails.append(codePreview);
+   row.append(sourceDetails);
   }else if(item.blob instanceof Blob){
    const audio=node('audio');audio.controls=true;audio.preload='none';
    const url=URL.createObjectURL(item.blob);entry.url=url;audio.src=url;row.append(audio);
   }else{
    row.append(node('p','This library item has neither audio nor source code.'));
   }
-  const actions=node('div');actions.className='actions';
-  actions.append(action(item.favorite?'★ Favorite':'☆ Favorite',async()=>{const item=entry.item;
+  const favoriteAction=action(item.favorite?'★ Favorite':'☆ Favorite',async()=>{const item=entry.item;
    try{await saveSound({...item,favorite:!item.favorite})}catch(error){say('Could not update favorite: '+error.message)}
-  }));
-  actions.append(action('Rename',async()=>{const item=entry.item;
+  });
+  favoriteAction.className='managed-favorite';favoriteAction.setAttribute('aria-pressed',String(!!item.favorite));
+  heading.append(favoriteAction);
+  const actions=node('div');actions.className='actions managed-primary-actions';
+  const more=node('details');more.className='managed-more';
+  more.append(node('summary','More options'));
+  const secondary=node('div');secondary.className='actions managed-secondary-actions';more.append(secondary);
+  secondary.append(action('Rename',async()=>{const item=entry.item;
    const newName=prompt('Sound name',item.name||'');
    if(newName===null)return;
    if(!newName.trim()){say('The sound name cannot be empty.');return}
@@ -84,26 +94,26 @@ function createRow(item,audioIds,signature){
     document.querySelector('#sounds-tabs [data-view="create"]').click();
     code.focus();
    }));
-   actions.append(action('Export .scd',()=>{const item=entry.item;
+   secondary.append(action('Export .scd',()=>{const item=entry.item;
     const blob=new Blob([item.code],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob);
     const a=node('a');a.href=url;
     a.download=(item.name||'instrument').replace(/[\\/:*?"<>|]/g,'_').slice(0,110).replace(/\.scd$/i,'')+'.scd';
     document.body.append(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),60000);
    }));
-   actions.append(action('Copy code',async()=>{const item=entry.item;
+   secondary.append(action('Copy code',async()=>{const item=entry.item;
     try{await navigator.clipboard.writeText(item.code);say('SuperCollider code copied.')}
     catch{say('Clipboard permission denied. Select and copy the displayed source instead.')}
    }));
   }else if(item.blob instanceof Blob){
-   actions.append(action('Export audio',()=>{const item=entry.item;
+   secondary.append(action('Export audio',()=>{const item=entry.item;
     const url=URL.createObjectURL(item.blob),anchor=node('a');
     anchor.href=url;anchor.download=filename(item);anchor.click();
     setTimeout(()=>URL.revokeObjectURL(url),30000);
    }));
   }
   if(item.origin){
-   actions.append(action('Copy attribution',async()=>{const item=entry.item;
+   secondary.append(action('Copy attribution',async()=>{const item=entry.item;
     const origin=item.origin;
     const text=origin.attribution||[item.name,'by '+(origin.creator||'Unknown creator'),
      readableLicense(origin.license),origin.url||'',origin.licenseUrl||''].filter(Boolean).join(' · ');
@@ -111,11 +121,12 @@ function createRow(item,audioIds,signature){
     catch{say('Could not copy attribution automatically. Source information is shown above.')}
    }));
   }
-  actions.append(action('Delete',async()=>{const item=entry.item;
+  secondary.append(action('Delete',async()=>{const item=entry.item;
    if(!confirm('Delete '+(item.name||'this sound')+' from this device? This cannot be undone.'))return;
    try{await deleteSound(item.id);say('Deleted '+item.name+'.')}catch(error){say('Delete failed: '+error.message)}
   }));
-  row.append(actions);entry.favoriteAction=actions.querySelector('button');
+  if(actions.childElementCount)row.append(actions);
+  row.append(more);entry.favoriteAction=favoriteAction;
   return entry;
 }
 const renderedRows=new Map();
@@ -156,6 +167,7 @@ async function refresh(){
    entry.item=item;
    entry.nameNode.textContent=item.name||'Untitled';
    entry.favoriteAction.textContent=item.favorite?'★ Favorite':'☆ Favorite';
+   entry.favoriteAction.setAttribute('aria-pressed',String(!!item.favorite));
   }
   visible.add(item.id);
   if(entry.row===cursor)cursor=cursor.nextSibling;
