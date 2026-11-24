@@ -216,7 +216,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   restart.hidden=stageState!=='error';
   const controls=recording.querySelector('.actions');
   if(controls)controls.hidden=document.getElementById('lab-cancel')?.disabled!==false;
-  sampleStage.hidden=loaded;
+  // The recording and its real audio player are the workspace when selected.
+  // Do not consume the screen with an empty instrument-shaped placeholder.
+  sampleStage.hidden=loaded||(Boolean(selected)&&!currentSampleBusy&&currentSampleKind!=='error');
   status.textContent=loaded?'READY TO SHAPE':selected?'READY TO MAKE INSTRUMENT':hasRecordings?'CHOOSE A RECORDING':'NO RECORDINGS IN LIBRARY';
   const make=document.getElementById('bench-make-instrument');
   if(make){
