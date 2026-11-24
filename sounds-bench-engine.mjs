@@ -6,7 +6,7 @@ import {readPcmWaveForNativeBuffer} from './sounds-pcm-ingest.mjs';
 import {REGION_DEFINITIONS,regionPlayCommand,regionLiveSource,stopRegionCommand,sampleInstrumentSource,validateRegion,DEMO_MARKER} from './sounds-sampler.mjs';
 import {waveformPeaks,waveformDragRegion} from './sounds-waveform.mjs';
 import {demoSynthSource,toneControls,toneDefaults,normalizeToneSettings,tuningOptions,notesForTuning} from './sounds-bench-tone.mjs';
-import {installToneVisuals} from './sounds-bench-visuals.mjs?v=0.3.1';
+import {installToneVisuals} from './sounds-bench-visuals.mjs?v=0.5.0';
 const $=id=>document.getElementById(id);
 const status=$('lab-status'),log=$('lab-log'),sound=$('lab-sound'),engine=$('lab-engine');
 const load=$('lab-load'),play=$('lab-play'),stop=$('lab-stop'),cancel=$('lab-cancel'),progress=$('lab-progress');
