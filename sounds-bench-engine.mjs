@@ -396,6 +396,7 @@ copySource?.addEventListener('click',async()=>{
 
 const presetName=$('lab-preset-name'),savePreset=$('lab-save-preset'),exportPreset=$('lab-export-preset');
 let pendingPresetId=new URL(location.href).searchParams.get('preset');
+let pendingSoundId=new URL(location.href).searchParams.get('sound');
 let queuedPresetLoadId=null,linkedPreset=null;
 let waveform=null,waveformAnchor=null;
 const BUFFER=700;
@@ -547,6 +548,13 @@ function maybeLoadLinkedPreset(){
  announce('Transferring the preset’s linked original into native SuperCollider…');
  load.click();
 }
+window.addEventListener('bench-select-sample',event=>{
+ const id=event.detail?.id;
+ if(typeof id==='string'&&id.length<250){
+  pendingSoundId=id;
+  void listSounds();
+ }
+});
 async function listSounds(){
  try{
   const previousId=sound.value;
@@ -576,7 +584,14 @@ async function listSounds(){
    const bytes=item.blob.size,size=bytes<1024?bytes+' B':bytes<1048576?(bytes/1024).toFixed(1)+' KB':(bytes/1048576).toFixed(1)+' MB';
    sound.add(new Option((item.name||'Untitled')+' · '+size,item.id));
   }
-  if(entries.some(item=>item.id===previousId))sound.value=previousId;
+  if(pendingSoundId){
+   const id=pendingSoundId;pendingSoundId=null;
+   if(!pendingPresetId&&entries.some(item=>item.id===id)){
+    sound.value=id;
+    sound.dispatchEvent(new Event('change',{bubbles:true}));
+    sampleActivity('Recording from LibriVox selected. Tap MAKE INSTRUMENT to shape and play it.',false);
+   }else if(!entries.some(item=>item.id===id))announce('The selected audio sample is not in the local Sounds library.');
+  }else if(entries.some(item=>item.id===previousId))sound.value=previousId;
   if(currentItemId&&!entries.some(item=>item.id===currentItemId)){current=null;currentItemId=null;waveform=null;renderWaveform();progress.value=0}
   if(pendingPresetId){
    const preset=catalog.find(item=>item.id===pendingPresetId&&item.source==='preset'&&item.preset);
