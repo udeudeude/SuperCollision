@@ -57,8 +57,8 @@ body[data-sc-surface][data-theme=scope]{
 body[data-sc-surface][data-theme=patch]{
  --sc-ground:#d9d3c2;--sc-panel:#e9e2d1;--sc-plate:#e8dfcc;
  --sc-editor:#f2e8d4;--sc-line:#302820;--sc-line-subtle:#aea18a;
- --sc-ink:#28241f;--sc-soft:#554b3e;--sc-accent:#d45332;
- --sc-accent-ink:#231b16;--sc-selected:#d45332;
+ --sc-ink:#28241f;--sc-soft:#554b3e;--sc-accent:#c34427;
+ --sc-accent-ink:#ffffff;--sc-selected:#d45332;
  --sc-graph-ink:#b24a2e;--sc-graph-dim:#736451;--sc-graph-grid:#b1a58b;
  --sc-font-ui:Arial,Helvetica,sans-serif;--sc-font-head:Arial,Helvetica,sans-serif;
 }
