@@ -37,8 +37,17 @@ function changeFavorite(type,id,label) {
 function syncFavoriteBook() { const b=$('favorite-book'); if (!state.work) return; const active=selectedFavorite('book',state.work.id); b.textContent=active?'★':'☆'; b.setAttribute('aria-pressed',String(active)); b.setAttribute('aria-label',`${active?'Remove':'Add'} favorite: ${state.work.title}`); }
 function setStatus(message,kind='') { $('search-status').textContent=message; $('search-status').dataset.kind=kind; }
 async function get(path, params) { const u = new URL(API + path); if (params) Object.entries(params).forEach(([k,v]) => v !== undefined && u.searchParams.set(k,String(v))); const response=await fetch(u.href,{headers:{Accept:'application/json'}}); if (!response.ok) throw new Error(response.status===429 ? 'Catalog is busy. Try again shortly.' : `Catalog request failed (${response.status}).`); return response.json(); }
-function showSearch() { app.classList.remove('show-work'); }
-function showWork() { app.classList.add('show-work'); }
+function showSearch() { app.classList.remove('show-work'); app.scrollLeft=0; }
+function showWork() { app.classList.add('show-work'); app.scrollLeft=0; }
+function setActiveSearch(label) { $('active-filters').textContent=label; }
+function revealResults() { $('active-filters').scrollIntoView({block:'nearest'}); }
+function updateWorkContext() {
+  const reader=state.filterContext?.reader;
+  $('work-context').textContent=reader
+    ? `Showing only sections read by ${reader.name}. Use BACK TO SEARCH to change the filters.`
+    : 'Browsing all readers. To find one particular voice, return to search and enter a reader.';
+}
+
 function titleResult(item, kind='book') {
   const row=el('div','result'); const main=button('',()=>openResult(item,kind),'result-main');
   main.append(el('span','result-pill', kind==='book'?'RECORDING':kind==='reader'?'READER':'AUTHOR'));
@@ -56,10 +65,14 @@ function renderFavorites() { const pane=$('catalog-results'); pane.replaceChildr
   },'result-main'); main.append(el('span','result-pill',kind.toUpperCase()),el('strong','',item.label));
     row.append(main,starButton(item.type,item.id,item.label));pane.append(row);
   }
+  setActiveSearch('Saved favorites');
   setStatus(`${list.length} saved item${list.length===1?'':'s'} on this device.`);
 }
 async function runSearch(query,scope) {
   state.scope=scope; state.showFavorites=false; $('show-favorites').setAttribute('aria-pressed','false');
+  $('filter-author').value=''; $('filter-reader').value='';
+  setActiveSearch(`${scope==='books'?'BOOK TITLE':scope==='authors'?'AUTHOR':'READER'}: ${query}`);
+
   $('list-caption').textContent=scope==='books'?'BOOK RESULTS':scope==='readers'?'READER RESULTS':'AUTHOR RESULTS';
   $('catalog-query').value=query; document.querySelector(`input[name=scope][value=${scope}]`).checked=true;
   const request=++state.request; setStatus(`Searching ${scope}…`); $('catalog-results').replaceChildren();
@@ -70,7 +83,7 @@ async function runSearch(query,scope) {
     const raw=Array.isArray(data.results)?data.results:[];
     const items=raw.filter(x=>Boolean(x?.id)).map(x=>scope==='books'?x:{...x,name:x.name||String(x.id)});
     state.results=items; const kind=scope==='books'?'book':scope==='readers'?'reader':'author';
-    renderResults(items,kind); setStatus(`${items.length} ${kind} ${items.length===1?'result':'results'} shown${scope!=='books'?' (includes people who may have other recording sources)':''}.`);
+    renderResults(items,kind); revealResults(); setStatus(`${items.length} ${kind} ${items.length===1?'result':'results'} shown${scope!=='books'?' (includes people who may have other recording sources)':''}.`);
   } catch(error) { if(request!==state.request)return; setStatus(`${error.message} You can still search on LibriVox.`, 'error');
     const pane=$('catalog-results'); pane.replaceChildren(); pane.append(button('OPEN LIBRIVOX SEARCH ↗',()=>window.open('https://librivox.org/search','_blank','noopener')));
   }
@@ -172,7 +185,10 @@ async function verifyFacetedRecording(candidate,reader,verifySections){
 }
 async function runCombinedFilter(){
   const authorNameInput=$('filter-author').value.trim(),readerNameInput=$('filter-reader').value.trim();
-  if(!authorNameInput&&!readerNameInput){setStatus('Enter an author or reader. Fill both to find their intersection.','error');return;}
+  if(!authorNameInput&&!readerNameInput){setStatus('Enter an author, a reader, or both.','error');$('filter-author').focus();return;}
+  $('catalog-disclosure').open=false;
+  $('catalog-query').value='';
+  setActiveSearch(`AUTHOR: ${authorNameInput||'Any'}   ·   READER: ${readerNameInput||'Any'}`);
   const request=++state.request;state.showFavorites=false;$('show-favorites').setAttribute('aria-pressed','false');
   $('catalog-results').replaceChildren();$('list-caption').textContent='FILTERING RECORDINGS';
   setStatus('Finding matching author and reader identities…');
@@ -216,12 +232,12 @@ async function runCombinedFilter(){
     await Promise.all(Array.from({length:Math.min(5,candidates.length)},worker));
     if(request!==state.request)return;
     verified.sort((a,b)=>a.work.title.localeCompare(b.work.title));
-    renderFacetResults(verified,author,reader,partial||failures>0);
+    renderFacetResults(verified,author,reader,partial||failures>0);revealResults();
     const incomplete=partial||failures>0;
     setStatus(`${verified.length} confirmed LibriVox work${verified.length===1?'':'s'} match${verified.length===1?'es':''} ${author?.name||'any author'} + ${reader?.name||'any reader'}.${incomplete?` Results may be incomplete (${failures} catalog checks failed${partial?', credits truncated':''}).`:''}`);
   }catch(error){if(request!==state.request)return;setStatus(error.message,'error');}
 }
-function showLoadingWork(message) { showWork();$('work-panel').classList.remove('empty');$('empty-work').hidden=true;$('work-body').hidden=false;$('work-heading').textContent=message;$('work-byline').textContent='';$('attribution-row').replaceChildren();$('recording-select').replaceChildren();$('chapter-select').replaceChildren();$('reader-info').replaceChildren(); }
+function showLoadingWork(message) { showWork();updateWorkContext();$('work-panel').scrollTop=0;$('work-panel').classList.remove('empty');$('empty-work').hidden=true;$('work-body').hidden=false;$('work-heading').textContent=message;$('work-byline').textContent='';$('attribution-row').replaceChildren();$('recording-select').replaceChildren();$('chapter-select').replaceChildren();$('reader-info').replaceChildren(); }
 async function loadWork(id,filterContext=null) {
   state.filterContext=filterContext;
   showLoadingWork('Loading recording…'); const request=++state.request; ++state.sectionRequest;
@@ -260,6 +276,8 @@ async function selectRecording(index) {
       const opt=el('option','',`${String(sectionNo).padStart(2,'0')} · ${section.title||'Section '+sectionNo}${readerNames?' · '+readerNames:''}`);opt.value=String(i);sel.append(opt);
     });
     sel.disabled=!sections.length;
+    updateWorkContext();
+
     if(!sections.length)throw new Error(filterReader?`This LibriVox edition has no playable sections credited to ${filterReader.name}.`:'No playable chapter links were provided by the catalog.');
     selectChapter(0);
   } catch(error) { if(request!==state.sectionRequest)return; $('reader-info').textContent=error.message;$('playback-status').textContent='Cannot load sections'; }
@@ -267,6 +285,9 @@ async function selectRecording(index) {
 function selectChapter(index) {
   const chapter=state.sections?.[index];if(!chapter)return;resetAudioSource();state.chapter=chapter;state.selectedMatch=-1;state.matches=[];
   $('chapter-select').value=String(index);audio.pause();audio.src=safeUrl(chapter.listen_url);audio.load();
+  $('sample-editor').open=false;
+  $('extract-options').open=false;
+  $('mark-position').hidden=true;
   const readers=$('reader-info');readers.replaceChildren(el('span','attrib-label','READ BY'));
   const people=chapter.readers||[];if(!people.length)readers.append(el('span','','Reader not identified in this chapter feed'));
   for(const person of people) { const name=person.display_name||'Unknown reader';readers.append(button(`${selectedFavorite('reader',person.reader_id)?'★':'☆'} ${name}`,event=>{
@@ -280,13 +301,13 @@ function selectChapter(index) {
 function effectiveDuration() {return Number.isFinite(audio.duration) ? audio.duration : parseDuration(state.chapter?.playtime); }
 function showMatches() {
   const text=$('chapter-text').value; const phrase=$('phrase-query').value.trim();const box=$('phrase-results');box.replaceChildren();
-  state.matches=findChapterPhraseMatches(text,phrase,{maxResults:150,contextChars:68});state.selectedMatch=-1;
+  state.matches=findChapterPhraseMatches(text,phrase,{maxResults:150,contextChars:68});state.selectedMatch=-1;$('mark-position').hidden=true;
   if(!text.trim()) { $('text-guidance').textContent='First load or paste the text of this chapter.'; return; }
   $('text-guidance').textContent=`${state.matches.length} match${state.matches.length===1?'':'es'} in the supplied text. Tap a result to estimate the position in this chapter. Verify by listening.`;
   for(let i=0;i<state.matches.length;i++){const m=state.matches[i];const b=button('',()=>selectMatch(i),'match-result');const title=el('strong','',`MATCH ${i+1} · ${Math.round(m.fraction*100)}% THROUGH TEXT`);const snippet=el('span');snippet.append(document.createTextNode(m.before),el('mark','',m.match),document.createTextNode(m.after));b.append(title,snippet);box.append(b);}
 }
 function selectMatch(index) {
-  const match=state.matches[index];if(!match)return;state.selectedMatch=index;
+  const match=state.matches[index];if(!match)return;state.selectedMatch=index;$('mark-position').hidden=false;
   $('phrase-results').querySelectorAll('button').forEach((b,i)=>b.classList.toggle('active',i===index));
   const anchors=state.anchors[storeKey()]||[];
   const estimate=estimateChapterSeek({fraction:match.fraction,durationSeconds:effectiveDuration(),anchors});
@@ -336,6 +357,7 @@ async function extractSelectedWav(){
     const knownWifi=network && (network.type==='wifi'||network.type==='ethernet');
     if(!knownWifi && !$('permit-audio-download').checked){
       $('extract-status').dataset.kind='error';
+      $('extract-options').open=true;
       $('extract-status').textContent='Full-chapter transfer not approved. Confirm the connection above, or use a downloaded chapter file.';return;
     }
   }
@@ -466,10 +488,13 @@ $('restore-stream').addEventListener('click',()=>{
 $('save-region').addEventListener('click',saveRegion);
 $('export-markers').addEventListener('click',exportMarkers);
 $('text-file').addEventListener('change',async event=>{const file=event.target.files?.[0];if(!file)return;if(file.size>2500000){$('text-guidance').textContent='Choose a plain-text file smaller than 2.5 MB.';return;} $('chapter-text').value=await file.text();$('text-guidance').textContent='Text loaded. Make sure it matches the selected audio chapter.';event.target.value='';});
-$('clear-text').addEventListener('click',()=>{$('chapter-text').value='';$('phrase-results').replaceChildren();state.matches=[];state.selectedMatch=-1;$('text-guidance').textContent='Paste or load matching chapter text to search.';});
+$('clear-text').addEventListener('click',()=>{$('chapter-text').value='';$('phrase-results').replaceChildren();state.matches=[];state.selectedMatch=-1;$('mark-position').hidden=true;$('text-guidance').textContent='Paste or load matching chapter text to search.';});
 $('try-source-text').addEventListener('click',loadLinkedText);
 $('favorite-count').textContent=state.favorites.length;renderClip();
 // Optional deep link into a specific, verified LibriVox project (no automatic audio download).
 const id=new URLSearchParams(location.search).get('book');if(id && /^\d{1,8}$/.test(id))get('/librivox/audiobooks',{id,extended:1}).then(async data=>{
   const title=data?.books?.[0]?.title;if(title){showSearch();runSearch(title,'books');}
 }).catch(()=>{});
+
+
+$('catalog-disclosure').open=false;
