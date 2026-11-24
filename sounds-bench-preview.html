@@ -734,6 +734,118 @@ body.is-recording #bench-acquire-overlay #start{background:#bb4b3c;color:#fff}
 #bench-sample-workspace #bench-sample-stage{min-height:80px!important;gap:5px!important}
 #bench-sample-workspace #bench-sample-stage strong{font-size:11px!important}
 #bench-sample-workspace #bench-sample-stage span{font-size:11px!important}
+</style><style id="sounds-library-polish-v040">
+/* LibriVox is a specialized source, not another screen of generic forms. */
+#bench-acquire-overlay .bench-librivox-link{
+ display:flex;align-items:center;justify-content:space-between;gap:8px;
+ min-height:59px;margin:0 0 9px;padding:9px;
+ color:#e8d8bd!important;text-decoration:none;
+ background:#2c342a;border:1px solid #ad9162;border-radius:2px;
+}
+#bench-acquire-overlay .bench-librivox-link strong{
+ display:block;color:#f2d398;font:800 12px/1.35 ui-monospace,monospace;
+}
+#bench-acquire-overlay .bench-librivox-link small{
+ display:block;color:#c7c8bb;font:11px/1.35 system-ui,sans-serif;
+ margin-top:3px;
+}
+#bench-acquire-overlay .bench-librivox-link>span:last-child{
+ color:#e8c584;font:700 23px ui-monospace,monospace;
+}
+#bench-acquire-overlay .bench-source-separator{
+ margin:8px 0 6px;padding-top:7px;border-top:1px solid #5a654f;
+ font:800 10px ui-monospace,monospace;color:#b7b6a0;letter-spacing:.04em;
+}
+/* A selected Library entry is not the same as an acquisition method.
+   Keep favorite, management, and primary OPEN actions visually distinct. */
+#acquire-collection .acquire-entry{
+ display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;
+ align-items:center;gap:5px 8px!important;padding:8px!important;
+ border:1px solid #606d5d;background:#242b24;
+}
+#acquire-collection .acquire-entry-meta{min-width:0;max-width:100%}
+#acquire-collection .acquire-entry-meta strong{font-size:11px!important}
+#acquire-collection .acquire-entry-meta small{font-size:9px!important}
+#acquire-collection .acquire-entry-actions{display:flex;align-items:center;gap:4px}
+#acquire-collection .acquire-entry-actions button{
+ min-width:29px;min-height:30px!important;padding:5px!important;
+ font:800 12px ui-monospace,monospace;border:1px solid #706d55;
+ background:#333b32;color:#e5dbc7;
+}
+#acquire-collection .acquire-entry-actions .acquire-open{
+ min-width:45px;background:#d8ae5b!important;color:#201e19!important;
+ border-color:#e8c787!important;font-size:10px!important;
+}
+#acquire-collection .acquire-entry-actions .acquire-favorite{
+ color:#dbc69c!important;font-size:20px!important;line-height:1!important;
+}
+#acquire-collection .acquire-entry-actions .acquire-favorite[aria-pressed="true"]{
+ background:#46402d!important;border-color:#dab16c!important;
+}
+#acquire-collection .acquire-entry-actions .acquire-more{font-size:20px!important;line-height:1!important}
+#acquire-collection .acquire-entry-menu,
+#acquire-collection .acquire-rename{
+ grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px;
+ padding:7px 0 2px;border-top:1px solid #535f52;margin-top:3px;
+}
+#acquire-collection .acquire-entry-menu[hidden],
+#acquire-collection .acquire-rename[hidden]{display:none!important}
+#acquire-collection .acquire-entry-menu button,
+#acquire-collection .acquire-rename button{
+ min-height:30px!important;padding:5px 9px!important;
+ font:800 10px ui-monospace,monospace;
+ background:#32392f;color:#e7d8b7;border:1px solid #77765b;
+}
+#acquire-collection .acquire-entry-menu button:nth-child(2){color:#e9b2a4}
+#acquire-collection .acquire-license{
+ display:block;width:100%;font:10px/1.35 system-ui,sans-serif;color:#c4c5b4;
+}
+#acquire-collection .acquire-rename input{
+ min-width:105px;flex:1 1 100%;min-height:33px!important;
+ padding:6px!important;background:#293327;color:#f1e5d1;
+ font:16px ui-monospace,monospace;border:1px solid #a08a67;
+}
+/* Backup and restore replace the dead-end link to the old Sounds interface. */
+#acquire-collection .bench-library-backup{
+ border-top:1px solid #6d6a53;margin-top:11px;padding:5px 0;
+}
+#acquire-collection .bench-library-backup summary{
+ min-height:35px;padding:9px 2px;cursor:pointer;
+ font:800 11px ui-monospace,monospace;color:#e7c38c;
+}
+#acquire-collection .bench-library-backup-actions{
+ display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:stretch;
+}
+#acquire-collection .bench-library-backup-actions button,
+#acquire-collection .bench-library-backup-actions label{
+ display:flex;align-items:center;justify-content:center;
+ min-height:42px;padding:6px;border:1px solid #796c52;
+ background:#2c372e;color:#e5d7bf;
+ font:800 10px/1.25 ui-monospace,monospace;text-align:center;
+}
+#acquire-collection .bench-library-backup-actions label{position:relative;cursor:pointer}
+#acquire-collection .bench-library-backup-actions input[type=file]{
+ position:absolute;opacity:0;inset:0;width:100%;height:100%;
+ cursor:pointer;
+}
+#acquire-collection #sounds-backup-status{
+ font:11px/1.4 ui-monospace,monospace;color:#dfc99e;overflow-wrap:anywhere;
+}
+/* Post-save continuation within the working environment, not a navigation detour. */
+#bench-acquire-overlay .bench-acquire-complete{
+ display:flex;flex-wrap:wrap;gap:7px;align-items:center;
+ justify-content:space-between;margin:10px 0 2px;padding:9px 0;
+ border-top:1px solid #8b805d;color:#dfc99e;
+ font:700 10px/1.4 ui-monospace,monospace;
+}
+#bench-acquire-overlay .bench-acquire-complete[hidden]{display:none!important}
+#bench-acquire-overlay .bench-acquire-complete button{min-width:140px}
+@media(max-width:380px){
+ #acquire-collection .acquire-entry{gap:3px!important;padding:6px!important}
+ #acquire-collection .acquire-entry-actions{gap:3px}
+ #acquire-collection .acquire-entry-actions button{min-width:27px}
+ #bench-acquire-overlay .bench-acquire-complete button{width:100%}
+}
 </style></head>
 <body>
 <header><a href="./index.html">← CODE</a><h1>SOUNDS</h1><small>v0.4.0</small></header>
@@ -917,7 +1029,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  // Earlier preview links used #acquire; take those into the appropriate instrument workspace.
  const initial=location.hash.slice(1);show(['play','sample','details'].includes(initial)?initial:'play');
 });
-</script><script type="module" src="./sounds-bench-engine.mjs?v=0.3.8"></script>
-<script type="module" src="./sounds-bench-acquire.mjs?v=0.3.9"></script>
+</script><script type="module" src="./sounds-bench-engine.mjs?v=0.4.0"></script>
+<script type="module" src="./sounds-bench-acquire.mjs?v=0.4.0"></script>
 </body>
 </html>
