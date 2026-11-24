@@ -95,8 +95,8 @@ try{
    assert.ok(geometry.tabRight<=geometry.modesRight+2,'SOUND tab must fit '+JSON.stringify(geometry));
    assert.ok((await page.locator('#sound-auth-status').innerText()).includes('connected'));
    assert.equal(requests.length,startCount,'No requests before explicit GENERATE');
-   assert.equal(await page.locator('#sound-model').inputValue(),'cohere/north-mini-code:free',
-      'Recommended free coding model should be selected by default');
+   assert.equal(await page.locator('#sound-model').inputValue(),'openrouter/free',
+      'Automatic free routing should be selected by default');
    await page.locator('#sound-load-models').click();
    await page.waitForFunction(()=>[...document.querySelector('#sound-model')?.options||[]].some(x=>x.value==='sample/working-code:free'));
    assert.ok((await page.locator('#sound-model option').allTextContents()).some(x=>x.includes('Working Coding Model')));
