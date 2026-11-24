@@ -116,6 +116,12 @@ try{
  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('is-recording')),true);
  await page.locator('#start').dispatchEvent('pointerup',{pointerId:1,button:0,isPrimary:true});
  await page.getByText('Saved recording locally',{exact:false}).waitFor();
+ assert.equal(await page.locator('#record-audition').isVisible(),true,
+  'a saved original must be auditable without leaving Record');
+ assert.equal(await page.locator('#record-audio').evaluate(el=>el.src.startsWith('blob:')),true,
+  'audition should use original local bytes, without an online transfer');
+ assert.equal(await page.locator('#mic-ready').isChecked(),false,
+  'microphone must be released after saving to avoid audio feedback');
  await page.getByRole('tab',{name:'Library'}).click();
  await page.locator('.managed-item').filter({hasText:'Recording'}).first().waitFor();
  assert.equal(await page.locator('.managed-item').count(),2);
