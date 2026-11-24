@@ -83,6 +83,25 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 .tab-intro{margin-bottom:14px}
 @media(max-width:370px){header .build{font-size:9px}header h1{font-size:1.1rem}.library-controls{grid-template-columns:minmax(0,1fr)}}
 @media(min-width:720px){.sounds-acquire-buttons{grid-template-columns:repeat(5,minmax(0,1fr))}.sounds-library-nav button{flex-basis:180px}}
+.record-monitor{border:1px solid #4b584e;background:#19201c;padding:10px 12px;margin:12px 0}
+.record-monitor-data{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#dfd7c4;font:650 12px/1.4 ui-monospace,monospace}
+#record-wave{display:block;width:100%;height:72px;margin:8px 0;border:1px solid #4b584e}
+.record-monitor progress{width:100%;height:7px;display:block}
+.record-audition{border:1px solid #a38b5c;background:#262821;padding:12px;margin:12px 0}
+.record-audition[hidden]{display:none!important}
+.record-audition h3{margin:0 0 5px}
+.record-audition audio{display:block;width:100%;margin:10px 0}
+@media(max-width:640px){
+body{padding-bottom:calc(87px + env(safe-area-inset-bottom))}
+nav#sounds-tabs{position:fixed;z-index:50;bottom:0;left:0;right:0;width:100%;padding:7px 8px calc(7px + env(safe-area-inset-bottom));display:grid;grid-template-columns:minmax(0,1fr) minmax(0,5fr);gap:5px;border-top:1px solid #88806c;border-bottom:0;background:#191e1a;box-shadow:0 -9px 24px #0008}
+nav .sounds-library-nav{padding:0;border:0;display:block}
+nav .sounds-library-nav button{width:100%;padding:6px 2px;text-align:center;min-height:52px;min-width:0}
+nav .nav-description,nav .nav-heading{display:none}
+nav .sounds-acquire-nav{display:block;min-width:0}
+nav .sounds-acquire-buttons{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}
+nav button{min-width:0;min-height:52px;font-size:clamp(9px,2.5vw,12px);overflow-wrap:anywhere;padding:5px 2px}
+#sounds-record #start{position:sticky;z-index:2;bottom:calc(78px + env(safe-area-inset-bottom));width:100%;min-height:58px;font-size:14px;box-shadow:0 4px 20px #0008}
+}
 </style>
 </head>
 <body>
@@ -122,9 +141,18 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 <label for="name">Recording name (optional)</label><input id="name" type="text" maxlength="120" placeholder="New recording">
 <label class="check" for="mic-ready"><input id="mic-ready" type="checkbox"><span>MIC READY · turn on microphone permission</span></label>
 <button id="start" class="primary" type="button" disabled aria-pressed="false">● HOLD TO RECORD</button>
-<progress id="level" max="1" value="0" aria-label="Microphone input level"></progress>
-<p id="status" role="status" aria-live="polite">Turn on MIC READY to begin.</p>
-<p class="muted">Press and hold to record; release to save. The screen border turns red during recording. Keep this page open while saving.</p>
+<div class="record-monitor" aria-label="Live microphone input">
+<div class="record-monitor-data"><strong id="record-level-text">MIC OFF</strong><span>Elapsed <output id="record-timer">0:00</output></span></div>
+<canvas id="record-wave" height="72" aria-label="Actual microphone waveform while available"></canvas>
+<progress id="level" max="1" value="0" aria-label="Measured microphone input level"></progress>
+</div>
+<p id="status" role="status" aria-live="polite">Enable microphone to begin. No audio is uploaded.</p>
+<div id="record-audition" class="record-audition" hidden>
+<h3>Listen to what you captured</h3><p id="record-audition-name" class="muted"></p>
+<audio id="record-audio" controls preload="none" aria-label="Play or pause the recorded original"></audio>
+<p class="muted">The original plays here without loading the SuperCollider instrument engine. Playback is never automatic.</p>
+</div>
+<p class="muted">Hold to record, release to save. A red border and timer confirm capture. The microphone turns off after saving so you can listen without feedback.</p>
 </section>
 <section id="sounds-import" role="tabpanel" hidden>
 <h2>Import audio</h2><p class="muted">Import existing recordings into the same local library. Originals are preserved; all later processing belongs to SuperCollider.</p>
@@ -208,10 +236,10 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 </section>
 </main>
 <script type="module" src="./sounds-page.mjs?v=3"></script>
-<script type="module" src="./sounds-library.mjs?v=3"></script>
+<script type="module" src="./sounds-library.mjs?v=7"></script>
 <script type="module" src="./sounds-tools.mjs?v=6"></script>
 <script type="module" src="./sounds-discover.mjs?v=9"></script>
-<script type="module" src="./sounds-generate.mjs?v=2"></script>
+<script type="module" src="./sounds-generate.mjs?v=8"></script>
 <script type="module" src="./sounds-backup-ui.mjs?v=2"></script>
 </body>
 </html>
