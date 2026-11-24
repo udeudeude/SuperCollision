@@ -11,6 +11,11 @@ on:
       - 'qa/librivox-*'
       - '.github/workflows/check-librivox.yml'
   workflow_dispatch:
+# Supersede older checks on the same pull request instead of running
+# multiple heavy Chromium/FFmpeg installations in parallel.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
