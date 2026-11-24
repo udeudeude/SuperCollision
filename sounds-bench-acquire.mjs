@@ -3,7 +3,7 @@
  * No imported SuperCollider code is executed automatically.
  */
 import {allSounds,saveSound,deleteSound} from './sounds-store.mjs';
-import {createRemoteTools} from './sounds-bench-remote.mjs?v=0.6.0';
+import {createRemoteTools} from './sounds-bench-remote.mjs?v=0.6.1';
 import {createOriginalPreview} from './sounds-original-preview.mjs?v=0.6.0';
 const $=id=>document.getElementById(id);
 const create=(tag,cls,text)=>{
