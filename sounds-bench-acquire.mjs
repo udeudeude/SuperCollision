@@ -49,6 +49,17 @@ function setup(){
  // The saved collection remains in Library. Creation and import tools are
  // temporarily shown over the instrument workspace that invoked them.
  for(const key of overlayKeys)overlay.append(pages[key]);
+ const audioCompletion={};
+ for(const kind of ['record','import']){
+  const bar=create('div','bench-acquire-complete');bar.hidden=true;
+  const message=create('span','','SAVED TO LIBRARY');
+  const next=action('USE IN SAMPLES',()=>{
+   const id=audioCompletion[kind]?.id;
+   if(id)openAudio(id);
+  },'bench-remote-primary');
+  bar.append(message,next);pages[kind].append(bar);
+  audioCompletion[kind]={bar,message,id:null};
+ }
  let active='collection',token=0;
  function microphoneOff(){
   const ready=$('mic-ready');
@@ -68,6 +79,7 @@ function setup(){
   }
   if(active==='record'&&name!=='record')microphoneOff();
   if(active==='discover'&&name!=='discover')remote.stopDiscover();
+  if(audioCompletion[name])audioCompletion[name].bar.hidden=true;
   active=name;
   for(const key of overlayKeys){
    pages[key].hidden=key!==name;
@@ -209,7 +221,22 @@ function setup(){
  filter.addEventListener('change',()=>void refresh());
  document.addEventListener('sounds-library-changed',()=>{
   void refresh();
-  if(active==='import')$('acquire-import-status').textContent='Audio added to Library. Open COLLECTION to use it.';
+  const kind=active;
+  if(kind==='import'||kind==='record'){
+   void allSounds().then(items=>{
+    if(active!==kind)return;
+    const newest=items.filter(item=>item.blob instanceof Blob)
+     .sort((a,b)=>Number(b.created||0)-Number(a.created||0))[0];
+    if(!newest)return;
+    const finish=audioCompletion[kind];
+    finish.id=newest.id;
+    finish.message.textContent=(kind==='record'?'RECORDING':'AUDIO FILE')+' SAVED · '+newest.name;
+    finish.bar.hidden=false;
+    if(kind==='import')$('acquire-import-status').textContent='Added to your Library. You can import more files or use the new sample.';
+   }).catch(error=>{
+    if(kind==='import')$('acquire-import-status').textContent='Saved, but the Library list could not refresh: '+error.message;
+   });
+  }
  });
  window.addEventListener('bench-library-open',()=>view('details'));
  window.addEventListener('bench-view-changed',event=>{
