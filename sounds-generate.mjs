@@ -16,7 +16,7 @@ const details=document.createElement('details');details.id='sounds-ai-request-de
 status.after(details);
 let lastRequest='';
 details.querySelector('button').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(lastRequest);say('Request details copied.')}catch{say('Select the request text to copy it.')}});
-function recordRequest(modelId,messages,settings){lastRequest=JSON.stringify({model:modelId,messages,...settings},null,2);details.querySelector('pre').textContent=lastRequest;}
+function recordRequest(modelId,messages,settings){lastRequest=(lastRequest&&busy?lastRequest+'\n\n':'')+JSON.stringify({model:modelId,messages,...settings},null,2);details.querySelector('pre').textContent=lastRequest;}
 function say(value){status.textContent=value}
 function syncProvider(){const isPuter=provider.value==='puter';keyBox.hidden=isPuter;puterConnect.hidden=!isPuter;model.hidden=isPuter;refreshModels.hidden=isPuter;document.querySelector('label[for="sounds-ai-model"]').hidden=isPuter}
 provider.addEventListener('change',syncProvider);
@@ -45,9 +45,9 @@ puterConnect.addEventListener('click',async()=>{
  }catch(error){say('Puter unavailable: '+error.message)}
  finally{puterConnect.disabled=false}
 });
-async function request(messages){
+async function request(messages,overrideModel){
  if(provider.value==='openrouter'){
-  const personalKey=key.value.trim(),chosen=model.value;
+  const personalKey=key.value.trim(),chosen=overrideModel||model.value;
   if(!personalKey)throw Error('Provide your personal OpenRouter key. It is not stored.');
   if(!isFreeOpenRouterModel(chosen))throw Error('Selected model is not free.');
   recordRequest(chosen,messages,{temperature:0.45,max_completion_tokens:OPENROUTER_COMPLETION_TOKENS});
@@ -62,11 +62,11 @@ async function request(messages){
   const data=await response.json().catch(()=>({}));
   if(!response.ok){
    const error=new Error(data.error?.message||'HTTP '+response.status);
-   error.status=response.status;throw error;
+   error.status=response.status;error.model=chosen;throw error;
   }
   say('OpenRouter responded · checking generated source…');
   const content=responseText(data);
-  if(!content.trim())throw Error('Model '+(data.model||chosen)+' returned no usable text (finish reason: '+(data?.choices?.[0]?.finish_reason||'unknown')+'). Try another free model.');
+  if(!content.trim()){const error=Error('Model '+(data.model||chosen)+' returned no usable text (finish reason: '+(data?.choices?.[0]?.finish_reason||'unknown')+').');error.emptyResponse=true;throw error;}
   if(data?.choices?.[0]?.finish_reason==='length'&&!completedCodeFence(content))
    throw Error('The free model ran out of output tokens before completing the instrument.');
   return {content,model:data.model||chosen,provider:'openrouter'};
@@ -87,10 +87,29 @@ async function create(isRevision){
  if(!description){say('Describe the sound you want.');prompt.focus();return}
  if(isRevision&&!current){say('Generate an instrument before requesting revisions.');return}
  if(isRevision&&!revision.value.trim()){say('Describe the desired revision first.');revision.focus();return}
- busy=true;generate.disabled=true;revise.disabled=true;say('Preparing request…');
+ lastRequest='';busy=true;generate.disabled=true;revise.disabled=true;say('Preparing request…');
  try{
   const messages=buildSoundMessages({description,revision:isRevision?revision.value:'',priorCode:isRevision?current?.code:''});
-  const response=await request(messages);
+  let response;
+  const selected=model.value;
+  const attempts=provider.value==='openrouter'&&selected===OPENROUTER_FREE_MODEL?2:1;
+  let nextModel=selected;
+  for(let attempt=0;attempt<attempts;attempt++){
+   say('Generating · request '+(attempt+1)+' of '+attempts+' · '+(provider.value==='openrouter'?nextModel:'Puter')+'…');
+   try{response=await request(messages,nextModel);break}
+   catch(error){
+    const recoverable=error.emptyResponse||error.status===404||
+     /no provider serves|no endpoints found|model.*not.*available/i.test(error.message);
+    if(!recoverable||attempt+1===attempts)throw error;
+    say('Free model unavailable. Checking alternatives…');
+    const catalog=await fetch('https://openrouter.ai/api/v1/models?output_modalities=text',{cache:'no-store'});
+    if(!catalog.ok)throw error;
+    const candidates=listVerifiedFreeModels(await catalog.json());
+    const alternate=candidates.find(item=>item.id!==error.model&&item.id!==PREFERRED_OPENROUTER_CODE_MODEL);
+    if(!alternate)throw error;
+    nextModel=alternate.id;
+   }
+  }
   say('Response received · checking SuperCollider code…');
   const parsed=parseSoundResponse(response.content);
   const inspected=inspectSoundCode(parsed.code);
