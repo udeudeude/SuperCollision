@@ -3,9 +3,15 @@ import {saveSound} from './sounds-store.mjs';
 import {normalizePersonName, workHasAuthor, matchingReaderCredits, selectLibriVoxEditions, filteredSections} from './librivox-combine.mjs';
 import {extractWavFromSource,fetchRecording} from './librivox-audio-extract.mjs';
 
-// This standalone preview deliberately does not import or mutate the Sounds workspace.
+// Standalone and in-Sounds modes share the same LibriVox catalog and sound store.
 // AudioSilo exposes a browser-accessible LibriVox catalogue mirror. LibriVox remains
 // the recording source; no optional audio or book text is fetched automatically.
+const EMBEDDED=new URLSearchParams(location.search).get('embedded')==='1' && window.parent!==window;
+if(EMBEDDED)document.documentElement.classList.add('embedded-surface');
+function sendToSounds(type,soundId,name){
+ if(!EMBEDDED||typeof soundId!=='string'||!soundId)return;
+ window.parent.postMessage({type,soundId,name:name||'LibriVox recording'},location.origin);
+}
 const API = 'https://meta.audiosilo.app/api/v1';
 const FAV_KEY = 'supercollision:librivox:favorites:v1';
 const ANCHOR_KEY = 'supercollision:librivox:anchors:v1';
@@ -13,6 +19,14 @@ const CLIP_KEY = 'supercollision:librivox:markers:v1';
 const $ = id => document.getElementById(id);
 const app = $('app-shell');
 const audio = $('chapter-audio');
+window.addEventListener('message',event=>{
+ if(!EMBEDDED||event.source!==window.parent||event.origin!==location.origin)return;
+ if(event.data?.type==='sc-sampler-pause'){
+  audio.pause();
+  $('extracted-audio').pause();
+ }
+});
+
 const state = { results: [], favorites: readLocal(FAV_KEY, []), anchors: readLocal(ANCHOR_KEY, {}), clips: readLocal(CLIP_KEY, []), work: null,
   book: null, recording: null, chapter: null, person: null, scope: 'books', showFavorites: false, matches: [], selectedMatch: -1,
   clipStart: null, clipEnd: null, regionPreview: false, request: 0, sectionRequest:0, filterContext:null, extractRun:0, extracting:false, extractAbort:null, localFile:null, localObjectUrl:null, wavBlob:null, wavObjectUrl:null, wavName:'' };
@@ -441,8 +455,9 @@ async function extractSelectedWav(){
     const bytes=extracted.blob.size;
     const size=bytes<1048576?(bytes/1024).toFixed(1)+' KB':(bytes/1048576).toFixed(1)+' MB';
     const use=$('use-in-sounds');
-    use.href='./sounds-bench-preview.html?v=0.4.0&sound='+encodeURIComponent(record.id)+'#sample';
+    use.href='./sounds-bench-preview.html?v=0.5.0&sound='+encodeURIComponent(record.id)+'#sample';
     use.hidden=false;
+    sendToSounds('sc-librivox-audio-saved',record.id,record.name);
     status.textContent='Saved '+size+' audio sample to Sounds. Open it there to shape and play it.';
   }catch(error){
     if(abort.signal.aborted||state.extractRun!==run)return;
@@ -523,6 +538,12 @@ audio.addEventListener('pause',()=>{state.regionPreview=false;});
 audio.addEventListener('error',()=>{if(state.chapter)$('playback-status').textContent='Playback failed. Open recording on LibriVox for a fallback.';});
 audio.addEventListener('loadedmetadata',()=>{if(state.chapter)$('playback-status').textContent=`${formatTime(audio.duration)} · Ready`;});
 $('extract-wav').addEventListener('click',extractSelectedWav);
+$('use-in-sounds').addEventListener('click',event=>{
+ if(!EMBEDDED)return;
+ event.preventDefault();
+ const id=new URL(event.currentTarget.href,location.href).searchParams.get('sound');
+ if(id)sendToSounds('sc-librivox-open-sample',id,'LibriVox sample');
+});
 $('download-wav').addEventListener('click',downloadWav);
 $('sample-audio-file').addEventListener('change',event=>{
   const file=event.target.files?.[0];if(!file)return;
