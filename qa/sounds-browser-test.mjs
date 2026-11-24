@@ -392,6 +392,78 @@ try{
  assert.equal(await page.locator('#lab-demo-code').inputValue(),editedTone);
  assert.equal(await page.locator('#lab-demo-controls').getAttribute('data-sync'),'modified','custom code must visibly extinguish controls');
  assert.equal(await page.locator('#lab-engine').textContent(),'Start SuperCollider');
+
+  // A revision must use the edited draft, and in-flight responses must not discard later edits.
+  const FENCE=String.fromCharCode(96).repeat(3);
+  const generatedCode='(\nSynthDef(\\draftA, { Out.ar(0, SinOsc.ar(220) * 0.1) }).add;\n)';
+  const revisedCode='(\nSynthDef(\\draftB, { Out.ar(0, LFTri.ar(220) * 0.1) }).add;\n)';
+  const proposalCode='(\nSynthDef(\\draftC, { Out.ar(0, Pulse.ar(220) * 0.1) }).add;\n)';
+  const aiRequests=[];
+  let delayNext=false,releaseDelayed,markStarted;
+  const started=new Promise(resolve=>{markStarted=resolve});
+  await page.route('https://openrouter.ai/api/v1/chat/completions',async route=>{
+   if(route.request().method()==='OPTIONS'){
+    await route.fulfill({status:204,headers:{'access-control-allow-origin':'*',
+     'access-control-allow-headers':'*','access-control-allow-methods':'POST, OPTIONS'}});
+    return;
+   }
+   aiRequests.push(route.request().postDataJSON());
+   if(delayNext){
+    delayNext=false;markStarted();
+    await new Promise(resolve=>{releaseDelayed=resolve});
+   }
+   const responseCode=[generatedCode,revisedCode,proposalCode][aiRequests.length-1];
+   await route.fulfill({status:200,contentType:'application/json',
+    headers:{'access-control-allow-origin':'*'},
+    body:JSON.stringify({model:'cohere/north-mini-code:free',
+     choices:[{finish_reason:'stop',message:{content:FENCE+'supercollider\n'+responseCode+'\n'+FENCE}}]})});
+  });
+  await page.goto(base+'/sounds.html#generate');
+  await page.locator('#sounds-ai-key').fill('test-key-not-valid');
+  await page.locator('#sounds-ai-prompt').fill('A hollow reed tone');
+  await page.locator('#sounds-ai-generate').click();
+  await page.locator('#sounds-ai-code').waitFor({state:'visible'});
+  assert.equal(await page.locator('#sounds-ai-code').inputValue(),generatedCode);
+  const editedDraft=generatedCode.replace('SinOsc.ar(220)','LFTri.ar(330)')+'\n// My timbre edits';
+  await page.locator('#sounds-ai-code').fill(editedDraft+'\n)');
+  assert.match(await page.locator('#sounds-ai-review').textContent(),/Blocker: Mismatched/,
+   'review warnings must track code edits');
+  await page.locator('#sounds-ai-code').fill(editedDraft);
+  assert.doesNotMatch(await page.locator('#sounds-ai-review').textContent(),/Blocker:/,
+   'repairing source must clear stale warnings');
+  await page.locator('#sounds-ai-revision').fill('Keep my modulation and add soft distortion');
+  await page.locator('#sounds-ai-revise').click();
+  await page.waitForFunction(()=>document.querySelector('#sounds-ai-code')?.value.includes('draftB'));
+  assert.equal(aiRequests.length,2);
+  assert.match(aiRequests[1].messages[1].content,/LFTri\.ar\(330\)/,'revision must use edited code');
+  assert.match(aiRequests[1].messages[1].content,/My timbre edits/,'user additions must reach the model');
+  await page.locator('#sounds-ai-prompt').fill('A different unsent prompt');
+  await page.locator('#sounds-ai-save').click();
+  await page.getByText('Saved generated SuperCollider source',{exact:false}).waitFor();
+  const savedAi=await page.evaluate(async()=>{
+   const {allSounds}=await import('/sounds-store.mjs');
+   return (await allSounds()).find(item=>item.source==='generated');
+  });
+  assert.equal(savedAi.name,'A hollow reed tone','saving must use the description sent with the model request');
+  assert.equal(savedAi.generator.description,'A hollow reed tone','provenance must match the request');
+  await page.locator('#sounds-ai-prompt').fill('A hollow reed tone');
+  await page.locator('#sounds-ai-revision').fill('Try a pulse-wave variation');
+  delayNext=true;
+  await page.locator('#sounds-ai-revise').click();
+  await started;
+  const duringGeneration=revisedCode+'\n// Kept while model replies';
+  await page.locator('#sounds-ai-code').fill(duringGeneration);
+  releaseDelayed();
+  await page.locator('#sounds-ai-proposal').waitFor({state:'visible'});
+  assert.equal(await page.locator('#sounds-ai-code').inputValue(),duringGeneration,
+   'late responses may not overwrite edits made during generation');
+  assert.equal(await page.locator('#sounds-ai-proposed-code').inputValue(),proposalCode);
+  assert.equal(await page.locator('#sounds-ai-generate').isDisabled(),true,
+   'a pending proposal must be resolved before another request');
+  await page.locator('#sounds-ai-apply-proposal').click();
+  assert.equal(await page.locator('#sounds-ai-code').inputValue(),proposalCode,
+   'explicit consent replaces the current draft');
+  assert.equal(await page.locator('#sounds-ai-proposal').isHidden(),true);
   assert.deepEqual(errors,[],'No unhandled page errors allowed');
  console.log('Sounds browser regression passed: library, source, recording, discovery, license filters and persistence');
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}

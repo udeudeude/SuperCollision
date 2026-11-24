@@ -11,8 +11,35 @@ const model=$('sounds-ai-model'),prompt=$('sounds-ai-prompt'),revision=$('sounds
 const generate=$('sounds-ai-generate'),revise=$('sounds-ai-revise'),status=$('sounds-generate-status');
 const result=$('sounds-ai-result'),preview=$('sounds-ai-code'),warnings=$('sounds-ai-review');
 const save=$('sounds-ai-save'),copy=$('sounds-ai-copy'),puterConnect=$('sounds-puter-connect');
-let current=null,busy=false,puterLoading=null;
+const proposal=$('sounds-ai-proposal'),proposedCode=$('sounds-ai-proposed-code');
+const applyProposal=$('sounds-ai-apply-proposal'),discardProposal=$('sounds-ai-discard-proposal');
+let current=null,staged=null,busy=false,puterLoading=null;
 function say(value){status.textContent=value}
+function reviewDraft(){
+ if(!current)return;
+ const review=inspectSoundCode(preview.value);
+ current.review=review;
+ warnings.textContent=[...review.blockers.map(x=>'Blocker: '+x),...review.warnings].join('\n');
+}
+function useGenerated(next){
+ current=next;
+ preview.value=next.code;
+ result.hidden=false;save.disabled=false;copy.disabled=false;
+ reviewDraft();revise.disabled=false;
+}
+function clearProposal(){
+ staged=null;proposedCode.value='';proposal.hidden=true;
+ generate.disabled=busy;revise.disabled=busy||!current;
+}
+preview.addEventListener('input',reviewDraft);
+applyProposal.addEventListener('click',()=>{
+ if(!staged)return;
+ const next=staged;clearProposal();useGenerated(next);
+ say('Applied the proposed code. Review and edit it before saving.');
+});
+discardProposal.addEventListener('click',()=>{
+ clearProposal();say('Kept your edited draft. The other proposal was discarded.');
+});
 function syncProvider(){const isPuter=provider.value==='puter';keyBox.hidden=isPuter;puterConnect.hidden=!isPuter;model.hidden=isPuter;document.querySelector('label[for="sounds-ai-model"]').hidden=isPuter}
 provider.addEventListener('change',syncProvider);syncProvider();
 for(const [id,text] of [
@@ -71,32 +98,42 @@ async function request(messages){
 }
 async function create(isRevision){
  if(busy)return;
+ if(staged){say('Choose whether to keep your draft or use the pending proposal first.');return}
  const description=prompt.value.trim();
  if(!description){say('Describe the sound you want.');prompt.focus();return}
  if(isRevision&&!current){say('Generate an instrument before requesting revisions.');return}
  if(isRevision&&!revision.value.trim()){say('Describe the desired revision first.');revision.focus();return}
- busy=true;generate.disabled=true;revise.disabled=true;say('Generating SuperCollider source. No sound will be played automatically.');
+ // Revise what the user can see and edit, rather than an earlier model response.
+ const priorCode=isRevision?preview.value:'';
+ if(isRevision&&!priorCode.trim()){say('The current code is empty. Edit it or generate a new instrument.');preview.focus();return}
+ const draftAtRequest=preview.value;
+ busy=true;generate.disabled=true;revise.disabled=true;
+ say('Generating SuperCollider source. No sound will be played automatically.');
  try{
-  const messages=buildSoundMessages({description,revision:isRevision?revision.value:'',priorCode:isRevision?current?.code:''});
+  const messages=buildSoundMessages({description,revision:isRevision?revision.value:'',priorCode});
   const response=await request(messages);
   const parsed=parseSoundResponse(response.content);
-  const inspected=inspectSoundCode(parsed.code);
-  current={code:parsed.code,description,explanation:parsed.explanation,model:response.model,
-   provider:response.provider,review:inspected};
-  preview.value=current.code;
-  const notes=[...inspected.blockers.map(x=>'Blocker: '+x),...inspected.warnings];
-  warnings.textContent=notes.join('\n');
-  result.hidden=false;save.disabled=false;copy.disabled=false;revise.disabled=false;
-  say('Generated with '+response.provider+' ('+response.model+'). Review source before saving or running it in SuperCollider.');
+  const next={code:parsed.code,description,explanation:parsed.explanation,model:response.model,
+   provider:response.provider,review:inspectSoundCode(parsed.code)};
+  if(!result.hidden&&preview.value!==draftAtRequest){
+   // The user edited while the request was in flight; the result is a proposal, not an overwrite.
+   staged=next;proposedCode.value=next.code;proposal.hidden=false;
+   say('A new proposal is ready. Your newer code edits were preserved; review the proposal before replacing your draft.');
+  }else{
+   useGenerated(next);
+   say('Generated with '+response.provider+' ('+response.model+'). Review the editable source before saving or running it in SuperCollider.');
+  }
  }catch(error){
   say(describeProviderFailure(error,provider.value));
- }finally{busy=false;generate.disabled=false;revise.disabled=!current}
+ }finally{
+  busy=false;generate.disabled=!!staged;revise.disabled=!current||!!staged;
+ }
 }
 generate.addEventListener('click',()=>create(false));
 revise.addEventListener('click',()=>create(true));
 save.addEventListener('click',async()=>{
  if(!current)return;
- const name=prompt.value.trim().slice(0,120)||'Generated instrument';
+ const name=current.description.slice(0,120)||'Generated instrument';
  const code=preview.value.trim();
  if(!code){say('There is no code to save.');return}
  try{
