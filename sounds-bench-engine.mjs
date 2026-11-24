@@ -2,6 +2,7 @@
  * This page boots its own sclang/scsynth; main editor remains untouched. */
 import {allSounds,saveSound} from './sounds-store.mjs';
 import {NativeBufferTransport} from './sounds-buffer.mjs';
+import {createOriginalPreview} from './sounds-original-preview.mjs?v=0.5.2';
 import {readPcmWaveForNativeBuffer} from './sounds-pcm-ingest.mjs';
 import {REGION_DEFINITIONS,regionPlayCommand,regionLiveSource,stopRegionCommand,sampleInstrumentSource,validateRegion,DEMO_MARKER} from './sounds-sampler.mjs';
 import {waveformPeaks,waveformDragRegion} from './sounds-waveform.mjs';
@@ -11,6 +12,16 @@ const $=id=>document.getElementById(id);
 const status=$('lab-status'),log=$('lab-log'),sound=$('lab-sound'),engine=$('lab-engine');
 const load=$('lab-load'),play=$('lab-play'),stop=$('lab-stop'),cancel=$('lab-cancel'),progress=$('lab-progress');
 const details=$('lab-details');
+// Read-only local audition of the original, independent of SuperCollider.
+const originalPreview=createOriginalPreview();
+sound.after(originalPreview.root);
+function updateOriginalPreview(){
+ const item=entries.find(entry=>entry.id===sound.value);
+ originalPreview.setItem(item||null);
+}
+window.addEventListener('bench-view-changed',event=>{
+ if(event.detail?.view!=='sample')originalPreview.pause();
+});
 const regionStart=$('lab-start'),regionFinish=$('lab-finish'),regionRate=$('lab-rate'),regionAmp=$('lab-amp'),regionLoop=$('lab-loop'),regionSummary=$('lab-region-summary');
 const demoCode=$('lab-demo-code'),demoPitch=$('lab-demo-pitch'),demoLevel=$('lab-demo-level'),demoReset=$('lab-demo-reset');
 const demoBay=$('lab-demo-code-bay'),demoControls=$('lab-demo-controls'),demoSyncLabel=$('lab-demo-sync-label');
@@ -589,9 +600,14 @@ async function listSounds(){
    if(!pendingPresetId&&entries.some(item=>item.id===id)){
     sound.value=id;
     sound.dispatchEvent(new Event('change',{bubbles:true}));
-    sampleActivity('Recording from LibriVox selected. Tap MAKE INSTRUMENT to shape and play it.',false);
+    const selected=entries.find(entry=>entry.id===id);
+    const origin=selected?.source==='recorded'?'Your microphone recording':
+     selected?.source==='imported'?'Imported recording':
+     selected?.source==='librivox'?'LibriVox recording':'Saved original audio';
+    sampleActivity(origin+' selected. Listen to the original, then tap MAKE INSTRUMENT.',false);
    }else if(!entries.some(item=>item.id===id))announce('The selected audio sample is not in the local Sounds library.');
   }else if(entries.some(item=>item.id===previousId))sound.value=previousId;
+  updateOriginalPreview();
   if(currentItemId&&!entries.some(item=>item.id===currentItemId)){current=null;currentItemId=null;waveform=null;renderWaveform();progress.value=0}
   if(pendingPresetId){
    const preset=catalog.find(item=>item.id===pendingPresetId&&item.source==='preset'&&item.preset);
@@ -766,6 +782,7 @@ sound.addEventListener('change',()=>{
   sound.value=currentItemId||'';return;
  }
  queuedPresetLoadId=null;linkedPreset=null;
+ updateOriginalPreview();
  if(current&&lang){try{lang.runCode(stopRegionCommand)}catch{}}
  current=null;currentItemId=null;waveform=null;progress.value=0;regionStart.value=0;regionFinish.value=100;updateRegionControls();
  showSoundDetails();
@@ -899,6 +916,7 @@ stop.addEventListener('click',()=>{
 });
 document.addEventListener('sounds-library-changed',listSounds);
 window.addEventListener('pagehide',event=>{
+ originalPreview.clear();
  controller?.abort();
  if(lang&&serverReady){try{lang.runCode(stopRegionCommand)}catch{}}
  if(synth&&allocated){try{transport.release(BUFFER)}catch{}}
