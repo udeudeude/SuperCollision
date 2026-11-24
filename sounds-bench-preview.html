@@ -87,7 +87,7 @@ document.addEventListener('touchmove',event=>{
 <span id="lab-note-hint" hidden></span>
 <div class="actions"><button id="lab-engine" type="button" class="primary">Start SuperCollider</button><button id="lab-demo-reset" type="button">Reset code from controls</button></div>
 <div id="lab-audio-phase" data-phase="idle" role="status" aria-live="polite"><span class="phase-lamp" aria-hidden="true"></span><span id="lab-audio-phase-label">ENGINE NOT STARTED</span></div>
-<div class="tone-save-row"><label for="lab-tone-name">INSTRUMENT NAME<input id="lab-tone-name" type="text" value="First tone" maxlength="120" autocomplete="off"></label><button id="lab-tone-save" type="button">Save code to Library</button></div><p id="lab-tone-save-status" class="muted" role="status" aria-live="polite"></p><a href="./sounds.html" id="lab-tone-library-link" hidden>Open Sounds Library</a>
+<div class="tone-save-row"><label for="lab-tone-name">INSTRUMENT NAME<input id="lab-tone-name" type="text" value="First tone" maxlength="120" autocomplete="off"></label><button id="lab-tone-save" type="button">Save code to Library</button></div><p id="lab-tone-save-status" class="muted" role="status" aria-live="polite"></p><a href="#details" id="lab-tone-library-link" hidden>Open Sounds Library</a>
 <p id="lab-status" role="status" aria-live="polite">Ready. Start SuperCollider, then tap Play tone.</p>
 <p id="lab-setup-hint" class="muted">First startup loads the native sound engine. When Play tone appears, tap it to hear the displayed code.</p>
 </section>
@@ -97,7 +97,7 @@ document.addEventListener('touchmove',event=>{
 <p id="lab-details" class="muted"></p>
 <div class="actions"><button id="lab-load" type="button" disabled>Load selected sound</button><button id="lab-cancel" type="button" disabled>Cancel loading</button></div>
 <progress id="lab-progress" max="1" value="0" aria-label="Sample loading progress"></progress>
-<p class="muted">No recordings? Return to <a href="./sounds.html">Sounds</a> to record, import or discover one.</p>
+<p class="muted">Use Record, Find Audio or Import Audio above to add a recording.</p>
 </section>
 <section><h2>3 / Shape your recording</h2>
 <aside id="lab-source-bay" aria-label="Editable native SuperCollider instrument source"><div class="source-head"><h2>SUPERCOLLIDER / LIVE INSTRUMENT SOURCE</h2><button type="button" id="lab-copy-source" disabled>Copy</button></div><span id="lab-sync-indicator" class="sync-indicator" role="status"><span class="sync-lamp" aria-hidden="true"></span><span id="lab-sync-label">NO SOURCE</span></span><label for="lab-live-source" class="muted">Full, executable native SynthDef and playback code. Tap to edit; Play runs exactly this source. Control changes require your approval before replacing manual edits.</label><textarea id="lab-live-source" spellcheck="false" wrap="off" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Editable SuperCollider playback command" readonly>Select and transfer a recording to reveal executable SuperCollider playback code.</textarea><p id="lab-source-state" class="muted" role="status">Load a sample to edit its playback code.</p><button type="button" id="lab-reset-source" disabled>Reset code from controls</button><button type="button" id="lab-apply-control" hidden>Apply control change</button><button type="button" id="lab-keep-code" hidden>Keep edited code</button></aside>
