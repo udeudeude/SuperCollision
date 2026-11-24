@@ -30,6 +30,17 @@ with sync_playwright() as pw:
   };}''',mock)
   page.add_script_tag(content=helpers+app)
   print('ADDED',width,height,errors,flush=True)
+  # Seeing area above, thumb-reachable search below: search stays anchored
+  # without pushing the result list outside the phone viewport.
+  reach=page.evaluate("""() => {
+   const panel=document.querySelector('#discovery-panel').getBoundingClientRect();
+   const form=document.querySelector('#combined-form').getBoundingClientRect();
+   const results=document.querySelector('#catalog-results').getBoundingClientRect();
+   return {panelBottom:panel.bottom,formBottom:form.bottom,formTop:form.top,
+    resultsTop:results.top,resultsBottom:results.bottom,resultsHeight:results.height};
+  }""")
+  assert reach['formBottom'] >= reach['panelBottom'] - 140, ('Search must be near thumb reach',width,height,reach)
+  assert reach['resultsTop'] < reach['formTop'] and reach['resultsHeight'] >= 60, ('Results must remain visible above search',width,height,reach)
   assert page.locator('#catalog-disclosure').evaluate('(e)=>!e.open')
   assert page.locator('input#filter-author').evaluate('(e)=>getComputedStyle(e).fontSize')=='16px'
   assert page.locator('input#filter-reader').evaluate('(e)=>getComputedStyle(e).fontSize')=='16px'
