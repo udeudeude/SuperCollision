@@ -78,7 +78,7 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 <div class="filter-group"><h2>Native SuperCollider sample lab</h2><p class="muted">Load a saved recording into native SuperCollider, including direct read-only 8/16/24/32-bit PCM and floating-point WAVE samples, verify its buffer, then audition non-destructive start/end regions, playback speed, volume, waveform region selection and crossfaded looping through SuperCollider. Experimental, isolated from Code, and preserves your original sound.</p><a href="./sounds-lab.html?build=2026112010">Open sample region and loop laboratory</a></div>
 <div class="library-controls">
 <div><label for="sounds-search">Find a sound</label><input id="sounds-search" type="search" placeholder="Name, creator, license…"></div>
-<div><label for="sounds-filter">Type</label><select id="sounds-filter"><option value="all">Everything</option><option value="favorite">Favorites</option><option value="recorded">Recordings</option><option value="imported">Imports</option><option value="written">Written code</option><option value="generated">Generated</option><option value="preset">Sample presets</option><option value="openverse">Openverse</option><option value="freesound">Freesound</option></select></div>
+<div><label for="sounds-filter">Type</label><select id="sounds-filter"><option value="all">Everything</option><option value="favorite">Favorites</option><option value="recorded">Recordings</option><option value="imported">Imports</option><option value="written">Written code</option><option value="generated">Generated</option><option value="preset">Sample presets</option><option value="openverse">Openverse</option><option value="freesound">Freesound</option><option value="librivox">LibriVox</option></select></div>
 </div>
 <div id="sounds-managed-list" aria-live="polite"></div>
 <div class="filter-group" id="sounds-backup">
@@ -104,6 +104,8 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 <section id="sounds-import" role="tabpanel" hidden>
 <h2>Import audio</h2><p class="muted">Import existing recordings into the same local library. Originals are preserved; all later processing belongs to SuperCollider.</p>
 <label for="import">Choose audio files</label><input id="import" type="file" accept="audio/*,.wav,.flac,.aiff,.ogg,.m4a,.mp3" multiple>
+<p id="import-status" role="status" aria-live="polite">Choose one or more recordings to add to your library.</p>
+<ul id="import-failures" aria-label="Files not imported" hidden></ul>
 <p class="muted">Large files may exceed available storage. Importing from Files does not delete the source file.</p>
 </section>
 <section id="sounds-create" role="tabpanel" hidden>
@@ -123,19 +125,33 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 <button id="sounds-puter-connect" type="button" hidden>Connect Puter</button>
 <label for="sounds-ai-prompt">Describe the sound</label><textarea id="sounds-ai-prompt" placeholder="A rough, reedy drone with slow wavering pitch…"></textarea>
 <div class="actions"><button id="sounds-ai-generate" class="primary" type="button">Generate instrument</button></div>
-<label for="sounds-ai-revision">Refinement (optional)</label><textarea id="sounds-ai-revision" placeholder="Make it darker, with more breath noise…" style="min-height:68px"></textarea>
-<button id="sounds-ai-revise" type="button" disabled>Revise generated instrument</button>
 <p id="sounds-generate-status" role="status" aria-live="polite"></p>
 <div id="sounds-ai-result" hidden>
 <label for="sounds-ai-code">Review and edit generated SuperCollider source</label><textarea id="sounds-ai-code" spellcheck="false" style="min-height:260px"></textarea>
 <pre id="sounds-ai-review" class="saved-code"></pre>
+<label for="sounds-ai-revision">Refine this instrument</label>
+<textarea id="sounds-ai-revision" placeholder="Make it darker, with more breath noise…" style="min-height:68px"></textarea>
+<p class="muted">Revisions use the code above, including your edits. They never execute it.</p>
+<div class="actions"><button id="sounds-ai-revise" type="button" disabled>Revise current code</button></div>
 <div class="actions"><button id="sounds-ai-save" type="button" class="primary" disabled>Save to library</button><button id="sounds-ai-copy" type="button" disabled>Copy code</button></div>
+</div>
+<div id="sounds-ai-proposal" hidden>
+<h2>New proposal</h2>
+<p class="muted">You edited the draft while generation was running. Your edits are intact. Review the new proposal before choosing whether to replace them.</p>
+<label for="sounds-ai-proposed-code">Proposed SuperCollider source</label>
+<textarea id="sounds-ai-proposed-code" readonly spellcheck="false" style="min-height:190px"></textarea>
+<div class="actions"><button id="sounds-ai-apply-proposal" type="button">Replace draft with proposal</button><button id="sounds-ai-discard-proposal" type="button">Keep my draft</button></div>
 </div>
 <p class="muted">Auditioning and audio processing will be added through SuperCollider itself, not a separate browser synthesizer.</p>
 </section>
 <section id="discover" role="tabpanel" hidden>
 <h2>Discover sounds</h2>
 <p class="muted">Search openly licensed online collections and add selected audio to your library. No automatic downloads.</p>
+<div class="filter-group" id="discover-spoken-word">
+<h3>Spoken-word recordings · LibriVox</h3>
+<p class="muted">Find recordings by author and reader, locate phrases using book text, and save extracted audio into this Sounds Library. Streaming requires a separate tap and respects Wi-Fi-first permission.</p>
+<a href="./librivox-explorer.html">Explore LibriVox recordings</a>
+</div>
 <form id="discover-form">
 <label for="discover-source">Collection</label>
 <select id="discover-source">
@@ -167,10 +183,10 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 </section>
 </main>
 <script type="module" src="./sounds-page.mjs?v=3"></script>
-<script type="module" src="./sounds-library.mjs?v=2"></script>
-<script type="module" src="./sounds-tools.mjs?v=5"></script>
+<script type="module" src="./sounds-library.mjs?v=3"></script>
+<script type="module" src="./sounds-tools.mjs?v=6"></script>
 <script type="module" src="./sounds-discover.mjs?v=9"></script>
-<script type="module" src="./sounds-generate.mjs?v=1"></script>
+<script type="module" src="./sounds-generate.mjs?v=2"></script>
 <script type="module" src="./sounds-backup-ui.mjs?v=2"></script>
 </body>
 </html>

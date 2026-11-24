@@ -1,0 +1,46 @@
+name: Check LibriVox explorer
+on:
+  push:
+    branches: ['sounds/librivox-*']
+  pull_request:
+    branches: [main]
+    paths:
+      - 'librivox-*'
+      - 'sounds.html'
+      - 'sounds-store.mjs'
+      - 'qa/librivox-*'
+      - '.github/workflows/check-librivox.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  librivox:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JavaScript and extraction logic
+        run: |
+          set -euo pipefail
+          for module in librivox-*.mjs; do node --check "$module"; done
+          node qa/librivox-audio-extract.test.mjs
+          node qa/librivox-combine.test.mjs
+          node qa/librivox-text-locator.test.mjs
+      - name: Set up Chromium and Python browser tests
+        run: |
+          set -euo pipefail
+          python3 -m venv .venv
+          .venv/bin/pip install playwright==1.56.0
+          .venv/bin/python -m playwright install --with-deps chromium
+          chrome="$(.venv/bin/python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')"
+          sudo ln -sf "$chrome" /usr/bin/chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version | head -n 1
+      - name: Test LibriVox search, mobile layout and audio extraction
+        run: |
+          set -euo pipefail
+          .venv/bin/python qa/librivox-combine-browser-test.py
+          .venv/bin/python qa/librivox-ui-workflow-test.py
+          .venv/bin/python qa/librivox-ui-sample-test.py
+          .venv/bin/python qa/librivox-extraction-browser-test.py
