@@ -403,8 +403,10 @@ const READY='__SC_SOUNDS_LAB_READY__',FAILED='__SC_SOUNDS_LAB_FAILED__',DEFS='__
 const DEFINITION_SOURCE=REGION_DEFINITIONS;
 let lang=null,synth=null,transport=null,languageReady=false,serverReady=false,definitionsReady=false;
 let bootRequested=false,booting=false,bootTimeout=null,definitionTimeout=null,installingDefinitions=false,current=null,currentItemId=null,controller=null,entries=[],allocated=false;
+let requestedSampleId=null;
 let synthBootPending=false,synthBootCompleted=false,serverSampleRate=null,nativeAudioContext=null;
-function announce(t){status.textContent=t;const hint=$('lab-setup-hint');if(hint&&(/failed|unavailable|requires|error|timed out/i).test(t))hint.textContent='If this persists, open Technical details and troubleshooting at the bottom of the page.'}
+function sampleActivity(message,loading){window.dispatchEvent(new CustomEvent('bench-sample-activity',{detail:{message,loading}}))}
+function announce(t){status.textContent=t;if(requestedSampleId&&(/failed|unavailable|requires|error|timed out|blocked/i).test(t))sampleActivity(t,false);const hint=$('lab-setup-hint');if(hint&&(/failed|unavailable|requires|error|timed out/i).test(t))hint.textContent='If this persists, open Technical details and troubleshooting at the bottom of the page.'}
 function print(t){log.textContent=(log.textContent+String(t)+'\n').slice(-10000);log.scrollTop=log.scrollHeight}
 /* The compiled scsynth getter can return a numerical handle instead of the
  * actual Web Audio context. Observe its own context constructor, never create
@@ -570,7 +572,10 @@ async function listSounds(){
 
   entries=catalog.filter(item=>item.blob instanceof Blob).sort((a,b)=>Number(b.created||0)-Number(a.created||0));
   sound.replaceChildren(new Option('Choose a recorded or imported sound…',''));
-  for(const item of entries)sound.add(new Option((item.name||'Untitled')+' · '+((item.blob.size/1024/1024).toFixed(1))+' MB',item.id));
+  for(const item of entries){
+   const bytes=item.blob.size,size=bytes<1024?bytes+' B':bytes<1048576?(bytes/1024).toFixed(1)+' KB':(bytes/1048576).toFixed(1)+' MB';
+   sound.add(new Option((item.name||'Untitled')+' · '+size,item.id));
+  }
   if(entries.some(item=>item.id===previousId))sound.value=previousId;
   if(currentItemId&&!entries.some(item=>item.id===currentItemId)){current=null;currentItemId=null;waveform=null;renderWaveform();progress.value=0}
   if(pendingPresetId){
@@ -661,6 +666,36 @@ async function playVisibleTone(label='tone'){
   print('Tone playback: '+error.message);
  }
 }
+function loadRequestedSample(){
+ if(!requestedSampleId||!serverReady||!definitionsReady||controller)return false;
+ const id=requestedSampleId;
+ if(!sound.value||sound.value!==id){requestedSampleId=null;return false;}
+ if(!entries.some(item=>item.id===id)){
+  requestedSampleId=null;
+  sampleActivity('That recording is no longer available. Choose another.',false);
+  return false;
+ }
+ requestedSampleId=null;
+ sampleActivity('Loading selected recording into SuperCollider…',true);
+ load.click();
+ return true;
+}
+window.addEventListener('bench-make-instrument',()=>{
+ if(!sound.value){
+  sound.focus();
+  sampleActivity('Choose a recording, then tap MAKE INSTRUMENT.',false);
+  return;
+ }
+ if(current&&currentItemId===sound.value){
+  sampleActivity('Sample instrument ready. Shape the waveform and play it below.',false);
+  return;
+ }
+ if(controller){sampleActivity('The recording is already being loaded.',true);return;}
+ requestedSampleId=sound.value;
+ if(loadRequestedSample())return;
+ sampleActivity('Starting SuperCollider. The selected recording will load when its engine is ready.',true);
+ if(!engine.disabled)engine.click();
+});
 engine.addEventListener('click',async()=>{
  if(synth&&serverReady){if(!definitionsReady){installDefinitions();return}await playVisibleTone('tone');return}
  if(lang){if(languageReady&&!bootRequested){requestServer();return}announce('SuperCollider initialization is already in progress.');return}
@@ -686,7 +721,7 @@ engine.addEventListener('click',async()=>{
    }
    const sampleRateMatch=text.match(/__SC_SOUNDS_LAB_RATE__:(\d+(?:\.\d+)?)/);
    if(sampleRateMatch){serverSampleRate=Number(sampleRateMatch[1]);print('Native SuperCollider server sample rate: '+serverSampleRate+' Hz.');}
-   if(text.includes(DEFS)){clearTimeout(definitionTimeout);installingDefinitions=false;definitionsReady=true;engine.textContent='Play tone';setAudioPhase('ready','READY · PLAY TONE OR CHOOSE FREQUENCY');announce('SuperCollider ready. Play tone or open the frequency browser.');refreshControls();maybeLoadLinkedPreset()}
+   if(text.includes(DEFS)){clearTimeout(definitionTimeout);installingDefinitions=false;definitionsReady=true;engine.textContent='Play tone';setAudioPhase('ready','READY · PLAY TONE OR CHOOSE FREQUENCY');announce('SuperCollider ready. Play tone or open the frequency browser.');refreshControls();maybeLoadLinkedPreset();loadRequestedSample()}
    if(text.includes(DEMO_MARKER)&&!controller){setAudioPhase('played','SUPERCOLLIDER EXECUTED '+lastPlayedLabel.toUpperCase());announce('Native SuperCollider executed '+lastPlayedLabel+'. If silent, check phone volume and audio route.');}
    if(/ERROR:\s|FAILURE IN SERVER/.test(text)){setAudioPhase('error','SUPERCOLLIDER REPORTED AN ERROR');announce('SuperCollider reported an error. Open Technical details below for the message.');}
    if(text.includes(FAILED)){clearTimeout(bootTimeout);bootRequested=false;engine.textContent='Retry server startup';setAudioPhase('error','ENGINE STARTUP FAILED');announce('SuperCollider server failed to start. Tap Retry to try again.');refreshControls()}
@@ -711,6 +746,7 @@ engine.addEventListener('click',async()=>{
  finally{booting=false;engine.disabled=false;refreshControls()}
 });
 sound.addEventListener('change',()=>{
+ requestedSampleId=null;
  if(sourceDirty&&!confirm('Switch recordings and discard the edited SuperCollider code?')){
   sound.value=currentItemId||'';return;
  }
@@ -725,6 +761,7 @@ load.addEventListener('click',async()=>{
  if(!item||!serverReady||!definitionsReady||controller)return;
  if(sourceDirty&&!confirm('Retransferring audio will replace your edited SuperCollider code. Continue?'))return;
  controller=new AbortController();current=null;currentItemId=null;waveform=null;renderWaveform();progress.value=0;refreshControls();
+ sampleActivity('Decoding and transferring recording into SuperCollider…',true);
  try{
   if(item.blob.size>50*1024*1024)throw Error('Choose an audio file under 50 MB for this laboratory.');
   const context=outputContext(),sampleRate=outputSampleRate();
@@ -788,6 +825,7 @@ load.addEventListener('click',async()=>{
   });
   allocated=true;currentItemId=item.id;sourceDirty=false;pendingControl=false;waveform=waveformPeaks(decoded,512);updateRegionControls();
   announce('Verified by native SuperCollider sample readback: '+current.frames+' frames, '+current.channels+' channel(s), '+current.sampleRate+' Hz source. Native playback preserves original timing. Ready for PlayBuf.');
+  sampleActivity('Recording loaded. Shape and play the sample instrument.',false);
  }catch(error){
   current=null;currentItemId=null;waveform=null;renderWaveform();
   print('Sample transfer failed: '+error.message);
@@ -796,10 +834,11 @@ load.addEventListener('click',async()=>{
    ', output context '+(outputContext()?.state||'unavailable')+
    ', server sample rate '+(serverSampleRate||'unknown')+' Hz.');
   announce('Sample transfer failed: '+error.message);
+  sampleActivity('Sample transfer failed: '+error.message,false);
  }
  finally{controller=null;refreshControls()}
 });
-cancel.addEventListener('click',()=>{controller?.abort();announce('Cancelling sample transfer and releasing the incomplete buffer…')});
+cancel.addEventListener('click',()=>{requestedSampleId=null;controller?.abort();announce('Cancelling sample transfer and releasing the incomplete buffer…');sampleActivity('Cancelling sample transfer…',false)});
 play.addEventListener('click',async()=>{
  if(!current||!definitionsReady)return;
  try{
