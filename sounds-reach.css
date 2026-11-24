@@ -419,3 +419,23 @@ body[data-sc-surface] .bench-tabs>button[aria-selected=true]{
    auto auto auto auto auto!important;
  }
 }
+
+/* When typing SuperCollider source, prioritize seeing the code and keyboard.
+   The dock returns on blur; it isn't replaced by a second code editor. */
+body:has(#lab-demo-code:focus) #bench-bottom-dock,
+body:has(#lab-demo-code:focus) .bench-tabs,
+body:has(#lab-live-source:focus) #bench-bottom-dock,
+body:has(#lab-live-source:focus) .bench-tabs{
+ display:none!important;
+}
+body:has(#lab-demo-code:focus) main,
+body:has(#lab-live-source:focus) main{
+ grid-template-rows:auto minmax(0,1fr) 0 0!important;
+}
+body:has(#lab-demo-code:focus) #lab-setup{
+ grid-template-rows:minmax(160px,1.8fr) minmax(80px,.6fr)
+  auto auto auto auto auto!important;
+}
+body:has(#lab-live-source:focus) #lab-source-bay{
+ min-height:190px!important;
+}
