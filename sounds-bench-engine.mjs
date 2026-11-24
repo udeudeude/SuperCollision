@@ -548,6 +548,13 @@ function maybeLoadLinkedPreset(){
  announce('Transferring the preset’s linked original into native SuperCollider…');
  load.click();
 }
+window.addEventListener('bench-select-sample',event=>{
+ const id=event.detail?.id;
+ if(typeof id==='string'&&id.length<250){
+  pendingSoundId=id;
+  void listSounds();
+ }
+});
 async function listSounds(){
  try{
   const previousId=sound.value;
