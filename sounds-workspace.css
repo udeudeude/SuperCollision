@@ -799,3 +799,43 @@ body.is-recording #bench-acquire-overlay #start{background:#bb4b3c;color:#fff}
  #acquire-collection .acquire-entry-actions button{min-width:27px}
  #bench-acquire-overlay .bench-acquire-complete button{width:100%}
 }
+
+
+/* v0.5.0: a genuine embedded LibriVox sampler, not a redirect or second top bar. */
+#bench-acquire-overlay #librivox.bench-remote-panel{
+ display:flex!important;flex-direction:column!important;align-items:stretch;
+ height:100%!important;min-height:0!important;max-height:100%!important;
+ padding:0!important;margin:0!important;gap:0;overflow:hidden!important;
+ background:var(--sc-panel,#242820)!important;
+}
+#bench-acquire-overlay #librivox[hidden]{display:none!important}
+#bench-acquire-overlay #bench-librivox-frame{
+ flex:1 1 auto;display:block;width:100%;height:100%;min-height:0;
+ max-height:none;border:0;background:var(--sc-ground,#171917);
+}
+#bench-acquire-overlay .bench-librivox-frame-head{
+ flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;
+ padding:4px 7px;min-height:27px;background:var(--sc-plate,#272e26);
+ color:var(--sc-ink,#e9dfc8);border-bottom:1px solid var(--sc-line,#73644a);
+}
+#bench-acquire-overlay .bench-librivox-frame-head strong{
+ font:800 10px/1.15 ui-monospace,monospace;
+}
+#bench-acquire-overlay .bench-librivox-frame-head span{
+ color:var(--sc-soft,#b7b6a8);font:9px/1.25 ui-monospace,monospace;text-align:right;
+}
+#bench-acquire-overlay #bench-librivox-next{
+ flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;
+ gap:7px;padding:6px 8px;border-top:1px solid var(--sc-line,#73644a);
+ background:var(--sc-panel,#242820);color:var(--sc-ink,#e9dfc8);
+ font:800 10px/1.3 ui-monospace,monospace;
+}
+#bench-acquire-overlay #bench-librivox-next[hidden]{display:none!important}
+#bench-acquire-overlay #bench-librivox-use{
+ min-height:34px!important;min-width:100px;padding:5px 8px!important;
+}
+#bench-acquire-overlay #bench-open-librivox{
+ width:100%;text-align:left;cursor:pointer;min-height:57px;
+}
+/* Ensure the acquired material's workflow always leaves enough space to work. */
+#bench-acquire-overlay .bench-remote-panel{min-height:0!important}
