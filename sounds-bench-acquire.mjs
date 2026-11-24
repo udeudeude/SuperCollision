@@ -95,7 +95,10 @@ function setup(){
  }
  let active='collection',token=0,lastTrigger=null,triggerWorkspace=null;
  const backgroundPanels=['lab-setup','bench-sample-workspace','bench-library-workspace','bench-bottom-dock'];
- const setBackgroundInert=value=>{for(const id of backgroundPanels){const el=$(id);if(el)el.inert=value}};
+ const setBackgroundInert=value=>{
+  for(const id of backgroundPanels){const el=$(id);if(el)el.inert=value}
+  const nav=document.querySelector('.bench-tabs');if(nav)nav.inert=value;
+ };
  function microphoneOff(){
   const ready=$('mic-ready');
   if(ready.checked){ready.checked=false;ready.dispatchEvent(new Event('change',{bubbles:true}))}
