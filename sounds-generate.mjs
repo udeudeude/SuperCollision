@@ -21,8 +21,7 @@ function say(value){status.textContent=value}
 function syncProvider(){const isPuter=provider.value==='puter';keyBox.hidden=isPuter;puterConnect.hidden=!isPuter;model.hidden=isPuter;document.querySelector('label[for="sounds-ai-model"]').hidden=isPuter}
 provider.addEventListener('change',syncProvider);syncProvider();
 for(const [id,text] of [
- [PREFERRED_OPENROUTER_CODE_MODEL,'Recommended free coding model'],
- [OPENROUTER_FREE_MODEL,'Automatic free model (variable quality)']
+ [OPENROUTER_FREE_MODEL,'Automatic free · OpenRouter chooses an available model']
 ]){const option=document.createElement('option');option.value=id;option.textContent=text;model.append(option)}
 async function loadPuter(){
  if(window.puter?.ai?.chat)return window.puter;
@@ -62,6 +61,7 @@ async function request(messages){
    const error=new Error(data.error?.message||'HTTP '+response.status);
    error.status=response.status;throw error;
   }
+  say('OpenRouter responded · checking generated source…');
   const content=responseText(data);
   if(!content.trim())throw Error('Model '+(data.model||chosen)+' returned no usable text (finish reason: '+(data?.choices?.[0]?.finish_reason||'unknown')+'). Try another free model.');
   if(data?.choices?.[0]?.finish_reason==='length'&&!completedCodeFence(content))
