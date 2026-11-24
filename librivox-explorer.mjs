@@ -441,7 +441,7 @@ async function extractSelectedWav(){
     const bytes=extracted.blob.size;
     const size=bytes<1048576?(bytes/1024).toFixed(1)+' KB':(bytes/1048576).toFixed(1)+' MB';
     const use=$('use-in-sounds');
-    use.href='./sounds-bench-preview.html?sound='+encodeURIComponent(record.id)+'#sample';
+    use.href='./sounds-bench-preview.html?v=0.4.0&sound='+encodeURIComponent(record.id)+'#sample';
     use.hidden=false;
     status.textContent='Saved '+size+' audio sample to Sounds. Open it there to shape and play it.';
   }catch(error){
