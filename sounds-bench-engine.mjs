@@ -2,7 +2,7 @@
  * This page boots its own sclang/scsynth; main editor remains untouched. */
 import {allSounds,saveSound} from './sounds-store.mjs';
 import {NativeBufferTransport} from './sounds-buffer.mjs';
-import {createOriginalPreview} from './sounds-original-preview.mjs?v=0.5.2';
+import {createOriginalPreview} from './sounds-original-preview.mjs?v=0.6.0';
 import {readPcmWaveForNativeBuffer} from './sounds-pcm-ingest.mjs';
 import {REGION_DEFINITIONS,regionPlayCommand,regionLiveSource,stopRegionCommand,sampleInstrumentSource,validateRegion,DEMO_MARKER} from './sounds-sampler.mjs';
 import {waveformPeaks,waveformDragRegion} from './sounds-waveform.mjs';
@@ -14,7 +14,14 @@ const load=$('lab-load'),play=$('lab-play'),stop=$('lab-stop'),cancel=$('lab-can
 const details=$('lab-details');
 // Read-only local audition of the original, independent of SuperCollider.
 const originalPreview=createOriginalPreview();
-sound.after(originalPreview.root);
+const sourceSection=document.getElementById('lab-recording');
+sourceSection.append(originalPreview.root);
+function mountOriginalPlayback(){
+ const dock=document.getElementById('bench-original-dock-slot');
+ if(dock&&!dock.contains(originalPreview.audio))dock.append(originalPreview.audio);
+}
+window.addEventListener('bench-layout-ready',mountOriginalPlayback);
+mountOriginalPlayback();
 function updateOriginalPreview(){
  const item=entries.find(entry=>entry.id===sound.value);
  originalPreview.setItem(item||null);
