@@ -61,24 +61,32 @@ function setup(){
   bar.append(message,next);pages[kind].append(bar);
   audioCompletion[kind]={bar,message,id:null};
  }
- let active='collection',token=0;
+ let active='collection',token=0,lastTrigger=null,triggerWorkspace=null;
+ const backgroundPanels=['lab-setup','bench-sample-workspace','bench-library-workspace'];
+ const setBackgroundInert=value=>{for(const id of backgroundPanels){const el=$(id);if(el)el.inert=value}};
  function microphoneOff(){
   const ready=$('mic-ready');
   if(ready.checked){ready.checked=false;ready.dispatchEvent(new Event('change',{bubbles:true}))}
  }
- function closeOverlay(){
+ function closeOverlay({restoreFocus=true}={}){
+  const wasVisible=!overlay.hidden;
   if(active==='record')microphoneOff();
   if(active==='discover')remote.stopDiscover();
   if(active==='librivox')remote.stopLibriVox();
   overlay.hidden=true;active='collection';
   for(const key of overlayKeys)pages[key].hidden=true;
+  setBackgroundInert(false);
+  if(wasVisible&&restoreFocus&&lastTrigger?.isConnected&&triggerWorkspace===location.hash)
+   try{lastTrigger.focus({preventScroll:true})}catch{}
+  lastTrigger=null;triggerWorkspace=null;
  }
  function show(name){
   if(name==='collection'){
-   closeOverlay();pages.collection.hidden=false;
+   closeOverlay({restoreFocus:false});pages.collection.hidden=false;
    $('acquire-heading').textContent='YOUR SOUNDS';
    void refresh();return;
   }
+  if(overlay.hidden){lastTrigger=document.activeElement;triggerWorkspace=location.hash}
   if(active==='record'&&name!=='record')microphoneOff();
   if(active==='discover'&&name!=='discover')remote.stopDiscover();
   if(active==='librivox'&&name!=='librivox')remote.stopLibriVox();
@@ -92,10 +100,13 @@ function setup(){
   $('bench-acquire-title').textContent=labels[name]||'SOUND METHODS';
   $('bench-acquire-back').textContent=location.hash.slice(1)==='sample'?'← BACK TO SAMPLES':'← BACK TO INSTRUMENT';
   overlay.hidden=false;
+  setBackgroundInert(true);
+  $('bench-acquire-back').focus({preventScroll:true});
   if(name==='generate'||name==='discover'||name==='librivox')void remote.activate(name);
  }
- $('bench-acquire-back').addEventListener('click',closeOverlay);
- overlay.querySelectorAll('.acquire-back').forEach(b=>b.addEventListener('click',closeOverlay));
+ $('bench-acquire-back').addEventListener('click',()=>closeOverlay());
+ window.addEventListener('keydown',event=>{if(event.key==='Escape'&&!overlay.hidden){event.preventDefault();closeOverlay()}});
+ overlay.querySelectorAll('.acquire-back').forEach(b=>b.addEventListener('click',()=>closeOverlay()));
  const controls={
   write:()=>{closeOverlay();view('play')},generate:()=>show('generate'),record:()=>show('record'),import:()=>show('import'),
   'discover-audio':()=>show('discover'),librivox:()=>show('librivox'),
