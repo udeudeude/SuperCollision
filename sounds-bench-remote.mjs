@@ -41,6 +41,7 @@ export function createRemoteTools({onUseCode,onOpenSamples}){
   loads.set(name,promise);return promise;
  }
  async function activate(name){
+  if(name==='discover')saved.hidden=true;
   const message=name==='generate'?status:discover.querySelector('#discover-status');
   if(!loads.has(name))message.textContent='Preparing '+(name==='generate'?'instrument generator':'recording search')+'…';
   try{
