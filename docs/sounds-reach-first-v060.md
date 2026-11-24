@@ -85,3 +85,25 @@ desktop layout patterns.
 - Verify touch reachability, reading space and theming on actual small iPhones.
 - Resolve native SuperCollider sample-buffer acknowledgement failures using
   evidence from the actual runtime, independently of the interface.
+
+## v0.6.1 follow-up: recording legibility and native transport
+- Added a microphone-input display with **real audio samples**, a measured
+  root-mean-square input level expressed in decibels and an elapsed timer.
+  This is a recording monitor, not an imaginary display or alternate synth.
+- Record continues to require a deliberate hold, now labelled visibly
+  **RECORDING · RELEASE TO SAVE**. Saving still preserves the original and
+  releases the microphone; an audio-player audition remains independent of
+  SuperCollider.
+- Added a **STOP** button beside the main instrument playback action, using
+  the established Code-page sequence (`CmdPeriod.run`, `/clearSched`,
+  `/g_freeAll`) on this Sounds page's own native engine.
+- The monitor accepts WebKit's audio-context implementation. Where browser
+  live monitoring is unavailable, recording can still proceed, with an
+  accurate explanation instead of an empty or misleading signal.
+- Synchronised LibriVox's links and embedded page request to the Sounds
+  version. Kept library data, original recordings, the main Code page,
+  engine wrappers and download permissions unchanged.
+- Automated tests confirm the microphone hold/release/save sequence under
+  simulated browser conditions. Actual microphone sound, device latency,
+  screen geometry and underlying SuperCollider buffer failures still require
+  evidence from real iPhone testing.
