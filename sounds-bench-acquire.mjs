@@ -21,6 +21,18 @@ const sources=[
 function setup(){
  const pane=$('bench-library-workspace'),overlay=$('bench-acquire-overlay');if(!pane||!overlay)return;
  pane.innerHTML="<div class=\"acquire-topline\">\n <strong id=\"acquire-heading\">ACQUIRE / SOUNDS</strong>\n \n</div>\n<div id=\"acquire-collection\" class=\"acquire-page\" hidden>\n <div class=\"acquire-searchbar\">\n  <input id=\"acquire-search\" type=\"search\" placeholder=\"Find sounds or creators\" aria-label=\"Search library\">\n  <select id=\"acquire-filter\" aria-label=\"Filter saved sounds\">\n   <option value=\"all\">ALL SOUNDS</option><option value=\"favorite\">FAVORITES</option><option value=\"instrument\">INSTRUMENTS</option><option value=\"sample\">SAMPLES</option><option value=\"hybrid\">HYBRIDS</option>\n  </select>\n </div>\n <div id=\"acquire-list\" aria-live=\"polite\"></div>\n <p class=\"acquire-footnote\">Saved on this device. Back up important sounds before clearing browser data.</p>\n <details class=\"bench-library-backup\" id=\"bench-library-backup\">\n <summary>BACK UP / RESTORE LIBRARY</summary>\n <div class=\"bench-library-backup-actions\">\n  <button id=\"sounds-backup-export\" type=\"button\">EXPORT ALL SOUNDS</button>\n  <label for=\"sounds-backup-import\">RESTORE BACKUP<input id=\"sounds-backup-import\" type=\"file\" accept=\".scsounds,application/octet-stream\"></label>\n </div>\n <p class=\"acquire-footnote\">Backups include original sound files and instrument code. Existing items are not overwritten during restoration.</p>\n <p id=\"sounds-backup-status\" role=\"status\" aria-live=\"polite\"></p>\n</details>\n</div>\n<div id=\"acquire-overview\" class=\"acquire-page\" hidden>\n <section class=\"acquire-category\" aria-labelledby=\"acquire-instruments-title\">\n  <h2 id=\"acquire-instruments-title\">01 / INSTRUMENTS &amp; CODE</h2>\n  <div class=\"acquire-choices\">\n   <button type=\"button\" data-action=\"write\"><strong>CREATE</strong><small>Write or shape a SuperCollider instrument</small></button>\n   <button type=\"button\" data-action=\"generate\"><strong>GENERATE</strong><small>Describe a sound to generate code</small></button>\n   <button type=\"button\" data-action=\"discover-code\"><strong>DISCOVER</strong><small>Find community SuperCollider instruments</small></button>\n   <button type=\"button\" data-action=\"import-code\"><strong>IMPORT</strong><small>Open a .scd file or paste source</small></button>\n  </div>\n </section>\n <section class=\"acquire-category\" aria-labelledby=\"acquire-samples-title\">\n  <h2 id=\"acquire-samples-title\">02 / RECORDINGS &amp; SAMPLES</h2>\n  <div class=\"acquire-choices\">\n   <button type=\"button\" data-action=\"record\"><strong>RECORD</strong><small>Capture microphone or other audio input</small></button>\n   <button type=\"button\" data-action=\"discover-audio\"><strong>DISCOVER</strong><small>Find licensed online audio recordings</small></button>\n   <button type=\"button\" data-action=\"import\"><strong>IMPORT</strong><small>Add existing audio files</small></button>\n  </div>\n </section>\n</div>\n<div id=\"acquire-record\" class=\"acquire-page acquire-detail\" hidden>\n <div class=\"acquire-detail-head\"><button type=\"button\" class=\"acquire-back\">‹ ACQUIRE</button><strong>RECORD AUDIO</strong></div>\n <label for=\"name\">NAME</label><input id=\"name\" type=\"text\" maxlength=\"120\" placeholder=\"New recording\">\n <label class=\"acquire-check\" for=\"mic-ready\"><input id=\"mic-ready\" type=\"checkbox\"> ENABLE MICROPHONE</label>\n <button id=\"start\" type=\"button\" disabled aria-pressed=\"false\">● HOLD TO RECORD</button>\n <progress id=\"level\" value=\"0\" max=\"1\" aria-label=\"Microphone input level\"></progress>\n <p id=\"status\" role=\"status\" aria-live=\"polite\">Enable microphone, then hold Record. Release to save.</p>\n</div>\n<div id=\"acquire-import\" class=\"acquire-page acquire-detail\" hidden>\n <div class=\"acquire-detail-head\"><button type=\"button\" class=\"acquire-back\">‹ ACQUIRE</button><strong>IMPORT AUDIO</strong></div>\n <label for=\"import\">CHOOSE AUDIO FILES</label>\n <input id=\"import\" type=\"file\" accept=\"audio/*,.wav,.flac,.aiff,.ogg,.m4a,.mp3\" multiple>\n <p id=\"acquire-import-status\" role=\"status\" aria-live=\"polite\">Select one or more files. Originals are preserved.</p>\n</div>\n<div id=\"acquire-code\" class=\"acquire-page acquire-detail\" hidden>\n <div class=\"acquire-detail-head\"><button type=\"button\" class=\"acquire-back\">‹ ACQUIRE</button><strong>SUPERCOLLIDER INSTRUMENTS</strong></div>\n <div id=\"acquire-community-sources\">\n  <div class=\"acquire-subhead\">COMMUNITY COLLECTIONS</div>\n  <div id=\"acquire-community-links\"></div>\n  <p class=\"acquire-footnote\">Verify the license, original author, and required Quarks. Public code is not necessarily licensed for reuse or compatible with browser SuperCollider.</p>\n </div>\n <form id=\"acquire-code-form\">\n  <div class=\"acquire-subhead\">IMPORT SOURCE FOR REVIEW</div>\n  <div class=\"acquire-two-inputs\">\n   <label>INSTRUMENT NAME<input id=\"acquire-code-name\" type=\"text\" maxlength=\"120\" placeholder=\"Discovered instrument\" required></label>\n   <label>OPEN .SCD / .TXT<input id=\"acquire-code-file\" type=\"file\" accept=\".scd,.txt,text/plain\"></label>\n  </div>\n  <label>SUPERCOLLIDER CODE<textarea id=\"acquire-code-source\" spellcheck=\"false\" autocorrect=\"off\" autocapitalize=\"off\" placeholder=\"Paste SynthDef or playable SuperCollider code\" required></textarea></label>\n  <div class=\"acquire-two-inputs\">\n   <label>CREATOR / AUTHOR<input id=\"acquire-code-author\" type=\"text\" maxlength=\"160\" placeholder=\"As credited at source\"></label>\n   <label>LICENSE<input id=\"acquire-code-license\" type=\"text\" maxlength=\"160\" placeholder=\"Verify at source\"></label>\n  </div>\n  <label>SOURCE LINK<input id=\"acquire-code-url\" type=\"url\" maxlength=\"800\" placeholder=\"https://...\"></label>\n  <button type=\"submit\">SAVE AND OPEN CODE</button>\n  <p id=\"acquire-code-status\" role=\"status\" aria-live=\"polite\">Imported code is not executed until you explicitly play it.</p>\n </form>\n</div>";
+ function openAudio(id){
+  closeOverlay();view('sample');
+  window.dispatchEvent(new CustomEvent('bench-select-sample',{detail:{id}}));
+ }
+ async function openNewestAudio(){
+  try{
+   const items=(await allSounds()).filter(item=>item.blob instanceof Blob);
+   items.sort((a,b)=>Number(b.created||0)-Number(a.created||0));
+   if(items.length)openAudio(items[0].id);
+   else {closeOverlay();view('sample')}
+  }catch{closeOverlay();view('sample')}
+ }
  const remote=createRemoteTools({
   onUseCode({name,code}){
    const payload={name,code};
@@ -28,7 +40,7 @@ function setup(){
    if(payload.opened){closeOverlay();view('play')}
    else $('sounds-generate-status').textContent='Current unsaved instrument edits were preserved. Review them before replacing the code.';
   },
-  onOpenSamples(){closeOverlay();view('sample')}
+  onOpenSamples(){void openNewestAudio()}
  });
  const pages={collection:$('acquire-collection'),acquire:$('acquire-overview'),
   record:$('acquire-record'),import:$('acquire-import'),code:$('acquire-code'),
@@ -136,21 +148,61 @@ function setup(){
   for(const item of matching){
    const row=create('article','acquire-entry');
    const meta=create('div','acquire-entry-meta');
-   const type=kindOf(item)==='hybrid'?'SAMPLE INSTRUMENT':item.blob instanceof Blob?(item.source==='recorded'?'RECORDING':'AUDIO')+' · '+size(item.blob.size):item.source==='generated'?'GENERATED INSTRUMENT':'SUPERCOLLIDER INSTRUMENT';
-   meta.append(create('strong','',item.name||'Untitled'),create('small','',type+(item.origin?.creator?' · '+item.origin.creator:'')));
+   const type=kindOf(item)==='hybrid'?'SAMPLE INSTRUMENT':item.blob instanceof Blob?
+    (item.source==='recorded'?'RECORDING':'AUDIO')+' · '+size(item.blob.size):
+    item.source==='generated'?'GENERATED INSTRUMENT':'SUPERCOLLIDER INSTRUMENT';
+   meta.append(create('strong','',item.name||'Untitled'),
+    create('small','',type+(item.origin?.creator?' · '+item.origin.creator:'')));
+   const controls=create('div','acquire-entry-actions');
    const open=action('OPEN',()=>{
     if(item.preset?.soundId){location.href='./sounds-bench-preview.html?preset='+encodeURIComponent(item.id)+'#sample';return}
     if(item.code){
-     const handoff={name:item.name,code:item.code,bench:item.bench};window.dispatchEvent(new CustomEvent('bench-open-source',{detail:handoff}));if(handoff.opened)view('play');return;
+     const handoff={name:item.name,code:item.code,bench:item.bench};
+     window.dispatchEvent(new CustomEvent('bench-open-source',{detail:handoff}));
+     if(handoff.opened)view('play');
+     return;
     }
-    if(item.blob instanceof Blob){
-     const select=$('lab-sound');select.value=item.id;
-     if(select.value!==item.id){list.append(create('p','acquire-empty','Recording not yet available in Sample. Reopen collection.'));return}
-     select.dispatchEvent(new Event('change',{bubbles:true}));view('sample');
-    }
+    if(item.blob instanceof Blob)openAudio(item.id);
    },'acquire-open');
    if(!item.code&&!(item.blob instanceof Blob)&&!item.preset)open.disabled=true;
-   row.append(meta,open);list.append(row);
+   const favorite=action(item.favorite?'★':'☆',async()=>{
+    favorite.disabled=true;
+    try{await saveSound({...item,favorite:!item.favorite})}
+    catch(error){list.prepend(create('p','acquire-empty','Could not update favorite: '+error.message));favorite.disabled=false}
+   },'acquire-favorite');
+   favorite.setAttribute('aria-pressed',String(Boolean(item.favorite)));
+   favorite.setAttribute('aria-label',(item.favorite?'Remove':'Add')+' favorite: '+item.name);
+   const menu=create('div','acquire-entry-menu');menu.hidden=true;
+   const editor=create('div','acquire-rename');editor.hidden=true;
+   const nameInput=create('input');nameInput.type='text';nameInput.value=item.name;nameInput.maxLength=120;
+   nameInput.setAttribute('aria-label','New name for '+item.name);
+   const confirmRename=action('SAVE NAME',async()=>{
+    const name=nameInput.value.trim();
+    if(!name){nameInput.focus();return}
+    confirmRename.disabled=true;
+    try{await saveSound({...item,name:name.slice(0,120)})}
+    catch(error){confirmRename.disabled=false;list.prepend(create('p','acquire-empty','Rename failed: '+error.message))}
+   });
+   const cancelRename=action('CANCEL',()=>{editor.hidden=true;menu.hidden=false});
+   editor.append(nameInput,confirmRename,cancelRename);
+   const rename=action('RENAME',()=>{menu.hidden=true;editor.hidden=false;nameInput.focus();nameInput.select()});
+   const remove=action('DELETE',async()=>{
+    if(!confirm('Delete "'+item.name+'" from this device? This cannot be undone.'))return;
+    remove.disabled=true;
+    try{await deleteSound(item.id)}
+    catch(error){remove.disabled=false;list.prepend(create('p','acquire-empty','Delete failed: '+error.message))}
+   });
+   menu.append(rename,remove);
+   if(item.origin?.license)menu.append(create('span','acquire-license','License: '+item.origin.license));
+   const more=action('⋯',()=>{
+    const show=menu.hidden&&editor.hidden;
+    menu.hidden=!show;editor.hidden=true;
+    more.setAttribute('aria-expanded',String(show));
+   },'acquire-more');
+   more.setAttribute('aria-label','More options for '+item.name);
+   more.setAttribute('aria-expanded','false');
+   controls.append(open,favorite,more);
+   row.append(meta,controls,menu,editor);list.append(row);
   }
  }
  search.addEventListener('input',()=>void refresh());
