@@ -130,7 +130,7 @@ importer.addEventListener('change',async event=>{
   for(const [index,file] of files.entries()){
    importStatus.textContent='Importing '+(index+1)+' of '+files.length+': '+file.name;
    try{
-    if(!file.type.startsWith('audio/')&&!/\\.(wav|mp3|m4a|aac|aiff|flac|ogg|opus)$/i.test(file.name))throw Error('Unrecognized audio format');
+    if(!file.type.startsWith('audio/')&&!/\.(wav|mp3|m4a|aac|aiff|flac|ogg|opus)$/i.test(file.name))throw Error('Unrecognized audio format');
     await saveSound({id:crypto.randomUUID(),name:file.name.slice(0,120),source:'imported',
      created:Date.now(),mime:file.type||'application/octet-stream',blob:file,favorite:false});
     imported++;
