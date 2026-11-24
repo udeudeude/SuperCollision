@@ -437,3 +437,80 @@ html.embedded-surface #work-panel>.mobile-back{display:none!important}
  #librivox-work-dock .jump-actions button{min-height:31px!important}
  #librivox-work-dock .clip-buttons button{min-height:35px!important}
 }
+
+/* A compact, consistent bottom instrument instead of stacked controls. */
+#librivox-work-modes{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:5px;min-width:0;
+}
+#librivox-work-modes button{
+ min-height:37px!important;min-width:0!important;
+ padding:5px!important;
+ background:var(--sc-plate,var(--plate))!important;
+ color:var(--sc-soft,var(--soft))!important;
+ border:1px solid var(--sc-line,var(--edge))!important;
+ font:850 10px/1.2 ui-monospace,monospace!important;
+}
+#librivox-work-modes button[aria-pressed=true]{
+ background:var(--sc-plate,var(--plate))!important;
+ color:var(--sc-ink,var(--ink))!important;
+ border:2px solid var(--sc-selected,var(--gold))!important;
+ box-shadow:inset 0 3px 0 var(--sc-selected,var(--gold))!important;
+}
+#librivox-work-dock .librivox-work-mode{
+ display:flex;flex-direction:column;gap:5px;
+ min-height:0;min-width:0;
+}
+#librivox-work-dock .librivox-work-mode[hidden]{display:none!important}
+#librivox-mode-locate{
+ display:grid!important;
+ grid-template-columns:repeat(4,minmax(0,1fr));
+ gap:5px!important;
+}
+#librivox-mode-locate[hidden]{display:none!important}
+#librivox-mode-locate #phrase-form,
+#librivox-mode-locate #clip-summary{grid-column:1/-1}
+#librivox-mode-locate #phrase-form{
+ margin:0!important;padding:0!important;
+}
+#librivox-mode-locate #phrase-form .query-row{
+ display:grid;grid-template-columns:minmax(0,1fr) 66px;
+ gap:5px;min-width:0;
+}
+#librivox-mode-locate #phrase-query{
+ display:block;min-width:0;min-height:40px!important;
+ padding:6px 8px!important;
+ font:16px/1.25 system-ui,sans-serif!important;
+ color:var(--sc-ink,var(--ink));background:var(--sc-editor,var(--ground));
+ border:1px solid var(--sc-line,var(--edge))!important;
+}
+#librivox-mode-locate #phrase-form button{
+ min-height:40px!important;min-width:0!important;
+ padding:5px!important;font:850 11px ui-monospace,monospace!important;
+ background:var(--sc-accent,var(--gold))!important;
+ color:var(--sc-accent-ink,#231d18)!important;
+}
+#librivox-mode-locate>button{
+ min-width:0!important;min-height:41px!important;
+ padding:5px 2px!important;white-space:normal!important;
+ font:800 10px/1.25 ui-monospace,monospace!important;
+ background:var(--sc-plate,var(--plate))!important;
+ color:var(--sc-ink,var(--ink))!important;
+ border:1px solid var(--sc-line,var(--edge))!important;
+}
+#librivox-mode-extract #extract-wav{
+ width:100%;min-height:44px!important;
+ background:var(--sc-accent,var(--gold))!important;
+ color:var(--sc-accent-ink,#211d18)!important;
+ border:1px solid var(--sc-line,var(--edge))!important;
+}
+#work-body #sample-editor .clip-heading,
+#work-body #sample-editor .clip-buttons,
+#work-body #sample-editor .extract-actions #extract-wav{display:none!important}
+#work-body #sample-editor>.clip-tools{padding:6px!important}
+#work-body #sample-editor .extract-actions{
+ grid-template-columns:minmax(0,1fr);
+}
+#librivox-work-dock[data-mode=listen]{max-height:min(36dvh,235px)}
+#librivox-work-dock[data-mode=locate]{max-height:min(44dvh,320px)}
+#librivox-work-dock[data-mode=extract]{max-height:min(47dvh,350px)}
