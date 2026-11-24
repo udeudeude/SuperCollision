@@ -26,17 +26,49 @@ function parseDuration(input) { if (typeof input === 'number') return input; if 
 function authorName(work) { return (work?.authors || []).map(a => a.name || [a.first_name,a.last_name].filter(Boolean).join(' ')).filter(Boolean).join(', ') || 'Unknown author'; }
 function storeKey() { return state.book && state.chapter ? `${state.book.id}:${state.chapter.id || state.chapter.section_number || $('chapter-select').selectedIndex}` : ''; }
 function selectedFavorite(type,id) { return state.favorites.some(x => x.type === type && String(x.id) === String(id)); }
-function starButton(type,id,label) { const b = button(selectedFavorite(type,id) ? '★' : '☆', () => { changeFavorite(type,id,label); b.textContent = selectedFavorite(type,id) ? '★':'☆'; b.setAttribute('aria-pressed', String(selectedFavorite(type,id))); }, 'result-star'); b.setAttribute('aria-label',`${selectedFavorite(type,id) ? 'Remove':'Add'} favorite: ${label}`); b.setAttribute('aria-pressed',String(selectedFavorite(type,id))); return b; }
+function starButton(type,id,label){
+ const b=button(selectedFavorite(type,id)?'★':'☆',()=>{
+  changeFavorite(type,id,label);const active=selectedFavorite(type,id);
+  b.textContent=active?'★':'☆';b.setAttribute('aria-pressed',String(active));
+  b.setAttribute('aria-label',(active?'Remove':'Add')+' favorite: '+label);
+ },'result-star');
+ b.setAttribute('aria-label',(selectedFavorite(type,id)?'Remove':'Add')+' favorite: '+label);
+ b.setAttribute('aria-pressed',String(selectedFavorite(type,id)));return b;
+}
+function syncPersonFavorites(){
+ for(const b of document.querySelectorAll('.person-chip[data-favorite-type]')){
+  const active=selectedFavorite(b.dataset.favoriteType,b.dataset.favoriteId);
+  b.textContent=(active?'★':'☆')+' '+b.dataset.favoriteName;
+  b.setAttribute('aria-pressed',String(active));
+  b.setAttribute('aria-label',(active?'Remove':'Add')+' favorite: '+b.dataset.favoriteName);
+ }
+}
+function favoritePersonChip(type,id,name){
+ const b=button('',()=>changeFavorite(type,id,name),'person-chip');
+ b.dataset.favoriteType=type;b.dataset.favoriteId=String(id);b.dataset.favoriteName=name;
+ const active=selectedFavorite(type,id);
+ b.textContent=(active?'★':'☆')+' '+name;
+ b.setAttribute('aria-pressed',String(active));
+ b.setAttribute('aria-label',(active?'Remove':'Add')+' favorite: '+name);return b;
+}
 function changeFavorite(type,id,label) {
   state.favorites = toggleExplorerFavorite(state.favorites,{type,id:String(id),label});
   writeLocal(FAV_KEY,state.favorites); $('favorite-count').textContent = state.favorites.length;
-  if (type === 'book' && state.work?.id === id) syncFavoriteBook();
+  if (type === 'book' && String(state.work?.id) === String(id)) syncFavoriteBook();
+   syncPersonFavorites();
   renderFavoriteFilterChips();
   if (state.showFavorites) renderFavorites();
 }
 function syncFavoriteBook() { const b=$('favorite-book'); if (!state.work) return; const active=selectedFavorite('book',state.work.id); b.textContent=active?'★':'☆'; b.setAttribute('aria-pressed',String(active)); b.setAttribute('aria-label',`${active?'Remove':'Add'} favorite: ${state.work.title}`); }
 function setStatus(message,kind='') { $('search-status').textContent=message; $('search-status').dataset.kind=kind; }
 async function get(path, params) { const u = new URL(API + path); if (params) Object.entries(params).forEach(([k,v]) => v !== undefined && u.searchParams.set(k,String(v))); const response=await fetch(u.href,{headers:{Accept:'application/json'}}); if (!response.ok) throw new Error(response.status===429 ? 'Catalog is busy. Try again shortly.' : `Catalog request failed (${response.status}).`); return response.json(); }
+function setSearchMode(mode,{focus=false}={}) {
+ const title=mode==='title';$('combined-form').hidden=title;
+ const catalog=$('catalog-disclosure');catalog.hidden=!title;catalog.open=title;
+ $('search-by-people').setAttribute('aria-pressed',String(!title));
+ $('search-by-title').setAttribute('aria-pressed',String(title));
+ if(focus)(title?$('catalog-query'):$('filter-author')).focus();
+}
 function showSearch() { app.classList.remove('show-work'); app.scrollLeft=0; }
 function showWork() { app.classList.add('show-work'); app.scrollLeft=0; }
 function setActiveSearch(label) { $('active-filters').textContent=label; }
@@ -92,6 +124,7 @@ async function openResult(item,kind) { if(kind==='book') await loadWork(item.id)
 // Selecting an author or reader, including from Favorites, fills one facet without
 // clearing the other. Thus separate person searches can be combined naturally.
 async function openPerson(person,kind) {
+  setSearchMode('people');
   const input=$(kind==='reader'?'filter-reader':'filter-author');
   input.value=person.name;
   showSearch();
@@ -102,6 +135,7 @@ function renderFavoriteFilterChips() {
   for(const favorite of state.favorites.filter(x=>x.type==='author'||x.type==='reader')){
     const type=favorite.type;
     const b=button(`★ ${type==='author'?'AUTHOR':'READER'}: ${favorite.label}`,()=>{
+      setSearchMode('people');
       $(type==='author'?'filter-author':'filter-reader').value=favorite.label;
       runCombinedFilter();
     });
@@ -186,7 +220,7 @@ async function verifyFacetedRecording(candidate,reader,verifySections){
 async function runCombinedFilter(){
   const authorNameInput=$('filter-author').value.trim(),readerNameInput=$('filter-reader').value.trim();
   if(!authorNameInput&&!readerNameInput){setStatus('Enter an author, a reader, or both.','error');$('filter-author').focus();return;}
-  $('catalog-disclosure').open=false;
+  setSearchMode('people');
   $('catalog-query').value='';
   setActiveSearch(`AUTHOR: ${authorNameInput||'Any'}   ·   READER: ${readerNameInput||'Any'}`);
   const request=++state.request;state.showFavorites=false;$('show-favorites').setAttribute('aria-pressed','false');
@@ -248,7 +282,7 @@ async function loadWork(id,filterContext=null) {
     if(!editions.length)throw new Error(filterContext?.reader?'No LibriVox recording credited to the selected reader is available for this work.':'No linked LibriVox recording is available for this work in the catalog mirror.');
     state.work=work; $('work-heading').textContent=work.title;$('work-byline').textContent=`${authorName(work)} · ${work.language||'Unknown language'}`;
     syncFavoriteBook(); const attrs=$('attribution-row'); attrs.replaceChildren(el('span','attrib-label','AUTHOR'));
-    for(const author of work.authors||[]){const b=button(`☆ ${author.name}`,()=>changeFavorite('author',author.id,author.name),'person-chip'); b.title='Toggle author favorite';attrs.append(b);}
+    for(const author of work.authors||[]){attrs.append(favoritePersonChip('author',author.id,author.name));}
     const sel=$('recording-select');sel.replaceChildren(); editions.forEach((r,i)=>{const opt=el('option','',`LibriVox ${r.librivox_id||i+1} · ${(r.narrators||[]).map(x=>x.name).join(', ')||'Reader varies'} · ${r.chapter_count||'?'} sections`);opt.value=String(i);sel.append(opt);});
     state.editions=editions;await selectRecording(0);
   } catch(error) { if(request!==state.request)return; $('work-heading').textContent='Recording unavailable'; $('work-byline').textContent=error.message; $('playback-status').textContent='Unavailable'; }
@@ -290,9 +324,7 @@ function selectChapter(index) {
   $('mark-position').hidden=true;
   const readers=$('reader-info');readers.replaceChildren(el('span','attrib-label','READ BY'));
   const people=chapter.readers||[];if(!people.length)readers.append(el('span','','Reader not identified in this chapter feed'));
-  for(const person of people) { const name=person.display_name||'Unknown reader';readers.append(button(`${selectedFavorite('reader',person.reader_id)?'★':'☆'} ${name}`,event=>{
-      changeFavorite('reader',person.reader_id,name);const active=selectedFavorite('reader',person.reader_id);event.currentTarget.textContent=`${active?'★':'☆'} ${name}`;
-    },'person-chip')); }
+  for(const person of people){const name=person.display_name||'Unknown reader';readers.append(favoritePersonChip('reader',person.reader_id,name));}
   $('playback-status').textContent=`${formatTime(parseDuration(chapter.playtime))} · Ready to play`;
   state.clipStart=null;state.clipEnd=null;state.regionPreview=false;renderClip();
   $('chapter-text').value='';$('phrase-query').value='';$('phrase-results').replaceChildren();
@@ -327,6 +359,7 @@ function clearGeneratedWav() {
   state.wavObjectUrl=null;
   const output=$('extracted-audio');output.pause();output.removeAttribute('src');output.hidden=true;
   $('download-wav').disabled=true;
+  $('use-in-sounds').hidden=true;
 }
 function cancelExtraction() {
   ++state.extractRun;
@@ -405,7 +438,12 @@ async function extractSelectedWav(){
     state.wavObjectUrl=URL.createObjectURL(extracted.blob);
     const preview=$('extracted-audio');preview.src=state.wavObjectUrl;preview.hidden=false;
     $('download-wav').disabled=false;
-    status.textContent=`Saved ${(extracted.blob.size/1048576).toFixed(1)} MB WAV in Sounds. Listen here, or download a copy.`;
+    const bytes=extracted.blob.size;
+    const size=bytes<1048576?(bytes/1024).toFixed(1)+' KB':(bytes/1048576).toFixed(1)+' MB';
+    const use=$('use-in-sounds');
+    use.href='./sounds-bench-preview.html?sound='+encodeURIComponent(record.id)+'#sample';
+    use.hidden=false;
+    status.textContent='Saved '+size+' audio sample to Sounds. Open it there to shape and play it.';
   }catch(error){
     if(abort.signal.aborted||state.extractRun!==run)return;
     status.dataset.kind='error';
@@ -429,7 +467,7 @@ function saveRegion() {if(!state.chapter||state.clipStart===null||state.clipEnd=
     phrase:state.selectedMatch<0?null:state.matches[state.selectedMatch]?.match,saved_at:new Date().toISOString()};
   state.clips=state.clips.filter(x=>x.id!==id);state.clips.push(item);writeLocal(CLIP_KEY,state.clips);
   if(!selectedFavorite('sample',id))changeFavorite('sample',id,`${item.title}: ${item.chapter} (${formatTime(item.start)}–${formatTime(item.end)})`);
-  $('clip-message').textContent='Region marker saved. Use EXTRACT & SAVE WAV to create the actual audio file in Sounds.';
+  $('clip-message').textContent='Passage bookmarked. No audio file saved yet. Use EXTRACT & SAVE AUDIO to create it in Sounds.';
 }
 function exportMarkers() { const payload={format:'supercollision-librivox-markers',version:1,created_at:new Date().toISOString(),markers:state.clips,anchors:state.anchors};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob),link=el('a');link.href=url;link.download='supercollision-librivox-markers.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -447,6 +485,8 @@ async function loadLinkedText() {
     $('chapter-text').value=text;$('text-guidance').textContent='Loaded linked text. If this is a complete book, copy only the chapter matching the audio before searching.';
   } catch(error) { $('text-guidance').textContent=`Could not load source text in this browser (${error.message}). Open SOURCE TEXT ↗ and paste the chapter or load a .txt file.`; }
 }
+$('search-by-people').addEventListener('click',()=>setSearchMode('people',{focus:true}));
+$('search-by-title').addEventListener('click',()=>setSearchMode('title',{focus:true}));
 $('combined-form').addEventListener('submit',event=>{event.preventDefault();runCombinedFilter();});
 $('combined-clear').addEventListener('click',()=>{$('filter-author').value='';$('filter-reader').value='';$('author-options').replaceChildren();$('reader-options').replaceChildren();++state.request;state.filterContext=null;$('catalog-results').replaceChildren();$('list-caption').textContent='DISCOVER';setStatus('Filters cleared. Find an author or reader to begin.');});
 $('test-combined').addEventListener('click',()=>{$('filter-author').value='George MacDonald';$('filter-reader').value='Peter Yearsley';runCombinedFilter();});
@@ -454,7 +494,20 @@ suggestFacet('filter-author','author-options');suggestFacet('filter-reader','rea
 renderFavoriteFilterChips();
 $('catalog-form').addEventListener('submit',event=>{event.preventDefault();const q=$('catalog-query').value.trim();if(q.length>=2)runSearch(q,new FormData(event.currentTarget).get('scope'));});
 $('phrase-form').addEventListener('submit',event=>{event.preventDefault();showMatches();});
-$('show-favorites').addEventListener('click',()=>{state.showFavorites=!state.showFavorites;$('show-favorites').setAttribute('aria-pressed',String(state.showFavorites));if(state.showFavorites)renderFavorites();else if($('catalog-query').value.trim())runSearch($('catalog-query').value.trim(),state.scope);else {$('catalog-results').replaceChildren();setStatus('Choose a search to begin.');$('list-caption').textContent='DISCOVER';}});
+$('show-favorites').addEventListener('click',()=>{
+ state.showFavorites=!state.showFavorites;
+ $('show-favorites').setAttribute('aria-pressed',String(state.showFavorites));
+ if(state.showFavorites){renderFavorites();return}
+ if($('filter-author').value.trim()||$('filter-reader').value.trim()){
+  setSearchMode('people');runCombinedFilter();
+ }else if($('catalog-query').value.trim()){
+  setSearchMode('title');runSearch($('catalog-query').value.trim(),state.scope);
+ }else{
+  $('catalog-results').replaceChildren();
+  $('list-caption').textContent='DISCOVER';
+  setStatus('Choose an author, reader or title to begin.');
+ }
+});
 document.querySelectorAll('[data-quick]').forEach(b=>b.addEventListener('click',()=>{showSearch();runSearch(b.dataset.quick,b.dataset.scope);}));
 $('back-to-search').addEventListener('click',showSearch);
 $('recording-select').addEventListener('change',e=>selectRecording(Number(e.target.value)));
