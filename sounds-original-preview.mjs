@@ -18,8 +18,11 @@ export function createOriginalPreview({label='LISTEN TO ORIGINAL'}={}){
  let objectUrl=null,activeId=null;
  function pause(){if(!audio.paused)audio.pause()}
  function clear(){
-  pause();audio.removeAttribute('src');audio.load();
-  if(objectUrl){URL.revokeObjectURL(objectUrl);objectUrl=null}
+  pause();
+  if(objectUrl){
+   audio.removeAttribute('src');audio.load();
+   URL.revokeObjectURL(objectUrl);objectUrl=null;
+  }
   activeId=null;root.hidden=true;message.textContent='';
  }
  function setItem(item){
