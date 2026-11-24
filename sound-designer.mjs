@@ -54,9 +54,10 @@ async function providerRequest({provider,messages,key,puter,signal,openRouterMod
    const data=await response.json().catch(()=>({}));
    if(!response.ok){
      const error=new Error(data?.error?.message||'HTTP '+response.status);
-     error.status=response.status;throw error;
+     error.status=response.status;error.model=model;throw error;
    }
    const text=responseText(data);
+   if(!text.trim()){const error=Error('Model '+(data?.model||model)+' returned no text (finish reason: '+(data?.choices?.[0]?.finish_reason||'unknown')+').');error.emptyResponse=true;throw error;}
    const cutOff=data?.choices?.[0]?.finish_reason==='length';
    if(cutOff&&!completedCodeFence(text)){
      const visible=Number(data?.usage?.completion_tokens||0)-
@@ -112,15 +113,13 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
  const modelLabel=node('label','','FREE OPENROUTER MODEL');
  const modelSelect=node('select');
  modelSelect.id='sound-model';modelSelect.setAttribute('aria-label','Select a free OpenRouter model');
- const recommended=node('option','','Recommended · North Mini Code (free)');
- recommended.value=PREFERRED_OPENROUTER_CODE_MODEL;
- const automatic=node('option','','Automatic · random free model');
+ const automatic=node('option','','Automatic · OpenRouter free routing');
  automatic.value=OPENROUTER_FREE_MODEL;
- modelSelect.append(recommended,automatic);
- modelSelect.value=PREFERRED_OPENROUTER_CODE_MODEL;
+ modelSelect.append(automatic);
+ modelSelect.value=OPENROUTER_FREE_MODEL;
  const loadModels=action('FIND AVAILABLE FREE MODELS','sound-load-models','sound-secondary');
  const modelHint=node('p','sound-fine',
-   'Recommended is a free coding model with room for full instruments. Automatic selects a random free model and may produce incomplete code. Find more free models below.');
+   'Automatic uses OpenRouter free routing. FIND AVAILABLE FREE MODELS lists current alternatives; retired models are not pinned.');
  modelWrap.append(modelLabel,modelSelect,loadModels,modelHint);
  const authPanel=node('div','sound-auth');
  const authStatus=node('span','sound-auth-status');authStatus.id='sound-auth-status';
@@ -192,10 +191,17 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
  scratch.append(resultTop,versionsBar,code,review,explanation,revisionLabel,revision,resultActions,caution);
  const footer=node('p','sound-fine',
   'OpenRouter offers only its free-model route or verified free variants. Puter uses your own monthly allowance. No developer key, paid OpenRouter model, or automatic retry is used. Draft versions stay only in this browser session until you save them as compositions.');
- box.append(head,label,provider,modelWrap,authPanel,promptLabel,description,presets,includeWrap,privacy,requestActions,status,scratch,footer);
+ const requestDetails=node('details','sound-request-details');
+ const requestSummary=node('summary','','REQUEST DETAILS · EXACT PROVIDER PAYLOAD');
+ const requestBody=node('pre','sound-code');requestBody.style.whiteSpace='pre-wrap';requestBody.style.overflowWrap='anywhere';
+ const copyRequest=action('COPY REQUEST','sound-copy-request','sound-secondary');
+ let requestText='';copyRequest.disabled=true;
+ copyRequest.onclick=async()=>{try{await navigator.clipboard.writeText(requestText);setStatus('Request copied.')}catch(e){setStatus('Could not copy request: '+e.message,true)}};
+ requestDetails.append(requestSummary,requestBody,copyRequest);
+ box.append(head,label,provider,modelWrap,authPanel,promptLabel,description,presets,includeWrap,privacy,requestActions,status,requestDetails,scratch,footer);
  host.append(box);
  let key='';let puterLoaded=false;let pending=false;let latest=null;let currentAbort=null;
- let freeModelIds=new Set([PREFERRED_OPENROUTER_CODE_MODEL]);
+ let freeModelIds=new Set();
  let versions=[],currentVersion=-1;
  try{
    const stored=normalizeSoundDrafts(JSON.parse(sessionStorage.getItem(RESULTS_KEY)||'null'));
@@ -450,14 +456,49 @@ export function createSoundDesigner({host,editor,saveComposition,audition,stopAu
    currentAbort=controller;
    cancel.disabled=false;
    const timeout=setTimeout(()=>controller.abort('timeout'),240000);
+   const modelId=chosen==='openrouter'?chosenModel:'gpt-5.4-nano';
+   requestText=JSON.stringify({endpoint:chosen==='openrouter'?ENDPOINT+'/chat/completions':'Puter ai.chat',model:modelId,messages,temperature:chosen==='openrouter'?0.45:0.5,...(chosen==='openrouter'?{max_completion_tokens:OPENROUTER_COMPLETION_TOKENS,usage:{include:true}}:{max_tokens:3500,normalize:true,stream:false,fallback:false})},null,2);
+   requestBody.textContent=requestText;copyRequest.disabled=false;
    busy(true);
-   setStatus('Request sent to '+(chosen==='openrouter'?'OpenRouter free models':'Puter')+
+   setStatus('Sending request to '+(chosen==='openrouter'?'OpenRouter ('+chosenModel+')':'Puter')+
      '. This uses one request from your own account.');
    try{
-     const answer=await providerRequest({
-       provider:chosen,messages,key,puter:window.puter,signal:controller.signal,
-       openRouterModel:chosenModel
-     });
+     let answer;
+     const attempts=[];
+     const maxAttempts=chosen==='openrouter'&&chosenModel===OPENROUTER_FREE_MODEL?2:1;
+     let attemptModel=chosenModel;
+     for(let attempt=0;attempt<maxAttempts;attempt++){
+       if(controller.signal.aborted)break;
+       const payload={endpoint:chosen==='openrouter'?ENDPOINT+'/chat/completions':'Puter ai.chat',
+         model:chosen==='openrouter'?attemptModel:'gpt-5.4-nano',messages,
+         temperature:chosen==='openrouter'?0.45:0.5,
+         ...(chosen==='openrouter'?{max_completion_tokens:OPENROUTER_COMPLETION_TOKENS,usage:{include:true}}:
+           {max_tokens:3500,normalize:true,stream:false,fallback:false})};
+       attempts.push(payload);
+       requestText=JSON.stringify({attempts},null,2);
+       requestBody.textContent=requestText;
+       setStatus('Generating · request '+(attempt+1)+' of '+maxAttempts+' · '+payload.model+
+         '. Waiting for provider response…');
+       try{
+         answer=await providerRequest({provider:chosen,messages,key,puter:window.puter,
+           signal:controller.signal,openRouterModel:attemptModel});
+         break;
+       }catch(error){
+         if(controller.signal.aborted)throw error;
+         const recoverable=error.emptyResponse||error.status===404||
+           /no provider serves|no endpoints found|model.*not.*available/i.test(error.message);
+         if(!recoverable||attempt+1>=maxAttempts)throw error;
+         setStatus('Automatic free model failed. Finding a different available free model…');
+         const catalogResponse=await fetch(ENDPOINT+'/models?output_modalities=text',
+           {cache:'no-store',signal:controller.signal});
+         if(!catalogResponse.ok)throw error;
+         const candidates=listVerifiedFreeModels(await catalogResponse.json());
+         const alternate=candidates.find(item=>item.id!==error.model&&
+           item.id!==PREFERRED_OPENROUTER_CODE_MODEL);
+         if(!alternate)throw error;
+         attemptModel=alternate.id;
+       }
+     }
      if(controller.signal.aborted)return;
      const parsed=parseSoundResponse(answer.text);
      const inspection=inspectSoundCode(parsed.code);
