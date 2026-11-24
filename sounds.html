@@ -78,7 +78,7 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 <div class="filter-group"><h2>Native SuperCollider sample lab</h2><p class="muted">Load a saved recording into native SuperCollider, including direct read-only 8/16/24/32-bit PCM and floating-point WAVE samples, verify its buffer, then audition non-destructive start/end regions, playback speed, volume, waveform region selection and crossfaded looping through SuperCollider. Experimental, isolated from Code, and preserves your original sound.</p><a href="./sounds-lab.html?build=2026112010">Open sample region and loop laboratory</a></div>
 <div class="library-controls">
 <div><label for="sounds-search">Find a sound</label><input id="sounds-search" type="search" placeholder="Name, creator, license…"></div>
-<div><label for="sounds-filter">Type</label><select id="sounds-filter"><option value="all">Everything</option><option value="favorite">Favorites</option><option value="recorded">Recordings</option><option value="imported">Imports</option><option value="written">Written code</option><option value="generated">Generated</option><option value="preset">Sample presets</option><option value="openverse">Openverse</option><option value="freesound">Freesound</option></select></div>
+<div><label for="sounds-filter">Type</label><select id="sounds-filter"><option value="all">Everything</option><option value="favorite">Favorites</option><option value="recorded">Recordings</option><option value="imported">Imports</option><option value="written">Written code</option><option value="generated">Generated</option><option value="preset">Sample presets</option><option value="openverse">Openverse</option><option value="freesound">Freesound</option><option value="librivox">LibriVox</option></select></div>
 </div>
 <div id="sounds-managed-list" aria-live="polite"></div>
 <div class="filter-group" id="sounds-backup">
@@ -136,6 +136,11 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 <section id="discover" role="tabpanel" hidden>
 <h2>Discover sounds</h2>
 <p class="muted">Search openly licensed online collections and add selected audio to your library. No automatic downloads.</p>
+<div class="filter-group" id="discover-spoken-word">
+<h3>Spoken-word recordings · LibriVox</h3>
+<p class="muted">Find recordings by author and reader, locate phrases using book text, and save extracted audio into this Sounds Library. Streaming requires a separate tap and respects Wi-Fi-first permission.</p>
+<a href="./librivox-explorer.html">Explore LibriVox recordings</a>
+</div>
 <form id="discover-form">
 <label for="discover-source">Collection</label>
 <select id="discover-source">

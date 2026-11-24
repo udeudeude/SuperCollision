@@ -24,6 +24,7 @@ with sync_playwright() as p:
  browser=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox','--autoplay-policy=no-user-gesture-required'])
  for width,height in [(896,414),(390,844)]:
   page=browser.new_page(viewport={'width':width,'height':height},accept_downloads=True)
+  page.route('https://archive.org/**',lambda route:route.fulfill(status=200,body=fixture.read_bytes(),headers={'Content-Type':'audio/mpeg'}))
   errors=[]
   page.on('pageerror',lambda error:errors.append(str(error)))
   page.set_content(html)
@@ -78,7 +79,12 @@ with sync_playwright() as p:
   assert filename.endswith('.wav'),filename
   # New selection must invalidate previous download, rather than exporting stale audio.
   page.locator('#chapter-select').select_option('1')
+  assert page.locator('#chapter-audio').get_attribute('src') is None
+  page.locator('#permit-preview-stream').check()
+  page.locator('#load-chapter-audio').click()
+  assert page.locator('#chapter-audio').get_attribute('src')=='https://archive.org/download/phantastes/02.mp3'
   assert page.locator('#download-wav').is_disabled()
+  page.wait_for_function('document.querySelector("#chapter-audio").readyState>=1',timeout=9000)
   page.evaluate('document.querySelector("#chapter-audio").currentTime=1')
   page.locator('#set-start').click()
   page.evaluate('document.querySelector("#chapter-audio").currentTime=2')

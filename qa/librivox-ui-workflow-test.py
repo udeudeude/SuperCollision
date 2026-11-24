@@ -3,6 +3,8 @@ from playwright.sync_api import sync_playwright
 import re
 root=Path(__file__).resolve().parent.parent if Path(__file__).resolve().parent.name=='qa' else Path(__file__).resolve().parent
 source=(root/'librivox-explorer.html').read_text()
+assert 'href="./librivox-explorer.html"' in (root/'sounds.html').read_text(), 'Sounds Discover link missing'
+assert '<option value="librivox">' in (root/'sounds.html').read_text(), 'Saved LibriVox samples cannot be filtered'
 source=re.sub(r'<link[^>]+librivox-explorer\.css[^>]*>', '<style>'+ (root/'librivox-explorer.css').read_text()+'</style>', source)
 source=re.sub(r'<script[^>]+librivox-explorer\.mjs[^>]*></script>','',source)
 def inline_source(path):
@@ -50,6 +52,20 @@ with sync_playwright() as pw:
   assert page.locator('#catalog-results .result-main').count()==1
   page.locator('#catalog-results .result-main').click()
   page.wait_for_function('document.querySelector("#section-coverage")?.textContent.includes("1 of 2")',timeout=6000)
+  assert page.locator('#chapter-audio').get_attribute('src') is None, 'Selecting a chapter cannot fetch audio'
+  assert page.locator('#chapter-audio').is_hidden()
+  assert page.locator('#load-chapter-audio').is_visible()
+  assert page.locator('#set-start').is_disabled()
+  page.locator('#load-chapter-audio').click()
+  assert page.locator('#chapter-audio').get_attribute('src') is None, 'Unknown network requires consent'
+  assert 'Streaming blocked' in page.locator('#playback-status').inner_text()
+  page.locator('#permit-preview-stream').check()
+  page.locator('#load-chapter-audio').click()
+  assert page.locator('#chapter-audio').get_attribute('src')=='https://archive.org/2.mp3'
+  assert page.locator('#load-chapter-audio').is_hidden()
+  page.locator('#permit-preview-stream').uncheck()
+  assert page.locator('#chapter-audio').get_attribute('src') is None, 'Revoked permission must unload audio'
+  assert page.locator('#load-chapter-audio').is_visible()
   assert page.locator('#chapter-select option').count()==1
   assert 'Peter Yearsley' in page.locator('#work-context').inner_text()
   assert 'Chapter 2' in page.locator('#chapter-select option').first.inner_text()
