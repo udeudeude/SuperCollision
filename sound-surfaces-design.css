@@ -119,7 +119,8 @@ body[data-sc-surface] .librivox-search-modes button[aria-pressed=false]{
  color:var(--sc-soft)!important;box-shadow:none!important;
 }
 body[data-sc-surface] :is(.bench-primary-action,.bench-remote-primary,#bench-make-instrument:not(:disabled),
-#extract-wav:not(:disabled),#find-combined,.combined-actions .primary,#discover-form .primary){
+#extract-wav:not(:disabled),#find-combined,.combined-actions .primary,#discover-form .primary,
+#lab-engine,button.primary){
  background:var(--sc-accent)!important;
  color:var(--sc-accent-ink)!important;
  border:1px solid var(--sc-line)!important;
@@ -143,6 +144,14 @@ body[data-sc-surface] :is(.bench-method-bar button,.acquire-entry-actions button
  background:var(--sc-plate)!important;
  border-color:var(--sc-line)!important;
  color:var(--sc-ink)!important;
+}
+body[data-sc-surface] :is(#save-region,#download-wav,.result-star,.person-chip){
+ background:var(--sc-plate)!important;color:var(--sc-ink)!important;
+ border-color:var(--sc-line)!important;
+}
+body[data-sc-surface] :is(.result-star,.person-chip)[aria-pressed=true]{
+ background:var(--sc-plate)!important;color:var(--sc-ink)!important;
+ border:2px solid var(--sc-selected)!important;
 }
 body[data-sc-surface] :is(.bench-method-bar button,.acquire-entry-actions button):active{
  background:var(--sc-selected)!important;color:var(--sc-accent-ink)!important;
