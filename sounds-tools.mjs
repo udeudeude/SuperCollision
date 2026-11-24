@@ -5,7 +5,7 @@ const $=id=>document.getElementById(id);
 const search=$('sounds-search'),filter=$('sounds-filter'),view=$('sounds-managed-list');
 const code=$('sounds-source'),title=$('sounds-source-name'),notice=$('sounds-tools-status');
 const saveButton=$('sounds-save-source'),cancelButton=$('sounds-cancel-edit');
-let pending=0,editing=null,objectUrls=[];
+let pending=0,editing=null;
 const say=message=>{notice.textContent=message};
 function node(tag,text){const element=document.createElement(tag);if(text!==undefined)element.textContent=text;return element}
 function action(text,fn){const b=node('button',text);b.type='button';b.addEventListener('click',fn);return b}
@@ -20,24 +20,19 @@ function resetEdit(){
  editing=null;saveButton.textContent='Save to library';cancelButton.hidden=true;
  title.value='';code.value='';
 }
-async function refresh(){
- const version=++pending;
- let items;try{items=await allSounds()}catch(error){say('Library unavailable: '+error.message);return}
- if(version!==pending)return;
- const audioIds=new Set(items.filter(item=>item.blob instanceof Blob).map(item=>item.id));
- for(const url of objectUrls)URL.revokeObjectURL(url);objectUrls=[];
- const query=search.value.trim().toLowerCase(),kind=filter.value;
- items=items.filter(item=>{
-  const haystack=[item.name,item.code,item.source,item.origin?.creator,item.origin?.license].filter(Boolean).join(' ').toLowerCase();
-  return (!query||haystack.includes(query))&&(kind==='all'||(kind==='favorite'?!!item.favorite:item.source===kind));
- }).sort((a,b)=>Number(b.created||0)-Number(a.created||0));
- view.replaceChildren();
- const count=node('p',items.length+' matching sound'+(items.length===1?'':'s'));
- count.className='muted';view.append(count);
- if(!items.length)return;
- for(const item of items){
-  const row=node('article');row.className='managed-item';
-  row.append(node('strong',item.name||'Untitled'));
+function rowSignature(item,audioIds){
+ // Renames and favorites change metadata, not the sound being auditioned.
+ // Rebuild if the source, origin, code or linked-sample state changes.
+ try{return JSON.stringify([item.source,item.created,item.code,item.mime,
+  item.blob instanceof Blob?[item.blob.size,item.blob.type]:null,
+  item.origin,item.preset,item.bench,
+  item.preset?.soundId?audioIds.has(item.preset.soundId):null])}
+ catch{return Symbol('uncomparable sound')}
+}
+function createRow(item,audioIds,signature){
+  const entry={item,signature,url:null};
+  const row=node('article');row.className='managed-item';entry.row=row;
+  const nameNode=node('strong',item.name||'Untitled');entry.nameNode=nameNode;row.append(nameNode);
   const date=new Date(item.created||0),dateText=Number.isNaN(+date)?'Unknown date':date.toLocaleString();
   const meta=node('small',(item.source||'unknown')+' · '+dateText);
   row.append(meta);
@@ -58,15 +53,15 @@ async function refresh(){
    const codePreview=node('pre',item.code);codePreview.className='saved-code';row.append(codePreview);
   }else if(item.blob instanceof Blob){
    const audio=node('audio');audio.controls=true;audio.preload='none';
-   const url=URL.createObjectURL(item.blob);objectUrls.push(url);audio.src=url;row.append(audio);
+   const url=URL.createObjectURL(item.blob);entry.url=url;audio.src=url;row.append(audio);
   }else{
    row.append(node('p','This library item has neither audio nor source code.'));
   }
   const actions=node('div');actions.className='actions';
-  actions.append(action(item.favorite?'★ Favorite':'☆ Favorite',async()=>{
+  actions.append(action(item.favorite?'★ Favorite':'☆ Favorite',async()=>{const item=entry.item;
    try{await saveSound({...item,favorite:!item.favorite})}catch(error){say('Could not update favorite: '+error.message)}
   }));
-  actions.append(action('Rename',async()=>{
+  actions.append(action('Rename',async()=>{const item=entry.item;
    const newName=prompt('Sound name',item.name||'');
    if(newName===null)return;
    if(!newName.trim()){say('The sound name cannot be empty.');return}
@@ -83,32 +78,32 @@ async function refresh(){
     lab.href='./sounds-lab.html?tone='+encodeURIComponent(item.id);
     actions.append(lab);
    }
-   if(!item.preset)actions.append(action('Edit source',()=>{
+   if(!item.preset)actions.append(action('Edit source',()=>{const item=entry.item;
     editing=item.id;title.value=item.name;code.value=item.code;
     saveButton.textContent='Save changes';cancelButton.hidden=false;
     document.querySelector('#sounds-tabs [data-view="create"]').click();
     code.focus();
    }));
-   actions.append(action('Export .scd',()=>{
+   actions.append(action('Export .scd',()=>{const item=entry.item;
     const blob=new Blob([item.code],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob);
     const a=node('a');a.href=url;
     a.download=(item.name||'instrument').replace(/[\\/:*?"<>|]/g,'_').slice(0,110).replace(/\.scd$/i,'')+'.scd';
     document.body.append(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),60000);
    }));
-   actions.append(action('Copy code',async()=>{
+   actions.append(action('Copy code',async()=>{const item=entry.item;
     try{await navigator.clipboard.writeText(item.code);say('SuperCollider code copied.')}
     catch{say('Clipboard permission denied. Select and copy the displayed source instead.')}
    }));
   }else if(item.blob instanceof Blob){
-   actions.append(action('Export audio',()=>{
+   actions.append(action('Export audio',()=>{const item=entry.item;
     const url=URL.createObjectURL(item.blob),anchor=node('a');
     anchor.href=url;anchor.download=filename(item);anchor.click();
     setTimeout(()=>URL.revokeObjectURL(url),30000);
    }));
   }
   if(item.origin){
-   actions.append(action('Copy attribution',async()=>{
+   actions.append(action('Copy attribution',async()=>{const item=entry.item;
     const origin=item.origin;
     const text=origin.attribution||[item.name,'by '+(origin.creator||'Unknown creator'),
      readableLicense(origin.license),origin.url||'',origin.licenseUrl||''].filter(Boolean).join(' · ');
@@ -116,11 +111,58 @@ async function refresh(){
     catch{say('Could not copy attribution automatically. Source information is shown above.')}
    }));
   }
-  actions.append(action('Delete',async()=>{
+  actions.append(action('Delete',async()=>{const item=entry.item;
    if(!confirm('Delete '+(item.name||'this sound')+' from this device? This cannot be undone.'))return;
    try{await deleteSound(item.id);say('Deleted '+item.name+'.')}catch(error){say('Delete failed: '+error.message)}
   }));
-  row.append(actions);view.append(row);
+  row.append(actions);entry.favoriteAction=actions.querySelector('button');
+  return entry;
+}
+const renderedRows=new Map();
+let countNode=null;
+function releaseRow(entry){
+ entry.row.remove();
+ if(entry.url)URL.revokeObjectURL(entry.url);
+}
+async function refresh(){
+ const version=++pending;
+ let items;try{items=await allSounds()}catch(error){say('Library unavailable: '+error.message);return}
+ if(version!==pending)return;
+ const audioIds=new Set(items.filter(item=>item.blob instanceof Blob).map(item=>item.id));
+ const query=search.value.trim().toLowerCase(),kind=filter.value;
+ items=items.filter(item=>{
+  const haystack=[item.name,item.code,item.source,item.origin?.creator,item.origin?.license].filter(Boolean).join(' ').toLowerCase();
+  return (!query||haystack.includes(query))&&(kind==='all'||(kind==='favorite'?!!item.favorite:item.source===kind));
+ }).sort((a,b)=>Number(b.created||0)-Number(a.created||0));
+ if(!countNode){
+  countNode=node('p');countNode.className='muted';view.prepend(countNode);
+ }
+ countNode.textContent=items.length+' matching sound'+(items.length===1?'':'s');
+ // Keep surviving audio elements in the document, instead of revoking their URLs
+ // and restarting playback whenever the library refreshes.
+ const visible=new Set();
+ let cursor=countNode.nextSibling;
+ for(const item of items){
+  const signature=rowSignature(item,audioIds);
+  let entry=renderedRows.get(item.id);
+  if(entry&&entry.signature!==signature){
+   if(entry.row===cursor)cursor=cursor.nextSibling;
+   releaseRow(entry);renderedRows.delete(item.id);entry=null;
+  }
+  if(!entry){
+   entry=createRow(item,audioIds,signature);
+   renderedRows.set(item.id,entry);
+  }else{
+   entry.item=item;
+   entry.nameNode.textContent=item.name||'Untitled';
+   entry.favoriteAction.textContent=item.favorite?'★ Favorite':'☆ Favorite';
+  }
+  visible.add(item.id);
+  if(entry.row===cursor)cursor=cursor.nextSibling;
+  else view.insertBefore(entry.row,cursor);
+ }
+ for(const [id,entry] of renderedRows){
+  if(!visible.has(id)){releaseRow(entry);renderedRows.delete(id)}
  }
 }
 saveButton.addEventListener('click',async()=>{
@@ -136,5 +178,5 @@ saveButton.addEventListener('click',async()=>{
 cancelButton.addEventListener('click',resetEdit);
 search.addEventListener('input',refresh);filter.addEventListener('change',refresh);
 document.addEventListener('sounds-library-changed',refresh);
-window.addEventListener('pagehide',()=>{for(const url of objectUrls)URL.revokeObjectURL(url);objectUrls=[]});
+window.addEventListener('pagehide',()=>{for(const entry of renderedRows.values())if(entry.url)URL.revokeObjectURL(entry.url)});
 refresh();

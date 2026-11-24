@@ -86,6 +86,37 @@ try{
  await page.getByRole('tab',{name:'Library'}).click();
  await page.getByText('Recording',{exact:false}).first().waitFor();
  assert.equal(await page.locator('.managed-item').count(),2);
+ // Favorites, renaming, and a matching search must not tear down an audible preview.
+ // The media element and its object URL must remain the SAME, not restart at zero.
+ const recordingRow=page.locator('.managed-item:has(audio)').first();
+ const originalAudioUrl=await recordingRow.locator('audio').evaluate(element=>{
+  window.__qaLibraryAudioElement=element;
+  return element.src;
+ });
+ await recordingRow.getByRole('button',{name:'☆ Favorite'}).click();
+ await recordingRow.getByRole('button',{name:'★ Favorite'}).waitFor();
+ assert.equal(await recordingRow.locator('audio').evaluate(el=>el===window.__qaLibraryAudioElement),true,
+  'favoriting must preserve the active audio element');
+ page.once('dialog',dialog=>dialog.accept('Retitled recording'));
+ await recordingRow.getByRole('button',{name:'Rename'}).click();
+ await recordingRow.getByText('Retitled recording',{exact:true}).waitFor();
+ assert.equal(await recordingRow.locator('audio').evaluate(el=>el===window.__qaLibraryAudioElement),true,
+  'renaming must preserve the active audio element');
+ await page.locator('#sounds-search').fill('Retitled');
+ await page.getByText('1 matching sound',{exact:true}).waitFor();
+ assert.equal(await recordingRow.locator('audio').evaluate(el=>el===window.__qaLibraryAudioElement),true,
+  'matching searches must preserve the active audio element');
+ assert.equal(await recordingRow.locator('audio').getAttribute('src'),originalAudioUrl,
+  'metadata refresh must retain the original media object URL');
+ await page.locator('#sounds-search').fill('');
+ await page.getByText('2 matching sounds',{exact:true}).waitFor();
+ await recordingRow.getByRole('button',{name:'★ Favorite'}).click();
+ await recordingRow.getByRole('button',{name:'☆ Favorite'}).waitFor();
+ const recordingName=await page.evaluate(async()=>{
+  const {allSounds}=await import('./sounds-store.mjs');
+  return (await allSounds()).find(item=>item.blob instanceof Blob)?.name;
+ });
+ assert.equal(recordingName,'Retitled recording','favoriting after rename may not restore stale metadata');
  await page.getByRole('tab',{name:'Discover'}).click();
  await page.locator('#discover-query').fill('bells');
  await page.getByRole('button',{name:'Search sounds'}).click();
