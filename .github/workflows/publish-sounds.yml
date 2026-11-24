@@ -82,6 +82,7 @@ jobs:
         run: |
           set -euo pipefail
           node source/qa/sounds-browser-test.mjs
+          node source/qa/sound-designer-browser-test.mjs
           .venv/bin/python source/qa/librivox-combine-browser-test.py
           .venv/bin/python source/qa/librivox-ui-workflow-test.py
           .venv/bin/python source/qa/librivox-ui-sample-test.py
