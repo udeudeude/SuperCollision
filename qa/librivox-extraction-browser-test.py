@@ -93,6 +93,8 @@ with sync_playwright() as p:
   page.locator('#set-start').click()
   page.evaluate('document.querySelector("#chapter-audio").currentTime=2')
   page.locator('#set-end').click()
+  readiness=page.evaluate('''()=>({start:state.clipStart,end:state.clipEnd,ready:state.audioLoaded,readyState:document.querySelector('#chapter-audio').readyState,currentTime:document.querySelector('#chapter-audio').currentTime,status:document.querySelector('#clip-message').textContent})''')
+  assert page.locator('#extract-wav').is_enabled(),f'Extraction unavailable after loading chapter metadata: {readiness}'
   page.locator('#extract-wav').click()
   assert 'Full-chapter transfer not approved' in page.locator('#extract-status').inner_text()
   assert page.evaluate('window.remoteDownloadCount')==0
