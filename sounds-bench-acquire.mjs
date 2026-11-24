@@ -50,6 +50,28 @@ function setup(){
  const pages={collection:$('acquire-collection'),acquire:$('acquire-overview'),
   record:$('acquire-record'),import:$('acquire-import'),code:$('acquire-code'),
   generate:remote.generate,discover:remote.discover,librivox:remote.librivox};
+ // Genuine microphone monitor: the recorder's existing analyser drives this
+ // waveform, level and elapsed time. Silence remains silence, not decoration.
+ const recordMonitor=create('div','bench-record-monitor');
+ recordMonitor.id='bench-record-monitor';
+ const monitorHead=create('div','bench-record-monitor-head');
+ const monitorTitle=create('strong','','MICROPHONE INPUT');
+ const meterText=create('output','','MIC OFF');
+ meterText.id='bench-record-level-text';
+ meterText.setAttribute('aria-label','Live microphone input level');
+ const timerText=create('output','','0:00');
+ timerText.id='bench-record-timer';
+ timerText.setAttribute('aria-label','Elapsed recording time');
+ monitorHead.append(monitorTitle,meterText,timerText);
+ const wave=create('canvas','bench-record-wave');
+ wave.id='bench-record-wave';
+ wave.height=90;
+ wave.setAttribute('role','img');
+ wave.setAttribute('aria-label','Live microphone waveform, derived from microphone input');
+ const monitorHint=create('p','bench-record-hint','Enable the microphone to check the incoming signal before recording.');
+ const meter=$('level');
+ recordMonitor.append(monitorHead,wave,meter,monitorHint);
+ pages.record.querySelector('#status')?.before(recordMonitor);
  const overlayKeys=['acquire','record','import','code','generate','discover','librivox'];
  // The saved collection remains in Library. Creation and import tools are
  // temporarily shown over the instrument workspace that invoked them.
@@ -307,7 +329,7 @@ function setup(){
  import('./sounds-backup-ui.mjs?v=1').catch(error=>{
   $('sounds-backup-status').textContent='Backup tools unavailable: '+error.message;
  });
- import('./sounds-library.mjs?v=0.5.2').catch(error=>{
+ import('./sounds-library.mjs?v=0.6.1').catch(error=>{
   $('status').textContent='Audio recorder unavailable: '+error.message;
   $('acquire-import-status').textContent='Import unavailable: '+error.message;
  });
