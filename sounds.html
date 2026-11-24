@@ -104,6 +104,8 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 <section id="sounds-import" role="tabpanel" hidden>
 <h2>Import audio</h2><p class="muted">Import existing recordings into the same local library. Originals are preserved; all later processing belongs to SuperCollider.</p>
 <label for="import">Choose audio files</label><input id="import" type="file" accept="audio/*,.wav,.flac,.aiff,.ogg,.m4a,.mp3" multiple>
+<p id="import-status" role="status" aria-live="polite">Choose one or more recordings to add to your library.</p>
+<ul id="import-failures" aria-label="Files not imported" hidden></ul>
 <p class="muted">Large files may exceed available storage. Importing from Files does not delete the source file.</p>
 </section>
 <section id="sounds-create" role="tabpanel" hidden>
