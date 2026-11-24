@@ -671,6 +671,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  loadWatch.observe(document.getElementById('lab-engine'),{childList:true,subtree:true,characterData:true});
  
  const status=document.createElement('p');status.id='bench-sample-status';status.textContent='Choose a recording, start SuperCollider, then load it to shape and play.';recording.append(status);
+ let currentSampleMessage='',currentSampleBusy=false;
  function updateSample(){
   const selector=document.getElementById('lab-sound');
   const selected=selector?.value;
@@ -686,20 +687,20 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(controls)controls.hidden=document.getElementById('lab-cancel')?.disabled!==false;
   sampleStage.hidden=loaded;
   status.textContent=loaded?'READY TO SHAPE':selected?'READY TO MAKE INSTRUMENT':hasRecordings?'CHOOSE A RECORDING':'NO RECORDINGS IN LIBRARY';
+  const make=document.getElementById('bench-make-instrument');
+  if(make){make.textContent=currentSampleBusy?'PREPARING…':'MAKE INSTRUMENT';make.setAttribute('aria-busy',String(currentSampleBusy));}
+  if(!loaded&&currentSampleMessage){sampleStage.querySelector('span').textContent=currentSampleMessage;status.textContent=currentSampleMessage;}
  }
  const watch=new MutationObserver(updateSample);
  watch.observe(document.getElementById('lab-live-source'),{attributes:true,attributeFilter:['readonly']});
  const recordingSelector=document.getElementById('lab-sound');
- recordingSelector?.addEventListener('change',updateSample);
+ recordingSelector?.addEventListener('change',()=>{currentSampleMessage='';currentSampleBusy=false;updateSample()});
  if(recordingSelector)new MutationObserver(updateSample).observe(recordingSelector,{childList:true,subtree:false});
  document.addEventListener('sounds-library-changed',updateSample);
  window.addEventListener('bench-sample-activity',event=>{
-  const message=event.detail?.message;
-  if(message&&source.readOnly!==false){
-   sampleStage.querySelector('span').textContent=message;
-   status.textContent=message;
-  }
-  if(event.detail?.loading!==undefined)updateSample();
+  currentSampleMessage=event.detail?.message||'';
+  currentSampleBusy=Boolean(event.detail?.loading);
+  updateSample();
  });
  const cancelButton=document.getElementById('lab-cancel');
  if(cancelButton)new MutationObserver(updateSample).observe(cancelButton,{attributes:true,attributeFilter:['disabled']});
