@@ -12,6 +12,11 @@ const generate=$('sounds-ai-generate'),revise=$('sounds-ai-revise'),status=$('so
 const result=$('sounds-ai-result'),preview=$('sounds-ai-code'),warnings=$('sounds-ai-review');
 const save=$('sounds-ai-save'),copy=$('sounds-ai-copy'),puterConnect=$('sounds-puter-connect');
 let current=null,busy=false,puterLoading=null;
+const details=document.createElement('details');details.id='sounds-ai-request-details';details.innerHTML='<summary>Request details · exact messages and model</summary><pre id="sounds-ai-request-body" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:340px;overflow:auto"></pre><button id="sounds-ai-copy-request" type="button">Copy request</button>';
+status.after(details);
+let lastRequest='';
+details.querySelector('button').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(lastRequest);say('Request details copied.')}catch{say('Select the request text to copy it.')}});
+function recordRequest(modelId,messages,settings){lastRequest=JSON.stringify({model:modelId,messages,...settings},null,2);details.querySelector('pre').textContent=lastRequest;}
 function say(value){status.textContent=value}
 function syncProvider(){const isPuter=provider.value==='puter';keyBox.hidden=isPuter;puterConnect.hidden=!isPuter;model.hidden=isPuter;document.querySelector('label[for="sounds-ai-model"]').hidden=isPuter}
 provider.addEventListener('change',syncProvider);syncProvider();
@@ -43,6 +48,8 @@ async function request(messages){
   const personalKey=key.value.trim(),chosen=model.value;
   if(!personalKey)throw Error('Provide your personal OpenRouter key. It is not stored.');
   if(!isFreeOpenRouterModel(chosen))throw Error('Selected model is not free.');
+  recordRequest(chosen,messages,{temperature:0.45,max_completion_tokens:OPENROUTER_COMPLETION_TOKENS});
+  say('Connecting to OpenRouter · '+chosen+'…');
   const response=await fetch('https://openrouter.ai/api/v1/chat/completions',{
    method:'POST',cache:'no-store',headers:{'Content-Type':'application/json',
     Authorization:'Bearer '+personalKey,'HTTP-Referer':location.origin,
@@ -56,10 +63,12 @@ async function request(messages){
    error.status=response.status;throw error;
   }
   const content=responseText(data);
+  if(!content.trim())throw Error('Model '+(data.model||chosen)+' returned no usable text (finish reason: '+(data?.choices?.[0]?.finish_reason||'unknown')+'). Try another free model.');
   if(data?.choices?.[0]?.finish_reason==='length'&&!completedCodeFence(content))
    throw Error('The free model ran out of output tokens before completing the instrument.');
   return {content,model:data.model||chosen,provider:'openrouter'};
  }
+ recordRequest('gpt-5.4-nano',messages,{temperature:0.5,max_tokens:3500});
  const puter=await loadPuter();
  if(!puter.ai?.chat)throw Error('Puter is not connected.');
  const data=await puter.ai.chat(messages,{model:'gpt-5.4-nano',normalize:true,
@@ -75,7 +84,7 @@ async function create(isRevision){
  if(!description){say('Describe the sound you want.');prompt.focus();return}
  if(isRevision&&!current){say('Generate an instrument before requesting revisions.');return}
  if(isRevision&&!revision.value.trim()){say('Describe the desired revision first.');revision.focus();return}
- busy=true;generate.disabled=true;revise.disabled=true;say('Generating SuperCollider source. No sound will be played automatically.');
+ busy=true;generate.disabled=true;revise.disabled=true;say('Preparing request…');
  try{
   const messages=buildSoundMessages({description,revision:isRevision?revision.value:'',priorCode:isRevision?current?.code:''});
   const response=await request(messages);
