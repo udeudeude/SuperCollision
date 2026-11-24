@@ -63,6 +63,34 @@ try{
  assert.deepEqual(await page.locator('.sounds-acquire-buttons [data-view]').evaluateAll(nodes=>nodes.map(n=>n.dataset.view)),['create','generate','import','record','discover'],'five acquisitions must be grouped separately from Library');
  assert.equal(await page.locator('#sounds-library').isVisible(),true);
  assert.equal(await page.locator('#discover-cancel-download').isHidden(),true,'cancel download is hidden while idle');
+ // Import feedback must be visible in Import itself, even when some files fail.
+ // Record's status lives in a hidden workspace and cannot report Import results.
+ await page.getByRole('tab',{name:'Import'}).click();
+ await page.locator('#import').setInputFiles([
+  {name:'good-recording.wav',mimeType:'audio/wav',buffer:Buffer.from('RIFFdemoWAVE')},
+  {name:'not-a-recording.txt',mimeType:'text/plain',buffer:Buffer.from('not audio')}
+ ]);
+ await page.waitForFunction(()=>document.querySelector('#import-status')?.textContent?.includes('Imported 1 of 2 files.'));
+ assert.equal(await page.locator('#import-status').isVisible(),true,'import results must appear in the active workspace');
+ assert.equal(await page.locator('#status').isVisible(),false,'record status is hidden and must not be reused for imports');
+ assert.match(await page.locator('#import-status').textContent(),/1 failed/);
+ assert.equal(await page.locator('#import-failures li').count(),1);
+ assert.match(await page.locator('#import-failures li').first().textContent(),/not-a-recording\.txt: Unrecognized audio format/);
+ await page.locator('#import').setInputFiles([
+  {name:'another-recording.wav',mimeType:'audio/wav',buffer:Buffer.from('RIFFdemoWAVE')}
+ ]);
+ await page.waitForFunction(()=>document.querySelector('#import-status')?.textContent==='Imported 1 audio file into the library.');
+ assert.equal(await page.locator('#import-failures').isHidden(),true,'a later successful batch must clear previous failures');
+ await page.getByRole('tab',{name:'Library'}).click();
+ for(const name of ['good-recording.wav','another-recording.wav']){
+  const imported=page.locator('.managed-item').filter({hasText:name});
+  await imported.waitFor();
+  page.once('dialog',dialog=>dialog.accept());
+  await imported.getByRole('button',{name:'Delete'}).click();
+  await imported.waitFor({state:'detached'});
+ }
+ assert.equal(await page.locator('.managed-item').count(),0,'import test must leave the library unchanged');
+
  await page.getByRole('tab',{name:'Create'}).click();
  await page.locator('#sounds-source-name').fill('Example instrument');
  await page.locator('#sounds-source').fill('SynthDef(\\tone,{Out.ar(0,SinOsc.ar(220)*0.1)}).add;');
