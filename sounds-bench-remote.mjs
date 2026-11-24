@@ -25,6 +25,14 @@ export function createRemoteTools({onUseCode,onOpenSamples}){
  discover.querySelector('#bench-discover-open-samples').addEventListener('click',onOpenSamples);
  const saved=discover.querySelector('#bench-discover-saved');
  document.addEventListener('sounds-library-changed',()=>{if(!discover.hidden)saved.hidden=false});
+ const networkDetails=discover.querySelector('.bench-network-policy');
+ const searchStatus=discover.querySelector('#discover-status');
+ // If iPhone Safari cannot report Wi-Fi and the production download guard blocks
+ // a preview or save, expose the opt-in control, never silently enable it.
+ new MutationObserver(()=>{
+  if(/Wi-Fi cannot be verified|Preview blocked: Wi-Fi/.test(searchStatus.textContent))
+   networkDetails.open=true;
+ }).observe(searchStatus,{childList:true,subtree:true,characterData:true});
  const loads=new Map();
  function ensure(name){
   if(loads.has(name))return loads.get(name);
