@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""Stage Sounds and LibriVox as one versioned release on the existing Pages site.
+
+This script does not build, delete, or modify the SuperCollider engine.
+It regenerates the opt-in offline *index*, not the download policy or service
+worker. The caller must commit the staged files together, or none of them.
+"""
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+from shutil import copy2
+
+PAGES = ("sounds.html", "sounds-lab.html")
+LIBRIVOX = (
+    "librivox-explorer.html",
+    "librivox-explorer.css",
+    "librivox-explorer.mjs",
+    "librivox-audio-extract.mjs",
+    "librivox-combine.mjs",
+    "librivox-text-locator.mjs",
+)
+
+
+def release_files(source: Path) -> tuple[str, ...]:
+    modules = tuple(sorted(path.name for path in source.glob("sounds-*.mjs")))
+    if len(modules) < 5:
+        raise ValueError("Refusing incomplete Sounds source: missing modules")
+    files = (*PAGES, *modules, *LIBRIVOX)
+    missing = [name for name in files if not (source / name).is_file()]
+    if missing:
+        raise ValueError("Refusing incomplete release: " + ", ".join(missing))
+
+    # A tested Sounds link must never point at an old/absent LibriVox app.
+    sounds = (source / "sounds.html").read_text(encoding="utf-8")
+    explorer = (source / "librivox-explorer.html").read_text(encoding="utf-8")
+    if 'href="./librivox-explorer.html"' not in sounds:
+        raise ValueError("Sounds does not link to the bundled LibriVox explorer")
+    if "librivox-explorer.css" not in explorer or "librivox-explorer.mjs" not in explorer:
+        raise ValueError("LibriVox page does not load its bundled stylesheet and module")
+    return files
+
+
+def stage_release(source: Path, site: Path) -> tuple[str, ...]:
+    source, site = source.resolve(), site.resolve()
+    files = release_files(source)
+    if not (site / "index.html").is_file():
+        raise ValueError("Refusing release without the existing Code entrypoint")
+    for engine in ("sclang", "scsynth"):
+        folder = site / "runtime" / engine
+        if not (folder / (engine + ".js")).is_file() or not list(folder.glob("*.wasm")):
+            raise ValueError(f"Refusing release without compiled {engine} engine")
+
+    for name in files:
+        copy2(source / name, site / name)
+
+    subprocess.run(
+        [sys.executable, str(source / "scripts" / "build_offline_manifest.py"), str(site)],
+        check=True,
+    )
+
+    manifest = json.loads((site / "lab-offline-assets.json").read_text(encoding="utf-8"))
+    entries = {entry["path"]: entry["bytes"] for entry in manifest["files"]}
+    if manifest["format"] != "supercollision-offline-v1":
+        raise ValueError("Unexpected offline manifest format")
+    for name in files:
+        deployed = site / name
+        if deployed.read_bytes() != (source / name).read_bytes():
+            raise ValueError(f"Release did not stage current {name}")
+        if entries.get("/" + name) != deployed.stat().st_size:
+            raise ValueError(f"Offline manifest is missing current {name}")
+    print(f"Validated one Sounds + LibriVox release: {len(files)} assets and offline index")
+    return files
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        raise SystemExit("Usage: stage_sounds_release.py SOURCE_DIR SITE_DIR")
+    stage_release(Path(sys.argv[1]), Path(sys.argv[2]))
