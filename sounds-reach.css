@@ -439,3 +439,75 @@ body:has(#lab-demo-code:focus) #lab-setup{
 body:has(#lab-live-source:focus) #lab-source-bay{
  min-height:190px!important;
 }
+
+/* v0.6.1: true microphone waveform and recording-time feedback.
+   Visual feedback lives in the viewing area; Record is at the thumb. */
+#bench-acquire-overlay #bench-record-monitor{
+ display:flex;flex-direction:column;gap:8px;
+ min-width:0;min-height:0;margin:8px 0!important;padding:10px!important;
+ background:var(--sc-plate,#282e26);
+ border:1px solid var(--sc-line,#786e55);
+}
+#bench-acquire-overlay #bench-record-monitor-head{min-height:20px}
+#bench-record-monitor .bench-record-monitor-head{
+ display:flex;align-items:baseline;justify-content:space-between;gap:6px;
+ font:800 11px/1.25 ui-monospace,monospace;
+}
+#bench-record-monitor .bench-record-monitor-head strong{
+ flex:1;min-width:0;letter-spacing:.05em;color:var(--sc-ink,#eedfc9);
+}
+#bench-record-monitor .bench-record-monitor-head output{
+ white-space:nowrap;flex:0 0 auto;
+ font:800 10px/1.25 ui-monospace,monospace;
+ color:var(--sc-soft,#c1b69f);
+}
+#bench-record-monitor #bench-record-timer{
+ min-width:42px;text-align:right;
+ color:var(--sc-graph-ink,#e3be7a);
+ font-variant-numeric:tabular-nums;
+}
+#bench-record-monitor #bench-record-wave{
+ display:block;width:100%;height:90px;min-height:90px;
+ background:var(--sc-editor,#172019);
+ border:1px solid var(--sc-line-subtle,#55594a);
+}
+#bench-record-monitor #level{
+ display:block;width:100%;height:9px;min-height:9px;
+ border:0!important;margin:0!important;
+ accent-color:var(--sc-accent,#d8ae5b);
+}
+#bench-record-monitor .bench-record-hint{
+ margin:0!important;color:var(--sc-soft,#bfb49d)!important;
+ font:11px/1.35 ui-monospace,monospace!important;
+ overflow-wrap:anywhere;
+}
+body.is-recording #bench-record-monitor{
+ border-color:#d18070!important;
+}
+body.is-recording #bench-record-timer{
+ color:#e99483!important;
+}
+#bench-bottom-play .bench-reach-primary{
+ grid-template-columns:minmax(0,1.45fr) minmax(0,.78fr) minmax(0,.88fr);
+}
+#bench-bottom-play #lab-tone-stop{
+ display:flex;align-items:center;justify-content:center;
+ min-width:0;min-height:44px!important;
+ font:850 11px/1.2 ui-monospace,monospace!important;
+ background:var(--sc-plate,#2e322b)!important;
+ color:var(--sc-ink,#ede1ca)!important;
+ border:1px solid #b46a5d!important;
+}
+#bench-bottom-play #lab-tone-stop:disabled{
+ opacity:.4!important;border-color:var(--sc-line,#71664d)!important;
+}
+#bench-bottom-play #lab-tone-stop:not(:disabled):active{
+ background:#a64a3c!important;color:white!important;
+}
+#bench-bottom-play #lab-tone-save{
+ font:850 10px/1.2 ui-monospace,monospace!important;
+}
+@media(max-height:640px){
+ #bench-record-monitor #bench-record-wave{height:62px;min-height:62px}
+ #bench-acquire-overlay #bench-record-monitor{gap:5px;margin:3px 0!important;padding:6px!important}
+}
