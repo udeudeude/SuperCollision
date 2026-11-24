@@ -2,6 +2,7 @@
  * This page boots its own sclang/scsynth; main editor remains untouched. */
 import {allSounds,saveSound} from './sounds-store.mjs';
 import {NativeBufferTransport} from './sounds-buffer.mjs';
+import {createOriginalPreview} from './sounds-original-preview.mjs?v=0.5.2';
 import {readPcmWaveForNativeBuffer} from './sounds-pcm-ingest.mjs';
 import {REGION_DEFINITIONS,regionPlayCommand,regionLiveSource,stopRegionCommand,sampleInstrumentSource,validateRegion,DEMO_MARKER} from './sounds-sampler.mjs';
 import {waveformPeaks,waveformDragRegion} from './sounds-waveform.mjs';
@@ -11,6 +12,16 @@ const $=id=>document.getElementById(id);
 const status=$('lab-status'),log=$('lab-log'),sound=$('lab-sound'),engine=$('lab-engine');
 const load=$('lab-load'),play=$('lab-play'),stop=$('lab-stop'),cancel=$('lab-cancel'),progress=$('lab-progress');
 const details=$('lab-details');
+// Read-only local audition of the original, independent of SuperCollider.
+const originalPreview=createOriginalPreview();
+sound.after(originalPreview.root);
+function updateOriginalPreview(){
+ const item=entries.find(entry=>entry.id===sound.value);
+ originalPreview.setItem(item||null);
+}
+window.addEventListener('bench-view-changed',event=>{
+ if(event.detail?.view!=='sample')originalPreview.pause();
+});
 const regionStart=$('lab-start'),regionFinish=$('lab-finish'),regionRate=$('lab-rate'),regionAmp=$('lab-amp'),regionLoop=$('lab-loop'),regionSummary=$('lab-region-summary');
 const demoCode=$('lab-demo-code'),demoPitch=$('lab-demo-pitch'),demoLevel=$('lab-demo-level'),demoReset=$('lab-demo-reset');
 const demoBay=$('lab-demo-code-bay'),demoControls=$('lab-demo-controls'),demoSyncLabel=$('lab-demo-sync-label');
@@ -406,8 +417,10 @@ let lang=null,synth=null,transport=null,languageReady=false,serverReady=false,de
 let bootRequested=false,booting=false,bootTimeout=null,definitionTimeout=null,installingDefinitions=false,current=null,currentItemId=null,controller=null,entries=[],allocated=false;
 let requestedSampleId=null;
 let synthBootPending=false,synthBootCompleted=false,serverSampleRate=null,nativeAudioContext=null;
-function sampleActivity(message,loading){window.dispatchEvent(new CustomEvent('bench-sample-activity',{detail:{message,loading}}))}
-function announce(t){status.textContent=t;if(requestedSampleId&&(/failed|unavailable|requires|error|timed out|blocked/i).test(t))sampleActivity(t,false);const hint=$('lab-setup-hint');if(hint&&(/failed|unavailable|requires|error|timed out/i).test(t))hint.textContent='If this persists, open Technical details and troubleshooting at the bottom of the page.'}
+function sampleActivity(message,loading,kind=loading?'loading':'info'){
+ window.dispatchEvent(new CustomEvent('bench-sample-activity',{detail:{message,loading,kind}}));
+}
+function announce(t){status.textContent=t;if(requestedSampleId&&(/failed|unavailable|requires|error|timed out|blocked/i).test(t)){requestedSampleId=null;sampleActivity(t,false,'error');}const hint=$('lab-setup-hint');if(hint&&(/failed|unavailable|requires|error|timed out/i).test(t))hint.textContent='If this persists, open Technical details and troubleshooting at the bottom of the page.'}
 function print(t){log.textContent=(log.textContent+String(t)+'\n').slice(-10000);log.scrollTop=log.scrollHeight}
 /* The compiled scsynth getter can return a numerical handle instead of the
  * actual Web Audio context. Observe its own context constructor, never create
@@ -450,6 +463,7 @@ function refreshControls(){
  play.disabled=!current||!definitionsReady||!!controller;
  stop.disabled=!serverReady;
  cancel.disabled=!controller;
+ progress.hidden=!controller;
  updateSourceBay();
 }
 
@@ -589,9 +603,14 @@ async function listSounds(){
    if(!pendingPresetId&&entries.some(item=>item.id===id)){
     sound.value=id;
     sound.dispatchEvent(new Event('change',{bubbles:true}));
-    sampleActivity('Recording from LibriVox selected. Tap MAKE INSTRUMENT to shape and play it.',false);
+    const selected=entries.find(entry=>entry.id===id);
+    const origin=selected?.source==='recorded'?'Your microphone recording':
+     selected?.source==='imported'?'Imported recording':
+     selected?.source==='librivox'?'LibriVox recording':'Saved original audio';
+    sampleActivity(origin+' selected. Listen to the original, then tap MAKE INSTRUMENT.',false);
    }else if(!entries.some(item=>item.id===id))announce('The selected audio sample is not in the local Sounds library.');
   }else if(entries.some(item=>item.id===previousId))sound.value=previousId;
+  updateOriginalPreview();
   if(currentItemId&&!entries.some(item=>item.id===currentItemId)){current=null;currentItemId=null;waveform=null;renderWaveform();progress.value=0}
   if(pendingPresetId){
    const preset=catalog.find(item=>item.id===pendingPresetId&&item.source==='preset'&&item.preset);
@@ -706,6 +725,7 @@ window.addEventListener('bench-make-instrument',()=>{
   return;
  }
  if(controller){sampleActivity('The recording is already being loaded.',true);return;}
+ originalPreview.pause();
  requestedSampleId=sound.value;
  if(loadRequestedSample())return;
  sampleActivity('Starting SuperCollider. The selected recording will load when its engine is ready.',true);
@@ -766,6 +786,7 @@ sound.addEventListener('change',()=>{
   sound.value=currentItemId||'';return;
  }
  queuedPresetLoadId=null;linkedPreset=null;
+ updateOriginalPreview();
  if(current&&lang){try{lang.runCode(stopRegionCommand)}catch{}}
  current=null;currentItemId=null;waveform=null;progress.value=0;regionStart.value=0;regionFinish.value=100;updateRegionControls();
  showSoundDetails();
@@ -781,6 +802,16 @@ load.addEventListener('click',async()=>{
   if(item.blob.size>50*1024*1024)throw Error('Choose an audio file under 50 MB for this laboratory.');
   const context=outputContext(),sampleRate=outputSampleRate();
   if(typeof context?.resume==='function')await context.resume();
+  // A ready language does not guarantee its native sample-buffer command
+  // path is responsive. Verify that path before decoding and allocation.
+  try{
+   sampleActivity('Checking SuperCollider sample-buffer response…',true);
+   await transport.sync({signal:controller.signal,timeoutMs:5000});
+  }catch(error){
+   print('Native sample-server preflight: '+error.message);
+   if(controller.signal.aborted)throw Error('Transfer cancelled');
+   throw Error('SuperCollider did not respond to the sample-buffer check. Your recording is saved and playable above. Restart Sounds before trying again.');
+  }
   // Uncompressed PCM WAVE can be unpacked exactly into native sample values,
   // avoiding decodeAudioData freezes observed after compiled scsynth startup.
   // This is container ingestion only: no browser synthesis, editing or effects.
@@ -836,11 +867,16 @@ load.addEventListener('click',async()=>{
         lastPhase=stage.phase;lastQuarter=quarter;
       }
     },
-    onProgress:ratio=>{progress.value=ratio;announce('Transferring into native SuperCollider buffer: '+Math.round(100*ratio)+'% acknowledged')}
+    onProgress:ratio=>{
+     progress.value=ratio;
+     const percent=Math.round(100*ratio);
+     announce('Transferring into native SuperCollider buffer: '+percent+'% acknowledged');
+     sampleActivity('SuperCollider has acknowledged '+percent+'% of the recording.',true);
+    }
   });
   allocated=true;currentItemId=item.id;sourceDirty=false;pendingControl=false;waveform=waveformPeaks(decoded,512);updateRegionControls();
   announce('Verified by native SuperCollider sample readback: '+current.frames+' frames, '+current.channels+' channel(s), '+current.sampleRate+' Hz source. Native playback preserves original timing. Ready for PlayBuf.');
-  sampleActivity('Recording loaded. Shape and play the sample instrument.',false);
+  sampleActivity('Recording loaded. Shape and play the sample instrument.',false,'ready');
  }catch(error){
   current=null;currentItemId=null;waveform=null;renderWaveform();
   print('Sample transfer failed: '+error.message);
@@ -848,12 +884,17 @@ load.addEventListener('click',async()=>{
    ', definitions '+(definitionsReady?'ready':'not ready')+
    ', output context '+(outputContext()?.state||'unavailable')+
    ', server sample rate '+(serverSampleRate||'unknown')+' Hz.');
-  announce('Sample transfer failed: '+error.message);
-  sampleActivity('Sample transfer failed: '+error.message,false);
+  const cancelled=controller.signal.aborted;
+  const message=cancelled?'Instrument creation cancelled. Your recording is unchanged.':
+   /allocation failed|did not respond to \/sync/i.test(error.message)?
+   'SuperCollider did not acknowledge its buffer. The original is safe and playable above. Restart Sounds before retrying.':
+   error.message;
+  announce('Sample transfer '+(cancelled?'cancelled':'failed')+': '+error.message);
+  sampleActivity(message,false,cancelled?'info':'error');
  }
  finally{controller=null;refreshControls()}
 });
-cancel.addEventListener('click',()=>{requestedSampleId=null;controller?.abort();announce('Cancelling sample transfer and releasing the incomplete buffer…');sampleActivity('Cancelling sample transfer…',false)});
+cancel.addEventListener('click',()=>{requestedSampleId=null;controller?.abort();announce('Cancelling sample transfer and releasing the incomplete buffer…');sampleActivity('Cancelling sample transfer…',true)});
 play.addEventListener('click',async()=>{
  if(!current||!definitionsReady)return;
  try{
@@ -899,6 +940,7 @@ stop.addEventListener('click',()=>{
 });
 document.addEventListener('sounds-library-changed',listSounds);
 window.addEventListener('pagehide',event=>{
+ originalPreview.clear();
  controller?.abort();
  if(lang&&serverReady){try{lang.runCode(stopRegionCommand)}catch{}}
  if(synth&&allocated){try{transport.release(BUFFER)}catch{}}
