@@ -38,7 +38,7 @@ function main(){
   option.value=id;option.textContent=title;select.add(option);
  }
  label.append(caption,select);
- const version=header.querySelector('small:not(h1 small),.preview-note');
+ const version=header.querySelector('.preview-note')||header.querySelector(':scope > small');
  if(version){version.classList.add('sc-version');header.insertBefore(label,version)}
  else header.append(label);
  function apply(value,{persist=false}={}){
