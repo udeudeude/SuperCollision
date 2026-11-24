@@ -19,9 +19,10 @@ details.querySelector('button').addEventListener('click',async()=>{try{await nav
 function recordRequest(modelId,messages,settings){lastRequest=JSON.stringify({model:modelId,messages,...settings},null,2);details.querySelector('pre').textContent=lastRequest;}
 function say(value){status.textContent=value}
 function syncProvider(){const isPuter=provider.value==='puter';keyBox.hidden=isPuter;puterConnect.hidden=!isPuter;model.hidden=isPuter;refreshModels.hidden=isPuter;document.querySelector('label[for="sounds-ai-model"]').hidden=isPuter}
-provider.addEventListener('change',syncProvider);syncProvider();
+provider.addEventListener('change',syncProvider);
 const refreshModels=document.createElement('button');refreshModels.type='button';refreshModels.textContent='Find available free models';model.after(refreshModels);
 refreshModels.addEventListener('click',async()=>{refreshModels.disabled=true;say('Checking current OpenRouter free models…');try{const response=await fetch('https://openrouter.ai/api/v1/models?output_modalities=text',{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const entries=listVerifiedFreeModels(await response.json());if(!entries.length)throw Error('No free text models available');const old=model.value;model.replaceChildren(new Option('Automatic free · OpenRouter routing',OPENROUTER_FREE_MODEL),...entries.map(m=>new Option(m.name+' · '+m.id,m.id)));model.value=[...model.options].some(o=>o.value===old)?old:OPENROUTER_FREE_MODEL;say(entries.length+' free models found. Choose one or use Automatic.');}catch(e){say('Model catalog unavailable: '+e.message)}finally{refreshModels.disabled=false}});
+syncProvider();
 for(const [id,text] of [
  [OPENROUTER_FREE_MODEL,'Automatic free · OpenRouter chooses an available model']
 ]){const option=document.createElement('option');option.value=id;option.textContent=text;model.append(option)}
