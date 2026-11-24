@@ -46,6 +46,8 @@ with sync_playwright() as p:
   }''')
   page.evaluate('(data)=>{window.mockRecords=data.records;window.mp3fixture=data.fixture}',{'records':mock_records,'fixture':mp3base64})
   page.add_script_tag(content=full_js)
+  # Reader quick searches live inside the collapsed advanced catalog section.
+  page.locator('#catalog-disclosure > summary').click()
   page.locator('[data-quick="Peter Yearsley"]').click()
   page.wait_for_function("document.querySelector('.result-main strong')?.textContent === 'Peter Yearsley'")
   page.locator('.result-main').first.click()
