@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#161817">
-<title>SuperCollision Sounds · v0.3.7</title>
+<title>SuperCollision Sounds · v0.3.8</title>
 <style>
 :root{color-scheme:dark;background:#161817;color:#eae7da;font:15px/1.5 system-ui,sans-serif}
 *{box-sizing:border-box}
@@ -555,9 +555,20 @@ body.is-recording #bench-acquire-overlay #start{background:#bb4b3c;color:#fff}
 @media(max-height:680px){
  #lab-setup{grid-template-rows:auto minmax(78px,.8fr) minmax(128px,1.5fr) auto auto auto auto!important}
 }
+</style><style id="one-action-sample-v038">
+/* "Make instrument" is the primary action, not a faux heading.
+   Power and transfer are orchestrated using the existing native engine. */
+#bench-make-instrument{display:flex;align-items:center;justify-content:center;background:#d8ae5b!important;color:#231d15!important;border:1px solid #f0cf8b!important;cursor:pointer}
+#bench-make-instrument:focus-visible{outline:2px solid #f0cf8b;outline-offset:2px}
+#bench-sample-workspace #bench-sample-power,
+#bench-sample-workspace #lab-load{display:none!important}
+#bench-sample-workspace #lab-recording .actions{display:flex!important;justify-content:flex-end!important;margin:2px 0!important;padding:0!important}
+#bench-sample-workspace #lab-recording .actions[hidden]{display:none!important}
+#bench-sample-workspace #lab-cancel{font-size:11px!important;min-height:28px!important}
+#bench-sample-status{display:block!important;margin:5px 0 0!important;color:#b4a98f;font:10px/1.35 ui-monospace,monospace;overflow-wrap:anywhere}
 </style></head>
 <body>
-<header><a href="./index.html">← CODE</a><h1>SOUNDS</h1><small>v0.3.7</small></header>
+<header><a href="./index.html">← CODE</a><h1>SOUNDS</h1><small>v0.3.8</small></header>
 <main>
 <p class="lab-intro">Make a sound first. The instrument runs entirely in SuperCollider. No recording required.</p>
 <section id="lab-setup">
@@ -623,7 +634,13 @@ document.addEventListener('DOMContentLoaded',()=>{
  // Library is a destination, never an acquisition menu.
  const methods=(parent,heading,items)=>{
   const bar=document.createElement('div');bar.className='bench-method-bar';
-  const label=document.createElement('strong');label.className='bench-method-current';label.textContent=heading;bar.append(label);
+  const label=document.createElement(heading==='MAKE INSTRUMENT'?'button':'strong');label.className='bench-method-current';label.textContent=heading;
+  if(heading==='MAKE INSTRUMENT'){
+   label.type='button';label.id='bench-make-instrument';
+   label.setAttribute('aria-label','Create playable instrument from the selected recording');
+   label.addEventListener('click',()=>window.dispatchEvent(new CustomEvent('bench-make-instrument')));
+  }
+  bar.append(label);
   for(const [title,action] of items){
    const button=document.createElement('button');button.type='button';button.textContent=title;
    button.setAttribute('aria-label',title+(heading==='CREATE / PLAY'?' SuperCollider instrument':' recording'));
@@ -646,7 +663,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  const details=document.getElementById('lab-details');if(details)details.hidden=true;
  const progress=document.getElementById('lab-progress');if(progress)progress.hidden=true;
  const sampleStage=document.createElement('div');sampleStage.id='bench-sample-stage';sampleStage.setAttribute('aria-live','polite');
- sampleStage.innerHTML='<div class="bench-empty-symbol">◌</div><strong>NO SAMPLE LOADED</strong><span>Select a recording above to shape it, or acquire another.</span>';
+ sampleStage.innerHTML='<div class="bench-empty-symbol">◌</div><strong>NO SAMPLE LOADED</strong><span>Select a recording, then tap MAKE INSTRUMENT. You can also record, discover or import audio.</span>';
  recording.after(sampleStage);sampleWorkspace.append(sampleStage);
  const source=document.getElementById('lab-live-source');
  const loadWatch=new MutationObserver(()=>{const loaded=source.readOnly===false;sampleStage.hidden=loaded;engineButton.hidden=document.getElementById('lab-engine')?.textContent?.trim()==='Play tone';});
@@ -654,6 +671,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  loadWatch.observe(document.getElementById('lab-engine'),{childList:true,subtree:true,characterData:true});
  
  const status=document.createElement('p');status.id='bench-sample-status';status.textContent='Choose a recording, start SuperCollider, then load it to shape and play.';recording.append(status);
+ let currentSampleMessage='',currentSampleBusy=false;
  function updateSample(){
   const selector=document.getElementById('lab-sound');
   const selected=selector?.value;
@@ -663,18 +681,29 @@ document.addEventListener('DOMContentLoaded',()=>{
   sampleStage.querySelector('strong').textContent=!hasRecordings?'NO RECORDINGS YET':'NO SAMPLE LOADED';
   sampleStage.querySelector('span').textContent=!hasRecordings
    ?'Record, discover or import above. Then shape audio into a playable instrument.'
-   :selected?'Power on SuperCollider and load the selected recording.'
+   :selected?'Tap MAKE INSTRUMENT above. SuperCollider will start and load this recording.'
    :'Choose a saved recording above, or record, discover or import another.';
-  const controls=recording.querySelector('.actions');if(controls)controls.hidden=!selected;
+  const controls=recording.querySelector('.actions');
+  if(controls)controls.hidden=document.getElementById('lab-cancel')?.disabled!==false;
   sampleStage.hidden=loaded;
-  status.textContent=loaded?'READY TO SHAPE':selected?'SELECTED · LOAD TO CONTINUE':hasRecordings?'CHOOSE A RECORDING':'NO RECORDINGS IN LIBRARY';
+  status.textContent=loaded?'READY TO SHAPE':selected?'READY TO MAKE INSTRUMENT':hasRecordings?'CHOOSE A RECORDING':'NO RECORDINGS IN LIBRARY';
+  const make=document.getElementById('bench-make-instrument');
+  if(make){make.textContent=currentSampleBusy?'PREPARING…':'MAKE INSTRUMENT';make.setAttribute('aria-busy',String(currentSampleBusy));}
+  if(!loaded&&currentSampleMessage){sampleStage.querySelector('span').textContent=currentSampleMessage;status.textContent=currentSampleMessage;}
  }
  const watch=new MutationObserver(updateSample);
  watch.observe(document.getElementById('lab-live-source'),{attributes:true,attributeFilter:['readonly']});
  const recordingSelector=document.getElementById('lab-sound');
- recordingSelector?.addEventListener('change',updateSample);
+ recordingSelector?.addEventListener('change',()=>{currentSampleMessage='';currentSampleBusy=false;updateSample()});
  if(recordingSelector)new MutationObserver(updateSample).observe(recordingSelector,{childList:true,subtree:false});
  document.addEventListener('sounds-library-changed',updateSample);
+ window.addEventListener('bench-sample-activity',event=>{
+  currentSampleMessage=event.detail?.message||'';
+  currentSampleBusy=Boolean(event.detail?.loading);
+  updateSample();
+ });
+ const cancelButton=document.getElementById('lab-cancel');
+ if(cancelButton)new MutationObserver(updateSample).observe(cancelButton,{attributes:true,attributeFilter:['disabled']});
  updateSample();
  for(const [name,lines] of [['play',['INSTRUMENTS','& CODE']],['sample',['RECORDINGS','& SAMPLES']],['details',['LIBRARY']]]){
   const b=document.createElement('button');b.type='button';
@@ -707,7 +736,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  // Earlier preview links used #acquire; take those into the appropriate instrument workspace.
  const initial=location.hash.slice(1);show(['play','sample','details'].includes(initial)?initial:'play');
 });
-</script><script type="module" src="./sounds-bench-engine.mjs?v=0.3.7"></script>
+</script><script type="module" src="./sounds-bench-engine.mjs?v=0.3.8"></script>
 <script type="module" src="./sounds-bench-acquire.mjs?v=0.3.7"></script>
 </body>
 </html>
