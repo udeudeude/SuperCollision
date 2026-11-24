@@ -4,6 +4,7 @@
  */
 import {allSounds,saveSound,deleteSound} from './sounds-store.mjs';
 import {createRemoteTools} from './sounds-bench-remote.mjs?v=0.5.1';
+import {createOriginalPreview} from './sounds-original-preview.mjs?v=0.5.2';
 const $=id=>document.getElementById(id);
 const create=(tag,cls,text)=>{
  const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el;
@@ -55,11 +56,14 @@ function setup(){
   const bar=create('div','bench-acquire-complete');bar.hidden=true;
   const message=create('span','','SAVED TO LIBRARY');
   const next=action('USE IN SAMPLES',()=>{
-   const id=audioCompletion[kind]?.id;
-   if(id)openAudio(id);
+   const entry=audioCompletion[kind];
+   entry?.audition.pause();
+   if(entry?.id)openAudio(entry.id);
   },'bench-remote-primary');
-  bar.append(message,next);pages[kind].append(bar);
-  audioCompletion[kind]={bar,message,id:null};
+  const audition=createOriginalPreview({label:'LISTEN TO YOUR SAVED ORIGINAL'});
+  bar.append(message,next);
+  pages[kind].append(audition.root,bar);
+  audioCompletion[kind]={bar,message,audition,id:null};
  }
  let active='collection',token=0,lastTrigger=null,triggerWorkspace=null;
  const backgroundPanels=['lab-setup','bench-sample-workspace','bench-library-workspace'];
@@ -71,6 +75,8 @@ function setup(){
  function closeOverlay({restoreFocus=true}={}){
   const wasVisible=!overlay.hidden;
   if(active==='record')microphoneOff();
+  audioCompletion.record.audition.pause();
+  audioCompletion.import.audition.pause();
   if(active==='discover')remote.stopDiscover();
   if(active==='librivox')remote.stopLibriVox();
   overlay.hidden=true;active='collection';
@@ -233,24 +239,25 @@ function setup(){
  }
  search.addEventListener('input',()=>void refresh());
  filter.addEventListener('change',()=>void refresh());
- document.addEventListener('sounds-library-changed',()=>{
-  void refresh();
-  const kind=active;
-  if(kind==='import'||kind==='record'){
-   void allSounds().then(items=>{
-    if(active!==kind)return;
-    const newest=items.filter(item=>item.blob instanceof Blob)
-     .sort((a,b)=>Number(b.created||0)-Number(a.created||0))[0];
-    if(!newest)return;
-    const finish=audioCompletion[kind];
-    finish.id=newest.id;
-    finish.message.textContent=(kind==='record'?'RECORDING':'AUDIO FILE')+' SAVED · '+newest.name;
-    finish.bar.hidden=false;
-    if(kind==='import')$('acquire-import-status').textContent='Added to your Library. You can import more files or use the new sample.';
-   }).catch(error=>{
-    if(kind==='import')$('acquire-import-status').textContent='Saved, but the Library list could not refresh: '+error.message;
-   });
-  }
+ document.addEventListener('sounds-library-changed',()=>{void refresh()});
+ // Use the exact ID emitted by a successful recorder/import save. A generic
+ // library change (renaming or favoriting) must never claim that audio was saved.
+ document.addEventListener('sounds-audio-saved',event=>{
+  const {id,source}=event.detail||{};
+  const kind=source==='recorded'?'record':source==='imported'?'import':null;
+  if(!kind||typeof id!=='string')return;
+  void allSounds().then(items=>{
+   const item=items.find(entry=>entry.id===id&&entry.blob instanceof Blob);
+   if(!item)return;
+   const finish=audioCompletion[kind];
+   finish.id=id;
+   finish.message.textContent=(kind==='record'?'RECORDING':'AUDIO FILE')+' SAVED · '+item.name;
+   finish.audition.setItem(item);
+   finish.bar.hidden=false;
+   if(kind==='import')$('acquire-import-status').textContent='Audio saved. Listen to the original before creating an instrument.';
+  }).catch(error=>{
+   if(kind==='import')$('acquire-import-status').textContent='Saved, but playback is unavailable: '+error.message;
+  });
  });
  window.addEventListener('bench-library-open',()=>view('details'));
  window.addEventListener('bench-view-changed',event=>{
@@ -268,7 +275,7 @@ function setup(){
  import('./sounds-backup-ui.mjs?v=1').catch(error=>{
   $('sounds-backup-status').textContent='Backup tools unavailable: '+error.message;
  });
- import('./sounds-library.mjs?v=2').catch(error=>{
+ import('./sounds-library.mjs?v=0.5.2').catch(error=>{
   $('status').textContent='Audio recorder unavailable: '+error.message;
   $('acquire-import-status').textContent='Import unavailable: '+error.message;
  });
