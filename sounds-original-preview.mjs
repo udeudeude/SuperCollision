@@ -22,7 +22,7 @@ export function createOriginalPreview({label='ORIGINAL RECORDING'}={}){
  const message=document.createElement('p');message.className='bench-original-message';
  message.setAttribute('role','status');message.setAttribute('aria-live','polite');
  root.append(head,canvas,audio,message);
- let objectUrl=null,activeId=null,decodeEpoch=0,peaks=null,dragging=false;
+ let objectUrl=null,activeId=null,activeItem=null,decodeEpoch=0,peaks=null,dragging=false;
  const time=t=>{
   if(!Number.isFinite(t)||t<0)return '0:00';
   const seconds=Math.floor(t);
@@ -88,6 +88,7 @@ export function createOriginalPreview({label='ORIGINAL RECORDING'}={}){
  audio.addEventListener('loadedmetadata',()=>{
   if(!activeId)return;
   message.textContent='Original length '+time(duration())+'. You can listen or scrub the waveform.';
+  if(activeItem)void analyze(activeItem,decodeEpoch);
   draw();
  });
  audio.addEventListener('error',()=>{
@@ -100,10 +101,12 @@ export function createOriginalPreview({label='ORIGINAL RECORDING'}={}){
    audio.removeAttribute('src');audio.load();
    URL.revokeObjectURL(objectUrl);objectUrl=null;
   }
-  peaks=null;activeId=null;canvas.hidden=true;audio.hidden=true;root.hidden=true;message.textContent='';
+  peaks=null;activeId=null;activeItem=null;canvas.hidden=true;audio.hidden=true;root.hidden=true;message.textContent='';
  }
  async function analyze(item,epoch){
-  if(item.blob.size>12*1024*1024)return;
+  // A tiny compressed file can expand to hundreds of megabytes.
+  // Keep passive waveform decoding bounded; full recordings stay playable.
+  if(item.blob.size>12*1024*1024||!duration()||duration()>90)return;
   const AudioCtor=window.AudioContext||window.webkitAudioContext;
   if(!AudioCtor||typeof item.blob.arrayBuffer!=='function')return;
   let ctx;
@@ -134,13 +137,12 @@ export function createOriginalPreview({label='ORIGINAL RECORDING'}={}){
  function setItem(item){
   if(!item?.id||!(item.blob instanceof Blob)){clear();return}
   if(activeId===item.id)return;
-  clear();activeId=item.id;objectUrl=URL.createObjectURL(item.blob);
+  clear();activeId=item.id;activeItem=item;objectUrl=URL.createObjectURL(item.blob);
   audio.src=objectUrl;audio.hidden=false;root.hidden=false;
   subtitle.textContent=(item.source==='recorded'?'Microphone recording':
    item.source==='imported'?'Imported recording':
    item.source==='librivox'?'LibriVox sample':'Saved original audio')+' · unchanged';
   message.textContent='Play the original below, or scrub the waveform when available.';
-  void analyze(item,decodeEpoch);
  }
  const resize=typeof ResizeObserver!=='undefined'?new ResizeObserver(()=>draw()):null;
  resize?.observe(canvas);
