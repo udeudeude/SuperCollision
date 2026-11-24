@@ -14,7 +14,7 @@ export function createRemoteTools({onUseCode,onOpenSamples,onOpenSample}){
   <button id="bench-librivox-retry" type="button" hidden>RETRY</button>
  </div>
  <iframe id="bench-librivox-frame" title="LibriVox spoken-word sampling interface" loading="lazy"
-   data-src="./librivox-explorer.html?v=0.6.0&embedded=1"
+   data-src="./librivox-explorer.html?v=0.6.1&embedded=1"
    data-sc-embedded="true" hidden allow="autoplay"></iframe>
  <div id="bench-librivox-next" hidden>
   <span id="bench-librivox-saved-name">Sample saved.</span>
