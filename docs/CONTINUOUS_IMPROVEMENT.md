@@ -28,7 +28,7 @@ This is a durable decision record for small, independent, testable improvements.
 - **Immediate verification:** test the combined implementation with Sounds browser acceptance and actual compiled SuperCollider runtime, plus LibriVox mobile search, consent, region selection, extraction and navigation tests. Passing tests on independent branches are not sufficient.
 - **Interface review:** LibriVox discovery is now reachable from Sounds, but still uses a separate page. Assess a unified workspace instead of duplicating acquisition interfaces.
 - **Device gate:** verify on physical iPhone Safari: recording, microphone release, editor keyboard, saved playback continuity, network consent, reader filters, extraction, storage and audio output.
-- **Release gate:** investigate the recurring Cloudflare preview failure. Do not automatically merge or publish until cross-feature tests and release checks pass.
+- **Release gate:** the isolated atomic-publisher proposal stages Sounds and LibriVox together, refreshes the opt-in offline asset index, runs both browser suites plus the compiled runtime smoke, and coordinates with the main UI publisher without cancellation. Validate this release workflow on its own pull request before including it in integration #35. Cloudflare preview failures and physical iPhone Safari testing remain open; do not merge or publish automatically.
 - **Further:** examine performance-friendly auditioning of multiple sounds and intentional removal of a playing filtered row.
 
 Scope: Sounds and LibriVox interface files, regression tests and this charter. No changes to the Code page, sound engine, stored schema or offline/cellular download default.
