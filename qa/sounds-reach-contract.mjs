@@ -32,13 +32,13 @@ for(const match of page.matchAll(/<script(?![^>]*\bsrc)[^>]*>([\s\S]*?)<\/script
  new Function(match[1]);checks++;
 }
 check(page.includes('<small>v0.6.1</small>'),'visible version');
-check(page.includes('sounds-reach.css?v=0.6.0'),'new shared reach layout');
+check(page.includes('sounds-reach.css?v=0.6.1'),'new shared reach layout');
 check(library.includes('preview-note">v0.6.1'),'LibriVox visible version');
 check(library.includes('librivox-explorer.css?v=0.6.0'),'LibriVox CSS freshness');
-check(page.includes('sounds-bench-engine.mjs?v=0.6.0'),'engine freshness');
-check(page.includes('sounds-bench-acquire.mjs?v=0.6.0'),'acquisition freshness');
-check(acquire.includes('sounds-bench-remote.mjs?v=0.6.0'),'remote freshness');
-check(remote.includes('librivox-explorer.html?v=0.6.0&embedded=1'),'embedded LibriVox freshness');
+check(page.includes('sounds-bench-engine.mjs?v=0.6.1'),'engine freshness');
+check(page.includes('sounds-bench-acquire.mjs?v=0.6.1'),'acquisition freshness');
+check(acquire.includes('sounds-bench-remote.mjs?v=0.6.1'),'remote freshness');
+check(remote.includes('librivox-explorer.html?v=0.6.1&embedded=1'),'embedded LibriVox freshness');
 check(style.includes('grid-template-rows:auto minmax(0,1fr) auto auto'),'four-zone display');
 check(style.includes('grid-row:4!important'),'bottom navigation');
 check(page.includes('playActions.append(engineControl)'),'actual engine action moved');
