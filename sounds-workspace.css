@@ -828,3 +828,22 @@ body.is-recording #bench-acquire-overlay #start{background:#bb4b3c;color:#fff}
 }
 /* Ensure the acquired material's workflow always leaves enough space to work. */
 #bench-acquire-overlay .bench-remote-panel{min-height:0!important}
+
+
+/* v0.5.1: LibriVox page verification and explicit failure recovery. */
+#bench-acquire-overlay #bench-librivox-frame[hidden]{display:none!important}
+#bench-acquire-overlay #bench-librivox-load{
+ flex:0 0 auto;display:flex;gap:9px;align-items:center;justify-content:space-between;
+ padding:12px 9px;border-bottom:1px solid var(--sc-line,#75634d);
+ background:var(--sc-panel,#292c27);
+ color:var(--sc-ink,#eadfc5);
+ font:700 11px/1.45 ui-monospace,monospace;overflow-wrap:anywhere;
+}
+#bench-acquire-overlay #bench-librivox-load[hidden]{display:none!important}
+#bench-acquire-overlay #bench-librivox-retry{
+ flex:0 0 auto;min-height:36px;padding:7px 10px;
+ color:var(--sc-accent-ink,#231e18);background:var(--sc-accent,#d8ae5b);
+ border:1px solid var(--sc-line,#78674d);
+ font:800 11px/1.25 ui-monospace,monospace;
+}
+#bench-acquire-overlay #bench-librivox-retry[hidden]{display:none!important}
