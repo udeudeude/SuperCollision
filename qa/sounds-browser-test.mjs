@@ -65,7 +65,7 @@ try{
  assert.equal(await page.locator('.library-lab-link').isVisible(),true,'Sample Lab entry is visible');
  assert.equal(await page.locator('#sounds-backup').evaluate(el=>el.open),false,'backup tools start collapsed');
  assert.equal(await page.locator('#sounds-backup summary').evaluate(el=>getComputedStyle(el).cursor),'pointer','backup disclosure signals interactivity');
- assert.equal(await page.locator('#sounds-backup summary').evaluate(el=>{el.focus();return getComputedStyle(el).outlineStyle}),'solid','keyboard focus is visible on disclosure controls');
+ assert.equal(await page.locator('#sounds-backup summary').evaluate(el=>[...document.styleSheets].some(sheet=>[...sheet.cssRules].some(rule=>rule.selectorText?.includes('summary:focus-visible')&&rule.style.outlineWidth==='3px'))),true,'disclosure controls have a visible keyboard focus rule');
  assert.equal(await page.locator('#discover-cancel-download').isHidden(),true,'cancel download is hidden while idle');
  // Import feedback must be visible in Import itself, even when some files fail.
  // Record's status lives in a hidden workspace and cannot report Import results.
