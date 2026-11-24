@@ -67,9 +67,15 @@ function startRecording(){
    try{
     if(!blob.size)throw Error('Recording is empty');
     const name=$('name').value.trim().slice(0,120)||'Recording '+new Date().toLocaleString();
-    await saveSound({id:crypto.randomUUID(),name,source:'recorded',created:Date.now(),
-     mime:blob.type,blob,favorite:false});
-    say('Saved recording locally ('+(blob.size/1024).toFixed(0)+' KB).');
+    const item={id:crypto.randomUUID(),name,source:'recorded',created:Date.now(),
+     mime:blob.type,blob,favorite:false};
+    await saveSound(item);
+    // The user owns the original and can audition it before any synthesis.
+    // Release the microphone so playback cannot feed into the live input.
+    closeMic();
+    document.dispatchEvent(new CustomEvent('sounds-audio-saved',
+     {detail:{id:item.id,name:item.name,source:item.source}}));
+    say('Saved recording locally ('+(blob.size/1024).toFixed(0)+' KB). Listen to the original below.');
    }catch(error){
     say('Save failed: '+error.message+'. Export this recording before closing the page.');
     if(blob.size){
