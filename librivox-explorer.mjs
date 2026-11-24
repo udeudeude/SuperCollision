@@ -25,6 +25,29 @@ const CLIP_KEY = 'supercollision:librivox:markers:v1';
 const $ = id => document.getElementById(id);
 const app = $('app-shell');
 const audio = $('chapter-audio');
+
+ // Put reading/search results in the seeing area and real tools at the thumb.
+ // Reparent existing elements; the recorder, text and chapter handlers stay intact.
+ const discoveryPanel=$('discovery-panel'),workPanel=$('work-panel');
+ const searchDock=document.createElement('div');
+ searchDock.id='librivox-search-dock';searchDock.className='librivox-reach-dock';
+ const modes=discoveryPanel.querySelector('.librivox-search-modes');
+ if(modes)searchDock.append(modes);
+ for(const id of ['combined-form','catalog-disclosure']){
+  const field=$(id);if(field)searchDock.append(field);
+ }
+ discoveryPanel.append(searchDock);
+ const workDock=document.createElement('div');
+ workDock.id='librivox-work-dock';workDock.className='librivox-reach-dock';
+ const player=$('player');if(player)workDock.append(player);
+ const markControls=document.querySelector('.clip-buttons');
+ if(markControls)workDock.append(markControls);
+ for(const id of ['clip-summary','extract-wav','extract-progress','extracted-audio','extract-status','use-in-sounds']){
+  const control=$(id);if(control)workDock.append(control);
+ }
+ const backToSearch=$('back-to-search');if(backToSearch)workDock.append(backToSearch);
+ workPanel.append(workDock);
+
 window.addEventListener('message',event=>{
  if(!EMBEDDED||event.source!==window.parent||event.origin!==COMMUNICATION_ORIGIN)return;
  if(event.data?.type==='sc-sampler-pause'){
@@ -89,7 +112,7 @@ function setSearchMode(mode,{focus=false}={}) {
  $('search-by-title').setAttribute('aria-pressed',String(title));
  if(focus)(title?$('catalog-query'):$('filter-author')).focus();
 }
-function showSearch() { app.classList.remove('show-work'); app.scrollLeft=0; }
+function showSearch() { audio.pause(); app.classList.remove('show-work'); app.scrollLeft=0; }
 function showWork() { app.classList.add('show-work'); app.scrollLeft=0; }
 function setActiveSearch(label) { $('active-filters').textContent=label; }
 function revealResults() { $('active-filters').scrollIntoView({block:'nearest'}); }
@@ -461,7 +484,7 @@ async function extractSelectedWav(){
     const bytes=extracted.blob.size;
     const size=bytes<1048576?(bytes/1024).toFixed(1)+' KB':(bytes/1048576).toFixed(1)+' MB';
     const use=$('use-in-sounds');
-    use.href='./sounds-bench-preview.html?v=0.5.1&sound='+encodeURIComponent(record.id)+'#sample';
+    use.href='./sounds-bench-preview.html?v=0.6.0&sound='+encodeURIComponent(record.id)+'#sample';
     use.hidden=false;
     sendToSounds('sc-librivox-audio-saved',record.id,record.name);
     status.textContent='Saved '+size+' audio sample to Sounds. Open it there to shape and play it.';
