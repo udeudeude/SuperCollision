@@ -47,9 +47,12 @@ function main(){
   if(persist){try{localStorage.setItem(KEY,value)}catch{}}
   const meta=document.querySelector('meta[name="theme-color"]');
   const dark=value==='scope'||value==='makenoise'||value==='moog';
-  if(meta)meta.content=dark?(value==='scope'?'#06150f':value==='makenoise'?'#0b0b0b':'#211e1a'):
+  const background=dark?(value==='scope'?'#06150f':value==='makenoise'?'#0b0b0b':'#211e1a'):
    value==='bauhaus'?'#f0ead9':value==='blackmountain'?'#e7e1ce':
    value==='score'?'#f6f0e0':value==='patch'?'#d9d3c2':'#f4f4f1';
+  if(meta)meta.content=background;
+  document.documentElement.style.backgroundColor=background;
+  document.documentElement.style.colorScheme=dark?'dark':'light';
   window.dispatchEvent(new CustomEvent('sc-surface-design-change',{detail:{design:value,surface}}));
  }
  apply(storedDesign());
