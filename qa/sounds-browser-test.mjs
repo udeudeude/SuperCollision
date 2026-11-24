@@ -58,6 +58,24 @@ await page.route('https://freesound.org/apiv2/search/**',async route=>{
 await page.route('https://audio.example.test/**',async route=>{downloadCount++;await route.fulfill({status:200,contentType:'audio/wav',headers:{'access-control-allow-origin':'*'},body:Buffer.from('RIFFdemo')})});
 try{
  await page.goto(base+'/sounds.html');
+ // The mobile bottom navigation must stay reachable without sideways scrolling
+ // at narrow iPhone widths, including the smallest supported 320-pixel layout.
+ for(const width of [320,390,430]){
+  await page.setViewportSize({width,height:780});
+  const bounds=await page.evaluate(()=>{
+   const navigation=document.querySelector('#sounds-tabs').getBoundingClientRect();
+   return {viewport:innerWidth,documentWidth:document.documentElement.scrollWidth,
+    bottom:navigation.bottom,buttons:[...document.querySelectorAll('#sounds-tabs button')].map(el=>{
+     const rect=el.getBoundingClientRect();
+     return {left:rect.left,right:rect.right,height:rect.height};
+    })};
+  });
+  assert.ok(bounds.documentWidth<=width+1,'Sounds must not scroll sideways at '+width+'px: '+JSON.stringify(bounds));
+  assert.ok(Math.abs(bounds.bottom-780)<3,'Sounds navigation must stay at reachable bottom: '+JSON.stringify(bounds));
+  assert.ok(bounds.buttons.every(rect=>rect.left>=-1&&rect.right<=width+1&&rect.height>=40),
+   'Navigation controls must fit the screen and stay touch-sized: '+JSON.stringify(bounds));
+ }
+ await page.setViewportSize({width:390,height:844});
  assert.equal(await page.locator('#sounds-tabs button').count(),6);
  assert.equal(await page.locator('.sounds-library-nav [data-view="library"]').count(),1,'library must be its own primary destination');
  assert.deepEqual(await page.locator('.sounds-acquire-buttons [data-view]').evaluateAll(nodes=>nodes.map(n=>n.dataset.view)),['create','generate','import','record','discover'],'five acquisitions must be grouped separately from Library');
