@@ -93,9 +93,13 @@ self.addEventListener('fetch', event => {
     // The offline entrypoint must be retrievable before any network attempt.
     // An offline navigator hint skips an unnecessary network navigation.
     if (request.mode === 'navigate') {
+      // Only the main Code entrypoint may fall back to cached index.html.
+      // Returning the Code app for /librivox-explorer.html or another
+      // workspace produces a nested, incorrect application on iPhone Safari.
+      const isCodeEntrypoint = relativePath === '' || relativePath === 'index.html';
       const saved = pack && (
         await pack.match(request, {ignoreSearch: true}) ||
-        await pack.match(new URL('./index.html', scope).href)
+        (isCodeEntrypoint ? await pack.match(new URL('./index.html', scope).href) : null)
       );
       if (saved && self.navigator?.onLine === false) return cleanNavigationResponse(saved);
       try {
