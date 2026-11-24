@@ -1,7 +1,7 @@
 /* Isolated native SuperCollider buffer laboratory.
  * This page boots its own sclang/scsynth; main editor remains untouched. */
 import {allSounds,saveSound} from './sounds-store.mjs';
-import {NativeBufferTransport} from './sounds-buffer.mjs';
+import {NativeBufferTransport,oscMessage} from './sounds-buffer.mjs';
 import {createOriginalPreview} from './sounds-original-preview.mjs?v=0.6.0';
 import {readPcmWaveForNativeBuffer} from './sounds-pcm-ingest.mjs';
 import {REGION_DEFINITIONS,regionPlayCommand,regionLiveSource,stopRegionCommand,sampleInstrumentSource,validateRegion,DEMO_MARKER} from './sounds-sampler.mjs';
@@ -469,6 +469,7 @@ function refreshControls(){
  load.disabled=!serverReady||!definitionsReady||!sound.value||!!controller;
  play.disabled=!current||!definitionsReady||!!controller;
  stop.disabled=!serverReady;
+ const toneStop=$('lab-tone-stop');if(toneStop)toneStop.disabled=!lang||!serverReady;
  cancel.disabled=!controller;
  progress.hidden=!controller;
  updateSourceBay();
@@ -737,6 +738,29 @@ window.addEventListener('bench-make-instrument',()=>{
  if(loadRequestedSample())return;
  sampleActivity('Starting SuperCollider. The selected recording will load when its engine is ready.',true);
  if(!engine.disabled)engine.click();
+});
+// Stop code, routines and scheduled native synth events, as on the main Code
+// page. The local original-audio player is paused without touching its file.
+window.addEventListener('bench-stop-all-audio',()=>{
+ originalPreview.pause();
+ if(!lang||!serverReady){
+  announce('SuperCollider is not running. Original audio playback is paused.');
+  return;
+ }
+ const errors=[];
+ try{lang.runCode('CmdPeriod.run;')}catch(error){errors.push('language: '+error.message)}
+ if(synth){
+  try{synth.sendOsc(oscMessage('/clearSched'))}catch(error){errors.push('schedule: '+error.message)}
+  try{synth.sendOsc(oscMessage('/g_freeAll',[{type:'i',value:0}]))}
+  catch(error){errors.push('nodes: '+error.message)}
+ }
+ if(errors.length){
+  setAudioPhase('error','STOP NEEDS ATTENTION');
+  announce('Stop requested, but '+errors.join('; '));
+ }else{
+  setAudioPhase('ready','STOPPED · ENGINE READY');
+  announce('Stopped native SuperCollider playback. The engine remains ready.');
+ }
 });
 engine.addEventListener('click',async()=>{
  if(synth&&serverReady){if(!definitionsReady){installDefinitions();return}await playVisibleTone('tone');return}
