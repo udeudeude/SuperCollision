@@ -80,3 +80,14 @@ The user should see a sound-discovery instrument, not a conventional audiobook c
 - Tests now cover a 101-credit paginated reader, two different authors, multiple editions, mixed chapter readers, missing/ambiguous identity and reusable favorites; browsers at 896×414 and 390×844. Previously implemented WAV extraction was retested and remains operational.
 
 **Known catalogue limitation:** AudioSilo's LibriVox section feed provides reader identity but does not supply section-level **author** attribution in mixed-author anthologies. The AND intersection therefore verifies works credited to the selected author, and it cannot guarantee finding that author's individual stories within a book catalogued as *Various*. An empty result is an empty result from this index, not proof no such LibriVox audio exists. Do not imply complete anthology section-author coverage until an appropriate index is available.
+
+## Mobile usability correction (2026-11-23)
+
+User screenshots on iPhone revealed a confusing juxtaposition of two independent searches, a stale Conan Doyle result while the combined author and reader filters were empty, and an offscreen horizontally panned work view.
+
+- **Primary path:** one author/reader search, optionally either filter alone, or both with AND semantics. Older title/catalog search is secondary and positioned *after* the current results rather than between filters and results. Result scope is always explicit; starting a combined search closes and clears the unrelated title search.
+- **Reader accountability:** the work view says either "Showing only sections read by [reader]" or "Browsing all readers", distinguishing filtered from unfiltered editions.
+- **Progressive controls:** selected chapter playback first, text phrase navigation second, sample extraction in an expandable third section. "FOUND HERE" appears only after a text match is selected; download-source options appear only when opened or when confirmation is needed.
+- **Phone stability:** all interactive text inputs and selects use at least 16-pixel font size to prevent Safari's automatic focus zoom, all panes constrain horizontal overflow, touch gestures favor vertical scrolling, and a new asset-version query avoids stale cached scripts.
+- **Verification:** Chromium touch-mode tests passed for 390x844, 414x896, 896x414 and 768x640; tested a prior stale "Doyle" catalog search replaced by the correct MacDonald + Yearsley intersection, chapter-level reader filtering, staged sample controls, no horizontal overflow, WAV extraction and download. Native iPhone Safari and live remote catalog/download behavior require follow-up.
+- Only isolated LibriVox files were updated on `pages-build`; the central Code and Sounds interfaces remain unchanged.
