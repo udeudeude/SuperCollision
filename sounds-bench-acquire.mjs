@@ -40,12 +40,13 @@ function setup(){
    if(payload.opened){closeOverlay();view('play')}
    else $('sounds-generate-status').textContent='Current unsaved instrument edits were preserved. Review them before replacing the code.';
   },
-  onOpenSamples(){void openNewestAudio()}
+  onOpenSamples(){void openNewestAudio()},
+  onOpenSample(id){openAudio(id)}
  });
  const pages={collection:$('acquire-collection'),acquire:$('acquire-overview'),
   record:$('acquire-record'),import:$('acquire-import'),code:$('acquire-code'),
-  generate:remote.generate,discover:remote.discover};
- const overlayKeys=['acquire','record','import','code','generate','discover'];
+  generate:remote.generate,discover:remote.discover,librivox:remote.librivox};
+ const overlayKeys=['acquire','record','import','code','generate','discover','librivox'];
  // The saved collection remains in Library. Creation and import tools are
  // temporarily shown over the instrument workspace that invoked them.
  for(const key of overlayKeys)overlay.append(pages[key]);
@@ -68,6 +69,7 @@ function setup(){
  function closeOverlay(){
   if(active==='record')microphoneOff();
   if(active==='discover')remote.stopDiscover();
+  if(active==='librivox')remote.stopLibriVox();
   overlay.hidden=true;active='collection';
   for(const key of overlayKeys)pages[key].hidden=true;
  }
@@ -79,23 +81,24 @@ function setup(){
   }
   if(active==='record'&&name!=='record')microphoneOff();
   if(active==='discover'&&name!=='discover')remote.stopDiscover();
+  if(active==='librivox'&&name!=='librivox')remote.stopLibriVox();
   if(audioCompletion[name])audioCompletion[name].bar.hidden=true;
   active=name;
   for(const key of overlayKeys){
    pages[key].hidden=key!==name;
    if(key===name)pages[key].scrollTop=0;
   }
-  const labels={acquire:'SOUND METHODS',record:'RECORD AUDIO',import:'IMPORT AUDIO',code:'IMPORT INSTRUMENT',generate:'GENERATE INSTRUMENT',discover:'DISCOVER RECORDINGS'};
+  const labels={acquire:'SOUND METHODS',record:'RECORD AUDIO',import:'IMPORT AUDIO',code:'IMPORT INSTRUMENT',generate:'GENERATE INSTRUMENT',discover:'DISCOVER RECORDINGS',librivox:'LIBRIVOX SAMPLER'};
   $('bench-acquire-title').textContent=labels[name]||'SOUND METHODS';
   $('bench-acquire-back').textContent=location.hash.slice(1)==='sample'?'← BACK TO SAMPLES':'← BACK TO INSTRUMENT';
   overlay.hidden=false;
-  if(name==='generate'||name==='discover')void remote.activate(name);
+  if(name==='generate'||name==='discover'||name==='librivox')void remote.activate(name);
  }
  $('bench-acquire-back').addEventListener('click',closeOverlay);
  overlay.querySelectorAll('.acquire-back').forEach(b=>b.addEventListener('click',closeOverlay));
  const controls={
   write:()=>{closeOverlay();view('play')},generate:()=>show('generate'),record:()=>show('record'),import:()=>show('import'),
-  'discover-audio':()=>show('discover'),
+  'discover-audio':()=>show('discover'),librivox:()=>show('librivox'),
   'discover-code':()=>{show('code');$('acquire-community-sources').hidden=false;$('bench-acquire-title').textContent='DISCOVER INSTRUMENTS'},
   'import-code':()=>{show('code');$('acquire-community-sources').hidden=true}
  };
