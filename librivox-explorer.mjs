@@ -387,7 +387,7 @@ async function selectRecording(index) {
 }
 function selectChapter(index) {
   const chapter=state.sections?.[index];if(!chapter)return;resetAudioSource();state.chapter=chapter;state.selectedMatch=-1;state.matches=[];
-  $('chapter-select').value=String(index);audio.pause();audio.src=safeUrl(chapter.listen_url);audio.load();
+  $('chapter-select').value=String(index);audio.pause();selectWorkMode('listen');audio.src=safeUrl(chapter.listen_url);audio.load();
   $('sample-editor').open=false;
   $('extract-options').open=false;
   $('mark-position').hidden=true;
