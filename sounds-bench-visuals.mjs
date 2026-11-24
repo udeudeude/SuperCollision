@@ -17,7 +17,15 @@ export function waveformSample(type,phase,duty=0.5) {
  return p<duty?1:-1;
 }
 const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
-const ink='#e2b96e',dim='#728574',grid='#39483e',paper='#101a14';
+let ink='#e2b96e',dim='#728574',grid='#39483e',paper='#101a14';
+function applyDesignPalette(){
+ const style=getComputedStyle(document.body);
+ const token=(name,fallback)=>style.getPropertyValue(name).trim()||fallback;
+ ink=token('--sc-graph-ink',ink);
+ dim=token('--sc-graph-dim',dim);
+ grid=token('--sc-graph-grid',grid);
+ paper=token('--sc-editor',paper);
+}
 function drawGrid(ctx,w,h,cols=4,rows=2){
  ctx.strokeStyle=grid;ctx.lineWidth=0.7;ctx.beginPath();
  for(let x=1;x<cols;x++){const px=x*w/cols;ctx.moveTo(px,0);ctx.lineTo(px,h)}
@@ -291,6 +299,7 @@ export function installToneVisuals({container,inputs,controls,isLocked}) {
   if(field){field.classList.add('bench-compact-control');container.insertBefore(field,hiddenBin)}
  }
  function render(){
+  applyDesignPalette();
   const locked=Boolean(isLocked());container.classList.toggle('bench-visuals-locked',locked);
   const output={
    OSCILLATOR:waveformNames(),FILTER:Math.round(value('cutoff'))+' Hz · RQ '+value('resonance').toFixed(2),
@@ -307,5 +316,6 @@ export function installToneVisuals({container,inputs,controls,isLocked}) {
  const resize=()=>render();
  window.addEventListener('resize',resize,{passive:true});
  window.addEventListener('bench-view-changed',resize);
+ window.addEventListener('sc-surface-design-change',resize);
  return {render,cards};
 }
