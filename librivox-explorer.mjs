@@ -40,13 +40,39 @@ const audio = $('chapter-audio');
  const workDock=document.createElement('div');
  workDock.id='librivox-work-dock';workDock.className='librivox-reach-dock';
  const player=$('player');if(player)workDock.append(player);
- const markControls=document.querySelector('.clip-buttons');
- if(markControls)workDock.append(markControls);
- for(const id of ['clip-summary','extract-options','extract-wav','extract-progress','extracted-audio','extract-status','use-in-sounds']){
-  const control=$(id);if(control)workDock.append(control);
+ const modeStrip=document.createElement('nav');modeStrip.id='librivox-work-modes';
+ modeStrip.setAttribute('aria-label','Spoken-word sampling tools');
+ const modePanels={};const modeButtons={};
+ for(const [name,label] of [['listen','LISTEN'],['locate','LOCATE'],['extract','EXTRACT']]){
+  const button=document.createElement('button');button.type='button';
+  button.textContent=label;button.dataset.workMode=name;
+  button.setAttribute('aria-pressed',String(name==='listen'));
+  modeButtons[name]=button;modeStrip.append(button);
+  const panel=document.createElement('div');panel.className='librivox-work-mode';
+  panel.id='librivox-mode-'+name;panel.hidden=name!=='listen';
+  modePanels[name]=panel;
+  button.addEventListener('click',()=>selectWorkMode(name));
  }
+ function selectWorkMode(name){
+  for(const [key,panel] of Object.entries(modePanels)){
+   panel.hidden=key!==name;
+   modeButtons[key].setAttribute('aria-pressed',String(key===name));
+  }
+  workDock.dataset.mode=name;
+ }
+ const jumps=player?.querySelector('.jump-actions');
+ if(jumps)modePanels.listen.append(jumps);
+ const phrase=$('phrase-form');if(phrase)modePanels.locate.append(phrase);
+ for(const id of ['clip-summary','set-start','set-end','preview-region','save-region']){
+  const control=$(id);if(control)modePanels.locate.append(control);
+ }
+ for(const id of ['extract-options','extract-wav','extract-progress','extracted-audio','extract-status','use-in-sounds']){
+  const control=$(id);if(control)modePanels.extract.append(control);
+ }
+ workDock.append(modeStrip,modePanels.listen,modePanels.locate,modePanels.extract);
  const backToSearch=$('back-to-search');if(backToSearch)workDock.append(backToSearch);
  workPanel.append(workDock);
+ selectWorkMode('listen');
 
 window.addEventListener('message',event=>{
  if(!EMBEDDED||event.source!==window.parent||event.origin!==COMMUNICATION_ORIGIN)return;
