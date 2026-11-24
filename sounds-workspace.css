@@ -813,17 +813,6 @@ body.is-recording #bench-acquire-overlay #start{background:#bb4b3c;color:#fff}
  flex:1 1 auto;display:block;width:100%;height:100%;min-height:0;
  max-height:none;border:0;background:var(--sc-ground,#171917);
 }
-#bench-acquire-overlay .bench-librivox-frame-head{
- flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;
- padding:4px 7px;min-height:27px;background:var(--sc-plate,#272e26);
- color:var(--sc-ink,#e9dfc8);border-bottom:1px solid var(--sc-line,#73644a);
-}
-#bench-acquire-overlay .bench-librivox-frame-head strong{
- font:800 10px/1.15 ui-monospace,monospace;
-}
-#bench-acquire-overlay .bench-librivox-frame-head span{
- color:var(--sc-soft,#b7b6a8);font:9px/1.25 ui-monospace,monospace;text-align:right;
-}
 #bench-acquire-overlay #bench-librivox-next{
  flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;
  gap:7px;padding:6px 8px;border-top:1px solid var(--sc-line,#73644a);
