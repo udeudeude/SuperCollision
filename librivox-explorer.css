@@ -193,3 +193,40 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
  .topbar h1 small{display:none}
  .librivox-search-modes button{font-size:9px!important}
 }
+
+/* Embedded LibriVox behaves like a real Sounds instrument work area.
+   Its parent supplies global navigation and the shared theme selector. */
+html.embedded-surface,html.embedded-surface body{
+ height:100%;height:100dvh;max-height:100dvh;overflow:hidden!important;
+}
+html.embedded-surface body{
+ display:grid!important;grid-template-rows:minmax(0,1fr)!important;
+ margin:0;padding:0!important;
+}
+html.embedded-surface header.topbar{display:none!important}
+html.embedded-surface .app-shell{
+ height:100%;min-height:0;max-height:100%;overflow:hidden;
+ padding:3px!important;
+}
+html.embedded-surface .discovery-panel,
+html.embedded-surface .work-panel{
+ height:100%;min-height:0;max-height:100%;overflow-y:auto;overscroll-behavior:contain;
+}
+html.embedded-surface .panel-top{padding:9px 9px 5px}
+html.embedded-surface .panel-top h2{margin-top:2px;font-size:15px}
+html.embedded-surface .panel-top p{font-size:11px;margin:4px 0 5px}
+html.embedded-surface .librivox-search-modes{padding:3px 6px 6px}
+html.embedded-surface .librivox-search-modes button{min-height:33px!important}
+html.embedded-surface #combined-form,
+html.embedded-surface #catalog-disclosure{margin:3px 6px 6px}
+html.embedded-surface .list-head{margin-top:6px}
+html.embedded-surface .work-body{padding-bottom:18px}
+html.embedded-surface .extract-actions{gap:6px}
+@media(min-width:741px){
+ html.embedded-surface .app-shell{display:block!important}
+ html.embedded-surface .discovery-panel,.embedded-surface .work-panel{
+  display:block;width:100%;height:100%;max-height:100%;min-height:0;
+ }
+ html.embedded-surface .app-shell.show-work .discovery-panel{display:none}
+ html.embedded-surface .app-shell:not(.show-work) .work-panel{display:none}
+}
