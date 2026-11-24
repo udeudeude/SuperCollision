@@ -147,7 +147,7 @@ body[data-sc-surface] :is(.bench-method-bar button,.acquire-entry-actions button
 body[data-sc-surface] :is(.bench-method-bar button,.acquire-entry-actions button):active{
  background:var(--sc-selected)!important;color:var(--sc-accent-ink)!important;
 }
-body[data-sc-surface] :is(#lab-demo-code,#lab-live-source,#sounds-ai-code,
+body[data-sc-surface] :is(#lab-live-source,#sounds-ai-code,
 #sounds-ai-prompt,#sounds-ai-revision,#text-search,#catalog-query,#filter-author,
 #filter-reader,#bench-acquire-overlay textarea,#bench-acquire-overlay input,
 #bench-acquire-overlay select,.acquire-searchbar input,.acquire-searchbar select){
