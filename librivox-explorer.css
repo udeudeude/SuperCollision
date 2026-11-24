@@ -128,3 +128,34 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .preview-network-permission input{flex:none;width:19px;height:19px;margin:0}
 .preview-explanation{font:12px/1.45 system-ui;color:var(--soft);margin:0}
 .sounds-library-link{display:block;margin:10px 0;padding:10px;border:1px solid var(--edge);color:var(--gold);text-align:center;min-height:44px;box-sizing:border-box}
+
+/* Reach-first on touch screens: keep results and context visible while
+   search and listening controls occupy the easier-to-reach bottom edge.
+   No audio loads merely because a search form or player becomes visible. */
+@media (max-width:740px), (max-width:980px) and (pointer:coarse){
+ .discovery-panel{display:flex;flex-direction:column;min-height:0}
+ .discovery-panel>.panel-top{order:0;flex:0 0 auto}
+ .discovery-panel>.list-head{order:1;flex:0 0 auto}
+ .discovery-panel>.active-filters{order:2;flex:0 0 auto}
+ .discovery-panel>#search-status{order:3;flex:0 0 auto}
+ .discovery-panel>#catalog-results{
+  order:4;flex:1 1 100px;min-height:60px;overflow-y:auto;
+  overscroll-behavior:contain;scrollbar-width:thin
+ }
+ .discovery-panel>.sources-footnote{order:5;flex:0 0 auto;margin-top:0}
+ .discovery-panel>#combined-form{
+  order:6;flex:0 0 auto;max-height:42dvh;overflow-y:auto;
+  position:relative;z-index:2;margin:0;padding:9px 11px 10px;
+  border-top:2px solid var(--gold);background:#222821
+ }
+ .discovery-panel>#catalog-disclosure{
+  order:7;flex:0 0 auto;max-height:35dvh;overflow-y:auto;
+  margin:0 0 2px;border-top:1px solid var(--line);background:#20251f
+ }
+ .work-body{display:flex;flex-direction:column;min-height:100%}
+ .work-body>#player{
+  order:99;position:sticky;bottom:0;z-index:3;flex:none;
+  max-height:48dvh;overflow-y:auto;
+  box-shadow:0 -9px 22px #0009
+ }
+}
