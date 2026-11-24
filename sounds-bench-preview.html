@@ -339,7 +339,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
   contextName.textContent=name==='play'?'INSTRUMENT / LIVE CODE':
    name==='sample'?'RECORDING / SAMPLE':'LIBRARY / SAVED SOUNDS';
-  contextDetail.textContent=name==='play'?'CODE SHAPES SOUND':
+  contextDetail.textContent=name==='play'?
+    (document.getElementById('lab-audio-phase-label')?.textContent||'ENGINE NOT STARTED'):
    name==='sample'?(document.getElementById('lab-sound')?.value?'ORIGINAL AVAILABLE':'NO AUDIO SELECTED'):
    'STORED ON THIS DEVICE';
   playDock.hidden=name!=='play';sampleDock.hidden=name!=='sample';libraryDock.hidden=name!=='details';
@@ -354,6 +355,11 @@ document.addEventListener('DOMContentLoaded',()=>{
  // Earlier preview links used #acquire; take those into the appropriate instrument workspace.
  const initial=location.hash.slice(1);show(['play','sample','details'].includes(initial)?initial:'play');
  positionAcquisition();
+ const phaseLabel=document.getElementById('lab-audio-phase-label');
+ if(phaseLabel)new MutationObserver(()=>{
+  if(tabs.querySelector('[aria-selected="true"]')?.dataset.tab==='play')
+   contextDetail.textContent=phaseLabel.textContent;
+ }).observe(phaseLabel,{childList:true,characterData:true,subtree:true});
  window.dispatchEvent(new CustomEvent('bench-layout-ready'));
 });
 </script><script type="module" src="./sounds-bench-engine.mjs?v=0.6.0"></script>
