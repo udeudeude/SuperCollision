@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#161817">
-<title>SuperCollision Sounds · v0.5.2</title>
-<link rel="stylesheet" href="./sounds-workspace.css?v=0.5.2">
+<title>SuperCollision Sounds · v0.6.0</title>
+<link rel="stylesheet" href="./sounds-workspace.css?v=0.6.0">
 <link rel="stylesheet" href="./sound-surfaces-design.css?v=0.5.0">
 <script type="module" src="./sound-surfaces-theme.mjs?v=0.5.0"></script>
 
@@ -70,7 +70,7 @@ document.addEventListener('touchmove',event=>{
 },{capture:true,passive:false});
 </script></head>
 <body>
-<header><a href="./index.html">← CODE</a><h1>SOUNDS</h1><small>v0.5.2</small></header>
+<header><a href="./index.html">← CODE</a><h1>SOUNDS</h1><small>v0.6.0</small></header>
 <main>
 <p class="lab-intro">Make a sound first. The instrument runs entirely in SuperCollider. No recording required.</p>
 <section id="lab-setup">
@@ -132,6 +132,28 @@ document.addEventListener('DOMContentLoaded',()=>{
  const shape=sections[2],save=sections[3];
  sampleWorkspace.append(recording,shape,save);
  const groups={play:[setup],sample:[sampleWorkspace],details:[]};
+ // Seeing belongs at the top; frequently touched controls live at the bottom.
+ // These are the original controls, relocated without replacing their handlers.
+ const dock=document.createElement('div');dock.id='bench-bottom-dock';
+ dock.setAttribute('aria-label','Sound actions within reach');
+ const playDock=document.createElement('div');playDock.id='bench-bottom-play';playDock.className='bench-bottom-pane';
+ const sampleDock=document.createElement('div');sampleDock.id='bench-bottom-sample';sampleDock.className='bench-bottom-pane';
+ const libraryDock=document.createElement('div');libraryDock.id='bench-bottom-library';libraryDock.className='bench-bottom-pane';
+ dock.append(playDock,sampleDock,libraryDock);main.append(dock);
+ const originalSlot=document.createElement('div');originalSlot.id='bench-original-dock-slot';
+ const sampleSelectorRow=document.createElement('div');sampleSelectorRow.id='bench-sample-select-row';
+ const playActions=document.createElement('div');playActions.className='bench-reach-primary';
+ const sampleActions=document.createElement('div');sampleActions.className='bench-reach-primary';
+ const sampleControls=document.createElement('div');sampleControls.id='bench-sample-transport';
+ sampleControls.className='bench-reach-primary';sampleControls.hidden=true;
+ const transferRow=document.createElement('div');transferRow.id='bench-transfer-row';
+ const selectionHeading=document.createElement('div');selectionHeading.id='bench-sample-selection-summary';
+ const context=document.createElement('div');context.id='bench-context-strip';
+ const contextName=document.createElement('strong');contextName.id='bench-context-title';
+ const contextDetail=document.createElement('span');contextDetail.id='bench-context-detail';
+ context.append(contextName,contextDetail);main.prepend(context);
+ recording.append(selectionHeading);
+
  // Every acquisition path belongs to one of the two working environments.
  // Library is a destination, never an acquisition menu.
  const methods=(parent,description,items)=>{
@@ -157,6 +179,20 @@ document.addEventListener('DOMContentLoaded',()=>{
   ['FIND AUDIO','discover-audio','Find licensed online recordings'],
   ['IMPORT AUDIO','import','Import an audio file from this device']
  ]);
+ // The acquisition choices are secondary but still easy to reach.
+ const playMethods=setup.querySelector('.bench-method-bar');
+ const sampleMethods=sampleWorkspace.querySelector('.bench-method-bar');
+ if(playMethods)playDock.append(playMethods);
+ if(sampleMethods)sampleDock.append(sampleMethods);
+ sampleDock.append(originalSlot,sampleSelectorRow,sampleActions,sampleControls,transferRow);
+ playDock.append(playActions);
+ const engineControl=document.getElementById('lab-engine');
+ const saveCodeControl=document.getElementById('lab-tone-save');
+ if(engineControl)playActions.append(engineControl);
+ if(saveCodeControl)playActions.append(saveCodeControl);
+ for(const id of ['lab-play','lab-stop','lab-save-preset']){
+  const control=document.getElementById(id);if(control)sampleControls.append(control);
+ }
 
  const sourceTitle=shape.querySelector('h2');if(sourceTitle)sourceTitle.textContent='SHAPE';
  const saveTitle=save.querySelector('h2');if(saveTitle)saveTitle.textContent='SAVE';
@@ -165,14 +201,19 @@ document.addEventListener('DOMContentLoaded',()=>{
  make.className='bench-primary-action';make.textContent='MAKE INSTRUMENT';make.disabled=true;
  make.setAttribute('aria-label','Create a playable SuperCollider instrument from the selected recording');
  make.addEventListener('click',()=>window.dispatchEvent(new CustomEvent('bench-make-instrument')));
- document.getElementById('lab-sound').after(make);
+ sampleActions.append(make);
  const originalHeading=recording.querySelector('h2:not(:first-child)');if(originalHeading)originalHeading.remove();
- const libraryLabel=recording.querySelector('label[for="lab-sound"]');if(libraryLabel)libraryLabel.textContent='RECORDING';
+ const libraryLabel=recording.querySelector('label[for="lab-sound"]');
+ if(libraryLabel){libraryLabel.textContent='RECORDING';sampleSelectorRow.append(libraryLabel)}
+ sampleSelectorRow.append(document.getElementById('lab-sound'));
  const engineButton=document.createElement('button');engineButton.type='button';engineButton.id='bench-sample-power';engineButton.textContent='POWER';engineButton.addEventListener('click',()=>document.getElementById('lab-engine')?.click());
  const loadButton=document.getElementById('lab-load');loadButton.textContent='LOAD INTO INSTRUMENT';
  const actionRow=recording.querySelector('.actions');if(actionRow)actionRow.prepend(engineButton);
  const details=document.getElementById('lab-details');if(details)details.hidden=true;
  const progress=document.getElementById('lab-progress');if(progress)progress.hidden=true;
+ if(progress)transferRow.append(progress);
+ const transferCancel=document.getElementById('lab-cancel');
+ if(transferCancel)transferRow.append(transferCancel);
  const sampleStage=document.createElement('div');sampleStage.id='bench-sample-stage';sampleStage.setAttribute('aria-live','polite');
  sampleStage.innerHTML='<div class="bench-empty-symbol" aria-hidden="true">○</div><strong>SELECT A RECORDING</strong><span>Record, find, or import audio. Listen to the original before making an instrument.</span>';
  const restart=document.createElement('button');restart.type='button';restart.id='bench-restart-sample-engine';
@@ -198,6 +239,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const hasRecordings=Boolean(selector?.options?.length>1);
   const loaded=document.getElementById('lab-live-source')?.readOnly===false;
   shape.hidden=!loaded;save.hidden=!loaded;
+  sampleControls.hidden=!loaded;
   const stageState=loaded?'ready':currentSampleBusy?'loading':
    currentSampleKind==='error'?'error':selected?'selected':'empty';
   sampleStage.dataset.state=stageState;
@@ -214,6 +256,9 @@ document.addEventListener('DOMContentLoaded',()=>{
    selected?'Listen to the original above, then make a playable instrument.':
    'Record, find or import audio to begin.';
   restart.hidden=stageState!=='error';
+  selectionHeading.textContent=selected?(selector.options[selector.selectedIndex]?.textContent||'SAVED ORIGINAL'):'CHOOSE OR MAKE A RECORDING';
+  if(tabs.querySelector('[aria-selected="true"]')?.dataset.tab==='sample')
+   contextDetail.textContent=selected?'ORIGINAL AVAILABLE':'NO AUDIO SELECTED';
   const controls=recording.querySelector('.actions');
   if(controls)controls.hidden=document.getElementById('lab-cancel')?.disabled!==false;
   // The recording and its real audio player are the workspace when selected.
@@ -224,6 +269,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(make){
    make.textContent=currentSampleBusy?'PREPARING…':loaded?'INSTRUMENT READY':currentSampleKind==='error'?'RETRY MAKE INSTRUMENT':'MAKE INSTRUMENT';
    make.disabled=!selected||currentSampleBusy||loaded;
+   make.hidden=loaded;
    make.setAttribute('aria-busy',String(currentSampleBusy));
   }
   if(!loaded&&currentSampleMessage){sampleStage.querySelector('span').textContent=currentSampleMessage;status.textContent=currentSampleMessage;}
@@ -261,7 +307,9 @@ document.addEventListener('DOMContentLoaded',()=>{
  const acquireTitle=document.createElement('strong');acquireTitle.id='bench-acquire-title';acquireTitle.textContent='ACQUIRE SOUND';
  acquireHead.append(acquireBack,acquireTitle);acquisition.append(acquireHead);main.append(acquisition);
  function positionAcquisition(){
-  acquisition.style.top=Math.round(tabs.getBoundingClientRect().bottom-main.getBoundingClientRect().top+5)+'px';
+  acquisition.style.top='0px';
+  acquisition.style.bottom=Math.max(0,Math.ceil(main.getBoundingClientRect().bottom-
+   tabs.getBoundingClientRect().top+2))+'px';
  }
  window.addEventListener('resize',positionAcquisition,{passive:true});
  window.visualViewport?.addEventListener('resize',positionAcquisition,{passive:true});
@@ -288,7 +336,14 @@ document.addEventListener('DOMContentLoaded',()=>{
    b.setAttribute('aria-selected',String(selected));
    b.tabIndex=selected?0:-1;
   }
-  if(location.hash!=='#'+name)location.hash=name;window.dispatchEvent(new CustomEvent('bench-view-changed',{detail:{view:name}}));
+  contextName.textContent=name==='play'?'INSTRUMENT / LIVE CODE':
+   name==='sample'?'RECORDING / SAMPLE':'LIBRARY / SAVED SOUNDS';
+  contextDetail.textContent=name==='play'?'CODE SHAPES SOUND':
+   name==='sample'?(document.getElementById('lab-sound')?.value?'ORIGINAL AVAILABLE':'NO AUDIO SELECTED'):
+   'STORED ON THIS DEVICE';
+  playDock.hidden=name!=='play';sampleDock.hidden=name!=='sample';libraryDock.hidden=name!=='details';
+  if(location.hash!=='#'+name)location.hash=name;
+  window.dispatchEvent(new CustomEvent('bench-view-changed',{detail:{view:name}}));
 }
  window.addEventListener('bench-open-view',event=>{if(['play','sample','details'].includes(event.detail?.view))show(event.detail.view)});
  window.addEventListener('hashchange',()=>{
@@ -297,8 +352,10 @@ document.addEventListener('DOMContentLoaded',()=>{
  });
  // Earlier preview links used #acquire; take those into the appropriate instrument workspace.
  const initial=location.hash.slice(1);show(['play','sample','details'].includes(initial)?initial:'play');
+ positionAcquisition();
+ window.dispatchEvent(new CustomEvent('bench-layout-ready'));
 });
-</script><script type="module" src="./sounds-bench-engine.mjs?v=0.5.2"></script>
-<script type="module" src="./sounds-bench-acquire.mjs?v=0.5.2"></script>
+</script><script type="module" src="./sounds-bench-engine.mjs?v=0.6.0"></script>
+<script type="module" src="./sounds-bench-acquire.mjs?v=0.6.0"></script>
 </body>
 </html>
