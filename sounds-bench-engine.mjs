@@ -183,7 +183,9 @@ for(const slot of ['a','b']){
   const saved=compareSlots[slot];if(!saved)return;
   commitGesture();
   const before=toneSnapshot();
-  if(historyChanged(before,saved)){restoreTone(saved);recordUndo(before)}
+  const changed=historyChanged(before,saved);
+  restoreTone(saved);
+  if(changed)recordUndo(before);
   if(serverReady&&definitionsReady)void playVisibleTone('comparison '+slot.toUpperCase());
   else if(!engine.disabled){pendingGeneratedAudition=true;engine.click()}
   else announce('SuperCollider is starting. Tap PLAY when ready.');
