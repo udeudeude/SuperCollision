@@ -426,7 +426,6 @@ toneVisuals=installToneVisuals({
  onSelect:key=>selectCodeControl(key),onBegin:beginGesture,onCommit:commitGesture
 });
 updateDemoCode();
-let pendingGeneratedAudition=false;
 window.addEventListener('bench-open-source',event=>{
  const item=event.detail||{},code=item.code,name=item.name;
  if(typeof code!=='string'||!code.trim()||code.length>150000)return;
@@ -445,15 +444,8 @@ window.addEventListener('bench-open-source',event=>{
   renderCodeOverlay(previous,'OPENED SOURCE');
   recordUndo(before);
   event.detail.opened=true;
-  if(item.play){
-   pendingGeneratedAudition=true;
-   toneSaveStatus.textContent='Preparing audition of the generated instrument…';
-   if(serverReady&&definitionsReady){pendingGeneratedAudition=false;void playVisibleTone('generated instrument')}
-   else if(!engine.disabled)engine.click();
-  }else{
-   toneSaveStatus.textContent='Editable source opened from Library. It has not been executed.';
-   announce('Loaded '+(name||'instrument')+' for review without playing it.');
-  }
+  toneSaveStatus.textContent='Editable source opened from Library. It has not been executed.';
+  announce('Loaded '+(name||'instrument')+' for review without playing it.');
  }catch(error){announce('Could not open source: '+error.message)}
 });
 toneSave.addEventListener('click',async()=>{
