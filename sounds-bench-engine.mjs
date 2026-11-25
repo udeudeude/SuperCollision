@@ -163,6 +163,33 @@ const redoButton=document.createElement('button');redoButton.type='button';
 redoButton.id='bench-tone-redo';redoButton.textContent='↷ Redo';redoButton.disabled=true;
 redoButton.setAttribute('aria-label','Redo the last undone instrument change');
 controlBar.append(undoButton,redoButton);
+// Two deliberately saved comparison slots, independent of the undo history.
+const compareBar=document.createElement('div');
+compareBar.id='bench-compare-bar';
+compareBar.setAttribute('aria-label','Instrument comparisons');
+compareBar.innerHTML='<span class="bench-compare-title">COMPARE</span><button type="button" id="bench-compare-save-a">SAVE A</button><button type="button" id="bench-compare-hear-a" disabled>HEAR A</button><button type="button" id="bench-compare-save-b">SAVE B</button><button type="button" id="bench-compare-hear-b" disabled>HEAR B</button>';
+controlBar.after(compareBar);
+const compareSlots={a:null,b:null};
+for(const slot of ['a','b']){
+ const saveButton=compareBar.querySelector('#bench-compare-save-'+slot);
+ const hearButton=compareBar.querySelector('#bench-compare-hear-'+slot);
+ saveButton.addEventListener('click',()=>{
+  commitGesture();
+  compareSlots[slot]=toneSnapshot();
+  hearButton.disabled=false;
+  announce('Saved comparison '+slot.toUpperCase()+'.');
+ });
+ hearButton.addEventListener('click',()=>{
+  const saved=compareSlots[slot];if(!saved)return;
+  commitGesture();
+  const before=toneSnapshot();
+  if(historyChanged(before,saved)){restoreTone(saved);recordUndo(before)}
+  if(serverReady&&definitionsReady)void playVisibleTone('comparison '+slot.toUpperCase());
+  else if(!engine.disabled){pendingGeneratedAudition=true;engine.click()}
+  else announce('SuperCollider is starting. Tap PLAY when ready.');
+ });
+}
+
 function toneSnapshot(){
  const settings={};
  for(const [key,input] of toneInputs)settings[key]=Number(input.value);
