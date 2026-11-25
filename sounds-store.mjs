@@ -35,7 +35,7 @@ async function transaction(mode,fn){
 // array only in those browsers. All callers still receive an unchanged Blob.
 let byteStorageFallback=false;
 function blobWriteRejected(error){
- return /Blob\\/File|DataCloneError|blob.*stor|blob.*prepar|file.*prepar/i.test(error?.message||'');
+ return /Blob.File|DataCloneError|blob.*stor|blob.*prepar|file.*prepar/i.test(error?.message||'');
 }
 async function toPortableRecord(item){
  if(!(item.blob instanceof Blob))return item;
