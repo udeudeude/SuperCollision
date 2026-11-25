@@ -950,3 +950,90 @@ body.is-recording #bench-acquire-overlay #start{background:#bb4b3c;color:#fff}
 #lab-setup>.actions{order:5}
 #lab-setup>.tone-save-row{order:7}
 @media(max-width:380px){#bench-compare-bar{grid-template-columns:repeat(4,minmax(0,1fr))}#bench-compare-bar .bench-compare-title{grid-column:1/-1}}
+
+/* Craft pass: coherent hierarchy and restrained tactile feedback.
+   Scoped to Instrument Bench; shared theme tokens remain authoritative. */
+body[data-sc-surface=sounds]{
+ --bench-hairline:var(--sc-line-subtle,#625c4b);
+ --bench-text:var(--sc-ink,#e9dfc8);
+ --bench-muted:var(--sc-soft,#c3b7a0);
+ --bench-action:var(--sc-accent,#d8ae5b);
+ --bench-action-ink:var(--sc-accent-ink,#201b13);
+}
+body[data-sc-surface=sounds] :is(header,.bench-tabs,main>section.bench-panel,#bench-acquire-overlay){
+ color:var(--bench-text);
+}
+body[data-sc-surface=sounds] header{
+ border:1px solid var(--bench-hairline)!important;
+ background:var(--sc-panel,#302820)!important;
+ padding:7px 11px!important;
+}
+body[data-sc-surface=sounds] header h1{
+ font-family:var(--sc-font-head,ui-monospace,monospace)!important;
+ font-size:clamp(14px,3.8vw,18px)!important;
+ font-weight:750!important;
+ letter-spacing:.045em!important;
+}
+body[data-sc-surface=sounds] .bench-tabs{gap:6px!important}
+body[data-sc-surface=sounds] .bench-tabs button{
+ border:1px solid var(--bench-hairline)!important;
+ border-radius:3px!important;
+ background:var(--sc-plate,#343a32)!important;
+ color:var(--bench-muted)!important;
+ font-family:var(--sc-font-ui,ui-monospace,monospace)!important;
+ font-weight:700!important;
+ transition:background-color .15s ease,color .15s ease,border-color .15s ease;
+}
+body[data-sc-surface=sounds] .bench-tabs button[aria-selected=true]{
+ background:var(--bench-action)!important;
+ color:var(--bench-action-ink)!important;
+ border-color:var(--bench-action)!important;
+}
+body[data-sc-surface=sounds] .bench-method-current{
+ background:var(--sc-panel,#302820);
+ color:var(--bench-muted);
+ border:1px solid var(--bench-hairline);
+ font-weight:650;
+}
+body[data-sc-surface=sounds] .bench-method-bar button{
+ background:var(--sc-plate,#343a32);
+ color:var(--bench-text);
+ border-color:var(--bench-hairline);
+ border-radius:3px;
+}
+body[data-sc-surface=sounds] :is(#lab-demo-code-bay,#lab-demo-controls,#bench-acquire-overlay){
+ border-color:var(--bench-hairline)!important;
+}
+body[data-sc-surface=sounds] :is(.demo-code-head,.source-head){
+ font-family:var(--sc-font-head,ui-monospace,monospace);
+ letter-spacing:.035em;
+}
+body[data-sc-surface=sounds] #bench-compare-bar{
+ border-top:1px solid var(--bench-hairline);
+ padding:7px 0 3px;
+ gap:5px;
+}
+body[data-sc-surface=sounds] #bench-compare-bar button{
+ border:1px solid var(--bench-hairline);
+ border-radius:3px;
+ background:var(--sc-plate,#30382e);
+ color:var(--bench-text);
+ font-family:var(--sc-font-ui,ui-monospace,monospace);
+ font-weight:700;
+}
+body[data-sc-surface=sounds] #bench-compare-bar button[id^="bench-compare-hear"]{
+ background:var(--bench-action);
+ color:var(--bench-action-ink);
+ border-color:var(--bench-action);
+}
+body[data-sc-surface=sounds] :is(button,input,textarea,select):focus-visible{
+ outline:2px solid var(--bench-action)!important;
+ outline-offset:2px!important;
+}
+body[data-sc-surface=sounds] button:not(:disabled):active{
+ filter:brightness(1.1);
+}
+body[data-sc-surface=sounds] :is(#lab-status,#sounds-generate-status):empty{display:none!important}
+@media(prefers-reduced-motion:reduce){
+ body[data-sc-surface=sounds] .bench-tabs button{transition:none}
+}
