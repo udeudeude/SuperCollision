@@ -75,6 +75,7 @@ jobs:
           sudo ln -sf "$chrome" /usr/bin/chromium
           sudo apt-get update -qq
           sudo apt-get install -y ffmpeg
+          (cd source && npx playwright install --with-deps webkit)
           google-chrome --version
       - name: Test Sounds and LibriVox browser workflows
         env:
@@ -82,6 +83,7 @@ jobs:
         run: |
           set -euo pipefail
           node source/qa/sounds-browser-test.mjs
+          node source/qa/sounds-webkit-browser-test.mjs
           node source/qa/sound-designer-browser-test.mjs
           .venv/bin/python source/qa/librivox-combine-browser-test.py
           .venv/bin/python source/qa/librivox-ui-workflow-test.py
@@ -104,6 +106,11 @@ jobs:
         env:
           SOUNDS_BROWSER_CHANNEL: chrome
         run: node source/qa/sounds-runtime-smoke.mjs
+      - name: Test main Code boot and actual live audio activity
+        timeout-minutes: 5
+        env:
+          SC_QA_SITE_DIR: site
+        run: node source/qa/runtime-activity.mjs
       - name: Publish a tested compiled preview without touching production
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.base.ref == 'main'
         env:
@@ -113,6 +120,11 @@ jobs:
         run: |
           set -euo pipefail
           bash source/scripts/publish_sounds_preview.sh site "$SOURCE_BRANCH" "$SOURCE_SHA" "$PR_NUMBER"
+      - name: Audit public preview branch alias (nonblocking hosting diagnostic)
+        if: github.event_name == 'pull_request' && github.event.pull_request.number == 39
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node source/qa/preview-host-probe.mjs site "$PR_NUMBER"
       - name: Publish one complete release, safely retrying concurrent advances
         if: github.event_name != 'pull_request'
         run: |
