@@ -63,6 +63,10 @@ jobs:
           (cd source && npx playwright install --with-deps webkit)
       - name: Test phone touch, local recording and saved audio in WebKit
         run: node source/qa/sounds-webkit-browser-test.mjs
+      - name: Test touch-safe Instrument Bench in Safari's browser engine
+        env:
+          BENCH_BROWSER: webkit
+        run: node source/qa/sounds-bench-interaction-browser.mjs
   sounds:
     needs: [mobile-webkit]
     name: Verify complete Sounds + LibriVox site before publication

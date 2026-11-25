@@ -623,3 +623,8 @@ body.is-recording #bench-record-timer{
  background:var(--sc-accent,#e0b66a)!important;
  color:var(--sc-accent-ink,#201b16)!important;
 }
+
+# An inactive slider must remain readable without accepting accidental touches.
+#lab-demo-controls .bench-compact-control input[type=range]:disabled{
+ opacity:.92!important;filter:none!important;
+}

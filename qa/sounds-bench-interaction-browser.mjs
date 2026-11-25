@@ -1,7 +1,7 @@
 /* Phone-browser acceptance for reversible Instrument Bench gestures.
  * No optional compiled audio resources are fetched. */
 import assert from 'node:assert/strict';
-import {chromium} from 'playwright';
+import {chromium,webkit} from 'playwright';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {resolve,extname,sep} from 'node:path';
@@ -15,7 +15,10 @@ const server=createServer(async(req,res)=>{
 });
 await new Promise(done=>server.listen(0,'127.0.0.1',done));
 const host='http://127.0.0.1:'+server.address().port;
-const browser=await chromium.launch({channel:'chrome',headless:true,args:['--no-sandbox']});
+const usingWebKit=process.env.BENCH_BROWSER==='webkit';
+const browser=await (usingWebKit?webkit:chromium).launch(
+ usingWebKit?{headless:true}:{channel:'chrome',headless:true,args:['--no-sandbox']}
+);
 try{
  for(const width of [320,390,430]){
   const context=await browser.newContext({viewport:{width,height:844},isMobile:true,hasTouch:true});
@@ -52,6 +55,10 @@ try{
   assert.equal(await page.locator('#bench-param-cutoff').inputValue(),cutoff);
   assert.equal(await page.locator('#lab-demo-level').isDisabled(),true,
    'The Volume slider must be inert until explicitly armed');
+  await page.locator('.bench-volume-adjust').click();
+  assert.equal(await page.locator('#lab-demo-level').isEnabled(),true);
+  await page.locator('.bench-volume-adjust').click();
+  assert.equal(await page.locator('#lab-demo-level').isDisabled(),true);
   // Zoom modifies only the visible frequency range, never the sound or code.
   const codeBefore=await page.locator('#lab-demo-code').inputValue();
   await page.getByRole('button',{name:'Zoom in on the pitch ruler'}).click();
@@ -93,12 +100,9 @@ try{
   assert.equal(await filterCanvas.evaluate(el=>getComputedStyle(el).touchAction),'pan-y');
   // Manual changes in editable code participate in the same undo history.
   const originalCode=await page.locator('#lab-demo-code').inputValue();
-  console.log('HISTORY BEFORE TYPE '+JSON.stringify(await page.evaluate(()=>window.__benchHistoryProbe?.())));
   await page.locator('#lab-demo-code').fill(originalCode.replace('\\freq, 440','\\freq, 523.25'));
-  console.log('HISTORY AFTER TYPE '+JSON.stringify(await page.evaluate(()=>window.__benchHistoryProbe?.())));
   assert.equal(await page.locator('#lab-demo-code-bay').getAttribute('data-sync'),'modified');
   await page.locator('#bench-tone-undo').click();
-  console.log('HISTORY AFTER UNDO '+JSON.stringify(await page.evaluate(()=>window.__benchHistoryProbe?.())));
   assert.equal(await page.locator('#lab-demo-code').inputValue(),originalCode,'Undo lost typed code');
   const size=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
   assert.ok(size.scroll<=size.width+1,'Phone horizontal overflow: '+JSON.stringify(size));
