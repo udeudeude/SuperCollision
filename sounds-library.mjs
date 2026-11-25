@@ -168,7 +168,7 @@ hold.addEventListener('click',async()=>{
    await new Promise((resolve,reject)=>{
     const deadline=Date.now()+30000;
     const poll=()=>{
-     if(stream||micRequest!==token||Date.now()>deadline){resolve();return}
+     if(stream||!ready.checked||micRequest!==token||Date.now()>deadline){resolve();return}
      setTimeout(poll,80);
     };poll();
    });
