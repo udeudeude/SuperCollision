@@ -1,0 +1,29 @@
+name: Instrument Bench gestures and code linkage
+on:
+  push:
+    branches: ['sounds/bench-scroll-undo-pitch-code-links-20261125']
+  pull_request:
+    paths: ['sounds-bench-*', 'sounds-reach.css', 'sounds-workspace.css', 'qa/sounds-bench-*', '.github/workflows/check-bench-interactions.yml']
+permissions:
+  contents: read
+jobs:
+  bench:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: source
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and parameter links
+        run: |
+          set -euo pipefail
+          for path in source/sounds-bench-*.mjs source/qa/sounds-bench-*.mjs; do node --check "$path"; done
+          node source/qa/sounds-bench-links-test.mjs
+      - name: Browser
+        run: |
+          npm install --no-save --prefix source playwright@1.56.1
+          google-chrome --version
+          node source/qa/sounds-bench-interaction-browser.mjs
