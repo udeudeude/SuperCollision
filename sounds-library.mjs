@@ -45,7 +45,7 @@ let micRequest=0,activePointer=null,keyboardDown=false,stopping=false;
 function say(message){status.textContent=message}
 function recordingStyle(on){
  document.body.classList.toggle('is-recording',on);hold.setAttribute('aria-pressed',String(on));
- hold.textContent=on?'● RECORDING · RELEASE TO SAVE':'● HOLD TO RECORD';
+ hold.textContent=on?'■ STOP & SAVE':'● RECORD';
  if(on){recordingStart=performance.now();recordingDuration=0}
  else{if(recordingStart!==null)recordingDuration=(performance.now()-recordingStart)/1000;recordingStart=null}
  updateTime();
@@ -60,7 +60,7 @@ function closeMic(){
  micRequest++;
  if(stream){for(const track of stream.getTracks())track.stop();stream=null}
  stopMeter();
- ready.checked=false;hold.disabled=true;
+ ready.checked=false;hold.disabled=false;
 }
 function activateMeter(){
  try{
@@ -94,7 +94,7 @@ ready.addEventListener('change',async()=>{
  if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){
   ready.checked=false;say('Microphone recording is unavailable in this browser.');return
  }
- hold.disabled=true;say('Requesting microphone permission…');
+ hold.disabled=false;say('Requesting microphone permission…');
  try{
   const acquired=await navigator.mediaDevices.getUserMedia({audio:{
    echoCancellation:false,noiseSuppression:false,autoGainControl:false
@@ -106,7 +106,7 @@ ready.addEventListener('change',async()=>{
   },{once:true}));
   hold.disabled=false;activateMeter();
   say('Microphone ready. Hold Record to capture; release to save.');
- }catch(error){if(token===micRequest){ready.checked=false;hold.disabled=true;say('Microphone unavailable: '+error.message)}}
+ }catch(error){if(token===micRequest){ready.checked=false;hold.disabled=false;say('Microphone unavailable: '+error.message)}}
 });
 function startRecording(){
  if(!stream||hold.disabled||recorder||stopping)return;
@@ -137,7 +137,7 @@ function startRecording(){
     }
    }finally{
     if(recorder===current)recorder=null;
-    stopping=false;recordingStyle(false);hold.disabled=!stream;
+    stopping=false;recordingStyle(false);hold.disabled=false;
    }
   };
   auditionAudio?.pause();
@@ -152,29 +152,32 @@ function stopRecording(){
  stopping=true;hold.disabled=true;recordingStyle(false);say('Saving recording…');
  try{current.stop()}catch(error){stopping=false;hold.disabled=!stream;say('Could not stop recording: '+error.message)}
 }
-hold.addEventListener('pointerdown',event=>{
- if(!event.isPrimary||event.button!==0||hold.disabled)return;
- event.preventDefault();activePointer=event.pointerId;
- try{hold.setPointerCapture(event.pointerId)}catch{}
+// One direct Record control: permission is requested on the first press.
+// A second press stops and saves. The recording is never uploaded.
+let pendingRecord=false;
+hold.addEventListener('click',async()=>{
+ if(recorder?.state==='recording'){stopRecording();return}
+ if(pendingRecord||stopping)return;
+ if(!stream){
+  pendingRecord=true;
+  ready.checked=true;
+  ready.dispatchEvent(new Event('change',{bubbles:true}));
+  // Wait for the permission request to settle without creating another request.
+  const token=micRequest;
+  try{
+   await new Promise((resolve,reject)=>{
+    const deadline=Date.now()+30000;
+    const poll=()=>{
+     if(stream||micRequest!==token||Date.now()>deadline){resolve();return}
+     setTimeout(poll,80);
+    };poll();
+   });
+   if(stream)startRecording();
+  }finally{pendingRecord=false}
+  return;
+ }
  startRecording();
 });
-function releasePointer(event){
- if(activePointer!==event.pointerId)return;
- activePointer=null;stopRecording();
-}
-hold.addEventListener('pointerup',releasePointer);
-hold.addEventListener('pointercancel',releasePointer);
-hold.addEventListener('lostpointercapture',releasePointer);
-hold.addEventListener('keydown',event=>{
- if(event.code!=='Space'&&event.code!=='Enter')return;
- if(event.repeat||keyboardDown)return;
- event.preventDefault();keyboardDown=true;startRecording();
-});
-hold.addEventListener('keyup',event=>{
- if(event.code!=='Space'&&event.code!=='Enter')return;
- event.preventDefault();keyboardDown=false;stopRecording();
-});
-hold.addEventListener('blur',()=>{if(keyboardDown){keyboardDown=false;stopRecording()}});
 importer.addEventListener('change',async event=>{
  const files=[...event.target.files];
  if(!files.length)return;
