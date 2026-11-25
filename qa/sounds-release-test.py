@@ -18,6 +18,7 @@ def main() -> None:
     assets = release_files(ROOT)
     assert set(LIBRIVOX).issubset(assets)
     assert "librivox-test.html" not in assets, "Do not publish an experimental test page"
+    assert "index.html" in assets, "Code must ship with the integrated Sounds navigation"
 
     with TemporaryDirectory() as temporary:
         site = Path(temporary)
@@ -29,9 +30,10 @@ def main() -> None:
             destination.write_bytes(("UNCHANGED:" + required).encode("utf-8"))
         sentinel = {
             name: (site / name).read_bytes()
-            for name in ("index.html", "runtime/sclang/sclang.wasm",
+            for name in ("runtime/sclang/sclang.wasm",
                          "runtime/scsynth/scsynth.wasm", "lab-sw.js")
         }
+        original_index = (site / "index.html").read_bytes()
         (site / "sounds.html").write_text("outdated Sounds page", encoding="utf-8")
         (site / "librivox-explorer.html").write_text("outdated LibriVox page", encoding="utf-8")
         (site / "lab-offline-assets.json").write_text('{"version":"outdated"}', encoding="utf-8")
@@ -49,13 +51,15 @@ def main() -> None:
         for name in staged:
             assert (site / name).read_bytes() == (ROOT / name).read_bytes(), name
             assert paths["/" + name] == (site / name).stat().st_size, name
+        assert (site / "index.html").read_bytes() == (ROOT / "index.html").read_bytes()
+        assert (site / "index.html").read_bytes() != original_index, "Legacy Code recorder not replaced"
         for name, before in sentinel.items():
             assert (site / name).read_bytes() == before, f"Overwrote protected {name}"
         assert (site / "unrelated.txt").read_text(encoding="utf-8") == "keep this"
         before_manifest = (site / "lab-offline-assets.json").read_bytes()
         stage_release(ROOT, site)
         assert (site / "lab-offline-assets.json").read_bytes() == before_manifest, "Not idempotent"
-    print("Release staging passed: both workspaces, fresh offline index, unchanged Code/runtime")
+    print("Release staging passed: unified Code + Sounds + LibriVox, fresh offline index, unchanged audio runtime")
 
 
 if __name__ == "__main__":

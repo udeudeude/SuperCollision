@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'index.html'
       - 'sounds.html'
       - 'sounds-lab.html'
       - 'sounds-*.mjs'
@@ -17,6 +18,7 @@ on:
   pull_request:
     branches: [main, 'sounds/cohesive-integration-20261124']
     paths:
+      - 'index.html'
       - 'sounds.html'
       - 'sounds-lab.html'
       - 'sounds-*.mjs'
@@ -101,6 +103,7 @@ jobs:
         run: |
           set -euo pipefail
           node source/qa/sounds-browser-test.mjs
+          node source/qa/header-navigation-browser-test.mjs
           node source/qa/sound-designer-browser-test.mjs
           .venv/bin/python source/qa/librivox-combine-browser-test.py
           .venv/bin/python source/qa/librivox-ui-workflow-test.py
@@ -118,6 +121,10 @@ jobs:
           python3 source/scripts/verify_runtime.py site/runtime
           python3 source/scripts/stage_sounds_release.py source site
           python3 source/scripts/verify_runtime.py site/runtime
+          test "$(sha256sum source/index.html | cut -d ' ' -f 1)" = "$(sha256sum site/index.html | cut -d ' ' -f 1)"
+          test "$(sha256sum source/sounds.html | cut -d ' ' -f 1)" = "$(sha256sum site/sounds.html | cut -d ' ' -f 1)"
+      - name: Confirm compiled Code opens the same Sounds workspace
+        run: SC_QA_SITE_DIR=site node source/qa/header-navigation-browser-test.mjs
       - name: Smoke-test the actual compiled SuperCollider engine
         timeout-minutes: 4
         env:
@@ -158,11 +165,11 @@ jobs:
             fi
             if (
               cd site
-              git add -- sounds.html sounds-lab.html sounds-*.mjs \
+              git add -- index.html sounds.html sounds-lab.html sounds-*.mjs \
                 librivox-explorer.html librivox-explorer.css librivox-*.mjs lab-offline-assets.json
               while IFS= read -r staged; do
                 case "$staged" in
-                  sounds.html|sounds-lab.html|sounds-*.mjs|librivox-explorer.html|librivox-explorer.css|librivox-*.mjs|lab-offline-assets.json) ;;
+                  index.html|sounds.html|sounds-lab.html|sounds-*.mjs|librivox-explorer.html|librivox-explorer.css|librivox-*.mjs|lab-offline-assets.json) ;;
                   *) echo "Unexpected staged path: $staged"; exit 2 ;;
                 esac
               done < <(git diff --cached --name-only)

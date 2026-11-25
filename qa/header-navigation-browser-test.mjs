@@ -6,7 +6,9 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { chromium } from 'playwright';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = process.env.SC_QA_SITE_DIR
+  ? path.resolve(process.env.SC_QA_SITE_DIR)
+  : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json',
@@ -81,19 +83,29 @@ try {
         where + ': Sounds navigation touch target too small');
       assert.ok(state.buttonsFit, where + ': navigation buttons overflow');
       if (theme === 'moog') {
+        assert.equal(await page.locator('#sounds-overlay').count(), 0,
+          where + ': obsolete recorder must not overlay Code');
+        await page.locator('#code').fill('// Navigation must preserve unsaved Code edits');
         await page.locator('#sounds-open').click();
-        assert.equal(await page.locator('#sounds-overlay').isVisible(), true,
-          where + ': Sounds page did not open');
-        await page.locator('#sounds-back').click();
-        assert.equal(await page.locator('#sounds-overlay').isVisible(), false,
-          where + ': Code page did not reopen');
+        await page.waitForURL('**/sounds.html#library');
+        assert.equal(await page.locator('#sounds-tabs').isVisible(), true,
+          where + ': integrated Sounds did not open');
+        assert.equal(await page.locator('#sounds-record').isVisible(), false,
+          where + ': Library should be the default Sounds destination');
+        await page.getByRole('tab',{name:'Record'}).click();
+        assert.equal(await page.locator('#record-audition').count(), 1,
+          where + ': current Sounds recorder/audition missing');
+        await page.getByRole('link',{name:'Return to Code'}).click();
+        await page.waitForURL('**/index.html');
         assert.equal(await page.locator('#code').isVisible(), true,
           where + ': Code editor missing after return');
+        assert.equal(await page.locator('#code').inputValue(), '// Navigation must preserve unsaved Code edits',
+          where + ': navigating away discarded the latest composition');
       }
     }
     await context.close();
   }
-  console.log('Header/navigation checks passed: v2.8 beside full title, no floating build, Sounds row opens/returns, eight themes at three phone widths.');
+  console.log('Header/navigation checks passed: v2.8 beside full title, unified Sounds link, saved Code preserved, eight themes at three phone widths.');
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));

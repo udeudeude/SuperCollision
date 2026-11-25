@@ -12,7 +12,7 @@ if(!sitePath||!/^[1-9][0-9]*$/.test(pr))
  throw Error('Usage: node qa/preview-host-probe.mjs SITE_PATH PR_NUMBER');
 
 const base='https://pages-preview-sounds-pr-'+pr+'.supercollision.pages.dev';
-const files=['sounds.html','librivox-explorer.html','lab-offline-assets.json'];
+const files=['index.html','sounds.html','librivox-explorer.html','lab-offline-assets.json'];
 const expected=new Map(await Promise.all(files.map(async name=>
  [name,await readFile(resolve(sitePath,name))])));
 const manifest=JSON.parse(expected.get('lab-offline-assets.json').toString('utf8'));
@@ -43,7 +43,7 @@ for(let attempt=1;attempt<=9;attempt++){
   }
  }
  if(!failures.length){
-  console.log('PUBLIC PREVIEW VERIFIED: all three files, including the exact offline asset index, match source '+manifest.version);
+  console.log('PUBLIC PREVIEW VERIFIED: Code, Sounds, LibriVox and exact offline asset index match source '+manifest.version);
   process.exit(0);
  }
  if(attempt<9){

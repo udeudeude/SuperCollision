@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 from shutil import copy2
 
-PAGES = ("sounds.html", "sounds-lab.html")
+PAGES = ("index.html", "sounds.html", "sounds-lab.html")
 LIBRIVOX = (
     "librivox-explorer.html",
     "librivox-explorer.css",
@@ -33,6 +33,11 @@ def release_files(source: Path) -> tuple[str, ...]:
     if missing:
         raise ValueError("Refusing incomplete release: " + ", ".join(missing))
 
+    # A tested Code entrypoint must open the SAME Sounds workspace. It must
+    # never launch an old inline recorder with incompatible local audio data.
+    code = (source / "index.html").read_text(encoding="utf-8")
+    if "location.assign('./sounds.html#library')" not in code or "sounds-overlay" in code:
+        raise ValueError("Code does not open the integrated Sounds workspace")
     # A tested Sounds link must never point at an old/absent LibriVox app.
     sounds = (source / "sounds.html").read_text(encoding="utf-8")
     explorer = (source / "librivox-explorer.html").read_text(encoding="utf-8")
