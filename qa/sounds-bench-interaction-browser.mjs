@@ -134,6 +134,7 @@ try{
   // Generated source handoff must not silently discard an existing instrument.
   await page.evaluate(()=>{document.querySelector('#lab-engine').disabled=true});
   const generated='({ SinOsc.ar(330,0,0.1) }.play;)';
+  page.once('dialog',dialog=>dialog.accept());
   await page.evaluate(code=>window.dispatchEvent(new CustomEvent('bench-open-source',{detail:{name:'Glass bell',code,play:false}})),generated);
   assert.equal(await page.locator('#lab-demo-code').inputValue(),generated,'Generated source was not loaded');
   assert.equal(await page.locator('#lab-tone-name').inputValue(),'Glass bell');
