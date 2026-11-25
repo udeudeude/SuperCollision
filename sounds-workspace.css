@@ -939,3 +939,14 @@ body.is-recording #bench-acquire-overlay #start{background:#bb4b3c;color:#fff}
 #lab-setup .actions button{min-width:0;white-space:normal}
 
 #bench-acquire-footer label[for="mic-ready"][hidden]{display:none!important}
+
+/* Instrument actions: compact, thumb-sized and visually subordinate to code. */
+#bench-compare-bar{order:6;display:grid;grid-template-columns:auto repeat(4,minmax(0,1fr));gap:4px;align-items:center;min-width:0;padding:5px 0;border-top:1px solid #665c49}
+#bench-compare-bar .bench-compare-title{font:700 9px ui-monospace,monospace;letter-spacing:.07em;color:#c3b89d}
+#bench-compare-bar button{min-width:0;min-height:36px;padding:5px 3px;font:700 clamp(9px,2.2vw,12px) ui-monospace,monospace;white-space:nowrap;background:#30382e;color:#e7dcc7;border:1px solid #82775d}
+#bench-compare-bar button[id^="bench-compare-hear"]{background:#ae8b4d;color:#171b17}
+#bench-compare-bar button:disabled{opacity:.38}
+#lab-setup{grid-template-rows:auto minmax(100px,.9fr) minmax(145px,1.3fr) auto auto auto auto auto auto!important}
+#lab-setup>.actions{order:5}
+#lab-setup>.tone-save-row{order:7}
+@media(max-width:380px){#bench-compare-bar{grid-template-columns:repeat(4,minmax(0,1fr))}#bench-compare-bar .bench-compare-title{grid-column:1/-1}}
