@@ -50,6 +50,8 @@ try{
       clientX:r.left+r.width*0.8,clientY:r.top+r.height*0.3}));
   });
   assert.equal(await page.locator('#bench-param-cutoff').inputValue(),cutoff);
+  assert.equal(await page.locator('#lab-demo-level').isDisabled(),true,
+   'The Volume slider must be inert until explicitly armed');
   // Zoom modifies only the visible frequency range, never the sound or code.
   const codeBefore=await page.locator('#lab-demo-code').inputValue();
   await page.getByRole('button',{name:'Zoom in on the pitch ruler'}).click();
@@ -91,9 +93,12 @@ try{
   assert.equal(await filterCanvas.evaluate(el=>getComputedStyle(el).touchAction),'pan-y');
   // Manual changes in editable code participate in the same undo history.
   const originalCode=await page.locator('#lab-demo-code').inputValue();
+  console.log('HISTORY BEFORE TYPE '+JSON.stringify(await page.evaluate(()=>window.__benchHistoryProbe?.())));
   await page.locator('#lab-demo-code').fill(originalCode.replace('\\freq, 440','\\freq, 523.25'));
+  console.log('HISTORY AFTER TYPE '+JSON.stringify(await page.evaluate(()=>window.__benchHistoryProbe?.())));
   assert.equal(await page.locator('#lab-demo-code-bay').getAttribute('data-sync'),'modified');
   await page.locator('#bench-tone-undo').click();
+  console.log('HISTORY AFTER UNDO '+JSON.stringify(await page.evaluate(()=>window.__benchHistoryProbe?.())));
   assert.equal(await page.locator('#lab-demo-code').inputValue(),originalCode,'Undo lost typed code');
   const size=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
   assert.ok(size.scroll<=size.width+1,'Phone horizontal overflow: '+JSON.stringify(size));

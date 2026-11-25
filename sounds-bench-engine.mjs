@@ -171,6 +171,15 @@ function toneSnapshot(){
 function historyChanged(a,b){
  return a.code!==b.code||Object.keys(a.settings).some(key=>a.settings[key]!==b.settings[key]);
 }
+if(location.hostname==='127.0.0.1'){
+ window.__benchHistoryProbe=()=>({
+  undo:undoHistory.map(x=>x.code.match(/\\freq, ([^,]+)/)?.[1]),
+  redo:redoHistory.map(x=>x.code.match(/\\freq, ([^,]+)/)?.[1]),
+  current:demoCode.value.match(/\\freq, ([^,]+)/)?.[1],
+  last: lastEditorText.match(/\\freq, ([^,]+)/)?.[1],
+  editingSession,dirty:demoDirty
+ });
+}
 function historyState(){
  undoButton.disabled=!undoHistory.length;
  redoButton.disabled=!redoHistory.length;
