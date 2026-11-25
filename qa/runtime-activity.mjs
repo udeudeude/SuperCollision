@@ -31,6 +31,16 @@ await mkdir('qa/screenshots',{recursive:true});
 let error=null;
 try{
  const page=await browser.newPage({viewport:{width:390,height:844},hasTouch:true,isMobile:true,deviceScaleFactor:2});
+ let startupApproved=false,startupPrompts=0;
+ page.on('dialog',dialog=>{
+  if(dialog.type()==='confirm'&&dialog.message().includes('Starting SuperCollider without a verified offline copy')){
+   startupPrompts++;
+   (startupApproved?dialog.accept():dialog.dismiss()).catch(e=>console.log('DIALOG ERROR:',e.message));
+  }else{
+   browserFailures.push('UNEXPECTED DIALOG '+dialog.type()+' '+dialog.message());
+   void dialog.dismiss();
+  }
+ });
  page.on('pageerror',e=>{browserFailures.push('PAGE '+e.message);console.log('PAGE ERROR:',e.message)});
  page.on('requestfailed',request=>{
   const record='NETWORK '+request.url()+' '+(request.failure()?.errorText||'unknown');
@@ -66,8 +76,19 @@ try{
   throw Error('Code module never installed POWER handler: '+JSON.stringify(state)+'; '+error.message);
  }
  console.log('CODE POWER HANDLER INSTALLED');
+ // Verify the Wi-Fi-first gate blocks a rejected download instead of
+ // silently bypassing the user's permission. A fresh context has no pack.
+ await page.locator('#engine').click();
+ await page.waitForTimeout(200);
+ if(startupPrompts!==1)throw Error('Expected an explicit offline/download consent prompt before POWER, got '+startupPrompts);
+ if(!(await page.locator('#evaluate').isDisabled()))throw Error('Denied engine download incorrectly enabled RUN');
+ if(await page.evaluate(()=>performance.getEntriesByType('resource').some(e=>e.name.includes('/runtime/'))))
+  throw Error('Denied engine download loaded runtime resources');
+ startupApproved=true;
  await page.locator('#engine').click();
  await page.waitForTimeout(350);
+ if(startupPrompts!==2)throw Error('Accepted engine download must be tied to a genuine confirmation');
+ console.log('ENGINE NETWORK CONSENT: denied first, explicitly approved second');
  console.log('POWER AFTER CLICK:',await page.evaluate(()=>({
   status:document.querySelector('#engine-status')?.textContent,
   disabled:document.querySelector('#engine')?.disabled,
