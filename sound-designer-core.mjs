@@ -70,10 +70,10 @@ export function parseSoundResponse(text) {
  if(matches.length){
    const preferred=matches.find(x=>/^\x60\x60\x60(?:supercollider|sclang|scd|sc)[ \t]*\n/i.test(x[0]))||matches[0];
    code=preferred[1].trim();
- }else if(/(?:\bSynthDef\s*\(|\bPbind\s*\(|\bSinOsc\.(?:ar|kr)\s*\(|\bOut\.ar\s*\(|s\.waitForBoot)/.test(raw)){
+ }else if(/(?:\bSynthDef\s*\(|\bPbind\s*\(|\bPdef\s*\(|\bNdef\s*\(|\bSinOsc\.(?:ar|kr)\s*\(|\bOut\.ar\s*\(|\b(?:play|playN|spawn)\s*\(|\.play\b|s\.waitForBoot)/.test(raw)){
    code=raw;
  }
- if(!code || !/(?:\bSynthDef\s*\(|\bPbind\s*\(|\bSinOsc\.(?:ar|kr)\s*\(|\bOut\.ar\s*\(|\{\s*[\s\S]*?\.play)/.test(code)){
+ if(!code || !/(?:\bSynthDef\s*\(|\bPbind\s*\(|\bPdef\s*\(|\bNdef\s*\(|\bSinOsc\.(?:ar|kr)\s*\(|\bOut\.ar\s*\(|\b(?:play|playN|spawn)\s*\(|\.play\b|\{\s*[\s\S]*?\.play)/.test(code)){
    throw Error('The response did not contain recognizable SuperCollider code. Try again or choose a different provider.');
  }
  if(code.length>36000)throw Error('The generated code is unusually long; request a simpler instrument.');
