@@ -17,6 +17,18 @@ from scripts.stage_sounds_release import LIBRIVOX, release_files, stage_release
 def main() -> None:
     assets = release_files(ROOT)
     assert set(LIBRIVOX).issubset(assets)
+    # Releasing an old label with a new manifest must fail before publication.
+    with TemporaryDirectory() as wrong_version:
+        fixture = Path(wrong_version)
+        for name in assets:
+            (fixture / name).write_bytes((ROOT / name).read_bytes())
+        (fixture / "app-version.json").write_text('{"version":"0.0"}', encoding="utf-8")
+        try:
+            release_files(fixture)
+        except ValueError as exc:
+            assert "version disagrees" in str(exc), exc
+        else:
+            raise AssertionError("Release staging accepted a contradictory version")
     assert "librivox-test.html" not in assets, "Do not publish an experimental test page"
     assert "index.html" in assets, "Code must ship with the integrated Sounds navigation"
     for name in ("sounds-bench-preview.html", "sounds-workspace.css", "sounds-reach.css",

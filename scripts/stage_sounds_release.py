@@ -8,6 +8,7 @@ worker. The caller must commit the staged files together, or none of them.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -51,10 +52,24 @@ def release_files(source: Path) -> tuple[str, ...]:
         raise ValueError("Instrument Bench does not load its native engine and acquisition")
     if "sounds-bench-links.mjs" not in (source / "sounds-bench-engine.mjs").read_text(encoding="utf-8"):
         raise ValueError("Instrument Bench source-to-control linking is absent")
-    if '<small>v2.8</small>' not in bench:
-        raise ValueError("Instrument Bench version disagrees with SuperCollision")
-    if '<small>v2.8</small>' not in (source / "sounds-lab.html").read_text(encoding="utf-8"):
-        raise ValueError("Sample Lab version disagrees with SuperCollision")
+    # Use one canonical public version instead of a frozen literal.
+    try:
+        version = json.loads((source / "app-version.json").read_text(encoding="utf-8"))["version"]
+    except (OSError, KeyError, json.JSONDecodeError) as exc:
+        raise ValueError("Missing or invalid canonical release version") from exc
+    if not isinstance(version, str) or not re.fullmatch(r"\d+\.\d+(?:\.\d+)?", version):
+        raise ValueError("Invalid canonical release version")
+    sample_lab = (source / "sounds-lab.html").read_text(encoding="utf-8")
+    version_markers = (
+        ("Code", code, f'<small class="app-version" aria-label="Version {version}">v{version}</small>'),
+        ("Sounds", sounds, f'<small class="build" aria-label="Version {version}">v{version}</small>'),
+        ("Instrument Bench", bench, f"<small>v{version}</small>"),
+        ("Sample Lab", sample_lab, f"<small>v{version}</small>"),
+        ("LibriVox", explorer, f'<span class="preview-note" aria-label="Version {version}">v{version}</span>'),
+    )
+    for name, html, marker in version_markers:
+        if marker not in html:
+            raise ValueError(f"{name} version disagrees with SuperCollision v{version}")
     if 'href="./sounds-bench-preview.html"' not in sounds:
         raise ValueError("Sounds Create must link to the current Instrument Bench")
     if 'href="./librivox-explorer.html"' not in sounds:
