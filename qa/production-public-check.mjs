@@ -95,8 +95,20 @@ try{
   await page.locator('#engine').click();
   await page.waitForFunction(()=>!document.querySelector('#evaluate').disabled,null,{timeout:90000});
   assert.ok(startupConfirmations>0,'Production engine must require explicit optional download approval');
-  await page.waitForFunction(()=>window.SCActivity?.tracker?.visible()?.confirmed>0,null,{timeout:40000});
-  console.log('LIVE CODE ENGINE PASS: real native SuperCollider booted, an audio node was confirmed, and the download consent dialog was accepted');
+  // POWER boots the engine. RUN, separately, evaluates the starter oscillator.
+  // Waiting for a note before pressing RUN is a false failure on this instrument.
+  const starter=await page.locator('#code').inputValue();
+  assert.ok(starter.includes('SinOsc.ar'),'The production starter oscillator is missing');
+  await page.locator('#evaluate').click();
+  await page.waitForFunction(()=>
+    /-> Synth\('temp__/.test(document.querySelector('#console')?.textContent||''),
+    null,{timeout:20000});
+  const bridge=await page.evaluate(()=>window.SCOscBridge?.diagnostics());
+  assert.ok(bridge?.outgoingCount>0&&bridge?.incomingCount>0,
+    'Real sound engine did not exchange OSC messages');
+  assert.equal(await page.locator('#code').inputValue(),starter,
+    'RUN changed the original composition');
+  console.log('LIVE CODE ENGINE PASS: actual downloaded native engine booted, RUN created a synth, OSC traveled both directions');
   await page.locator('#panic').click();
   await page.locator('#code').fill('// Actual production navigation preserves this unsaved composition');
   await page.locator('#sounds-open').click();
