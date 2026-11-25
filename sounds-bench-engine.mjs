@@ -173,13 +173,13 @@ const compareSlots={a:null,b:null};
 for(const slot of ['a','b']){
  const saveButton=compareBar.querySelector('#bench-compare-save-'+slot);
  const hearButton=compareBar.querySelector('#bench-compare-hear-'+slot);
- saveButton.addEventListener('click',()=>{
+ responsiveAction(saveButton,()=>{
   commitGesture();
   compareSlots[slot]=toneSnapshot();
   hearButton.disabled=false;
   announce('Saved comparison '+slot.toUpperCase()+'.');
  });
- hearButton.addEventListener('click',()=>{
+ responsiveAction(hearButton,()=>{
   const saved=compareSlots[slot];if(!saved)return;
   commitGesture();
   const before=toneSnapshot();
