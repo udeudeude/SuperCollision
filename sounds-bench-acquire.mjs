@@ -85,7 +85,7 @@ function setup(){
  }
  $('bench-acquire-back').remove();
  const micLabel=pages.record.querySelector('label[for="mic-ready"]');
- if(micLabel)micLabel.remove();
+ if(micLabel){micLabel.hidden=true;footerPanels.record.append(micLabel)}
  footerPanels.record.append($('start'));
  const importLabel=pages.import.querySelector('label[for="import"]');
  if(importLabel)footerPanels.import.append(importLabel);
