@@ -112,7 +112,18 @@ try{
   await page.locator('#panic').click();
   await page.locator('#code').fill('// Actual production navigation preserves this unsaved composition');
   await page.locator('#sounds-open').click();
-  await page.waitForURL('**/sounds.html#library',{timeout:15000});
+  try{
+    await page.waitForURL('**/sounds.html#library',{waitUntil:'domcontentloaded',timeout:20000});
+  }catch(error){
+    const detail=await page.evaluate(()=>({
+      href:location.href,title:document.title,ready:document.readyState,
+      currentPane:document.querySelector('#sounds-tabs')?.outerHTML?.slice(0,300),
+      console:document.querySelector('#console')?.textContent?.slice(-500),
+      button:document.querySelector('#sounds-open')?.outerHTML?.slice(0,300)
+    })).catch(e=>({error:e.message}));
+    throw Error('Live Code-to-Sounds navigation failed: '+JSON.stringify({
+      lastUrl:page.url(),page:detail,errors,original:error.message}));
+  }
   assert.equal(await page.locator('#sc-surface-design').inputValue(),'moog');
   const narrow=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,width:innerWidth,bottom:document.querySelector('#sounds-tabs').getBoundingClientRect().bottom}));
   assert.ok(narrow.scroll<=narrow.width+1&&Math.abs(narrow.bottom-844)<4,'Production Sounds mobile navigation: '+JSON.stringify(narrow));
