@@ -66,7 +66,7 @@ try {
       });
       const where = theme + ' at ' + width + 'px';
       assert.equal(state.title, 'SuperCollision', where + ': page name changed');
-      assert.equal(state.versionText, 'v2.8', where + ': correct version is beside title');
+      assert.equal(state.versionText, 'v2.9', where + ': correct version is beside title');
       assert.ok(state.versionVisible, where + ': version hidden on small screen');
       assert.ok(state.titleScroll <= state.titleWidth + 1, where +
         ': title clipped (' + state.titleScroll + 'px text vs ' + state.titleWidth + 'px available)');
@@ -119,7 +119,7 @@ try {
     }
     await context.close();
   }
-  console.log('Header/navigation checks passed: v2.8 beside full title, unified Sounds link, saved Code preserved, eight themes at three phone widths.');
+  console.log('Header/navigation checks passed: v2.9 beside full title, unified Sounds link, saved Code preserved, eight themes at three phone widths.');
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));
