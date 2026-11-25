@@ -921,3 +921,10 @@ body.is-recording #bench-acquire-overlay #start{background:#bb4b3c;color:#fff}
  font-size:18px!important;
 }
 #bench-sample-workspace #bench-sample-stage[hidden]{display:none!important}
+
+/* Keep the prompt readable and the persistent navigation accessible. */
+#bench-acquire-overlay #sounds-ai-prompt{height:auto!important;min-height:110px!important;max-height:38dvh!important;overflow-y:auto!important;resize:vertical;touch-action:auto}
+#bench-acquire-overlay #sounds-ai-system-message,#bench-acquire-overlay #sounds-ai-user-message{height:auto!important;min-height:125px;max-height:38dvh;overflow:auto;touch-action:auto}
+#bench-acquire-overlay #bench-acquire-footer{padding-bottom:env(safe-area-inset-bottom,0px)}
+#lab-setup #lab-audio-phase{display:none!important}
+#bench-acquire-overlay #acquire-record .bench-record-hint{display:none!important}
