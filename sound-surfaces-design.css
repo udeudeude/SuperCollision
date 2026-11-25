@@ -251,3 +251,94 @@ body[data-sc-surface][data-theme=terminal] :is(.bench-tabs button,.librivox-sear
   scroll-behavior:auto!important;transition-duration:0s!important;animation-duration:0s!important;
  }
 }
+
+/* Current Sounds/LibriVox surfaces: shared tokens, same eight identities as Code.
+   Never alter source data, waveform measurements, recording state or permissions. */
+@font-face{font-family:"SC Oxanium";src:url("./assets/fonts/oxanium.woff2") format("woff2");font-weight:400 800;font-display:swap}
+@font-face{font-family:"SC Josefin";src:url("./assets/fonts/josefin-sans.woff2") format("woff2");font-weight:400 700;font-display:swap}
+@font-face{font-family:"SC Franklin";src:url("./assets/fonts/libre-franklin.woff2") format("woff2");font-weight:400 800;font-display:swap}
+@font-face{font-family:"SC Megrim";src:url("./assets/fonts/megrim.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"SC Plaster";src:url("./assets/fonts/plaster.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"SC Outpost";src:url("./assets/fonts/outpost-mono.woff2") format("woff2");font-weight:400;font-display:swap}
+body[data-sc-surface=sounds] :is(section,.managed-item,.record-monitor,.record-audition,
+.library-backup,.managed-source,.library-lab-link,.filter-group,.discovered-sound){
+ background:var(--sc-panel)!important;color:var(--sc-ink)!important;
+ border-color:var(--sc-line)!important
+}
+body[data-sc-surface=sounds] :is(.record-monitor,.saved-code,.managed-source){
+ background:var(--sc-editor)!important;color:var(--sc-ink)!important
+}
+body[data-sc-surface=sounds] :is(.muted,small,.nav-description,.nav-heading,.record-monitor-data){
+ color:var(--sc-soft)!important
+}
+body[data-sc-surface=sounds] :is(input[type=text],input[type=search],input[type=password],
+input[type=number],textarea,select){
+ color:var(--sc-ink)!important;background:var(--sc-editor)!important;border-color:var(--sc-line)!important
+}
+body[data-sc-surface=sounds] :is(a,.library-lab-link,.managed-source>summary,.managed-more>summary){
+ color:var(--sc-accent)!important
+}
+body[data-sc-surface=sounds] :is(.managed-favorite[aria-pressed=true],.result-star[aria-pressed=true]){
+ background:var(--sc-plate)!important;border:2px solid var(--sc-selected)!important;
+ color:var(--sc-ink)!important
+}
+body[data-sc-surface=sounds] nav#sounds-tabs{
+ background:var(--sc-ground)!important;border-color:var(--sc-line)!important
+}
+body[data-sc-surface=sounds] :is(button.primary:not(:disabled),#start:not(:disabled)){
+ background:var(--sc-accent)!important;color:var(--sc-accent-ink)!important;
+ border-color:var(--sc-line)!important
+}
+body[data-sc-surface=sounds].is-recording #start{
+ background:#ac312d!important;color:white!important;border:3px solid #ffb1a4!important
+}
+body[data-sc-surface=librivox]{
+ --ground:var(--sc-ground);--panel:var(--sc-panel);--plate:var(--sc-plate);
+ --edge:var(--sc-line);--line:var(--sc-line-subtle);--ink:var(--sc-ink);
+ --soft:var(--sc-soft);--gold:var(--sc-accent);--dim:var(--sc-soft)
+}
+body[data-sc-surface=librivox] :is(.topbar,.player,.text-bay,.combined-form,.catalog-disclosure,
+.sample-editor,.preview-gate){
+ background:var(--sc-panel)!important;color:var(--sc-ink)!important;
+ border-color:var(--sc-line)!important
+}
+body[data-sc-surface=librivox] :is(.query-row input,.combined-inputs input,select,textarea){
+ background:var(--sc-editor)!important;color:var(--sc-ink)!important;
+ border-color:var(--sc-line)!important
+}
+body[data-sc-surface=librivox] :is(button.primary,#find-combined,#load-chapter-audio,#extract-wav){
+ background:var(--sc-accent)!important;color:var(--sc-accent-ink)!important
+}
+body[data-sc-surface] :is(h1,h2){font-family:var(--sc-font-head)!important}
+body[data-sc-surface][data-theme=makenoise] :is(header h1,main h2){
+ font-family:"SC Megrim",sans-serif!important;font-weight:400!important;letter-spacing:.015em!important
+}
+body[data-sc-surface][data-theme=makenoise] :is(button,summary,.sc-design-choice){
+ font-family:"SC Outpost","SC Oxanium",monospace!important
+}
+body[data-sc-surface][data-theme=bauhaus] :is(header h1,main h2){
+ font-family:"SC Plaster","SC Josefin",sans-serif!important;font-weight:400!important
+}
+body[data-sc-surface][data-theme=bauhaus] button{font-family:"SC Josefin",sans-serif!important}
+body[data-sc-surface][data-theme=blackmountain] :is(header h1,main h2){
+ font-family:"SC Franklin",sans-serif!important;font-weight:450!important
+}
+body[data-sc-surface][data-theme=moog] :is(header h1,main h2){
+ font-family:"SC Oxanium",sans-serif!important;font-weight:700!important;letter-spacing:.055em!important
+}
+body[data-sc-surface][data-theme=makenoise] :is(section,.managed-item,.player,.text-bay){border-style:dashed!important}
+body[data-sc-surface][data-theme=bauhaus] :is(section,.managed-item,.player,.text-bay){
+ border-left:5px solid #285e9b!important;border-radius:0!important
+}
+body[data-sc-surface][data-theme=scope] :is(.record-monitor,.player){
+ background:repeating-linear-gradient(0deg,#06110c 0 3px,#0b2318 4px)!important
+}
+body[data-sc-surface][data-theme=terminal] :is(section,.managed-item,.player,.text-bay){
+ border-radius:0!important;border-bottom-width:3px!important
+}
+@media(max-width:390px){
+ body[data-sc-surface=librivox] .topbar h1{font-size:12px}
+ body[data-sc-surface=librivox] .topbar h1 small{display:none}
+ body[data-sc-surface=sounds] header h1{font-size:15px!important}
+ body[data-sc-surface] header .sc-design-choice{flex:0 0 auto}
+}

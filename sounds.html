@@ -22,7 +22,7 @@ nav{display:grid;gap:11px;padding:12px 0;border-bottom:1px solid #4b514b}
 .sounds-acquire-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
 .sounds-acquire-buttons button{min-width:0}
 nav button{font-size:12px;padding:8px 3px;min-height:40px}
-nav button[aria-selected="true"]{background:#d8ae5b;color:#171918;border-color:#f3d89f}
+nav button[aria-selected="true"]{background:#242d26;color:#f3d69d;border-color:#d8ae5b;box-shadow:inset 0 -3px 0 #d8ae5b}
 main{padding:13px 0 28px}section{border:1px solid #545c52;padding:15px;margin-bottom:12px;min-width:0}
 section[hidden],#discover-key-box[hidden],#sounds-cancel-edit[hidden]{display:none!important}
 h2{font-size:1.07rem;letter-spacing:.035em;margin:0 0 9px}
@@ -34,7 +34,7 @@ input[type=file]{max-width:100%}
 button{border:1px solid #868774;background:#343832;color:#f1eee4;padding:9px 12px;min-height:43px;font:750 13px/1.2 system-ui;cursor:pointer;border-radius:2px}
 button.primary{background:#d8ae5b;color:#171918;border-color:#d8ae5b}
 button:disabled{opacity:.45;cursor:not-allowed}
-button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #eed387;outline-offset:3px}
+button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #eed387;outline-offset:3px}
 .actions{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:10px 0}
 .actions a{font-size:13px}
 input[type=checkbox]{width:20px;height:20px;accent-color:#d8ae5b}
@@ -46,9 +46,35 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 #status,#discover-status,#sounds-tools-status,#sounds-generate-status{min-height:24px;overflow-wrap:anywhere}
 .library-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,160px);gap:8px;align-items:end}
 .library-controls label{margin-top:0}
-.managed-item,.discovered-sound{border-top:1px solid #575d54;padding:13px 0;min-width:0}
+.managed-item{background:#20251f;border:1px solid #515a50;border-left:3px solid #a48a57;padding:13px 14px;margin:10px 0;min-width:0}
+.discovered-sound{border-top:1px solid #575d54;padding:13px 0;min-width:0}
 .managed-item strong,.discovered-sound strong,.managed-item small,.discovered-sound small{display:block;overflow-wrap:anywhere}
 .managed-item audio,.discovered-sound audio{display:block;width:100%;margin:9px 0}
+.library-headline{display:grid;grid-template-columns:minmax(0,1fr) minmax(175px,240px);align-items:center;gap:12px;margin-bottom:13px}
+.library-headline p{margin-bottom:0}
+.library-lab-link{display:flex;flex-direction:column;justify-content:center;gap:3px;min-height:58px;padding:10px 12px;border:1px solid #8f7a52;color:#ecd09c;text-decoration:none;background:#292b23}
+.library-lab-link span{font-size:11px;color:#c0b9a7}
+.managed-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.managed-identity{min-width:0;flex:1}
+.managed-identity strong{font-size:15px;line-height:1.3}
+.managed-identity small{margin-top:3px}
+.managed-favorite{flex:0 0 auto;min-height:44px;color:#e9c785;background:transparent;border-color:#666751}
+.managed-favorite[aria-pressed="true"]{background:#4b4027;border-color:#d9ae5b}
+.managed-primary-actions{margin:9px 0 3px}
+.managed-source{margin:8px 0;border:1px solid #48544b;background:#181e1a}
+.managed-source>summary{color:#ddc18d;font-size:12px;padding:10px 11px;cursor:pointer;min-height:44px}
+.managed-source .saved-code{margin:0;border-top:1px solid #48544b;max-height:300px}
+.managed-more{border-top:1px solid #48544b;margin-top:10px;padding-top:3px}
+.managed-more>summary{cursor:pointer;min-height:44px;padding:11px 0;color:#c3c6b5;font-size:12px;font-weight:700}
+.managed-more[open]>summary{color:#edd09b}
+.managed-secondary-actions{margin:4px 0 2px;gap:7px}
+.managed-secondary-actions button{background:#292e28;font-weight:600}
+.managed-secondary-actions button:last-child{border-color:#855b57;color:#efb6ae}
+.library-backup{border:1px solid #525a4e;margin-top:18px}
+.library-backup>summary{cursor:pointer;padding:14px;min-height:50px;font-weight:700;color:#e2c18a}
+.library-backup[open]>summary{border-bottom:1px solid #525a4e}
+.library-backup-body{padding:12px 14px 16px}
+@media(max-width:520px){.library-headline{grid-template-columns:minmax(0,1fr)}.library-lab-link{min-height:50px}.managed-item{padding:11px 10px}}
 .discovered-sound audio[hidden]{display:none!important}
 .saved-code{margin:8px 0;background:#10151d;color:#e4e6e8;max-height:210px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:10px;font:12px/1.5 ui-monospace,monospace}
 .filter-group{border:1px solid #52594e;margin:12px 0;padding:12px}
@@ -57,10 +83,30 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 .tab-intro{margin-bottom:14px}
 @media(max-width:370px){header .build{font-size:9px}header h1{font-size:1.1rem}.library-controls{grid-template-columns:minmax(0,1fr)}}
 @media(min-width:720px){.sounds-acquire-buttons{grid-template-columns:repeat(5,minmax(0,1fr))}.sounds-library-nav button{flex-basis:180px}}
+.record-monitor{border:1px solid #4b584e;background:#19201c;padding:10px 12px;margin:12px 0}
+.record-monitor-data{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#dfd7c4;font:650 12px/1.4 ui-monospace,monospace}
+#record-wave{display:block;width:100%;height:72px;margin:8px 0;border:1px solid #4b584e}
+.record-monitor progress{width:100%;height:7px;display:block}
+.record-audition{border:1px solid #a38b5c;background:#262821;padding:12px;margin:12px 0}
+.record-audition[hidden]{display:none!important}
+.record-audition h3{margin:0 0 5px}
+.record-audition audio{display:block;width:100%;margin:10px 0}
+@media(max-width:640px){
+body{padding-bottom:calc(87px + env(safe-area-inset-bottom))}
+nav#sounds-tabs{position:fixed;z-index:50;bottom:0;left:0;right:0;width:100%;padding:7px 8px calc(7px + env(safe-area-inset-bottom));display:grid;grid-template-columns:minmax(0,1fr) minmax(0,5fr);gap:5px;border-top:1px solid #88806c;border-bottom:0;background:#191e1a;box-shadow:0 -9px 24px #0008}
+nav .sounds-library-nav{padding:0;border:0;display:block}
+nav .sounds-library-nav button{width:100%;padding:6px 2px;text-align:center;min-height:52px;min-width:0}
+nav .nav-description,nav .nav-heading{display:none}
+nav .sounds-acquire-nav{display:block;min-width:0}
+nav .sounds-acquire-buttons{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}
+nav button{min-width:0;min-height:52px;font-size:clamp(9px,2.5vw,12px);overflow-wrap:anywhere;padding:5px 2px}
+#sounds-record #start{position:sticky;z-index:2;bottom:calc(78px + env(safe-area-inset-bottom));width:100%;min-height:58px;font-size:14px;box-shadow:0 4px 20px #0008}
+}
 </style>
+<link rel="stylesheet" href="./sound-surfaces-design.css?v=1">
 </head>
 <body>
-<header><a href="./index.html" aria-label="Return to Code">← Code</a><h1>SOUNDS</h1><small class="build">2026.11.20.12</small></header>
+<header><a href="./index.html" aria-label="Return to Code">← Code</a><h1>SOUNDS</h1><small class="build" aria-label="Version 2.8">v2.8</small></header>
 <nav aria-label="Sounds workspace" id="sounds-tabs">
 <div class="sounds-library-nav"><button data-view="library" role="tab" aria-controls="sounds-library" aria-selected="true">Library</button><span class="nav-description">Your collection</span></div>
 <div class="sounds-acquire-nav"><span class="nav-heading">ACQUIRE A SOUND</span><div class="sounds-acquire-buttons">
@@ -73,23 +119,22 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 </nav>
 <main>
 <section id="sounds-library" role="tabpanel">
-<h2>Sound library</h2>
-<p class="muted">One collection for recordings, imports, SuperCollider source, generated instruments and discovered sounds. Files stay on this device. Export important items to Files before clearing website data.</p>
-<div class="filter-group"><h2>Native SuperCollider sample lab</h2><p class="muted">Load a saved recording into native SuperCollider, including direct read-only 8/16/24/32-bit PCM and floating-point WAVE samples, verify its buffer, then audition non-destructive start/end regions, playback speed, volume, waveform region selection and crossfaded looping through SuperCollider. Experimental, isolated from Code, and preserves your original sound.</p><a href="./sounds-lab.html?build=2026112010">Open sample region and loop laboratory</a></div>
+<div class="library-headline"><div><h2>Your sounds</h2><p class="muted">Listen to saved audio, revisit instruments, and find what you need. Your library stays on this device.</p></div>
+<a class="library-lab-link" href="./sounds-lab.html?build=2026112010"><strong>Open Sample Lab</strong><span>Shape regions and loops in native SuperCollider</span></a></div>
 <div class="library-controls">
 <div><label for="sounds-search">Find a sound</label><input id="sounds-search" type="search" placeholder="Name, creator, license…"></div>
-<div><label for="sounds-filter">Type</label><select id="sounds-filter"><option value="all">Everything</option><option value="favorite">Favorites</option><option value="recorded">Recordings</option><option value="imported">Imports</option><option value="written">Written code</option><option value="generated">Generated</option><option value="preset">Sample presets</option><option value="openverse">Openverse</option><option value="freesound">Freesound</option></select></div>
+<div><label for="sounds-filter">Type</label><select id="sounds-filter"><option value="all">Everything</option><option value="favorite">Favorites</option><option value="recorded">Recordings</option><option value="imported">Imports</option><option value="written">Written code</option><option value="generated">Generated</option><option value="preset">Sample presets</option><option value="openverse">Openverse</option><option value="freesound">Freesound</option><option value="librivox">LibriVox</option></select></div>
 </div>
 <div id="sounds-managed-list" aria-live="polite"></div>
-<div class="filter-group" id="sounds-backup">
-<h2>Back up your entire library</h2>
+<details class="library-backup" id="sounds-backup"><summary>Back up or restore your library</summary>
+<div class="library-backup-body"><h2>Keep an independent copy</h2>
 <p class="muted">Export every sound, original recording, imported audio file, source code, license, attribution and favorite. The .scsounds backup is uncompressed and contains your private recordings; keep it somewhere safe outside browser storage.</p>
 <button id="sounds-backup-export" type="button">Export complete library</button>
 <label for="sounds-backup-import">Restore from a SuperCollision Sounds backup</label>
 <input id="sounds-backup-import" type="file" accept=".scsounds,application/octet-stream">
 <p class="muted">Restore adds missing sounds only. Existing sound identifiers are never overwritten. Restores are all-or-nothing. New backups include per-recording corruption checks; older backups still open.</p>
 <p id="sounds-backup-status" role="status" aria-live="polite"></p>
-</div>
+</div></details>
 </section>
 <section id="sounds-record" role="tabpanel" hidden>
 <h2>Record audio</h2>
@@ -97,13 +142,24 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 <label for="name">Recording name (optional)</label><input id="name" type="text" maxlength="120" placeholder="New recording">
 <label class="check" for="mic-ready"><input id="mic-ready" type="checkbox"><span>MIC READY · turn on microphone permission</span></label>
 <button id="start" class="primary" type="button" disabled aria-pressed="false">● HOLD TO RECORD</button>
-<progress id="level" max="1" value="0" aria-label="Microphone input level"></progress>
-<p id="status" role="status" aria-live="polite">Turn on MIC READY to begin.</p>
-<p class="muted">Press and hold to record; release to save. The screen border turns red during recording. Keep this page open while saving.</p>
+<div class="record-monitor" aria-label="Live microphone input">
+<div class="record-monitor-data"><strong id="record-level-text">MIC OFF</strong><span>Elapsed <output id="record-timer">0:00</output></span></div>
+<canvas id="record-wave" height="72" aria-label="Actual microphone waveform while available"></canvas>
+<progress id="level" max="1" value="0" aria-label="Measured microphone input level"></progress>
+</div>
+<p id="status" role="status" aria-live="polite">Enable microphone to begin. No audio is uploaded.</p>
+<div id="record-audition" class="record-audition" hidden>
+<h3>Listen to what you captured</h3><p id="record-audition-name" class="muted"></p>
+<audio id="record-audio" controls preload="none" aria-label="Play or pause the recorded original"></audio>
+<p class="muted">The original plays here without loading the SuperCollider instrument engine. Playback is never automatic.</p>
+</div>
+<p class="muted">Hold to record, release to save. A red border and timer confirm capture. The microphone turns off after saving so you can listen without feedback.</p>
 </section>
 <section id="sounds-import" role="tabpanel" hidden>
 <h2>Import audio</h2><p class="muted">Import existing recordings into the same local library. Originals are preserved; all later processing belongs to SuperCollider.</p>
 <label for="import">Choose audio files</label><input id="import" type="file" accept="audio/*,.wav,.flac,.aiff,.ogg,.m4a,.mp3" multiple>
+<p id="import-status" role="status" aria-live="polite">Choose one or more recordings to add to your library.</p>
+<ul id="import-failures" aria-label="Files not imported" hidden></ul>
 <p class="muted">Large files may exceed available storage. Importing from Files does not delete the source file.</p>
 </section>
 <section id="sounds-create" role="tabpanel" hidden>
@@ -123,19 +179,33 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 <button id="sounds-puter-connect" type="button" hidden>Connect Puter</button>
 <label for="sounds-ai-prompt">Describe the sound</label><textarea id="sounds-ai-prompt" placeholder="A rough, reedy drone with slow wavering pitch…"></textarea>
 <div class="actions"><button id="sounds-ai-generate" class="primary" type="button">Generate instrument</button></div>
-<label for="sounds-ai-revision">Refinement (optional)</label><textarea id="sounds-ai-revision" placeholder="Make it darker, with more breath noise…" style="min-height:68px"></textarea>
-<button id="sounds-ai-revise" type="button" disabled>Revise generated instrument</button>
 <p id="sounds-generate-status" role="status" aria-live="polite"></p>
 <div id="sounds-ai-result" hidden>
 <label for="sounds-ai-code">Review and edit generated SuperCollider source</label><textarea id="sounds-ai-code" spellcheck="false" style="min-height:260px"></textarea>
 <pre id="sounds-ai-review" class="saved-code"></pre>
+<label for="sounds-ai-revision">Refine this instrument</label>
+<textarea id="sounds-ai-revision" placeholder="Make it darker, with more breath noise…" style="min-height:68px"></textarea>
+<p class="muted">Revisions use the code above, including your edits. They never execute it.</p>
+<div class="actions"><button id="sounds-ai-revise" type="button" disabled>Revise current code</button></div>
 <div class="actions"><button id="sounds-ai-save" type="button" class="primary" disabled>Save to library</button><button id="sounds-ai-copy" type="button" disabled>Copy code</button></div>
+</div>
+<div id="sounds-ai-proposal" hidden>
+<h2>New proposal</h2>
+<p class="muted">You edited the draft while generation was running. Your edits are intact. Review the new proposal before choosing whether to replace them.</p>
+<label for="sounds-ai-proposed-code">Proposed SuperCollider source</label>
+<textarea id="sounds-ai-proposed-code" readonly spellcheck="false" style="min-height:190px"></textarea>
+<div class="actions"><button id="sounds-ai-apply-proposal" type="button">Replace draft with proposal</button><button id="sounds-ai-discard-proposal" type="button">Keep my draft</button></div>
 </div>
 <p class="muted">Auditioning and audio processing will be added through SuperCollider itself, not a separate browser synthesizer.</p>
 </section>
 <section id="discover" role="tabpanel" hidden>
 <h2>Discover sounds</h2>
 <p class="muted">Search openly licensed online collections and add selected audio to your library. No automatic downloads.</p>
+<div class="filter-group" id="discover-spoken-word">
+<h3>Spoken-word recordings · LibriVox</h3>
+<p class="muted">Find recordings by author and reader, locate phrases using book text, and save extracted audio into this Sounds Library. Streaming requires a separate tap and respects Wi-Fi-first permission.</p>
+<a href="./librivox-explorer.html">Explore LibriVox recordings</a>
+</div>
 <form id="discover-form">
 <label for="discover-source">Collection</label>
 <select id="discover-source">
@@ -166,11 +236,12 @@ body.is-recording #start{background:#a72e2a;color:#fff;border-color:#f8b3a2;box-
 <p class="muted">Freesound offers compressed previews, including when indexed by Openverse. Other Openverse providers supply audio of unverified original quality. Attribution and source links are retained; each download is limited to 50 MB.</p>
 </section>
 </main>
+<script type="module" src="./sound-surfaces-theme.mjs?v=1"></script>
 <script type="module" src="./sounds-page.mjs?v=3"></script>
-<script type="module" src="./sounds-library.mjs?v=2"></script>
-<script type="module" src="./sounds-tools.mjs?v=5"></script>
+<script type="module" src="./sounds-library.mjs?v=7"></script>
+<script type="module" src="./sounds-tools.mjs?v=7"></script>
 <script type="module" src="./sounds-discover.mjs?v=9"></script>
-<script type="module" src="./sounds-generate.mjs?v=4"></script>
+<script type="module" src="./sounds-generate.mjs?v=8"></script>
 <script type="module" src="./sounds-backup-ui.mjs?v=2"></script>
 </body>
 </html>

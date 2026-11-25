@@ -3,21 +3,9 @@ import {saveSound} from './sounds-store.mjs';
 import {normalizePersonName, workHasAuthor, matchingReaderCredits, selectLibriVoxEditions, filteredSections} from './librivox-combine.mjs';
 import {extractWavFromSource,fetchRecording} from './librivox-audio-extract.mjs';
 
-// Standalone and in-Sounds modes share the same LibriVox catalog and sound store.
+// This isolated explorer saves audio to the shared Sounds library.
 // AudioSilo exposes a browser-accessible LibriVox catalogue mirror. LibriVox remains
 // the recording source; no optional audio or book text is fetched automatically.
-// A verified HTML document can run inside srcdoc to bypass stale navigation
-// fallbacks. frameElement carries the embedded flag when the URL is about:srcdoc.
-const EMBEDDED=window.parent!==window && (
- new URLSearchParams(location.search).get('embedded')==='1' ||
- window.frameElement?.dataset.scEmbedded==='true'
-);
-const COMMUNICATION_ORIGIN=new URL(document.baseURI).origin;
-if(EMBEDDED)document.documentElement.classList.add('embedded-surface');
-function sendToSounds(type,soundId,name){
- if(!EMBEDDED||typeof soundId!=='string'||!soundId)return;
- window.parent.postMessage({type,soundId,name:name||'LibriVox recording'},COMMUNICATION_ORIGIN);
-}
 const API = 'https://meta.audiosilo.app/api/v1';
 const FAV_KEY = 'supercollision:librivox:favorites:v1';
 const ANCHOR_KEY = 'supercollision:librivox:anchors:v1';
@@ -25,66 +13,9 @@ const CLIP_KEY = 'supercollision:librivox:markers:v1';
 const $ = id => document.getElementById(id);
 const app = $('app-shell');
 const audio = $('chapter-audio');
-
- // Put reading/search results in the seeing area and real tools at the thumb.
- // Reparent existing elements; the recorder, text and chapter handlers stay intact.
- const discoveryPanel=$('discovery-panel'),workPanel=$('work-panel');
- const searchDock=document.createElement('div');
- searchDock.id='librivox-search-dock';searchDock.className='librivox-reach-dock';
- const modes=discoveryPanel.querySelector('.librivox-search-modes');
- if(modes)searchDock.append(modes);
- for(const id of ['combined-form','catalog-disclosure']){
-  const field=$(id);if(field)searchDock.append(field);
- }
- discoveryPanel.append(searchDock);
- const workDock=document.createElement('div');
- workDock.id='librivox-work-dock';workDock.className='librivox-reach-dock';
- const player=$('player');if(player)workDock.append(player);
- const modeStrip=document.createElement('nav');modeStrip.id='librivox-work-modes';
- modeStrip.setAttribute('aria-label','Spoken-word sampling tools');
- const modePanels={};const modeButtons={};
- for(const [name,label] of [['listen','LISTEN'],['locate','LOCATE'],['extract','EXTRACT']]){
-  const button=document.createElement('button');button.type='button';
-  button.textContent=label;button.dataset.workMode=name;
-  button.setAttribute('aria-pressed',String(name==='listen'));
-  modeButtons[name]=button;modeStrip.append(button);
-  const panel=document.createElement('div');panel.className='librivox-work-mode';
-  panel.id='librivox-mode-'+name;panel.hidden=name!=='listen';
-  modePanels[name]=panel;
-  button.addEventListener('click',()=>selectWorkMode(name));
- }
- function selectWorkMode(name){
-  for(const [key,panel] of Object.entries(modePanels)){
-   panel.hidden=key!==name;
-   modeButtons[key].setAttribute('aria-pressed',String(key===name));
-  }
-  workDock.dataset.mode=name;
- }
- const jumps=player?.querySelector('.jump-actions');
- if(jumps)modePanels.listen.append(jumps);
- const phrase=$('phrase-form');if(phrase)modePanels.locate.append(phrase);
- for(const id of ['clip-summary','set-start','set-end','preview-region','save-region']){
-  const control=$(id);if(control)modePanels.locate.append(control);
- }
- for(const id of ['extract-options','extract-wav','extract-progress','extracted-audio','extract-status','use-in-sounds']){
-  const control=$(id);if(control)modePanels.extract.append(control);
- }
- workDock.append(modeStrip,modePanels.listen,modePanels.locate,modePanels.extract);
- const backToSearch=$('back-to-search');if(backToSearch)workDock.append(backToSearch);
- workPanel.append(workDock);
- selectWorkMode('listen');
-
-window.addEventListener('message',event=>{
- if(!EMBEDDED||event.source!==window.parent||event.origin!==COMMUNICATION_ORIGIN)return;
- if(event.data?.type==='sc-sampler-pause'){
-  audio.pause();
-  $('extracted-audio').pause();
- }
-});
-
 const state = { results: [], favorites: readLocal(FAV_KEY, []), anchors: readLocal(ANCHOR_KEY, {}), clips: readLocal(CLIP_KEY, []), work: null,
   book: null, recording: null, chapter: null, person: null, scope: 'books', showFavorites: false, matches: [], selectedMatch: -1,
-  clipStart: null, clipEnd: null, regionPreview: false, request: 0, sectionRequest:0, filterContext:null, extractRun:0, extracting:false, extractAbort:null, localFile:null, localObjectUrl:null, wavBlob:null, wavObjectUrl:null, wavName:'' };
+  clipStart: null, clipEnd: null, regionPreview: false, request: 0, sectionRequest:0, filterContext:null, extractRun:0, extracting:false, extractAbort:null, localFile:null, localObjectUrl:null, wavBlob:null, wavObjectUrl:null, wavName:'', pendingSeek:null, audioLoaded:false };
 function readLocal(key, fallback) { try { const value = JSON.parse(localStorage.getItem(key)); return value && typeof value === typeof fallback ? value : fallback; } catch { return fallback; } }
 function writeLocal(key, data) { try { localStorage.setItem(key, JSON.stringify(data)); return true; } catch { return false; } }
 function el(tag, className, text) { const node = document.createElement(tag); if (className) node.className = className; if (text !== undefined) node.textContent = String(text); return node; }
@@ -95,50 +26,18 @@ function parseDuration(input) { if (typeof input === 'number') return input; if 
 function authorName(work) { return (work?.authors || []).map(a => a.name || [a.first_name,a.last_name].filter(Boolean).join(' ')).filter(Boolean).join(', ') || 'Unknown author'; }
 function storeKey() { return state.book && state.chapter ? `${state.book.id}:${state.chapter.id || state.chapter.section_number || $('chapter-select').selectedIndex}` : ''; }
 function selectedFavorite(type,id) { return state.favorites.some(x => x.type === type && String(x.id) === String(id)); }
-function starButton(type,id,label){
- const b=button(selectedFavorite(type,id)?'★':'☆',()=>{
-  changeFavorite(type,id,label);const active=selectedFavorite(type,id);
-  b.textContent=active?'★':'☆';b.setAttribute('aria-pressed',String(active));
-  b.setAttribute('aria-label',(active?'Remove':'Add')+' favorite: '+label);
- },'result-star');
- b.setAttribute('aria-label',(selectedFavorite(type,id)?'Remove':'Add')+' favorite: '+label);
- b.setAttribute('aria-pressed',String(selectedFavorite(type,id)));return b;
-}
-function syncPersonFavorites(){
- for(const b of document.querySelectorAll('.person-chip[data-favorite-type]')){
-  const active=selectedFavorite(b.dataset.favoriteType,b.dataset.favoriteId);
-  b.textContent=(active?'★':'☆')+' '+b.dataset.favoriteName;
-  b.setAttribute('aria-pressed',String(active));
-  b.setAttribute('aria-label',(active?'Remove':'Add')+' favorite: '+b.dataset.favoriteName);
- }
-}
-function favoritePersonChip(type,id,name){
- const b=button('',()=>changeFavorite(type,id,name),'person-chip');
- b.dataset.favoriteType=type;b.dataset.favoriteId=String(id);b.dataset.favoriteName=name;
- const active=selectedFavorite(type,id);
- b.textContent=(active?'★':'☆')+' '+name;
- b.setAttribute('aria-pressed',String(active));
- b.setAttribute('aria-label',(active?'Remove':'Add')+' favorite: '+name);return b;
-}
+function starButton(type,id,label) { const b = button(selectedFavorite(type,id) ? '★' : '☆', () => { changeFavorite(type,id,label); b.textContent = selectedFavorite(type,id) ? '★':'☆'; b.setAttribute('aria-pressed', String(selectedFavorite(type,id))); }, 'result-star'); b.setAttribute('aria-label',`${selectedFavorite(type,id) ? 'Remove':'Add'} favorite: ${label}`); b.setAttribute('aria-pressed',String(selectedFavorite(type,id))); return b; }
 function changeFavorite(type,id,label) {
   state.favorites = toggleExplorerFavorite(state.favorites,{type,id:String(id),label});
   writeLocal(FAV_KEY,state.favorites); $('favorite-count').textContent = state.favorites.length;
-  if (type === 'book' && String(state.work?.id) === String(id)) syncFavoriteBook();
-   syncPersonFavorites();
+  if (type === 'book' && state.work?.id === id) syncFavoriteBook();
   renderFavoriteFilterChips();
   if (state.showFavorites) renderFavorites();
 }
 function syncFavoriteBook() { const b=$('favorite-book'); if (!state.work) return; const active=selectedFavorite('book',state.work.id); b.textContent=active?'★':'☆'; b.setAttribute('aria-pressed',String(active)); b.setAttribute('aria-label',`${active?'Remove':'Add'} favorite: ${state.work.title}`); }
 function setStatus(message,kind='') { $('search-status').textContent=message; $('search-status').dataset.kind=kind; }
 async function get(path, params) { const u = new URL(API + path); if (params) Object.entries(params).forEach(([k,v]) => v !== undefined && u.searchParams.set(k,String(v))); const response=await fetch(u.href,{headers:{Accept:'application/json'}}); if (!response.ok) throw new Error(response.status===429 ? 'Catalog is busy. Try again shortly.' : `Catalog request failed (${response.status}).`); return response.json(); }
-function setSearchMode(mode,{focus=false}={}) {
- const title=mode==='title';$('combined-form').hidden=title;
- const catalog=$('catalog-disclosure');catalog.hidden=!title;catalog.open=title;
- $('search-by-people').setAttribute('aria-pressed',String(!title));
- $('search-by-title').setAttribute('aria-pressed',String(title));
- if(focus)(title?$('catalog-query'):$('filter-author')).focus();
-}
-function showSearch() { audio.pause(); app.classList.remove('show-work'); app.scrollLeft=0; }
+function showSearch() { app.classList.remove('show-work'); app.scrollLeft=0; }
 function showWork() { app.classList.add('show-work'); app.scrollLeft=0; }
 function setActiveSearch(label) { $('active-filters').textContent=label; }
 function revealResults() { $('active-filters').scrollIntoView({block:'nearest'}); }
@@ -193,7 +92,6 @@ async function openResult(item,kind) { if(kind==='book') await loadWork(item.id)
 // Selecting an author or reader, including from Favorites, fills one facet without
 // clearing the other. Thus separate person searches can be combined naturally.
 async function openPerson(person,kind) {
-  setSearchMode('people');
   const input=$(kind==='reader'?'filter-reader':'filter-author');
   input.value=person.name;
   showSearch();
@@ -204,7 +102,6 @@ function renderFavoriteFilterChips() {
   for(const favorite of state.favorites.filter(x=>x.type==='author'||x.type==='reader')){
     const type=favorite.type;
     const b=button(`★ ${type==='author'?'AUTHOR':'READER'}: ${favorite.label}`,()=>{
-      setSearchMode('people');
       $(type==='author'?'filter-author':'filter-reader').value=favorite.label;
       runCombinedFilter();
     });
@@ -289,7 +186,7 @@ async function verifyFacetedRecording(candidate,reader,verifySections){
 async function runCombinedFilter(){
   const authorNameInput=$('filter-author').value.trim(),readerNameInput=$('filter-reader').value.trim();
   if(!authorNameInput&&!readerNameInput){setStatus('Enter an author, a reader, or both.','error');$('filter-author').focus();return;}
-  setSearchMode('people');
+  $('catalog-disclosure').open=false;
   $('catalog-query').value='';
   setActiveSearch(`AUTHOR: ${authorNameInput||'Any'}   ·   READER: ${readerNameInput||'Any'}`);
   const request=++state.request;state.showFavorites=false;$('show-favorites').setAttribute('aria-pressed','false');
@@ -344,14 +241,14 @@ function showLoadingWork(message) { showWork();updateWorkContext();$('work-panel
 async function loadWork(id,filterContext=null) {
   state.filterContext=filterContext;
   showLoadingWork('Loading recording…'); const request=++state.request; ++state.sectionRequest;
-  resetAudioSource();audio.pause();audio.removeAttribute('src');audio.load();state.chapter=null;state.book=null;state.work=null;
+  resetAudioSource();unloadChapterAudio();state.chapter=null;state.book=null;state.work=null;
   try {
     const work=await get(`/works/${encodeURIComponent(id)}`); if(request!==state.request)return;
     const editions=selectLibriVoxEditions(work,filterContext?.reader,filterContext?.recordingIds||null);
     if(!editions.length)throw new Error(filterContext?.reader?'No LibriVox recording credited to the selected reader is available for this work.':'No linked LibriVox recording is available for this work in the catalog mirror.');
     state.work=work; $('work-heading').textContent=work.title;$('work-byline').textContent=`${authorName(work)} · ${work.language||'Unknown language'}`;
     syncFavoriteBook(); const attrs=$('attribution-row'); attrs.replaceChildren(el('span','attrib-label','AUTHOR'));
-    for(const author of work.authors||[]){attrs.append(favoritePersonChip('author',author.id,author.name));}
+    for(const author of work.authors||[]){const b=button(`☆ ${author.name}`,()=>changeFavorite('author',author.id,author.name),'person-chip'); b.title='Toggle author favorite';attrs.append(b);}
     const sel=$('recording-select');sel.replaceChildren(); editions.forEach((r,i)=>{const opt=el('option','',`LibriVox ${r.librivox_id||i+1} · ${(r.narrators||[]).map(x=>x.name).join(', ')||'Reader varies'} · ${r.chapter_count||'?'} sections`);opt.value=String(i);sel.append(opt);});
     state.editions=editions;await selectRecording(0);
   } catch(error) { if(request!==state.request)return; $('work-heading').textContent='Recording unavailable'; $('work-byline').textContent=error.message; $('playback-status').textContent='Unavailable'; }
@@ -385,16 +282,48 @@ async function selectRecording(index) {
     selectChapter(0);
   } catch(error) { if(request!==state.sectionRequest)return; $('reader-info').textContent=error.message;$('playback-status').textContent='Cannot load sections'; }
 }
+function verifiedWifi() {
+  const connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+  return !!connection && (connection.type==='wifi'||connection.type==='ethernet') && !connection.saveData;
+}
+function streamingAllowed() { return verifiedWifi() || $('permit-preview-stream').checked; }
+function unloadChapterAudio() {
+  state.audioLoaded=false;
+  audio.pause();audio.removeAttribute('src');audio.load();audio.hidden=true;
+  $('load-chapter-audio').hidden=false;
+  $('mark-position').hidden=true;
+  renderClip();
+}
+function loadChapterAudio() {
+  if(!state.chapter||state.localFile)return;
+  if(!navigator.onLine){$('playback-status').textContent='Offline. Choose a local chapter file to listen.';return;}
+  if(!streamingAllowed()){
+    $('playback-status').textContent='Streaming blocked: verify Wi-Fi or explicitly allow streaming below.';
+    $('permit-preview-stream').focus();return;
+  }
+  const src=safeUrl(state.chapter.listen_url);
+  if(!src){$('playback-status').textContent='No secure audio source for this chapter.';return;}
+  state.audioLoaded=false;audio.src=src;audio.hidden=false;audio.load();$('load-chapter-audio').hidden=true;renderClip();
+  $('playback-status').textContent='Loading chapter audio…';
+}
+function enforceStreamingPermission() {
+  if(!state.localFile&&audio.hasAttribute('src')&&!streamingAllowed()){
+    unloadChapterAudio();
+    $('playback-status').textContent='Streaming stopped because Wi-Fi is no longer verified.';
+  }
+}
 function selectChapter(index) {
   const chapter=state.sections?.[index];if(!chapter)return;resetAudioSource();state.chapter=chapter;state.selectedMatch=-1;state.matches=[];
-  $('chapter-select').value=String(index);audio.pause();selectWorkMode('listen');audio.src=safeUrl(chapter.listen_url);audio.load();
+  $('chapter-select').value=String(index);state.pendingSeek=null;unloadChapterAudio();
   $('sample-editor').open=false;
   $('extract-options').open=false;
   $('mark-position').hidden=true;
   const readers=$('reader-info');readers.replaceChildren(el('span','attrib-label','READ BY'));
   const people=chapter.readers||[];if(!people.length)readers.append(el('span','','Reader not identified in this chapter feed'));
-  for(const person of people){const name=person.display_name||'Unknown reader';readers.append(favoritePersonChip('reader',person.reader_id,name));}
-  $('playback-status').textContent=`${formatTime(parseDuration(chapter.playtime))} · Ready to play`;
+  for(const person of people) { const name=person.display_name||'Unknown reader';readers.append(button(`${selectedFavorite('reader',person.reader_id)?'★':'☆'} ${name}`,event=>{
+      changeFavorite('reader',person.reader_id,name);const active=selectedFavorite('reader',person.reader_id);event.currentTarget.textContent=`${active?'★':'☆'} ${name}`;
+    },'person-chip')); }
+  $('playback-status').textContent=`${formatTime(parseDuration(chapter.playtime))} · Tap Load chapter audio to listen`;
   state.clipStart=null;state.clipEnd=null;state.regionPreview=false;renderClip();
   $('chapter-text').value='';$('phrase-query').value='';$('phrase-results').replaceChildren();
   $('text-guidance').textContent='Paste or load the text corresponding to this section. Full-book text must be narrowed to this chapter before using estimated seeks.';
@@ -402,33 +331,33 @@ function selectChapter(index) {
 function effectiveDuration() {return Number.isFinite(audio.duration) ? audio.duration : parseDuration(state.chapter?.playtime); }
 function showMatches() {
   const text=$('chapter-text').value; const phrase=$('phrase-query').value.trim();const box=$('phrase-results');box.replaceChildren();
-  state.matches=findChapterPhraseMatches(text,phrase,{maxResults:150,contextChars:68});state.selectedMatch=-1;$('mark-position').hidden=true;
+  state.matches=findChapterPhraseMatches(text,phrase,{maxResults:150,contextChars:68});state.selectedMatch=-1;state.pendingSeek=null;$('mark-position').hidden=true;
   if(!text.trim()) { $('text-guidance').textContent='First load or paste the text of this chapter.'; return; }
   $('text-guidance').textContent=`${state.matches.length} match${state.matches.length===1?'':'es'} in the supplied text. Tap a result to estimate the position in this chapter. Verify by listening.`;
   for(let i=0;i<state.matches.length;i++){const m=state.matches[i];const b=button('',()=>selectMatch(i),'match-result');const title=el('strong','',`MATCH ${i+1} · ${Math.round(m.fraction*100)}% THROUGH TEXT`);const snippet=el('span');snippet.append(document.createTextNode(m.before),el('mark','',m.match),document.createTextNode(m.after));b.append(title,snippet);box.append(b);}
 }
 function selectMatch(index) {
-  const match=state.matches[index];if(!match)return;state.selectedMatch=index;$('mark-position').hidden=false;
+  const match=state.matches[index];if(!match)return;state.selectedMatch=index;$('mark-position').hidden=!state.audioLoaded;
   $('phrase-results').querySelectorAll('button').forEach((b,i)=>b.classList.toggle('active',i===index));
   const anchors=state.anchors[storeKey()]||[];
   const estimate=estimateChapterSeek({fraction:match.fraction,durationSeconds:effectiveDuration(),anchors});
-  if(estimate){audio.currentTime=Math.min(Math.max(estimate.seconds,0),Math.max(0,effectiveDuration()-.1));
+  if(estimate){const seek=Math.min(Math.max(estimate.seconds,0),Math.max(0,effectiveDuration()-.1));if(state.audioLoaded){audio.currentTime=seek;state.pendingSeek=null;}else state.pendingSeek=seek;
     $('text-guidance').textContent=`Approximate audio position ${formatTime(estimate.seconds)} (${estimate.method==='anchor-informed'?'improved using saved anchors':'based on text position'}). Listen, then tap FOUND HERE to correct it.`;
   } else $('text-guidance').textContent='Audio duration is not available yet. Start playback, then try this match again.';
 }
-function markFound() { if(state.selectedMatch<0||!state.chapter){$('text-guidance').textContent='Select a text match, locate it in the recording, then choose FOUND HERE.';return;}
+function markFound() { if(state.selectedMatch<0||!state.chapter||!state.audioLoaded){$('text-guidance').textContent='Select a text match, locate it in the recording, then choose FOUND HERE.';return;}
   const match=state.matches[state.selectedMatch],key=storeKey(),anchors=state.anchors[key]||[];
   const withoutNear=anchors.filter(a=>Math.abs(a.fraction-match.fraction)>.0001); withoutNear.push({fraction:match.fraction,seconds:audio.currentTime});withoutNear.sort((a,b)=>a.fraction-b.fraction);
   state.anchors[key]=withoutNear.slice(-60);writeLocal(ANCHOR_KEY,state.anchors);
   $('text-guidance').textContent=`Verified match ${state.selectedMatch+1} at ${formatTime(audio.currentTime)}. Later estimates in this chapter will use this anchor.`;
 }
 function clearGeneratedWav() {
+  $('open-sounds-library').hidden=true;
   state.wavBlob=null;state.wavName='';
   if(state.wavObjectUrl)URL.revokeObjectURL(state.wavObjectUrl);
   state.wavObjectUrl=null;
   const output=$('extracted-audio');output.pause();output.removeAttribute('src');output.hidden=true;
   $('download-wav').disabled=true;
-  $('use-in-sounds').hidden=true;
 }
 function cancelExtraction() {
   ++state.extractRun;
@@ -455,9 +384,7 @@ function downloadWav() {
 async function extractSelectedWav(){
   if(state.extracting || !state.chapter || state.clipStart===null || state.clipEnd===null || state.clipEnd<=state.clipStart)return;
   if(!state.localFile){
-    const network=navigator.connection||navigator.webkitConnection;
-    const knownWifi=network && (network.type==='wifi'||network.type==='ethernet');
-    if(!knownWifi && !$('permit-audio-download').checked){
+    if(!verifiedWifi() && !$('permit-audio-download').checked){
       $('extract-status').dataset.kind='error';
       $('extract-options').open=true;
       $('extract-status').textContent='Full-chapter transfer not approved. Confirm the connection above, or use a downloaded chapter file.';return;
@@ -507,13 +434,8 @@ async function extractSelectedWav(){
     state.wavObjectUrl=URL.createObjectURL(extracted.blob);
     const preview=$('extracted-audio');preview.src=state.wavObjectUrl;preview.hidden=false;
     $('download-wav').disabled=false;
-    const bytes=extracted.blob.size;
-    const size=bytes<1048576?(bytes/1024).toFixed(1)+' KB':(bytes/1048576).toFixed(1)+' MB';
-    const use=$('use-in-sounds');
-    use.href='./sounds-bench-preview.html?v=0.6.1&sound='+encodeURIComponent(record.id)+'#sample';
-    use.hidden=false;
-    sendToSounds('sc-librivox-audio-saved',record.id,record.name);
-    status.textContent='Saved '+size+' audio sample to Sounds. Open it there to shape and play it.';
+    $('open-sounds-library').hidden=false;
+    status.textContent=`Saved ${(extracted.blob.size/1048576).toFixed(1)} MB WAV in Sounds. Listen here, or download a copy.`;
   }catch(error){
     if(abort.signal.aborted||state.extractRun!==run)return;
     status.dataset.kind='error';
@@ -525,8 +447,12 @@ async function extractSelectedWav(){
   }
 }
 function renderClip() {
+  // HAVE_METADATA was verified once for the selected source; seeking can temporarily lower readyState.
+  const ready=state.audioLoaded;
+  $('set-start').disabled=!ready;$('set-end').disabled=!ready;
+  document.querySelectorAll('[data-jump]').forEach(button=>button.disabled=!ready);
   $('clip-summary').textContent=`IN ${state.clipStart===null?'--:--':formatTime(state.clipStart)} · OUT ${state.clipEnd===null?'--:--':formatTime(state.clipEnd)}`;
-  $('preview-region').disabled=!(state.clipStart!==null && state.clipEnd!==null && state.clipEnd>state.clipStart);
+  $('preview-region').disabled=!ready || !(state.clipStart!==null && state.clipEnd!==null && state.clipEnd>state.clipStart);
   $('save-region').disabled=$('preview-region').disabled;
   $('extract-wav').disabled=$('preview-region').disabled || state.extracting;
 }
@@ -537,7 +463,7 @@ function saveRegion() {if(!state.chapter||state.clipStart===null||state.clipEnd=
     phrase:state.selectedMatch<0?null:state.matches[state.selectedMatch]?.match,saved_at:new Date().toISOString()};
   state.clips=state.clips.filter(x=>x.id!==id);state.clips.push(item);writeLocal(CLIP_KEY,state.clips);
   if(!selectedFavorite('sample',id))changeFavorite('sample',id,`${item.title}: ${item.chapter} (${formatTime(item.start)}–${formatTime(item.end)})`);
-  $('clip-message').textContent='Passage bookmarked. No audio file saved yet. Use EXTRACT & SAVE AUDIO to create it in Sounds.';
+  $('clip-message').textContent='Region marker saved. Use EXTRACT & SAVE WAV to create the actual audio file in Sounds.';
 }
 function exportMarkers() { const payload={format:'supercollision-librivox-markers',version:1,created_at:new Date().toISOString(),markers:state.clips,anchors:state.anchors};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob),link=el('a');link.href=url;link.download='supercollision-librivox-markers.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -555,8 +481,6 @@ async function loadLinkedText() {
     $('chapter-text').value=text;$('text-guidance').textContent='Loaded linked text. If this is a complete book, copy only the chapter matching the audio before searching.';
   } catch(error) { $('text-guidance').textContent=`Could not load source text in this browser (${error.message}). Open SOURCE TEXT ↗ and paste the chapter or load a .txt file.`; }
 }
-$('search-by-people').addEventListener('click',()=>setSearchMode('people',{focus:true}));
-$('search-by-title').addEventListener('click',()=>setSearchMode('title',{focus:true}));
 $('combined-form').addEventListener('submit',event=>{event.preventDefault();runCombinedFilter();});
 $('combined-clear').addEventListener('click',()=>{$('filter-author').value='';$('filter-reader').value='';$('author-options').replaceChildren();$('reader-options').replaceChildren();++state.request;state.filterContext=null;$('catalog-results').replaceChildren();$('list-caption').textContent='DISCOVER';setStatus('Filters cleared. Find an author or reader to begin.');});
 $('test-combined').addEventListener('click',()=>{$('filter-author').value='George MacDonald';$('filter-reader').value='Peter Yearsley';runCombinedFilter();});
@@ -564,20 +488,7 @@ suggestFacet('filter-author','author-options');suggestFacet('filter-reader','rea
 renderFavoriteFilterChips();
 $('catalog-form').addEventListener('submit',event=>{event.preventDefault();const q=$('catalog-query').value.trim();if(q.length>=2)runSearch(q,new FormData(event.currentTarget).get('scope'));});
 $('phrase-form').addEventListener('submit',event=>{event.preventDefault();showMatches();});
-$('show-favorites').addEventListener('click',()=>{
- state.showFavorites=!state.showFavorites;
- $('show-favorites').setAttribute('aria-pressed',String(state.showFavorites));
- if(state.showFavorites){renderFavorites();return}
- if($('filter-author').value.trim()||$('filter-reader').value.trim()){
-  setSearchMode('people');runCombinedFilter();
- }else if($('catalog-query').value.trim()){
-  setSearchMode('title');runSearch($('catalog-query').value.trim(),state.scope);
- }else{
-  $('catalog-results').replaceChildren();
-  $('list-caption').textContent='DISCOVER';
-  setStatus('Choose an author, reader or title to begin.');
- }
-});
+$('show-favorites').addEventListener('click',()=>{state.showFavorites=!state.showFavorites;$('show-favorites').setAttribute('aria-pressed',String(state.showFavorites));if(state.showFavorites)renderFavorites();else if($('catalog-query').value.trim())runSearch($('catalog-query').value.trim(),state.scope);else {$('catalog-results').replaceChildren();setStatus('Choose a search to begin.');$('list-caption').textContent='DISCOVER';}});
 document.querySelectorAll('[data-quick]').forEach(b=>b.addEventListener('click',()=>{showSearch();runSearch(b.dataset.quick,b.dataset.scope);}));
 $('back-to-search').addEventListener('click',showSearch);
 $('recording-select').addEventListener('change',e=>selectRecording(Number(e.target.value)));
@@ -591,27 +502,24 @@ $('preview-region').addEventListener('click',()=>{if(state.clipStart===null||sta
 audio.addEventListener('timeupdate',()=>{if(state.regionPreview&&state.clipEnd!==null&&audio.currentTime>=state.clipEnd){audio.pause();state.regionPreview=false;audio.currentTime=state.clipStart||0;}});
 audio.addEventListener('pause',()=>{state.regionPreview=false;});
 audio.addEventListener('error',()=>{if(state.chapter)$('playback-status').textContent='Playback failed. Open recording on LibriVox for a fallback.';});
-audio.addEventListener('loadedmetadata',()=>{if(state.chapter)$('playback-status').textContent=`${formatTime(audio.duration)} · Ready`;});
+audio.addEventListener('loadedmetadata',()=>{state.audioLoaded=true;if(state.pendingSeek!==null){try{audio.currentTime=Math.min(state.pendingSeek,Math.max(0,Number.isFinite(audio.duration)?audio.duration-.1:state.pendingSeek));}catch{}state.pendingSeek=null;} $('mark-position').hidden=state.selectedMatch<0;renderClip();if(state.chapter)$('playback-status').textContent=`${formatTime(audio.duration)} · Ready`;});
+$('load-chapter-audio').addEventListener('click',loadChapterAudio);
+$('permit-preview-stream').addEventListener('change',enforceStreamingPermission);
+(navigator.connection||navigator.mozConnection||navigator.webkitConnection)?.addEventListener?.('change',enforceStreamingPermission);
 $('extract-wav').addEventListener('click',extractSelectedWav);
-$('use-in-sounds').addEventListener('click',event=>{
- if(!EMBEDDED)return;
- event.preventDefault();
- const id=new URL(event.currentTarget.href,location.href).searchParams.get('sound');
- if(id)sendToSounds('sc-librivox-open-sample',id,'LibriVox sample');
-});
 $('download-wav').addEventListener('click',downloadWav);
 $('sample-audio-file').addEventListener('change',event=>{
   const file=event.target.files?.[0];if(!file)return;
   if(file.size>80*1024*1024){$('extract-status').dataset.kind='error';$('extract-status').textContent='Choose a chapter file no larger than 80 MB.';event.target.value='';return;}
   cancelExtraction();if(state.localObjectUrl)URL.revokeObjectURL(state.localObjectUrl);
   state.localFile=file;state.localObjectUrl=URL.createObjectURL(file);
-  audio.pause();audio.src=state.localObjectUrl;audio.load();
+  audio.pause();state.audioLoaded=false;audio.src=state.localObjectUrl;audio.hidden=false;$('load-chapter-audio').hidden=true;audio.load();
   $('restore-stream').hidden=false;$('sample-source-status').textContent=`Source: ${file.name}`;
   $('extract-status').dataset.kind='';$('extract-status').textContent='Local chapter file ready. Verify that it matches the selected recording, then mark the region.';
   state.clipStart=null;state.clipEnd=null;renderClip();
 });
 $('restore-stream').addEventListener('click',()=>{
-  resetAudioSource();audio.pause();if(state.chapter)audio.src=safeUrl(state.chapter.listen_url);audio.load();
+  resetAudioSource();unloadChapterAudio();$('playback-status').textContent='Local file removed. Tap Load chapter audio to stream.';
   state.clipStart=null;state.clipEnd=null;renderClip();
 });
 $('save-region').addEventListener('click',saveRegion);
