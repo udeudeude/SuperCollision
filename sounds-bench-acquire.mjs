@@ -83,9 +83,9 @@ function setup(){
   panel.dataset.forTool=name;panel.hidden=true;footer.append(panel);
   footerPanels[name]=panel;
  }
- footer.append($('bench-acquire-back'));
+ $('bench-acquire-back').remove();
  const micLabel=pages.record.querySelector('label[for="mic-ready"]');
- if(micLabel)footerPanels.record.append(micLabel);
+ if(micLabel)micLabel.remove();
  footerPanels.record.append($('start'));
  const importLabel=pages.import.querySelector('label[for="import"]');
  if(importLabel)footerPanels.import.append(importLabel);
@@ -119,7 +119,7 @@ function setup(){
  const backgroundPanels=['lab-setup','bench-sample-workspace','bench-library-workspace','bench-bottom-dock'];
  const setBackgroundInert=value=>{
   for(const id of backgroundPanels){const el=$(id);if(el)el.inert=value}
-  const nav=document.querySelector('.bench-tabs');if(nav)nav.inert=value;
+  // Keep the persistent workspace tabs usable while an acquisition tool is open.
  };
  function microphoneOff(){
   const ready=$('mic-ready');
@@ -158,13 +158,13 @@ function setup(){
   for(const [key,controls] of Object.entries(footerPanels))controls.hidden=key!==name;
   const labels={acquire:'SOUND METHODS',record:'RECORD AUDIO',import:'IMPORT AUDIO',code:'IMPORT INSTRUMENT',generate:'GENERATE INSTRUMENT',discover:'DISCOVER RECORDINGS',librivox:'LIBRIVOX SAMPLER'};
   $('bench-acquire-title').textContent=labels[name]||'SOUND METHODS';
-  $('bench-acquire-back').textContent=location.hash.slice(1)==='sample'?'← BACK TO SAMPLES':'← BACK TO INSTRUMENT';
+
   overlay.hidden=false;
   setBackgroundInert(true);
-  $('bench-acquire-back').focus({preventScroll:true});
+
   if(name==='generate'||name==='discover'||name==='librivox')void remote.activate(name);
  }
- $('bench-acquire-back').addEventListener('click',()=>closeOverlay());
+
  window.addEventListener('keydown',event=>{if(event.key==='Escape'&&!overlay.hidden){event.preventDefault();closeOverlay()}});
  overlay.querySelectorAll('.acquire-back').forEach(b=>b.addEventListener('click',()=>closeOverlay()));
  const controls={
