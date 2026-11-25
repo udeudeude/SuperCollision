@@ -10,8 +10,6 @@ on:
       - 'sounds-lab.html'
       - 'sounds-bench-preview.html'
       - 'sounds-*.css'
-      - 'sounds-bench-preview.html'
-      - 'sounds-*.css'
       - 'sounds-*.mjs'
       - 'librivox-explorer.html'
       - 'librivox-explorer.css'
@@ -22,11 +20,13 @@ on:
       - 'scripts/build_offline_manifest.py'
       - '.github/workflows/publish-sounds.yml'
   pull_request:
-    branches: [main, 'sounds/cohesive-integration-20261124']
+    branches: [main]
     paths:
       - 'index.html'
       - 'sounds.html'
       - 'sounds-lab.html'
+      - 'sounds-bench-preview.html'
+      - 'sounds-*.css'
       - 'sounds-*.mjs'
       - 'librivox-explorer.html'
       - 'librivox-explorer.css'

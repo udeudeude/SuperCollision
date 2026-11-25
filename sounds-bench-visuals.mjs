@@ -379,7 +379,11 @@ export function installToneVisuals({container,inputs,controls,isLocked,onSelect=
    button.textContent=adjusting?'Done':'Adjust';
    for(const canvas of item.querySelectorAll('canvas'))canvas.style.touchAction=adjusting?'none':'pan-y';
   }
-  const window=pitchWindow();
+  let window=pitchWindow();
+  if(value('frequency')<window.first||value('frequency')>window.last){
+   zoomCenter=Math.log2(value('frequency'));
+   window=pitchWindow();
+  }
   zoomRange.textContent=Math.round(window.first)+'–'+Math.round(window.last)+' Hz';
   zoomIn.disabled=zoomIndex>=zoomSteps.length-1;
   zoomOut.disabled=zoomIndex===0;

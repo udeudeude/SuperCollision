@@ -152,6 +152,12 @@ const toneFields=Object.fromEntries(toneControls.map(t=>[t.key,t]));
 // Each pointer gesture creates one history entry, not a flood of snapshots.
 const undoHistory=[],redoHistory=[],historyLimit=60;
 let gestureBefore=null,lastEditorText=demoCode.value;
+let editingSession=false,pendingCodeEdit=null;
+demoCode.addEventListener('focus',()=>{editingSession=false});
+demoCode.addEventListener('blur',()=>{editingSession=false;pendingCodeEdit=null});
+demoCode.addEventListener('beforeinput',()=>{
+ if(!editingSession&&!pendingCodeEdit)pendingCodeEdit=toneSnapshot();
+});
 const controlBar=demoReset.parentElement;
 const undoButton=document.createElement('button');undoButton.type='button';
 undoButton.id='bench-tone-undo';undoButton.textContent='↶ Undo';undoButton.disabled=true;
@@ -263,8 +269,13 @@ function updateDemoCode(force=false,changedKey=''){
  toneVisuals?.render();
 }
 demoCode.addEventListener('input',()=>{
- const before=toneSnapshot();before.code=lastEditorText;
- recordUndo(before);
+ if(!editingSession){
+  const before=pendingCodeEdit||toneSnapshot();
+  if(!pendingCodeEdit)before.code=lastEditorText;
+  recordUndo(before);
+  editingSession=true;
+ }
+ pendingCodeEdit=null;
  demoDirty=demoCode.value!==demoGenerated;
  updateDemoCode(false,'');
  renderCodeOverlay(demoCode.value,'');
