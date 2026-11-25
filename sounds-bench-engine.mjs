@@ -7,7 +7,8 @@ import {readPcmWaveForNativeBuffer} from './sounds-pcm-ingest.mjs';
 import {REGION_DEFINITIONS,regionPlayCommand,regionLiveSource,stopRegionCommand,sampleInstrumentSource,validateRegion,DEMO_MARKER} from './sounds-sampler.mjs';
 import {waveformPeaks,waveformDragRegion} from './sounds-waveform.mjs';
 import {demoSynthSource,toneControls,toneDefaults,normalizeToneSettings,tuningOptions,notesForTuning} from './sounds-bench-tone.mjs';
-import {installToneVisuals} from './sounds-bench-visuals.mjs?v=0.5.0';
+import {installToneVisuals} from './sounds-bench-visuals.mjs?v=2.8.1';
+import {linkedControlAtCursor,controlTextRange} from './sounds-bench-links.mjs?v=2.8.1';
 const $=id=>document.getElementById(id);
 const status=$('lab-status'),log=$('lab-log'),sound=$('lab-sound'),engine=$('lab-engine');
 const load=$('lab-load'),play=$('lab-play'),stop=$('lab-stop'),cancel=$('lab-cancel'),progress=$('lab-progress');
@@ -70,7 +71,7 @@ function highlightChangedLine(previous,next){
 }
 // Keep the highlighted edit visible in the editor itself. Measure the rendered
 // highlight, not a guessed line number: fonts, zoom and iPhone layout can vary.
-let codeRevealFrame=0;
+let codeRevealFrame=0,linkedControl=null;
 function revealChangedCode(){
  const mark=highlightText.querySelector('mark');
  if(!mark)return;
@@ -99,18 +100,28 @@ function revealChangedCode(){
 function renderCodeOverlay(previous=demoCode.value,changedLabel=''){
  const lines=demoCode.value.split('\n'),before=previous.split('\n');
  const changed=Boolean(changedLabel&&previous!==demoCode.value);
+ const linked=linkedControl?controlTextRange(demoCode.value,linkedControl):null;
+ let lineOffset=0;
  highlightText.innerHTML=lines.map((line,i)=>{
   const differs=changed&&line!==before[i];
-  return differs?highlightChangedLine(before[i]??'',line):escapeText(line);
+  const start=lineOffset;lineOffset+=line.length+1;
+  if(differs)return highlightChangedLine(before[i]??'',line);
+  if(linked&&linked.start>=start&&linked.end<=start+line.length){
+   const a=linked.start-start,b=linked.end-start;
+   return escapeText(line.slice(0,a))+'<mark class="bench-code-link">'+
+    escapeText(line.slice(a,b))+'</mark>'+escapeText(line.slice(b));
+  }
+  return escapeText(line);
  }).join('\n');
- highlightStatus.textContent=changed?'CHANGED · '+changedLabel:'';
+ highlightStatus.textContent=changed?'CHANGED · '+changedLabel:
+  linkedControl?'LINKED · '+(toneFields?.[linkedControl]?.name||linkedControl):'';
  syncHighlightMetrics();
  syncHighlightScroll();
  // Wait until the textarea has its new scroll dimensions and the rendered
  // highlight has its final geometry. Coalesce rapid touch-drag updates.
  if(codeRevealFrame)cancelAnimationFrame(codeRevealFrame);
  codeRevealFrame=0;
- if(changed&&highlightText.querySelector('mark')){
+ if((changed||linked)&&highlightText.querySelector('mark')){
   codeRevealFrame=requestAnimationFrame(()=>{
    codeRevealFrame=0;
    revealChangedCode();
@@ -170,13 +181,16 @@ function updateDemoCode(force=false,changedKey=''){
  }
  demoBay.dataset.sync=demoControls.dataset.sync=demoDirty?'modified':'matched';
  for(const input of toneInputs.values())input.disabled=demoDirty;
- noteHint.textContent=demoDirty?'Edited code: controls paused':'Choose a frequency in the NOTES drawer';
+ noteHint.textContent=demoDirty?'Edited code: controls paused':'Tap ♫ for named pitches and tunings.';
  demoSyncLabel.textContent=demoDirty?'CUSTOM CODE · CONTROLS OFF':'CONTROLS MATCH CODE';
  demoReset.textContent=demoDirty?'Restore from controls':'Reset code from controls';
  renderCodeOverlay(previous,changedKey&&toneFields[changedKey]?.name||'');
+ lastEditorText=demoCode.value;
  toneVisuals?.render();
 }
 demoCode.addEventListener('input',()=>{
+ const before=toneSnapshot();before.code=lastEditorText;
+ recordUndo(before);
  demoDirty=demoCode.value!==demoGenerated;
  updateDemoCode(false,'');
  renderCodeOverlay(demoCode.value,'');
@@ -189,7 +203,7 @@ for(const [key,input] of toneInputs){
 }
 demoReset.addEventListener('click',()=>{
  if(demoDirty&&!confirm('Replace your custom SuperCollider code with the instrument controls?'))return;
- updateDemoCode(true);
+ const before=toneSnapshot();updateDemoCode(true);recordUndo(before);
 });
 function buildNoteDrawer(){
  const shell=document.createElement('div');shell.id='bench-notes-shell';shell.className='bench-notes-closed';
@@ -294,7 +308,7 @@ function buildNoteDrawer(){
    if(Math.abs(Number(demoPitch.value)-note.frequency)<0.015)button.classList.add('selected');
    button.addEventListener('click',()=>{
     if(demoDirty){announce('Code has been edited. Use Restore from controls before choosing a note.');return;}
-    demoPitch.value=String(note.frequency);updateDemoCode(false,'frequency');
+    beginGesture();demoPitch.value=String(note.frequency);updateDemoCode(false,'frequency');commitGesture();
     show(false);
     if(serverReady&&definitionsReady)void playVisibleTone(note.label);
     else announce(note.label+' selected at '+note.frequency.toFixed(2)+' Hz. Start SuperCollider to play it.');
@@ -308,13 +322,16 @@ function buildNoteDrawer(){
  window.benchSetTuning=tuning=>{if(tuningOptions.some(t=>t.value===tuning)){select.value=tuning;render()}};
 }
 buildNoteDrawer();
-toneVisuals=installToneVisuals({container:demoControls,inputs:toneInputs,controls:toneControls,isLocked:()=>demoDirty});
+toneVisuals=installToneVisuals({
+ container:demoControls,inputs:toneInputs,controls:toneControls,isLocked:()=>demoDirty,
+ onSelect:key=>selectCodeControl(key),onBegin:beginGesture,onCommit:commitGesture
+});
 updateDemoCode();
 window.addEventListener('bench-open-source',event=>{
  const item=event.detail||{},code=item.code,name=item.name;
  if(typeof code!=='string'||!code.trim()||code.length>150000)return;
  if(demoDirty&&demoCode.value!==code&&!confirm('Replace unsaved edits in Play/Code? The current custom code will not be saved automatically.'))return;
- const previous=demoCode.value;
+ const previous=demoCode.value,before=toneSnapshot();
  try{
   if(item.bench?.kind==='tone'){
    const settings={frequency:item.bench.frequency,amplitude:item.bench.amplitude,...(item.bench.toneSettings||{})};
@@ -326,6 +343,7 @@ window.addEventListener('bench-open-source',event=>{
   updateDemoCode();
   if(typeof name==='string')toneName.value=name.slice(0,120);
   renderCodeOverlay(previous,'OPENED SOURCE');
+  recordUndo(before);
   event.detail.opened=true;
   toneSaveStatus.textContent='Editable source opened from Library. It has not been executed.';
   announce('Loaded '+(name||'instrument')+' for review without playing it.');
