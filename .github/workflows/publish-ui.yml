@@ -17,6 +17,7 @@ on:
       - 'scripts/render_icons.py'
       - 'qa/lab-offline-browser-test.mjs'
       - 'qa/offline-policy-test.mjs'
+      - 'qa/release-version-test.mjs'
       - '.github/workflows/publish-ui.yml'
   workflow_dispatch:
 permissions:
@@ -92,6 +93,7 @@ jobs:
           node --check source/lab-composition-vault.mjs
           node --check source/code-selection.mjs
           node source/qa/code-selection-test.mjs
+          node source/qa/release-version-test.mjs
           node source/qa/sounds-bench-links-test.mjs
           node --check source/instrument-layout.js
           node --check source/live-activity.mjs

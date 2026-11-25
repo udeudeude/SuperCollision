@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'app-version.json'
       - 'sound-surfaces-*'
       - 'sound-surfaces-*'
       - 'sounds.html'
@@ -15,6 +16,7 @@ on:
       - 'librivox-explorer.css'
       - 'librivox-*.mjs'
       - 'qa/sounds-*'
+      - 'qa/release-version-test.mjs'
       - 'qa/librivox-*'
       - 'scripts/stage_sounds_release.py'
       - 'scripts/build_offline_manifest.py'
@@ -23,6 +25,7 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'app-version.json'
       - 'sounds.html'
       - 'sounds-lab.html'
       - 'sounds-bench-preview.html'
@@ -32,6 +35,7 @@ on:
       - 'librivox-explorer.css'
       - 'librivox-*.mjs'
       - 'qa/sounds-*'
+      - 'qa/release-version-test.mjs'
       - 'qa/librivox-*'
       - 'scripts/stage_sounds_release.py'
       - 'scripts/build_offline_manifest.py'
@@ -87,6 +91,7 @@ jobs:
           node source/qa/sounds-buffer-test.mjs
           node source/qa/sounds-sampler-test.mjs
           node source/qa/sounds-bench-links-test.mjs
+          node source/qa/release-version-test.mjs
           node source/qa/sounds-pcm-ingest-test.mjs
           node source/qa/sounds-waveform-test.mjs
           node source/qa/sounds-backup-test.mjs

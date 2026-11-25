@@ -26,7 +26,7 @@ try{
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto(host+'/sounds-bench-preview.html',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelectorAll('.bench-visual').length===7,{timeout:12000});
-  assert.equal(await page.locator('header small').textContent(),'v2.8');
+  assert.equal(await page.locator('header small').textContent(),'v2.9');
   assert.equal(await page.locator('#lab-demo-code-bay').getAttribute('data-sync'),'matched');
   assert.equal(await page.locator('#bench-tone-undo').isDisabled(),true);
   assert.equal(await page.locator('#bench-tone-redo').isDisabled(),true);
