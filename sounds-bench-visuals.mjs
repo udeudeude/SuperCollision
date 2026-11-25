@@ -94,10 +94,8 @@ export function installToneVisuals({container,inputs,controls,isLocked,onSelect=
   section.addEventListener('click',event=>{
    if(event.target.closest('button'))return;
    if(keys.length){selectControl(keys[0]);onSelect(keys[0],true)}
-  }
+  });
   cards.push(section);return {section,reading,adjust};
- });
-
  }
  function surface(parent,cssClass=''){
   const canvas=document.createElement('canvas');canvas.className='bench-visual-canvas '+cssClass;
