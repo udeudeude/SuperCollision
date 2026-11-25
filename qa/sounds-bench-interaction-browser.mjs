@@ -106,6 +106,7 @@ try{
   assert.equal(await page.locator('#lab-demo-code').inputValue(),originalCode,'Undo lost typed code');
   // Comparison snapshots must preserve exact source and participate in undo.
   await page.locator('#bench-compare-save-a').click();
+  assert.equal(await page.locator('#bench-compare-hear-a').isEnabled(),true,'Save A must enable Hear A');
   const comparisonA=await page.locator('#lab-demo-code').inputValue();
   await page.locator('#lab-demo-code').fill(comparisonA+'\\n// comparison B');
   await page.locator('#bench-compare-save-b').click();
@@ -114,7 +115,7 @@ try{
    document.querySelector('#lab-engine').disabled=true;
    el.click();
   });
-  assert.equal(await page.locator('#lab-demo-code').inputValue(),comparisonA,'Comparison A did not restore source');
+  assert.equal(await page.locator('#lab-demo-code').inputValue(),comparisonA,'Comparison A did not restore source: '+JSON.stringify({errors,status:await page.locator('#lab-status').textContent()}));
   await page.locator('#bench-tone-undo').click();
   assert.match(await page.locator('#lab-demo-code').inputValue(),/comparison B/,'Comparison switch not undoable');
   await page.locator('#bench-tone-redo').click();
