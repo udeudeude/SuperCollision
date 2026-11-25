@@ -46,7 +46,10 @@ def make_base(origin, author):
 
 
 def stage(site, value='NEW SOUNDS'):
+    (site / 'index.html').write_text('NEW INTEGRATED CODE')
     (site / 'sounds.html').write_text(value)
+    (site / 'sound-surfaces-design.css').write_text('SHARED THEME STYLES')
+    (site / 'sound-surfaces-theme.mjs').write_text('SHARED THEME SETTINGS')
     (site / 'librivox-explorer.html').write_text('NEW LIBRIVOX')
     (site / 'lab-offline-assets.json').write_text('{"index":"new"}')
 
@@ -71,7 +74,10 @@ def main():
         preview = 'refs/heads/pages-preview-sounds-pr-35'
         first = git('rev-parse', preview, cwd=origin)
         assert git('show', f'{first}:sounds.html', cwd=origin) == 'NEW SOUNDS'
-        assert git('show', f'{first}:index.html', cwd=origin) == 'SAFE CODE'
+        assert git('show', f'{first}:index.html', cwd=origin) == 'NEW INTEGRATED CODE'
+        assert git('show', f'{first}:sound-surfaces-design.css', cwd=origin) == 'SHARED THEME STYLES'
+        assert git('show', f'{first}:sound-surfaces-theme.mjs', cwd=origin) == 'SHARED THEME SETTINGS'
+        assert git('show', f'{base}:index.html', cwd=origin) == 'SAFE CODE'
         assert git('show', f'{first}:lab-sw.js', cwd=origin) == 'SAFE OFFLINE'
         assert git('show', f'{first}:runtime/sclang/sclang.js', cwd=origin) == 'SCLANG'
         assert git('show', f'{first}:runtime/scsynth/scsynth.js', cwd=origin) == 'SCSYNTH'
@@ -90,6 +96,7 @@ def main():
         second = git('rev-parse', preview, cwd=origin)
         assert second != first
         assert git('show', f'{second}:sounds.html', cwd=origin) == 'UPDATED SOUNDS'
+        assert git('show', f'{second}:index.html', cwd=origin) == 'NEW INTEGRATED CODE'
         assert git('rev-parse', 'refs/heads/pages-build', cwd=origin) == base
         # A stale compiled base must fail rather than preview inconsistent Code.
         git('switch', 'pages-build', cwd=author)
@@ -107,7 +114,7 @@ def main():
         (root / 'site4/runtime/sclang/sclang.js').unlink()
         stage(root / 'site4')
         assert 'compiled SuperCollider runtime' in publish(root / 'site4', new_sha, expected=2)
-        print('Preview publication passed: compiled assets, scoped branch, stale-source and base protection')
+        print('Preview publication passed: atomic Code/Sounds/LibriVox/theme payload, compiled runtime, stale-source and base protection')
 
 
 if __name__ == '__main__':

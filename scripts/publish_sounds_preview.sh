@@ -38,13 +38,14 @@ if [ -z "$pages_head" ] || [ "$(git rev-parse HEAD)" != "$pages_head" ]; then
   exit 1
 fi
 
-# Only stage the exact release payload. The Code page, service worker, compiled
-# engine, and user storage remain inherited and untouched from pages-build.
-git add -- sounds.html sounds-lab.html sounds-*.mjs \
+# Only stage the exact jointly tested release payload. Code's entrypoint must
+# point to the current Sounds Library. The service worker, compiled engine,
+# user storage, and unrelated Code modules remain inherited from pages-build.
+git add -- index.html sounds.html sounds-lab.html sound-surfaces-design.css sound-surfaces-theme.mjs sounds-*.mjs \
   librivox-explorer.html librivox-explorer.css librivox-*.mjs lab-offline-assets.json
 while IFS= read -r changed; do
   case "$changed" in
-    sounds.html|sounds-lab.html|sounds-*.mjs|librivox-explorer.html|librivox-explorer.css|librivox-*.mjs|lab-offline-assets.json) ;;
+    index.html|sounds.html|sounds-lab.html|sound-surfaces-design.css|sound-surfaces-theme.mjs|sounds-*.mjs|librivox-explorer.html|librivox-explorer.css|librivox-*.mjs|lab-offline-assets.json) ;;
     *) echo "Refusing unexpected staged path: $changed" >&2; exit 1 ;;
   esac
 done < <(git diff --cached --name-only)
