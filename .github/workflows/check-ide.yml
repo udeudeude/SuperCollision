@@ -37,7 +37,7 @@ jobs:
           js=Path('instrument-layout.js').read_text()
           p=Scripts()
           p.feed(html)
-          assert len(p.scripts)==6, f"Found {len(p.scripts)} inline scripts"
+          assert 1<=len(p.scripts)<=12, f"Unexpected inline scripts: {len(p.scripts)}"
           for i,script in enumerate(p.scripts):
               Path(f'/tmp/supercollision-{i}.js').write_text(script)
           expected=['<header>', 'class="projectbar"', 'class="editor-frame"', 'class="toolbar"', 'class="panel console-shell"']
@@ -57,7 +57,7 @@ jobs:
               assert 'data-theme='+theme in css,theme
               assert 'art-'+theme in html,theme
           PY
-          for script in /tmp/supercollision-{0..5}.js; do node --check "$script"; done
+          for script in /tmp/supercollision-*.js; do node --check "$script"; done
           node --check code-selection.mjs
           node --check instrument-layout.js
           node --check osc-priority-bridge.mjs

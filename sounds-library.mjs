@@ -3,13 +3,57 @@
 import {saveSound} from './sounds-store.mjs';
 const $=id=>document.getElementById(id);
 const status=$('status'),hold=$('start'),ready=$('mic-ready'),level=$('level'),importer=$('import');
+const importStatus=$('import-status'),importFailures=$('import-failures');
+const wave=$('record-wave'),monitorLevel=$('record-level-text'),recordTime=$('record-timer');
+const auditionArea=$('record-audition'),auditionAudio=$('record-audio'),auditionName=$('record-audition-name');
+let auditionUrl=null,recordingStart=null,recordingDuration=0;
+const formatTime=seconds=>Math.floor(seconds/60)+':'+String(Math.floor(seconds%60)).padStart(2,'0');
+function updateTime(){
+ const elapsed=recordingStart===null?recordingDuration:(performance.now()-recordingStart)/1000;
+ if(recordTime)recordTime.textContent=formatTime(Math.max(0,elapsed));
+}
+function drawMic(data){
+ if(!wave)return;
+ const width=Math.max(1,Math.floor(wave.getBoundingClientRect().width||320));
+ const ratio=Math.min(2,window.devicePixelRatio||1),height=72;
+ if(wave.width!==Math.round(width*ratio)||wave.height!==Math.round(height*ratio)){
+  wave.width=Math.round(width*ratio);wave.height=Math.round(height*ratio);
+ }
+ const g=wave.getContext('2d');if(!g)return;
+ g.setTransform(ratio,0,0,ratio,0,0);
+ const style=getComputedStyle(wave);
+ g.fillStyle=style.getPropertyValue('--sc-editor').trim()||'#19221b';
+ g.fillRect(0,0,width,height);
+ g.strokeStyle='#68736a';g.beginPath();g.moveTo(0,height/2);g.lineTo(width,height/2);g.stroke();
+ if(!data?.length)return;
+ g.strokeStyle='#e2c17d';g.lineWidth=1.4;g.beginPath();
+ for(let x=0;x<width;x++){
+  const n=data[Math.min(data.length-1,Math.floor(x/width*data.length))];
+  const y=height/2-(n-128)/128*(height*.45);
+  if(x===0)g.moveTo(x,y);else g.lineTo(x,y);
+ }
+ g.stroke();
+}
+function auditionOriginal(blob,name){
+ if(auditionUrl){auditionAudio.pause();auditionAudio.removeAttribute('src');URL.revokeObjectURL(auditionUrl)}
+ auditionUrl=URL.createObjectURL(blob);
+ auditionAudio.src=auditionUrl;auditionAudio.load();
+ auditionName.textContent=name;auditionArea.hidden=false;
+}
 let stream=null,recorder=null,meter=null,meterTimer=null,audioContext=null;
 let micRequest=0,activePointer=null,keyboardDown=false,stopping=false;
 function say(message){status.textContent=message}
-function recordingStyle(on){document.body.classList.toggle('is-recording',on);hold.setAttribute('aria-pressed',String(on))}
+function recordingStyle(on){
+ document.body.classList.toggle('is-recording',on);hold.setAttribute('aria-pressed',String(on));
+ hold.textContent=on?'● RECORDING · RELEASE TO SAVE':'● HOLD TO RECORD';
+ if(on){recordingStart=performance.now();recordingDuration=0}
+ else{if(recordingStart!==null)recordingDuration=(performance.now()-recordingStart)/1000;recordingStart=null}
+ updateTime();
+}
 async function stopMeter(){
  if(meterTimer!==null){clearInterval(meterTimer);meterTimer=null}
  level.value=0;meter=null;
+ if(monitorLevel)monitorLevel.textContent='MIC OFF';drawMic(null);
  if(audioContext){const context=audioContext;audioContext=null;await context.close().catch(()=>{})}
 }
 function closeMic(){
@@ -20,7 +64,9 @@ function closeMic(){
 }
 function activateMeter(){
  try{
-  audioContext=new AudioContext();
+  const Context=window.AudioContext||window.webkitAudioContext;
+  if(!Context)throw Error('Audio monitoring is unavailable');
+  audioContext=new Context();
   const analyser=audioContext.createAnalyser();
   analyser.fftSize=1024;
   const source=audioContext.createMediaStreamSource(stream);
@@ -30,9 +76,17 @@ function activateMeter(){
   meterTimer=setInterval(()=>{
    if(!meter)return;meter.getByteTimeDomainData(data);let sum=0;
    for(const n of data)sum+=((n-128)/128)**2;
-   level.value=Math.min(1,Math.sqrt(sum/data.length)*4);
+   const rms=Math.sqrt(sum/data.length);
+   level.value=Math.min(1,rms*4);
+   if(monitorLevel){
+    const decibels=rms>0?Math.max(-60,Math.round(20*Math.log10(rms))):-60;
+    monitorLevel.textContent='INPUT '+(decibels<=-60?'−60 OR LESS':String(decibels).replace('-', '−'))+' dB';
+   }
+   drawMic(data);updateTime();
   },120);
- }catch{stopMeter()}
+ }catch{
+  void stopMeter().then(()=>{if(stream&&ready.checked&&monitorLevel)monitorLevel.textContent='LIVE MONITOR UNAVAILABLE'});
+ }
 }
 ready.addEventListener('change',async()=>{
  if(!ready.checked){if(recorder&&recorder.state==='recording')stopRecording();closeMic();say('Microphone off.');return}
@@ -64,12 +118,15 @@ function startRecording(){
   current.onerror=e=>{say('Recorder error: '+(e.error?.message||'unknown'));if(current.state==='recording')current.stop()};
   current.onstop=async()=>{
    const blob=new Blob(chunks,{type:current.mimeType||chunks[0]?.type||'audio/mp4'});
+   if(blob.size)auditionOriginal(blob,$('name').value.trim().slice(0,120)||'Last recording');
    try{
     if(!blob.size)throw Error('Recording is empty');
     const name=$('name').value.trim().slice(0,120)||'Recording '+new Date().toLocaleString();
     await saveSound({id:crypto.randomUUID(),name,source:'recorded',created:Date.now(),
      mime:blob.type,blob,favorite:false});
-    say('Saved recording locally ('+(blob.size/1024).toFixed(0)+' KB).');
+    // Release live input before replaying the unchanged recording.
+    closeMic();
+    say('Saved recording locally ('+(blob.size/1024).toFixed(0)+' KB). Play the original below.');
    }catch(error){
     say('Save failed: '+error.message+'. Export this recording before closing the page.');
     if(blob.size){
@@ -83,6 +140,7 @@ function startRecording(){
     stopping=false;recordingStyle(false);hold.disabled=!stream;
    }
   };
+  auditionAudio?.pause();
   current.start(250);
   recordingStyle(true);
   say('Recording. Release to save.');
@@ -118,17 +176,56 @@ hold.addEventListener('keyup',event=>{
 });
 hold.addEventListener('blur',()=>{if(keyboardDown){keyboardDown=false;stopRecording()}});
 importer.addEventListener('change',async event=>{
- const files=[...event.target.files];importer.disabled=true;
+ const files=[...event.target.files];
+ if(!files.length)return;
+ importer.disabled=true;
  let imported=0;
- for(const file of files){
-  try{
-   if(!file.type.startsWith('audio/')&&!/\.(wav|mp3|m4a|aac|aiff|flac|ogg|opus)$/i.test(file.name))throw Error('Unrecognized audio format');
-   await saveSound({id:crypto.randomUUID(),name:file.name.slice(0,120),source:'imported',
-    created:Date.now(),mime:file.type||'application/octet-stream',blob:file,favorite:false});
-   imported++;
-  }catch(error){say('Failed to import '+file.name+': '+error.message)}
+ const failures=[];
+ importFailures.replaceChildren();
+ importFailures.hidden=true;
+ try{
+  for(const [index,file] of files.entries()){
+   importStatus.textContent='Importing '+(index+1)+' of '+files.length+': '+file.name;
+   try{
+    if(!file.type.startsWith('audio/')&&!/\.(wav|mp3|m4a|aac|aiff|flac|ogg|opus)$/i.test(file.name))throw Error('Unrecognized audio format');
+    await saveSound({id:crypto.randomUUID(),name:file.name.slice(0,120),source:'imported',
+     created:Date.now(),mime:file.type||'application/octet-stream',blob:file,favorite:false});
+    imported++;
+   }catch(error){
+    failures.push({name:file.name,reason:error?.message||String(error)});
+   }
+  }
+ }finally{
+  importer.value='';
+  importer.disabled=false;
  }
- importer.value='';importer.disabled=false;
- if(imported)say('Imported '+imported+' audio file'+(imported===1?'':'s')+' into the library.');
+ if(failures.length){
+  importStatus.textContent='Imported '+imported+' of '+files.length+' files. '+failures.length+
+   ' failed; see the files not imported below.';
+  for(const failure of failures){
+   const row=document.createElement('li');
+   row.textContent=failure.name+': '+failure.reason;
+   importFailures.append(row);
+  }
+  importFailures.hidden=false;
+ }else{
+  importStatus.textContent='Imported '+imported+' audio file'+(imported===1?'':'s')+' into the library.';
+ }
 });
-window.addEventListener('pagehide',()=>{if(recorder?.state==='recording')stopRecording();closeMic()});
+/* Leaving Record must never leave a live microphone behind a different
+ * workspace. Stop capture before stopping tracks so MediaRecorder can flush
+ * its final data; a pending permission response is invalidated by closeMic. */
+document.addEventListener('sounds-view-changed',event=>{
+ if(event.detail?.view==='record'||(!ready.checked&&!stream&&!recorder))return;
+ const wasRecording=recorder?.state==='recording';
+ if(wasRecording)stopRecording();
+ activePointer=null;keyboardDown=false;
+ closeMic();
+ say(wasRecording?
+  'Recording ended when you left Record. Saving locally…':
+  'Microphone off. Return to Record to enable it again.');
+});
+window.addEventListener('pagehide',()=>{
+ if(recorder?.state==='recording')stopRecording();
+ closeMic();if(auditionUrl){auditionAudio.pause();URL.revokeObjectURL(auditionUrl);auditionUrl=null}
+});

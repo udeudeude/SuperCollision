@@ -11,13 +11,37 @@ const model=$('sounds-ai-model'),prompt=$('sounds-ai-prompt'),revision=$('sounds
 const generate=$('sounds-ai-generate'),revise=$('sounds-ai-revise'),status=$('sounds-generate-status');
 const result=$('sounds-ai-result'),preview=$('sounds-ai-code'),warnings=$('sounds-ai-review');
 const save=$('sounds-ai-save'),copy=$('sounds-ai-copy'),puterConnect=$('sounds-puter-connect');
-let current=null,busy=false,puterLoading=null;
+const proposal=$('sounds-ai-proposal'),proposedCode=$('sounds-ai-proposed-code');
+const applyProposal=$('sounds-ai-apply-proposal'),discardProposal=$('sounds-ai-discard-proposal');
+let current=null,staged=null,busy=false,puterLoading=null;
 const details=document.createElement('details');details.id='sounds-ai-request-details';details.innerHTML='<summary>Request details · exact messages and model</summary><pre id="sounds-ai-request-body" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:340px;overflow:auto"></pre><button id="sounds-ai-copy-request" type="button">Copy request</button>';
 status.after(details);
 let lastRequest='';
 details.querySelector('button').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(lastRequest);say('Request details copied.')}catch{say('Select the request text to copy it.')}});
 function recordRequest(modelId,messages,settings){lastRequest=(lastRequest&&busy?lastRequest+'\n\n':'')+JSON.stringify({model:modelId,messages,...settings},null,2);details.querySelector('pre').textContent=lastRequest;}
 function say(value){status.textContent=value}
+function reviewDraft(){
+ if(!current)return;
+ const review=inspectSoundCode(preview.value);current.review=review;
+ warnings.textContent=[...review.blockers.map(x=>'Blocker: '+x),...review.warnings].join('\n');
+}
+function useGenerated(next){
+ current=next;preview.value=next.code;result.hidden=false;
+ save.disabled=false;copy.disabled=false;revise.disabled=false;reviewDraft();
+}
+function clearProposal(){
+ staged=null;proposedCode.value='';proposal.hidden=true;
+ generate.disabled=busy;revise.disabled=busy||!current;
+}
+preview.addEventListener('input',reviewDraft);
+applyProposal.addEventListener('click',()=>{
+ if(!staged)return;
+ const next=staged;clearProposal();useGenerated(next);
+ say('Applied the proposed code. Review and edit it before saving.');
+});
+discardProposal.addEventListener('click',()=>{
+ clearProposal();say('Kept your edited draft. The other proposal was discarded.');
+});
 function syncProvider(){const isPuter=provider.value==='puter';keyBox.hidden=isPuter;puterConnect.hidden=!isPuter;model.hidden=isPuter;refreshModels.hidden=isPuter;document.querySelector('label[for="sounds-ai-model"]').hidden=isPuter}
 provider.addEventListener('change',syncProvider);
 const refreshModels=document.createElement('button');refreshModels.type='button';refreshModels.textContent='Find available free models';model.after(refreshModels);
@@ -83,13 +107,17 @@ async function request(messages,overrideModel){
 }
 async function create(isRevision){
  if(busy)return;
+ if(staged){say('Choose whether to keep your draft or use the pending proposal first.');return}
  const description=prompt.value.trim();
  if(!description){say('Describe the sound you want.');prompt.focus();return}
  if(isRevision&&!current){say('Generate an instrument before requesting revisions.');return}
  if(isRevision&&!revision.value.trim()){say('Describe the desired revision first.');revision.focus();return}
+ const priorCode=isRevision?preview.value:'';
+ if(isRevision&&!priorCode.trim()){say('Your current code is empty. Edit it or generate a new instrument.');preview.focus();return}
+ const draftAtRequest=preview.value;
  lastRequest='';busy=true;generate.disabled=true;revise.disabled=true;say('Preparing request…');
  try{
-  const messages=buildSoundMessages({description,revision:isRevision?revision.value:'',priorCode:isRevision?current?.code:''});
+  const messages=buildSoundMessages({description,revision:isRevision?revision.value:'',priorCode});
   let response;
   const selected=model.value;
   const attempts=provider.value==='openrouter'&&selected===OPENROUTER_FREE_MODEL?2:1;
@@ -112,23 +140,24 @@ async function create(isRevision){
   }
   say('Response received · checking SuperCollider code…');
   const parsed=parseSoundResponse(response.content);
-  const inspected=inspectSoundCode(parsed.code);
-  current={code:parsed.code,description,explanation:parsed.explanation,model:response.model,
-   provider:response.provider,review:inspected};
-  preview.value=current.code;
-  const notes=[...inspected.blockers.map(x=>'Blocker: '+x),...inspected.warnings];
-  warnings.textContent=notes.join('\n');
-  result.hidden=false;save.disabled=false;copy.disabled=false;revise.disabled=false;
-  say('Generated with '+response.provider+' ('+response.model+'). Review source before saving or running it in SuperCollider.');
+  const next={code:parsed.code,description,explanation:parsed.explanation,
+   model:response.model,provider:response.provider,review:inspectSoundCode(parsed.code)};
+  if(!result.hidden&&preview.value!==draftAtRequest){
+   staged=next;proposedCode.value=next.code;proposal.hidden=false;
+   say('A new proposal is ready. Your later code edits are intact; choose which version to keep.');
+  }else{
+   useGenerated(next);
+   say('Generated with '+response.provider+' ('+response.model+'). Review source before saving or running it in SuperCollider.');
+  }
  }catch(error){
   say(describeProviderFailure(error,provider.value));
- }finally{busy=false;generate.disabled=false;revise.disabled=!current}
+ }finally{busy=false;generate.disabled=!!staged;revise.disabled=!current||!!staged}
 }
 generate.addEventListener('click',()=>create(false));
 revise.addEventListener('click',()=>create(true));
 save.addEventListener('click',async()=>{
  if(!current)return;
- const name=prompt.value.trim().slice(0,120)||'Generated instrument';
+ const name=current.description.slice(0,120)||'Generated instrument';
  const code=preview.value.trim();
  if(!code){say('There is no code to save.');return}
  try{

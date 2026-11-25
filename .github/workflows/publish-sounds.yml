@@ -1,42 +1,79 @@
-name: Publish Sounds workspace only
+name: Test and publish Sounds + LibriVox together
 on:
   push:
     branches: [main]
     paths:
+      - 'index.html'
+      - 'sound-surfaces-*'
+      - 'sound-surfaces-*'
       - 'sounds.html'
       - 'sounds-lab.html'
       - 'sounds-*.mjs'
-      - 'qa/sounds-*.mjs'
+      - 'librivox-explorer.html'
+      - 'librivox-explorer.css'
+      - 'librivox-*.mjs'
+      - 'qa/sounds-*'
+      - 'qa/librivox-*'
+      - 'scripts/stage_sounds_release.py'
+      - 'scripts/build_offline_manifest.py'
       - '.github/workflows/publish-sounds.yml'
   pull_request:
-    branches: [main]
+    branches: [main, 'sounds/cohesive-integration-20261124']
     paths:
+      - 'index.html'
       - 'sounds.html'
       - 'sounds-lab.html'
       - 'sounds-*.mjs'
-      - 'qa/sounds-*.mjs'
+      - 'librivox-explorer.html'
+      - 'librivox-explorer.css'
+      - 'librivox-*.mjs'
+      - 'qa/sounds-*'
+      - 'qa/librivox-*'
+      - 'scripts/stage_sounds_release.py'
+      - 'scripts/build_offline_manifest.py'
       - '.github/workflows/publish-sounds.yml'
   workflow_dispatch:
 permissions:
   contents: write
+# Share the Pages publication lane with publish-ui.yml. A newer UI job
+# must not cancel a Sounds release halfway through staging or publishing.
 concurrency:
-  group: supercollision-sounds-${{ github.event.pull_request.number || 'main' }}
+  group: ${{ github.event_name == 'pull_request' && format('supercollision-sounds-check-{0}', github.event.pull_request.number) || 'supercollision-pages-publish' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
-  sounds:
-    name: Test and publish isolated Sounds files
+  mobile-webkit:
+    name: WebKit phone recording and navigation gate
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 12
     steps:
-      - name: Checkout source only
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          path: source
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install WebKit and its system dependencies
+        run: |
+          npm install --no-save --prefix source playwright@1.56.1
+          (cd source && npx playwright install --with-deps webkit)
+      - name: Test phone touch, local recording and saved audio in WebKit
+        run: node source/qa/sounds-webkit-browser-test.mjs
+  sounds:
+    needs: [mobile-webkit]
+    name: Verify complete Sounds + LibriVox site before publication
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact source revision
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           path: source
-      - name: Validate Sounds JavaScript and license logic
+      - name: Validate Sounds and LibriVox JavaScript
         run: |
           set -euo pipefail
-          for file in source/sounds-*.mjs; do node --check "$file"; done
+          for file in source/sounds-*.mjs source/librivox-*.mjs; do node --check "$file"; done
           node source/qa/sounds-licenses-test.mjs
           node source/qa/sounds-discover-test.mjs
           node source/qa/sounds-buffer-test.mjs
@@ -44,50 +81,111 @@ jobs:
           node source/qa/sounds-pcm-ingest-test.mjs
           node source/qa/sounds-waveform-test.mjs
           node source/qa/sounds-backup-test.mjs
+          node source/qa/librivox-audio-extract.test.mjs
+          node source/qa/librivox-combine.test.mjs
+          node source/qa/librivox-text-locator.test.mjs
           node --check source/qa/sounds-runtime-smoke.mjs
-      - name: Install browser test dependencies
+          python3 source/qa/sounds-release-test.py
+          python3 source/qa/sounds-preview-workflow-test.py
+      - name: Install browser and audio test dependencies
         run: |
+          set -euo pipefail
           npm install --no-save --prefix source playwright@1.56.1
+          python3 -m venv .venv
+          .venv/bin/pip install playwright==1.56.0
+          .venv/bin/python -m playwright install --with-deps chromium
+          chrome="$(.venv/bin/python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')"
+          sudo ln -sf "$chrome" /usr/bin/chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
           google-chrome --version
-      - name: Run isolated Sounds browser acceptance tests
-        run: node source/qa/sounds-browser-test.mjs
+      - name: Test Sounds and LibriVox browser workflows
         env:
           SOUNDS_BROWSER_CHANNEL: chrome
-      - name: Checkout production branch for real SuperCollider runtime smoke
+        run: |
+          set -euo pipefail
+          node source/qa/sounds-browser-test.mjs
+          node source/qa/header-navigation-browser-test.mjs
+          node source/qa/sound-designer-browser-test.mjs
+          .venv/bin/python source/qa/librivox-combine-browser-test.py
+          .venv/bin/python source/qa/librivox-ui-workflow-test.py
+          .venv/bin/python source/qa/librivox-ui-sample-test.py
+          .venv/bin/python source/qa/librivox-extraction-browser-test.py
+      - name: Checkout compiled production site without replacing its engine
         uses: actions/checkout@v4
         with:
           ref: pages-build
           path: site
           persist-credentials: true
-      - name: Smoke-test actual compiled SuperCollider engine in isolated browser
-        if: github.event_name == 'pull_request'
-        # Native WASM boot and /b_getn readback now pass in Chrome.
+      - name: Stage both tested workspaces and rebuild their offline asset index
+        run: |
+          set -euo pipefail
+          python3 source/scripts/verify_runtime.py site/runtime
+          python3 source/scripts/stage_sounds_release.py source site
+          python3 source/scripts/verify_runtime.py site/runtime
+          test "$(sha256sum source/index.html | cut -d ' ' -f 1)" = "$(sha256sum site/index.html | cut -d ' ' -f 1)"
+          test "$(sha256sum source/sounds.html | cut -d ' ' -f 1)" = "$(sha256sum site/sounds.html | cut -d ' ' -f 1)"
+      - name: Confirm compiled Code opens the same Sounds workspace
+        run: SC_QA_SITE_DIR=site node source/qa/header-navigation-browser-test.mjs
+      - name: Smoke-test the actual compiled SuperCollider engine
         timeout-minutes: 4
         env:
           SOUNDS_BROWSER_CHANNEL: chrome
         run: node source/qa/sounds-runtime-smoke.mjs
-      - name: Overlay Sounds files only
+      - name: Test main Code boot and actual live audio activity
+        timeout-minutes: 5
+        env:
+          SC_QA_SITE_DIR: site
+        run: node source/qa/runtime-activity.mjs
+      - name: Publish a tested compiled preview without touching production
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.base.ref == 'main'
+        env:
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          bash source/scripts/publish_sounds_preview.sh site "$SOURCE_BRANCH" "$SOURCE_SHA" "$PR_NUMBER"
+      - name: Audit public preview branch alias (nonblocking hosting diagnostic)
+        if: github.event_name == 'pull_request' && github.event.pull_request.number == 39
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node source/qa/preview-host-probe.mjs site "$PR_NUMBER"
+      - name: Publish one complete release, safely retrying concurrent advances
         if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
-          test -f site/runtime/sclang/sclang.js
-          test -f site/runtime/scsynth/scsynth.js
-          cp source/sounds.html site/sounds.html
-          cp source/sounds-lab.html site/sounds-lab.html
-          for file in source/sounds-*.mjs; do cp "$file" site/; done
-          cd site
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- sounds.html sounds-lab.html sounds-*.mjs
-          if git diff --cached --quiet; then
-            echo "Sounds workspace already published"
-          else
-            while IFS= read -r staged; do
-              case "$staged" in
-                sounds.html|sounds-lab.html|sounds-*.mjs) ;;
-                *) echo "Unexpected staged path: $staged"; exit 1 ;;
-              esac
-            done < <(git diff --cached --name-only)
-            git commit -m "Publish tested standalone SuperCollision Sounds"
-            git push origin HEAD:pages-build
-          fi
+          git -C site config user.name "github-actions[bot]"
+          git -C site config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            if [ "$attempt" -gt 1 ]; then
+              git -C site fetch --no-tags origin pages-build
+              git -C site reset --hard origin/pages-build
+              # Never rebase a stale offline asset index onto newer site files.
+              # Recopy only the tested source assets and reindex the latest site.
+              python3 source/scripts/stage_sounds_release.py source site
+            fi
+            if (
+              cd site
+              git add -- index.html sounds.html sounds-lab.html sound-surfaces-design.css sound-surfaces-theme.mjs sounds-*.mjs \
+                librivox-explorer.html librivox-explorer.css librivox-*.mjs lab-offline-assets.json
+              while IFS= read -r staged; do
+                case "$staged" in
+                  index.html|sounds.html|sounds-lab.html|sound-surfaces-design.css|sound-surfaces-theme.mjs|sounds-*.mjs|librivox-explorer.html|librivox-explorer.css|librivox-*.mjs|lab-offline-assets.json) ;;
+                  *) echo "Unexpected staged path: $staged"; exit 2 ;;
+                esac
+              done < <(git diff --cached --name-only)
+              if git diff --cached --quiet; then
+                echo "The complete Sounds + LibriVox release is already present."
+                exit 0
+              fi
+              git commit -m "Publish tested Sounds and LibriVox as one release"
+              git push origin HEAD:pages-build
+            ); then
+              echo "Sounds, LibriVox and the matching offline index published together."
+              exit 0
+            fi
+            echo "Pages branch advanced; refreshing overlay (attempt $attempt)."
+          done
+          echo "Publication stopped rather than overwrite a concurrent deployment."
+          exit 1

@@ -7,7 +7,9 @@ import { createServer } from 'node:http';
 import {readFile,stat,mkdir} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..','site');
+const root=process.env.SC_QA_SITE_DIR
+ ?path.resolve(process.env.SC_QA_SITE_DIR)
+ :path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..','site');
 const type={'.html':'text/html;charset=utf-8','.js':'text/javascript;charset=utf-8','.mjs':'text/javascript;charset=utf-8','.wasm':'application/wasm','.css':'text/css;charset=utf-8','.data':'application/octet-stream'};
 const server=createServer(async(req,res)=>{
  const uri=new URL(req.url,'http://127.0.0.1');
@@ -24,11 +26,32 @@ const server=createServer(async(req,res)=>{
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const port=server.address().port;
 const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required','--enable-features=SharedArrayBuffer']});
+const browserFailures=[];
 await mkdir('qa/screenshots',{recursive:true});
 let error=null;
 try{
  const page=await browser.newPage({viewport:{width:390,height:844},hasTouch:true,isMobile:true,deviceScaleFactor:2});
- page.on('pageerror',e=>console.log('PAGE ERROR:',e.message));
+ let startupApproved=false,startupPrompts=0;
+ page.on('dialog',dialog=>{
+  if(dialog.type()==='confirm'&&dialog.message().includes('Starting SuperCollider without a verified offline copy')){
+   startupPrompts++;
+   (startupApproved?dialog.accept():dialog.dismiss()).catch(e=>console.log('DIALOG ERROR:',e.message));
+  }else{
+   browserFailures.push('UNEXPECTED DIALOG '+dialog.type()+' '+dialog.message());
+   void dialog.dismiss();
+  }
+ });
+ page.on('pageerror',e=>{browserFailures.push('PAGE '+e.message);console.log('PAGE ERROR:',e.message)});
+ page.on('requestfailed',request=>{
+  const record='NETWORK '+request.url()+' '+(request.failure()?.errorText||'unknown');
+  browserFailures.push(record);console.log('REQUEST FAILED:',record);
+ });
+ page.on('response',response=>{
+  if(response.status()>=400&&!response.url().endsWith('/favicon.ico')){
+   const record='HTTP '+response.status()+' '+response.url();
+   browserFailures.push(record);console.log('REQUEST ERROR:',record);
+  }
+ });
  page.on('console',m=>{if(['error','warning'].includes(m.type()))console.log('BROWSER:',m.type(),m.text().slice(0,500))});
  console.log('Open test site');
  await page.goto('http://127.0.0.1:'+port+'/',{waitUntil:'domcontentloaded'});
@@ -36,10 +59,60 @@ try{
  const ready=await page.evaluate(()=>({isolated:crossOriginIsolated,module:!!window.SCActivity,version:document.querySelector('header small')?.textContent,worker:!!navigator.serviceWorker}));
  console.log('READY:',ready);
  if(!ready.isolated||!ready.module)throw Error('App not cross-origin isolated or missing activity module');
+ // The activity display is constructed before the Code POWER callback exists.
+ // Clicking while the main module is still initializing silently does nothing.
+ try{
+  await page.waitForFunction(()=>typeof document.querySelector('#engine')?.onclick==='function',
+   null,{timeout:15000});
+ }catch(error){
+  const state=await page.evaluate(()=>({
+   powerMarkup:document.querySelector('#engine')?.outerHTML,
+   handlerInstalled:typeof document.querySelector('#engine')?.onclick,
+   activityReady:!!window.SCActivity,
+   designerReady:!!window.SCSoundDesigner,
+   console:document.querySelector('#console')?.textContent?.slice(-500),
+   resourceNames:performance.getEntriesByType('resource').map(e=>e.name.split('/').pop()).slice(-30)
+  }));
+  throw Error('Code module never installed POWER handler: '+JSON.stringify(state)+'; '+error.message);
+ }
+ console.log('CODE POWER HANDLER INSTALLED');
+ // Verify the Wi-Fi-first gate blocks a rejected download instead of
+ // silently bypassing the user's permission. A fresh context has no pack.
  await page.locator('#engine').click();
+ await page.waitForTimeout(200);
+ if(startupPrompts!==1)throw Error('Expected an explicit offline/download consent prompt before POWER, got '+startupPrompts);
+ if(!(await page.locator('#evaluate').isDisabled()))throw Error('Denied engine download incorrectly enabled RUN');
+ if(await page.evaluate(()=>performance.getEntriesByType('resource').some(e=>e.name.includes('/runtime/'))))
+  throw Error('Denied engine download loaded runtime resources');
+ startupApproved=true;
+ await page.locator('#engine').click();
+ await page.waitForTimeout(350);
+ if(startupPrompts!==2)throw Error('Accepted engine download must be tied to a genuine confirmation');
+ console.log('ENGINE NETWORK CONSENT: denied first, explicitly approved second');
+ console.log('POWER AFTER CLICK:',await page.evaluate(()=>({
+  status:document.querySelector('#engine-status')?.textContent,
+  disabled:document.querySelector('#engine')?.disabled,
+  handler:typeof document.querySelector('#engine')?.onclick
+ })));
  try{
  await page.waitForFunction(()=>!document.querySelector('#evaluate').disabled,null,{timeout:115000});
- }catch(e){console.log('POWER LOG:',await page.locator('#console').innerText());throw e}
+ }catch(e){
+  const diagnostic=await page.evaluate(()=>({
+   engineStatus:document.querySelector('#engine-status')?.textContent,
+   engineButtonDisabled:document.querySelector('#engine')?.disabled,
+   runDisabled:document.querySelector('#evaluate')?.disabled,
+   languageLoaded:typeof window.bootServer==='function',
+   oscBridge:!!window.SCOscBridge,
+   isolated:crossOriginIsolated,
+   consoleText:document.querySelector('#console')?.textContent?.slice(-5000),
+   moduleScripts:[...document.scripts].filter(s=>s.type==='module').map(s=>s.src||'inline'),
+   runtimeResources:performance.getEntriesByType('resource').filter(x=>x.name.includes('/runtime/'))
+    .map(x=>({name:x.name.split('/').slice(-2).join('/'),size:x.transferSize,duration:Math.round(x.duration)}))
+  }));
+  console.log('POWER DIAGNOSTIC:',JSON.stringify(diagnostic));
+  console.log('BROWSER FAILURES:',JSON.stringify(browserFailures.slice(-20)));
+  throw e
+ }
  console.log('LANGUAGE READY');
  await page.evaluate(()=>{
    const mon=window.SCActivity,prev=mon.outgoing;

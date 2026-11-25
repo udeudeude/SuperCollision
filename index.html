@@ -985,122 +985,13 @@ document.addEventListener('click', function(e) {
   const label=(control.id+' '+(control.getAttribute('aria-label')||'')+' '+(control.textContent||'').slice(0,60)).toLowerCase();
   if (/run|play|evaluate|record/i.test(label)) umami.track('app-use',{project:'supercollision',action:'interaction'});
 },true);
-</script><script>
-(function(){
- const link=document.querySelector('#sounds-open');
- const panel=document.createElement('section');panel.id='sounds-overlay';panel.hidden=true;
- panel.setAttribute('aria-label','Sounds library');
- panel.className='sounds-workspace';
- panel.innerHTML=`<div class="sounds-shell"><header class="sounds-header"><button type="button" id="sounds-back" class="secondary">← CODE</button><strong>SOUNDS <span class="sounds-divider">/</span> LIBRARY</strong><span class="sounds-build">2026.11.19.6</span></header><section class="sounds-section"><div class="sounds-eyebrow">01 / CAPTURE</div><h2>Recorder</h2><label for="name">SOUND NAME</label><input id="name" type="text" maxlength="120" placeholder="New recording"><div class="sounds-capture"><div class="sounds-mic-row"><label for="mic-ready">MIC READY</label><input type="checkbox" id="mic-ready" role="switch" aria-label="Enable microphone"><span id="mic-state">OFF</span></div><button type="button" id="start" disabled class="sounds-hold" aria-label="Hold to record, release to save"><span class="sounds-dot"></span><span id="hold-label">HOLD TO RECORD</span></button><p class="sounds-hint">Press and hold to record. Release to stop and save. Turn on MIC READY first to grant permission, then hold to record.</p><progress id="level" max="1" value="0"></progress><p id="status" role="status" aria-live="polite">Ready to record.</p></div></section><section class="sounds-section"><div class="sounds-eyebrow">02 / SOURCE</div><h2>Import audio</h2><input id="import" type="file" accept="audio/*" multiple></section><section class="sounds-section"><div class="sounds-eyebrow">03 / COLLECTION</div><h2>Your sounds</h2><p class="sounds-hint">Saved on this device. Export important recordings to Files as backup.</p><div id="library"></div></section></div>`;
- document.body.append(panel);
- let loaded=false;
- link.addEventListener('click',async()=>{
-   panel.hidden=false;
-   if(!loaded){loaded=true;try{window.initializeSoundsLibrary()}catch(error){loaded=false;panel.querySelector('#status').textContent='Sound library failed to load: '+error.message}}
- });
- panel.querySelector('#sounds-back').addEventListener('click',()=>{
-   if(panel.classList.contains('is-recording')){panel.querySelector('#status').textContent='Release the record button before returning to Code.';return;}
-   panel.querySelector('#mic-ready').checked=false;panel.querySelector('#mic-ready').dispatchEvent(new Event('change'));panel.hidden=true;
- });
-})();
-</script><style id="sounds-workspace-style">
-#sounds-overlay[hidden]{display:none!important}
-#sounds-overlay{--sound-accent:var(--accent,#d8ae5b);position:fixed;inset:0;z-index:10000;overflow-y:auto;overscroll-behavior:contain;background:var(--bg,#161817);color:var(--fg,#e6e4db);padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);font:inherit}
-#sounds-overlay .sounds-shell{max-width:1000px;margin:auto}
-#sounds-overlay .sounds-header{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:2px solid currentColor;position:relative;min-height:56px}
-#sounds-overlay .sounds-header strong{font-size:14px;font-weight:800;line-height:1.2;letter-spacing:.06em}
-#sounds-overlay .sounds-divider{opacity:.55}
-#sounds-overlay .sounds-build{margin-left:auto;font:10px ui-monospace,monospace;opacity:.75}
-#sounds-overlay .sounds-section{padding:18px 0;border-bottom:1px solid #7778}
-#sounds-overlay .sounds-eyebrow{font:700 10px ui-monospace,monospace;letter-spacing:.14em;opacity:.7}
-#sounds-overlay h2{font-size:1.1rem;text-transform:uppercase;letter-spacing:.045em;margin:8px 0 14px}
-#sounds-overlay label{font:700 11px ui-monospace,monospace;letter-spacing:.08em;margin:8px 0;display:block}
-#sounds-overlay input[type=text]{width:100%;font-size:16px}
-#sounds-overlay .sounds-capture{margin-top:14px}
-#sounds-overlay .sounds-mic-row{display:flex;align-items:center;gap:12px;margin:10px 0 14px;padding:9px;border:1px solid #7778}#sounds-overlay .sounds-mic-row label{margin:0}#sounds-overlay #mic-ready{width:24px;height:24px;accent-color:#d8ae5b}#sounds-overlay #mic-state{margin-left:auto;font:700 11px ui-monospace,monospace}#sounds-overlay.is-ready .sounds-mic-row{border-color:#d8ae5b}#sounds-overlay .sounds-hold{width:100%;min-height:80px;display:flex;align-items:center;justify-content:center;gap:13px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;font-size:15px;letter-spacing:.07em}
-#sounds-overlay .sounds-dot{width:17px;height:17px;border-radius:50%;background:#9c312b;border:2px solid currentColor}
-#sounds-overlay .sounds-hint{font-size:12px;line-height:1.5;opacity:.78;margin:10px 0}
-#sounds-overlay progress{display:block;width:100%;height:9px;margin:14px 0;accent-color:var(--sound-accent)}
-#sounds-overlay #status{font:12px/1.5 ui-monospace,monospace;min-height:20px}
-#sounds-overlay .item{display:grid;gap:8px;padding:13px 0;border-top:1px solid #7777;min-width:0}
-#sounds-overlay .item strong{display:block;overflow-wrap:anywhere}
-#sounds-overlay .item small{display:block;overflow-wrap:anywhere;opacity:.7}
-#sounds-overlay .item audio{width:100%;display:block;min-width:0}
-#sounds-overlay .item .actions{display:flex;gap:8px;flex-wrap:wrap}
-#sounds-overlay.is-recording{box-shadow:inset 0 0 0 9px #ec392d;animation:sounds-record-glow 1.1s ease-in-out infinite alternate}
-#sounds-overlay.is-recording .sounds-hold{background:#c92e26;color:white}
-#sounds-overlay.is-recording .sounds-dot{background:white}
-@keyframes sounds-record-glow{from{box-shadow:inset 0 0 0 7px #d82b23}to{box-shadow:inset 0 0 0 12px #ff6b45}}
-@media(prefers-reduced-motion:reduce){#sounds-overlay.is-recording{animation:none}}
-</style>
+</script>
 <script>
-window.initializeSoundsLibrary=function(){
-const $=id=>document.querySelector('#sounds-overlay [id="'+id+'"]');
-const status=$('status'),start=$('start'),stop=$('stop'),level=$('level'),list=$('library');
-const DB='supercollision-sounds-v1',STORE='sounds';
-function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(STORE))req.result.createObjectStore(STORE,{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
-async function transaction(mode,work){const db=await openDB();try{return await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,mode),store=tx.objectStore(STORE);let result;tx.oncomplete=()=>resolve(result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);work(store,value=>{result=value})})}finally{db.close()}}
-function all(){return transaction('readonly',(s,set)=>{const r=s.getAll();r.onsuccess=()=>set(r.result)})}
-function put(record){return transaction('readwrite',s=>s.put(record))}
-function remove(id){return transaction('readwrite',s=>s.delete(id))}
-function say(s){status.textContent=s}
-function nameFor(defaultName){return $('name').value.trim()||defaultName}
-let recorder=null,stream=null,chunks=[],meterContext=null,meterTimer=null,requestId=0,pending=false,held=false,startedAt=0,clock=null,finishing=false;
-const overlay=document.querySelector('#sounds-overlay'),holdLabel=$('hold-label'),mic=$('mic-ready'),micState=$('mic-state');
-function sayReady(message){micState.textContent=message;overlay.classList.toggle('is-ready',Boolean(stream));start.disabled=!stream||pending||finishing}
-function indicate(active){overlay.classList.toggle('is-recording',active);holdLabel.textContent=active?'RECORDING · RELEASE TO SAVE':'HOLD TO RECORD'}
-function stopMeter(){if(meterTimer){clearInterval(meterTimer);meterTimer=null}level.value=0;if(meterContext){meterContext.close().catch(()=>{});meterContext=null}}
-function disconnect(){++requestId;pending=false;held=false;stopMeter();if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}mic.checked=false;sayReady('OFF');indicate(false)}
-function finishClock(){if(clock){clearInterval(clock);clock=null}}
-async function saveBlob(blob,name,source){if(!blob.size)throw Error('The recording was empty');const id=crypto.randomUUID();await put({id,name,source,created:Date.now(),mime:blob.type||'audio/webm',blob});await render();return id}
-async function activateMic(){
- if(stream||pending)return;
- const token=++requestId;pending=true;sayReady('CONNECTING');say('Requesting microphone permission…');
- try{
-  if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined')throw Error('Microphone recording is unavailable in this browser');
-  const incoming=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-  if(token!==requestId||!mic.checked){incoming.getTracks().forEach(t=>t.stop());return}
-  stream=incoming;pending=false;sayReady('READY');say('Microphone ready. Hold RECORD to capture.');
-  incoming.getAudioTracks().forEach(track=>track.addEventListener('ended',()=>{if(stream===incoming){disconnect();say('Microphone disconnected.')}}));
-  try{meterContext=new AudioContext();const src=meterContext.createMediaStreamSource(stream),an=meterContext.createAnalyser();an.fftSize=1024;src.connect(an);const data=new Uint8Array(an.fftSize);meterTimer=setInterval(()=>{an.getByteTimeDomainData(data);let sum=0;for(const n of data)sum+=((n-128)/128)**2;level.value=Math.min(1,Math.sqrt(sum/data.length)*4)},120)}catch{}
- }catch(e){if(token===requestId){disconnect();say('Cannot enable microphone: '+e.message)}}
-}
-mic.addEventListener('change',()=>{if(mic.checked){activateMic()}else if(recorder?.state==='recording'){endRecording();say('Saving recording before disconnecting microphone…');disconnectAfterSave=true}else if(finishing){disconnectAfterSave=true}else{disconnect();say('Microphone off.')}});
-let disconnectAfterSave=false;
-function beginRecording(){
- if(!stream||recorder||pending||finishing)return;
- held=true;indicate(true);
- try{
-  const options=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t));
-  const active=new MediaRecorder(stream,options?{mimeType:options}:undefined);recorder=active;chunks=[];
-  active.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
-  active.onerror=e=>{say('Recording error: '+(e.error?.message||'unknown'));finishing=false;recorder=null;indicate(false);sayReady(stream?'READY':'OFF')};
-  active.onstop=async()=>{
-   const blob=new Blob(chunks,{type:active.mimeType||chunks[0]?.type||'audio/mp4'});
-   try{await saveBlob(blob,nameFor('Recording '+new Date().toLocaleString()),'recorded');say('Saved recording locally ('+(blob.size/1024).toFixed(0)+' KB).')}
-   catch(e){say('Save failed: '+e.message);if(blob.size){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='unsaved-recording.'+(blob.type.includes('mp4')?'m4a':'webm');a.textContent='Export unsaved recording';status.append(' ',a)}}
-   finally{recorder=null;finishing=false;if(disconnectAfterSave){disconnectAfterSave=false;disconnect()}else{sayReady(stream?'READY':'OFF')} }
-  };
-  active.start(250);startedAt=Date.now();say('Recording · 0:00');
-  clock=setInterval(()=>{if(active.state==='recording')say('Recording · '+Math.floor((Date.now()-startedAt)/60000)+':'+String(Math.floor((Date.now()-startedAt)/1000)%60).padStart(2,'0'))},250);
- }catch(e){recorder=null;held=false;indicate(false);say('Recording failed: '+e.message)}
-}
-function endRecording(){
- if(!held)return;held=false;indicate(false);finishClock();
- if(recorder?.state==='recording'){finishing=true;start.disabled=true;say('Saving recording…');try{recorder.stop()}catch(e){finishing=false;say('Stop failed: '+e.message)}}
-}
-start.addEventListener('pointerdown',e=>{if(e.button!==0||start.disabled)return;e.preventDefault();try{start.setPointerCapture(e.pointerId)}catch{}beginRecording()});
-start.addEventListener('pointerup',e=>{e.preventDefault();endRecording()});
-start.addEventListener('pointercancel',endRecording);
-start.addEventListener('lostpointercapture',endRecording);
-start.addEventListener('contextmenu',e=>e.preventDefault());
-start.addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat){e.preventDefault();beginRecording()}});
-start.addEventListener('keyup',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();endRecording()}});
-window.addEventListener('blur',()=>{if(held)endRecording()});
-$('import').onchange=async e=>{const files=[...e.target.files];for(const file of files){try{if(!file.type.startsWith('audio/')&&!/\.(wav|mp3|m4a|aac|aiff|flac|ogg|opus)$/i.test(file.name))throw Error('Not a recognized audio file');await saveBlob(file,file.name,'imported');say('Imported '+file.name)}catch(err){say('Import failed: '+err.message)}}e.target.value=''};
-function button(text,fn){const b=document.createElement('button');b.textContent=text;b.onclick=fn;return b}
-async function render(){let entries;try{entries=(await all()).sort((a,b)=>b.created-a.created)}catch(e){list.textContent='Library unavailable: '+e.message;return}list.replaceChildren();if(!entries.length){list.textContent='No sounds saved yet.';return}for(const entry of entries){const row=document.createElement('article');row.className='item';const title=document.createElement('strong');title.textContent=entry.name;const meta=document.createElement('small');meta.textContent=new Date(entry.created).toLocaleString()+' · '+entry.source+' · '+(entry.blob.size/1024).toFixed(0)+' KB';const audio=document.createElement('audio');audio.controls=true;audio.preload='none';const url=URL.createObjectURL(entry.blob);audio.src=url;const actions=document.createElement('div');actions.className='actions';actions.append(button('Export',()=>{const a=document.createElement('a');a.href=url;a.download=entry.name.replace(/[\\/:*?"<>|]/g,'_')+(entry.name.includes('.')?'':entry.mime.includes('mp4')?'.m4a':entry.mime.includes('wav')?'.wav':'.webm');a.click()}),button('Delete',async()=>{if(!confirm('Delete '+entry.name+' from this device?'))return;try{await remove(entry.id);await render()}catch(e){say('Delete failed: '+e.message)}}));row.append(title,meta,audio,actions);list.append(row);audio.addEventListener('emptied',()=>URL.revokeObjectURL(url),{once:true})}}
-render();
-};
+// Sounds is one cohesive, versioned workspace. Keep the user's Code edits
+// before navigating and never mount the obsolete inline recorder over Code.
+document.querySelector('#sounds-open').addEventListener('click',()=>{
+  flush();
+  location.assign('./sounds.html#library');
+});
 </script>
 <script type="module" src="./lab-offline.mjs"></script><script type="module" src="./lab-composition-vault.mjs"></script></html>
