@@ -37,7 +37,26 @@ concurrency:
   group: ${{ github.event_name == 'pull_request' && format('supercollision-sounds-check-{0}', github.event.pull_request.number) || 'supercollision-pages-publish' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
+  mobile-webkit:
+    name: WebKit phone recording and navigation gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          path: source
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install WebKit and its system dependencies
+        run: |
+          npm install --no-save --prefix source playwright@1.56.1
+          (cd source && npx playwright install --with-deps webkit)
+      - name: Test phone touch, local recording and saved audio in WebKit
+        run: node source/qa/sounds-webkit-browser-test.mjs
   sounds:
+    needs: [mobile-webkit]
     name: Verify complete Sounds + LibriVox site before publication
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -75,7 +94,6 @@ jobs:
           sudo ln -sf "$chrome" /usr/bin/chromium
           sudo apt-get update -qq
           sudo apt-get install -y ffmpeg
-          (cd source && npx playwright install --with-deps webkit)
           google-chrome --version
       - name: Test Sounds and LibriVox browser workflows
         env:
@@ -83,7 +101,6 @@ jobs:
         run: |
           set -euo pipefail
           node source/qa/sounds-browser-test.mjs
-          node source/qa/sounds-webkit-browser-test.mjs
           node source/qa/sound-designer-browser-test.mjs
           .venv/bin/python source/qa/librivox-combine-browser-test.py
           .venv/bin/python source/qa/librivox-ui-workflow-test.py

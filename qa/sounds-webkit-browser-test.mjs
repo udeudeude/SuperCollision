@@ -69,7 +69,23 @@ try{
   await page.locator('#start').dispatchEvent('pointerdown',{pointerId:2,button:0,isPrimary:true});
   assert.equal(await page.locator('body').evaluate(x=>x.classList.contains('is-recording')),true);
   await page.locator('#start').dispatchEvent('pointerup',{pointerId:2,button:0,isPrimary:true});
-  await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('Saved recording locally'));
+  try{
+   await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('Saved recording locally'),
+    null,{timeout:12000});
+  }catch(error){
+   const snapshot=await page.evaluate(()=>({
+    status:document.querySelector('#status')?.textContent,
+    recording:document.body.classList.contains('is-recording'),
+    micReady:document.querySelector('#mic-ready')?.checked,
+    buttonDisabled:document.querySelector('#start')?.disabled,
+    auditionVisible:!document.querySelector('#record-audition')?.hidden,
+    audioSource:document.querySelector('#record-audio')?.getAttribute('src'),
+    state:window.__micQA,
+    supported:!!window.indexedDB,
+    secure:window.isSecureContext
+   }));
+   throw new Error('WebKit recording did not save: '+JSON.stringify(snapshot)+'; '+error.message);
+  }
   assert.equal(await page.locator('#record-audition').isVisible(),true,'original must remain in Record to audition');
   const audition=await page.locator('#record-audio').evaluate(async audio=>{
    const response=await fetch(audio.src),bytes=new Uint8Array(await response.arrayBuffer());
