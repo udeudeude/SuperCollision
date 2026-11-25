@@ -38,8 +38,8 @@ function setup(){
   }catch{closeOverlay();view('sample')}
  }
  const remote=createRemoteTools({
-  onUseCode({name,code}){
-   const payload={name,code};
+  onUseCode({name,code,play=false}){
+   const payload={name,code,play};
    window.dispatchEvent(new CustomEvent('bench-open-source',{detail:payload}));
    if(payload.opened){closeOverlay();view('play')}
    else $('sounds-generate-status').textContent='Current unsaved instrument edits were preserved. Review them before replacing the code.';
