@@ -577,10 +577,10 @@ function outputSampleRate(){
 function refreshControls(){
  const hint=$('lab-setup-hint');
  if(hint){hint.textContent=!serverReady?'First startup loads native SuperCollider. After it starts, tap Play tone to hear the code above.':!definitionsReady?'SuperCollider is preparing its instruments…':'Play tone runs the visible SuperCollider source. To work with a recording, select one below.';}
- if(!serverReady&&!booting&&!lang)engine.textContent='Start SuperCollider';
+ if(!serverReady&&!booting&&!lang)engine.textContent='PWR';
  engine.disabled=booting||bootRequested||installingDefinitions||Boolean(lang&&!languageReady);
- if(!serverReady&&lang&&languageReady&&!bootRequested)engine.textContent='Retry server startup';
- if(serverReady&&definitionsReady)engine.textContent='Play tone';
+ if(!serverReady&&lang&&languageReady&&!bootRequested)engine.textContent='Retry PWR';
+ if(serverReady&&definitionsReady)engine.textContent='PLAY';
  if(noteHint)noteHint.textContent=demoDirty?'Edited code: controls paused':'Open NOTES to choose frequencies';
  sound.disabled=!!controller;
  load.disabled=!serverReady||!definitionsReady||!sound.value||!!controller;
