@@ -511,3 +511,120 @@ body.is-recording #bench-record-timer{
  #bench-record-monitor #bench-record-wave{height:62px;min-height:62px}
  #bench-acquire-overlay #bench-record-monitor{gap:5px;margin:3px 0!important;padding:6px!important}
 }
+
+
+/* The instrument is a scrollable reading surface until a single control is
+   explicitly armed. No scrolling finger should change a synthesis parameter. */
+#lab-demo-controls>.bench-visual{
+ scroll-margin-block:12px;
+}
+#lab-demo-controls>.bench-visual .bench-visual-head{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr) minmax(52px,auto)!important;
+ grid-template-rows:auto auto;
+ align-items:center!important;gap:2px 5px!important;
+ min-height:43px!important;white-space:normal!important;
+}
+#lab-demo-controls>.bench-visual .bench-visual-head strong{
+ grid-column:1;grid-row:1;
+}
+#lab-demo-controls>.bench-visual .bench-visual-reading{
+ grid-column:1;grid-row:2;text-align:left!important;
+ font-size:10px!important;white-space:nowrap!important;
+}
+#lab-demo-controls>.bench-visual .bench-visual-adjust{
+ grid-column:2;grid-row:1/span 2;align-self:stretch;
+ min-width:52px;min-height:42px!important;padding:4px 5px!important;
+ font:800 10px/1.1 ui-monospace,monospace!important;letter-spacing:0;
+ background:var(--sc-plate,#292d26)!important;color:var(--sc-ink,#e9debd)!important;
+ border:1px solid var(--sc-line,#837454)!important;
+ touch-action:manipulation;cursor:pointer;border-radius:2px;
+}
+#lab-demo-controls>.bench-visual.is-adjusting .bench-visual-adjust{
+ background:var(--sc-accent,#e0b66a)!important;
+ color:var(--sc-accent-ink,#211c17)!important;
+}
+#lab-demo-controls>.bench-visual.is-adjusting{
+ border-color:var(--sc-accent,#e0b66a)!important;
+ box-shadow:inset 0 0 0 1px var(--sc-accent,#e0b66a);
+}
+#lab-demo-controls>.bench-visual.is-linked,
+#lab-demo-controls>.bench-compact-control.is-linked{
+ outline:2px solid var(--sc-graph-ink,#e0b66a);
+ outline-offset:-2px;
+}
+#lab-demo-controls>.bench-visual:not(.is-adjusting) .bench-visual-canvas,
+#lab-demo-controls>.bench-visual:not(.is-adjusting) .bench-wave-plot{
+ cursor:default!important;
+}
+#lab-demo-controls>.bench-visual.is-adjusting .bench-visual-canvas,
+#lab-demo-controls>.bench-visual.is-adjusting .bench-wave-plot{
+ cursor:crosshair!important;
+}
+#lab-demo-controls>.bench-visual .bench-pitch-zoom{
+ display:grid;grid-template-columns:48px minmax(0,1fr) 48px;
+ align-items:center;gap:7px;min-height:37px;
+}
+#lab-demo-controls>.bench-visual .bench-pitch-zoom button{
+ min-height:36px!important;padding:3px!important;
+ background:var(--sc-plate,#2b302b)!important;
+ border:1px solid var(--sc-line,#817154)!important;
+ color:var(--sc-ink,#e5ddc6)!important;font-size:22px!important;
+ touch-action:manipulation;
+}
+#lab-demo-controls>.bench-visual .bench-pitch-zoom output{
+ font:700 10px ui-monospace,monospace!important;
+ text-align:center;white-space:nowrap;color:var(--sc-ink,#e5ddc6);
+}
+#bench-code-highlight mark.bench-code-link{
+ background:#90d9a7!important;color:#122018!important;
+ box-shadow:0 0 0 1px #90d9a7!important;
+}
+#lab-setup>.actions:has(#bench-tone-undo){
+ display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:5px!important;
+}
+#lab-demo-reset{grid-column:1/-1;max-width:none!important;width:100%}
+#bench-tone-undo,#bench-tone-redo{
+ min-height:39px!important;min-width:0;
+ font:800 12px ui-monospace,monospace!important;
+ padding:6px 8px!important;
+ background:var(--sc-plate,#302b22)!important;
+ color:var(--sc-ink,#e5ddc6)!important;
+}
+#bench-tone-undo:disabled,#bench-tone-redo:disabled{opacity:.43!important}
+
+/* Volume is read-only while navigating; the deliberate Adjust button lets
+   fingers interact with the slider without scroll/change ambiguity. */
+#lab-demo-controls .bench-compact-control{
+ display:grid!important;grid-template-columns:minmax(0,1fr) 58px;
+ grid-template-rows:auto auto;gap:4px 7px;align-items:center;
+ min-height:75px!important;
+}
+#lab-demo-controls .bench-compact-control label{
+ grid-column:1;grid-row:1;
+}
+#lab-demo-controls .bench-compact-control input[type=range]{
+ grid-column:1/-1;grid-row:2;min-height:28px!important;
+}
+#lab-demo-controls .bench-compact-control .bench-volume-adjust{
+ grid-column:2;grid-row:1;
+ min-width:58px;min-height:42px!important;padding:4px!important;
+ font:800 10px ui-monospace,monospace!important;
+ background:var(--sc-plate,#282d27)!important;
+ color:var(--sc-ink,#e8ddc8)!important;
+ border:1px solid var(--sc-line,#837454)!important;
+ touch-action:manipulation;
+}
+#lab-demo-controls .bench-compact-control.is-adjusting{
+ border-color:var(--sc-accent,#e0b66a)!important;
+}
+#lab-demo-controls .bench-compact-control.is-adjusting .bench-volume-adjust{
+ background:var(--sc-accent,#e0b66a)!important;
+ color:var(--sc-accent-ink,#201b16)!important;
+}
+
+# An inactive slider must remain readable without accepting accidental touches.
+#lab-demo-controls .bench-compact-control input[type=range]:disabled{
+ opacity:.92!important;filter:none!important;
+}
