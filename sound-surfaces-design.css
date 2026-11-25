@@ -1,0 +1,344 @@
+/* SuperCollision surface design system v0.5.0
+ * Shared by Sounds and LibriVox only. The main Code page is untouched.
+ * Mirrors the eight named designs and the localStorage theme choice in Code.
+ * Color tokens are centralized here; individual workspaces own their layout.
+ */
+body[data-sc-surface]{
+ --sc-ground:#211e1a;--sc-panel:#302820;--sc-plate:#37312a;
+ --sc-editor:#171816;--sc-line:#8b7658;--sc-line-subtle:#635844;
+ --sc-ink:#e9d9bc;--sc-soft:#c3b7a0;--sc-accent:#df8e3f;
+ --sc-accent-ink:#231e18;--sc-selected:#bd9c65;
+ --sc-graph-ink:#e5bd7f;--sc-graph-dim:#938873;--sc-graph-grid:#544c3d;
+ --sc-font-ui:ui-monospace,SFMono-Regular,Menlo,monospace;
+ --sc-font-head:ui-monospace,SFMono-Regular,Menlo,monospace;
+ background:var(--sc-ground)!important;color:var(--sc-ink)!important;
+ font-family:var(--sc-font-ui);
+}
+body[data-sc-surface][data-theme=bauhaus]{
+ --sc-ground:#f0ead9;--sc-panel:#e1dbc9;--sc-plate:#e8dfcb;
+ --sc-editor:#f6efdf;--sc-line:#222623;--sc-line-subtle:#a89c87;
+ --sc-ink:#222623;--sc-soft:#4c554d;--sc-accent:#c83f2c;
+ --sc-accent-ink:#fff9ec;--sc-selected:#285e9b;
+ --sc-graph-ink:#285e9b;--sc-graph-dim:#887969;--sc-graph-grid:#bbb09b;
+ --sc-font-ui:Arial,Helvetica,sans-serif;--sc-font-head:Arial,Helvetica,sans-serif;
+}
+body[data-sc-surface][data-theme=blackmountain]{
+ --sc-ground:#e7e1ce;--sc-panel:#ded5bd;--sc-plate:#e6dcc6;
+ --sc-editor:#f1e9d5;--sc-line:#92866e;--sc-line-subtle:#b0a38a;
+ --sc-ink:#302f2b;--sc-soft:#61594b;--sc-accent:#9e6547;
+ --sc-accent-ink:#fff9e9;--sc-selected:#9e6547;
+ --sc-graph-ink:#7e5236;--sc-graph-dim:#958570;--sc-graph-grid:#b9af9b;
+ --sc-font-ui:Georgia,serif;--sc-font-head:Georgia,serif;
+}
+body[data-sc-surface][data-theme=makenoise]{
+ --sc-ground:#0b0b0b;--sc-panel:#141414;--sc-plate:#1b1b1b;
+ --sc-editor:#080808;--sc-line:#deded6;--sc-line-subtle:#606058;
+ --sc-ink:#f2f1e9;--sc-soft:#c9c9bf;--sc-accent:#eee;
+ --sc-accent-ink:#080808;--sc-selected:#eee;
+ --sc-graph-ink:#f2f1e9;--sc-graph-dim:#97978e;--sc-graph-grid:#4f4f48;
+ --sc-font-ui:ui-monospace,monospace;--sc-font-head:ui-monospace,monospace;
+}
+body[data-sc-surface][data-theme=score]{
+ --sc-ground:#f6f0e0;--sc-panel:#eee7d6;--sc-plate:#ede5d3;
+ --sc-editor:#faf5e7;--sc-line:#a53a32;--sc-line-subtle:#b9b1a1;
+ --sc-ink:#2c3029;--sc-soft:#58594d;--sc-accent:#b3392f;
+ --sc-accent-ink:#fff;--sc-selected:#a53a32;
+ --sc-graph-ink:#a53a32;--sc-graph-dim:#928f85;--sc-graph-grid:#c9c3b2;
+ --sc-font-ui:Georgia,serif;--sc-font-head:Georgia,serif;
+}
+body[data-sc-surface][data-theme=scope]{
+ --sc-ground:#06150f;--sc-panel:#092015;--sc-plate:#0c281a;
+ --sc-editor:#06110c;--sc-line:#39875e;--sc-line-subtle:#295a3b;
+ --sc-ink:#b0f4c7;--sc-soft:#83ac90;--sc-accent:#83d99d;
+ --sc-accent-ink:#05210f;--sc-selected:#6bffac;
+ --sc-graph-ink:#7dfbb3;--sc-graph-dim:#409668;--sc-graph-grid:#24533a;
+ --sc-font-ui:ui-monospace,monospace;--sc-font-head:ui-monospace,monospace;
+}
+body[data-sc-surface][data-theme=patch]{
+ --sc-ground:#d9d3c2;--sc-panel:#e9e2d1;--sc-plate:#e8dfcc;
+ --sc-editor:#f2e8d4;--sc-line:#302820;--sc-line-subtle:#aea18a;
+ --sc-ink:#28241f;--sc-soft:#554b3e;--sc-accent:#c34427;
+ --sc-accent-ink:#ffffff;--sc-selected:#d45332;
+ --sc-graph-ink:#b24a2e;--sc-graph-dim:#736451;--sc-graph-grid:#b1a58b;
+ --sc-font-ui:Arial,Helvetica,sans-serif;--sc-font-head:Arial,Helvetica,sans-serif;
+}
+body[data-sc-surface][data-theme=terminal]{
+ --sc-ground:#f4f4f1;--sc-panel:#ebebe7;--sc-plate:#e1e1db;
+ --sc-editor:#f4f4f1;--sc-line:#111;--sc-line-subtle:#96968f;
+ --sc-ink:#101010;--sc-soft:#555;--sc-accent:#111;
+ --sc-accent-ink:#fff;--sc-selected:#111;
+ --sc-graph-ink:#111;--sc-graph-dim:#707070;--sc-graph-grid:#b8b8b1;
+ --sc-font-ui:ui-monospace,monospace;--sc-font-head:ui-monospace,monospace;
+}
+body[data-sc-surface] header{
+ background:var(--sc-panel)!important;color:var(--sc-ink)!important;
+ border-color:var(--sc-line)!important;
+}
+body[data-sc-surface] header h1{
+ color:var(--sc-ink)!important;font-family:var(--sc-font-head)!important;
+}
+body[data-sc-surface] header a,
+body[data-sc-surface] .back-link{color:var(--sc-ink)!important}
+body[data-sc-surface] .sc-design-choice{
+ display:flex;align-items:center;gap:4px;min-width:0;
+ margin-left:auto;
+}
+body[data-sc-surface] .sc-design-choice>span{
+ font:800 9px/1.1 ui-monospace,monospace;letter-spacing:.045em;
+ color:var(--sc-soft);white-space:nowrap;
+}
+body[data-sc-surface] .sc-design-choice select{
+ display:block;width:91px;min-width:0;min-height:29px;max-height:35px;
+ padding:3px 4px;border:1px solid var(--sc-line)!important;border-radius:1px;
+ color:var(--sc-ink)!important;background:var(--sc-plate)!important;
+ font:700 11px/1.2 var(--sc-font-ui);text-overflow:ellipsis;
+}
+body[data-sc-surface] .sc-design-choice select:focus-visible{
+ outline:2px solid var(--sc-accent);outline-offset:2px;
+}
+body[data-sc-surface] .sc-version{
+ color:var(--sc-soft)!important;white-space:nowrap;flex:none;
+ font:700 10px/1.3 ui-monospace,monospace;
+}
+/* Stable surface & focus grammar. Selection uses an outlined edge;
+   solid accent means a genuine primary action, never merely 'you are here'. */
+body[data-sc-surface] :is(button,a,input,select,textarea,summary):focus-visible{
+ outline:2px solid var(--sc-accent)!important;outline-offset:2px;
+}
+body[data-sc-surface] button:disabled{opacity:.43;cursor:not-allowed}
+body[data-sc-surface] button[aria-selected=true],
+body[data-sc-surface] .librivox-search-modes button[aria-pressed=true]{
+ background:var(--sc-plate)!important;
+ border:2px solid var(--sc-selected)!important;
+ color:var(--sc-ink)!important;
+ box-shadow:inset 0 -3px 0 var(--sc-selected)!important;
+}
+body[data-sc-surface] button[aria-selected=false],
+body[data-sc-surface] .librivox-search-modes button[aria-pressed=false]{
+ background:var(--sc-panel)!important;border-color:var(--sc-line-subtle)!important;
+ color:var(--sc-soft)!important;box-shadow:none!important;
+}
+body[data-sc-surface] :is(.bench-primary-action,.bench-remote-primary,#bench-make-instrument:not(:disabled),
+#extract-wav:not(:disabled),#find-combined,.combined-actions .primary,#discover-form .primary,
+#lab-engine,button.primary){
+ background:var(--sc-accent)!important;
+ color:var(--sc-accent-ink)!important;
+ border:1px solid var(--sc-line)!important;
+}
+body[data-sc-surface] :is(#bench-sample-workspace,#bench-library-workspace,#lab-setup,
+#bench-acquire-overlay,#bench-notes-drawer,.discovery-panel,.work-panel,
+.panel-top,.sample-editor,.acquire-category,.bench-visual,.discovered-sound){
+ border-color:var(--sc-line)!important;
+}
+body[data-sc-surface] :is(#bench-library-workspace,#bench-acquire-overlay,.discovery-panel,.work-panel,
+.bench-visual,.acquire-category,.discovered-sound){
+ background:var(--sc-panel)!important;color:var(--sc-ink)!important;
+}
+body[data-sc-surface] :is(#lab-demo-code-bay,#lab-source-bay,#bench-sample-stage,
+#lab-demo-controls,#bench-frequency-list,.code-stack){
+ background:var(--sc-editor)!important;color:var(--sc-ink)!important;
+}
+body[data-sc-surface] :is(.bench-method-bar button,.acquire-entry-actions button,
+.librivox-search-modes button,.bench-remote-options,.person-chip,.result-star,
+.scope-picker label,.catalog-disclosure,.combined-form){
+ background:var(--sc-plate)!important;
+ border-color:var(--sc-line)!important;
+ color:var(--sc-ink)!important;
+}
+body[data-sc-surface] :is(#save-region,#download-wav,.result-star,.person-chip){
+ background:var(--sc-plate)!important;color:var(--sc-ink)!important;
+ border-color:var(--sc-line)!important;
+}
+body[data-sc-surface] :is(.result-star,.person-chip)[aria-pressed=true]{
+ background:var(--sc-plate)!important;color:var(--sc-ink)!important;
+ border:2px solid var(--sc-selected)!important;
+}
+body[data-sc-surface] :is(.bench-method-bar button,.acquire-entry-actions button):active{
+ background:var(--sc-selected)!important;color:var(--sc-accent-ink)!important;
+}
+body[data-sc-surface] :is(#lab-live-source,#sounds-ai-code,
+#sounds-ai-prompt,#sounds-ai-revision,#text-search,#catalog-query,#filter-author,
+#filter-reader,#bench-acquire-overlay textarea,#bench-acquire-overlay input,
+#bench-acquire-overlay select,.acquire-searchbar input,.acquire-searchbar select){
+ color:var(--sc-ink)!important;border-color:var(--sc-line-subtle)!important;
+ background:var(--sc-editor)!important;
+}
+body[data-sc-surface] :is(.demo-code-head,.bench-visual-head,.panel-top h2,
+.sample-editor>summary,.acquire-category h2,.work-context,.text-toolbar,
+#bench-acquire-title,.eyebrow){
+ color:var(--sc-ink)!important;
+}
+body[data-sc-surface] :is(.muted,.bench-visual-hint,.bench-remote-note,
+.acquired-footnote,.preview-note,.status-line,.text-hint){
+ color:var(--sc-soft)!important;
+}
+body[data-sc-surface] .bench-wave-choice.is-selected{
+ background:var(--sc-plate)!important;border:2px solid var(--sc-selected)!important;
+ color:var(--sc-ink)!important;
+}
+body[data-sc-surface] #bench-notes-toggle{
+ background:var(--sc-accent)!important;color:var(--sc-accent-ink)!important;
+ border-color:var(--sc-line)!important;
+}
+body[data-sc-surface] #bench-notes-drawer{
+ background:var(--sc-panel)!important;
+}
+body[data-sc-surface] #bench-frequency-list button{
+ background:var(--sc-plate)!important;color:var(--sc-ink)!important;
+ border-color:var(--sc-line)!important;
+}
+body[data-sc-surface] #bench-frequency-list button[aria-pressed=true]{
+ border-color:var(--sc-selected)!important;color:var(--sc-ink)!important;
+}
+/* Theme-specific structural accents, not just a color swap. */
+body[data-sc-surface][data-theme=moog] header{
+ border:2px solid var(--sc-line)!important;box-shadow:inset 0 1px 0 #ffffff1a;
+}
+body[data-sc-surface][data-theme=moog] .bench-visual{
+ border:2px solid var(--sc-line)!important;border-radius:3px!important;
+ box-shadow:inset 0 1px 0 #ffffff1a;
+}
+body[data-sc-surface][data-theme=bauhaus] header{
+ border:0!important;border-bottom:5px solid #c83f2c!important;
+}
+body[data-sc-surface][data-theme=bauhaus] :is(.bench-tabs,.librivox-search-modes){
+ border-bottom:3px solid #285e9b;
+}
+body[data-sc-surface][data-theme=bauhaus] h1{
+ letter-spacing:-.055em!important;text-transform:uppercase;font-weight:900!important;
+}
+body[data-sc-surface][data-theme=blackmountain] header{
+ border:0!important;border-bottom:1px solid #82745c!important;
+}
+body[data-sc-surface][data-theme=blackmountain] h1{
+ letter-spacing:-.04em!important;font-weight:400!important;
+}
+body[data-sc-surface][data-theme=makenoise] header{
+ border:0!important;border-bottom:4px dashed #deded6!important;
+ transform:skewX(-2deg);
+}
+body[data-sc-surface][data-theme=makenoise] :is(.bench-visual,.sample-editor){
+ border:2px dashed #deded6!important;
+}
+body[data-sc-surface][data-theme=score] #lab-demo-code-bay{
+ background:repeating-linear-gradient(to bottom,#faf5e7 0,#faf5e7 20px,#c9c3b2 21px,#faf5e7 22px)!important;
+}
+body[data-sc-surface][data-theme=scope] :is(#lab-demo-code-bay,#bench-sample-stage){
+ background:repeating-linear-gradient(0deg,#06110c 0px,#06110c 3px,#0b2318 4px)!important;
+}
+body[data-sc-surface][data-theme=patch] .bench-visual{
+ border:3px solid #302820!important;box-shadow:3px 3px 0 #302820!important;
+}
+body[data-sc-surface][data-theme=terminal] header{
+ border:0!important;border-bottom:6px solid #111!important;
+}
+body[data-sc-surface][data-theme=terminal] :is(.bench-tabs button,.librivox-search-modes button){
+ border-radius:0!important;
+}
+/* A predictable small-screen header. Theme label disappears, choice remains. */
+@media(max-width:490px){
+ body[data-sc-surface] .sc-design-choice>span{display:none}
+ body[data-sc-surface] .sc-design-choice select{width:76px;font-size:10px;padding:3px}
+ body[data-sc-surface] header{gap:6px!important}
+ body[data-sc-surface] header h1{min-width:0}
+}
+@media(max-width:360px){
+ body[data-sc-surface] .sc-design-choice select{width:69px;font-size:9px}
+ body[data-sc-surface] .sc-version{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ body[data-sc-surface] *,body[data-sc-surface] *:before,body[data-sc-surface] *:after{
+  scroll-behavior:auto!important;transition-duration:0s!important;animation-duration:0s!important;
+ }
+}
+
+/* Current Sounds/LibriVox surfaces: shared tokens, same eight identities as Code.
+   Never alter source data, waveform measurements, recording state or permissions. */
+@font-face{font-family:"SC Oxanium";src:url("./assets/fonts/oxanium.woff2") format("woff2");font-weight:400 800;font-display:swap}
+@font-face{font-family:"SC Josefin";src:url("./assets/fonts/josefin-sans.woff2") format("woff2");font-weight:400 700;font-display:swap}
+@font-face{font-family:"SC Franklin";src:url("./assets/fonts/libre-franklin.woff2") format("woff2");font-weight:400 800;font-display:swap}
+@font-face{font-family:"SC Megrim";src:url("./assets/fonts/megrim.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"SC Plaster";src:url("./assets/fonts/plaster.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"SC Outpost";src:url("./assets/fonts/outpost-mono.woff2") format("woff2");font-weight:400;font-display:swap}
+body[data-sc-surface=sounds] :is(section,.managed-item,.record-monitor,.record-audition,
+.library-backup,.managed-source,.library-lab-link,.filter-group,.discovered-sound){
+ background:var(--sc-panel)!important;color:var(--sc-ink)!important;
+ border-color:var(--sc-line)!important
+}
+body[data-sc-surface=sounds] :is(.record-monitor,.saved-code,.managed-source){
+ background:var(--sc-editor)!important;color:var(--sc-ink)!important
+}
+body[data-sc-surface=sounds] :is(.muted,small,.nav-description,.nav-heading,.record-monitor-data){
+ color:var(--sc-soft)!important
+}
+body[data-sc-surface=sounds] :is(input[type=text],input[type=search],input[type=password],
+input[type=number],textarea,select){
+ color:var(--sc-ink)!important;background:var(--sc-editor)!important;border-color:var(--sc-line)!important
+}
+body[data-sc-surface=sounds] :is(a,.library-lab-link,.managed-source>summary,.managed-more>summary){
+ color:var(--sc-accent)!important
+}
+body[data-sc-surface=sounds] :is(.managed-favorite[aria-pressed=true],.result-star[aria-pressed=true]){
+ background:var(--sc-plate)!important;border:2px solid var(--sc-selected)!important;
+ color:var(--sc-ink)!important
+}
+body[data-sc-surface=sounds] nav#sounds-tabs{
+ background:var(--sc-ground)!important;border-color:var(--sc-line)!important
+}
+body[data-sc-surface=sounds] :is(button.primary:not(:disabled),#start:not(:disabled)){
+ background:var(--sc-accent)!important;color:var(--sc-accent-ink)!important;
+ border-color:var(--sc-line)!important
+}
+body[data-sc-surface=sounds].is-recording #start{
+ background:#ac312d!important;color:white!important;border:3px solid #ffb1a4!important
+}
+body[data-sc-surface=librivox]{
+ --ground:var(--sc-ground);--panel:var(--sc-panel);--plate:var(--sc-plate);
+ --edge:var(--sc-line);--line:var(--sc-line-subtle);--ink:var(--sc-ink);
+ --soft:var(--sc-soft);--gold:var(--sc-accent);--dim:var(--sc-soft)
+}
+body[data-sc-surface=librivox] :is(.topbar,.player,.text-bay,.combined-form,.catalog-disclosure,
+.sample-editor,.preview-gate){
+ background:var(--sc-panel)!important;color:var(--sc-ink)!important;
+ border-color:var(--sc-line)!important
+}
+body[data-sc-surface=librivox] :is(.query-row input,.combined-inputs input,select,textarea){
+ background:var(--sc-editor)!important;color:var(--sc-ink)!important;
+ border-color:var(--sc-line)!important
+}
+body[data-sc-surface=librivox] :is(button.primary,#find-combined,#load-chapter-audio,#extract-wav){
+ background:var(--sc-accent)!important;color:var(--sc-accent-ink)!important
+}
+body[data-sc-surface] :is(h1,h2){font-family:var(--sc-font-head)!important}
+body[data-sc-surface][data-theme=makenoise] :is(header h1,main h2){
+ font-family:"SC Megrim",sans-serif!important;font-weight:400!important;letter-spacing:.015em!important
+}
+body[data-sc-surface][data-theme=makenoise] :is(button,summary,.sc-design-choice){
+ font-family:"SC Outpost","SC Oxanium",monospace!important
+}
+body[data-sc-surface][data-theme=bauhaus] :is(header h1,main h2){
+ font-family:"SC Plaster","SC Josefin",sans-serif!important;font-weight:400!important
+}
+body[data-sc-surface][data-theme=bauhaus] button{font-family:"SC Josefin",sans-serif!important}
+body[data-sc-surface][data-theme=blackmountain] :is(header h1,main h2){
+ font-family:"SC Franklin",sans-serif!important;font-weight:450!important
+}
+body[data-sc-surface][data-theme=moog] :is(header h1,main h2){
+ font-family:"SC Oxanium",sans-serif!important;font-weight:700!important;letter-spacing:.055em!important
+}
+body[data-sc-surface][data-theme=makenoise] :is(section,.managed-item,.player,.text-bay){border-style:dashed!important}
+body[data-sc-surface][data-theme=bauhaus] :is(section,.managed-item,.player,.text-bay){
+ border-left:5px solid #285e9b!important;border-radius:0!important
+}
+body[data-sc-surface][data-theme=scope] :is(.record-monitor,.player){
+ background:repeating-linear-gradient(0deg,#06110c 0 3px,#0b2318 4px)!important
+}
+body[data-sc-surface][data-theme=terminal] :is(section,.managed-item,.player,.text-bay){
+ border-radius:0!important;border-bottom-width:3px!important
+}
+@media(max-width:390px){
+ body[data-sc-surface=librivox] .topbar h1{font-size:12px}
+ body[data-sc-surface=librivox] .topbar h1 small{display:none}
+ body[data-sc-surface=sounds] header h1{font-size:15px!important}
+ body[data-sc-surface] header .sc-design-choice{flex:0 0 auto}
+}

@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'sound-surfaces-*'
+      - 'sound-surfaces-*'
       - 'sounds.html'
       - 'sounds-lab.html'
       - 'sounds-*.mjs'
@@ -165,11 +167,11 @@ jobs:
             fi
             if (
               cd site
-              git add -- index.html sounds.html sounds-lab.html sounds-*.mjs \
+              git add -- index.html sounds.html sounds-lab.html sound-surfaces-design.css sound-surfaces-theme.mjs sounds-*.mjs \
                 librivox-explorer.html librivox-explorer.css librivox-*.mjs lab-offline-assets.json
               while IFS= read -r staged; do
                 case "$staged" in
-                  index.html|sounds.html|sounds-lab.html|sounds-*.mjs|librivox-explorer.html|librivox-explorer.css|librivox-*.mjs|lab-offline-assets.json) ;;
+                  index.html|sounds.html|sounds-lab.html|sound-surfaces-design.css|sound-surfaces-theme.mjs|sounds-*.mjs|librivox-explorer.html|librivox-explorer.css|librivox-*.mjs|lab-offline-assets.json) ;;
                   *) echo "Unexpected staged path: $staged"; exit 2 ;;
                 esac
               done < <(git diff --cached --name-only)

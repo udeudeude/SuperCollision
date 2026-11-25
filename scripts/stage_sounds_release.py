@@ -13,7 +13,8 @@ import sys
 from pathlib import Path
 from shutil import copy2
 
-PAGES = ("index.html", "sounds.html", "sounds-lab.html")
+PAGES = ("index.html", "sounds.html", "sounds-lab.html",
+         "sound-surfaces-design.css", "sound-surfaces-theme.mjs")
 LIBRIVOX = (
     "librivox-explorer.html",
     "librivox-explorer.css",
@@ -41,6 +42,9 @@ def release_files(source: Path) -> tuple[str, ...]:
     # A tested Sounds link must never point at an old/absent LibriVox app.
     sounds = (source / "sounds.html").read_text(encoding="utf-8")
     explorer = (source / "librivox-explorer.html").read_text(encoding="utf-8")
+    for name, body in (("Sounds", sounds), ("LibriVox", explorer)):
+        if "sound-surfaces-theme.mjs" not in body or "sound-surfaces-design.css" not in body:
+            raise ValueError(name + " does not load the shared design")
     if 'href="./librivox-explorer.html"' not in sounds:
         raise ValueError("Sounds does not link to the bundled LibriVox explorer")
     if "librivox-explorer.css" not in explorer or "librivox-explorer.mjs" not in explorer:

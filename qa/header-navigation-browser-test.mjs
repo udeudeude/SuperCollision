@@ -92,6 +92,18 @@ try {
           where + ': integrated Sounds did not open');
         assert.equal(await page.locator('#sounds-record').isVisible(), false,
           where + ': Library should be the default Sounds destination');
+        assert.equal(await page.locator('#sc-surface-design').inputValue(), 'moog',
+          where + ': Sounds did not inherit Code design');
+        await page.locator('#sc-surface-design').selectOption('bauhaus');
+        await page.getByRole('tab',{name:'Discover'}).click();
+        await page.getByRole('link',{name:'Explore LibriVox recordings'}).click();
+        await page.waitForURL('**/librivox-explorer.html');
+        assert.equal(await page.locator('#sc-surface-design').inputValue(), 'bauhaus',
+          where + ': LibriVox lost shared design');
+        await page.getByRole('link',{name:'Back to Sounds'}).click();
+        await page.waitForURL('**/sounds.html#discover');
+        assert.equal(await page.locator('#sc-surface-design').inputValue(), 'bauhaus',
+          where + ': Sounds lost LibriVox design');
         await page.getByRole('tab',{name:'Record'}).click();
         assert.equal(await page.locator('#record-audition').count(), 1,
           where + ': current Sounds recorder/audition missing');
@@ -99,6 +111,8 @@ try {
         await page.waitForURL('**/index.html');
         assert.equal(await page.locator('#code').isVisible(), true,
           where + ': Code editor missing after return');
+        assert.equal(await page.evaluate(()=>document.body.dataset.theme),'bauhaus',
+          where + ': Code did not inherit design selected in Sounds');
         assert.equal(await page.locator('#code').inputValue(), '// Navigation must preserve unsaved Code edits',
           where + ': navigating away discarded the latest composition');
       }
