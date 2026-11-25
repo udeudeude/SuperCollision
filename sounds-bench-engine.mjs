@@ -149,6 +149,80 @@ function toneDisplay(key,value){
  return Number(value).toFixed(2);
 }
 const toneFields=Object.fromEntries(toneControls.map(t=>[t.key,t]));
+// Each pointer gesture creates one history entry, not a flood of snapshots.
+const undoHistory=[],redoHistory=[],historyLimit=60;
+let gestureBefore=null,lastEditorText=demoCode.value;
+const controlBar=demoReset.parentElement;
+const undoButton=document.createElement('button');undoButton.type='button';
+undoButton.id='bench-tone-undo';undoButton.textContent='↶ Undo';undoButton.disabled=true;
+undoButton.setAttribute('aria-label','Undo the last instrument change');
+const redoButton=document.createElement('button');redoButton.type='button';
+redoButton.id='bench-tone-redo';redoButton.textContent='↷ Redo';redoButton.disabled=true;
+redoButton.setAttribute('aria-label','Redo the last undone instrument change');
+controlBar.append(undoButton,redoButton);
+function toneSnapshot(){
+ const settings={};
+ for(const [key,input] of toneInputs)settings[key]=Number(input.value);
+ return {settings,code:demoCode.value};
+}
+function historyChanged(a,b){
+ return a.code!==b.code||Object.keys(a.settings).some(key=>a.settings[key]!==b.settings[key]);
+}
+function historyState(){
+ undoButton.disabled=!undoHistory.length;
+ redoButton.disabled=!redoHistory.length;
+}
+function recordUndo(before){
+ if(!before||!historyChanged(before,toneSnapshot()))return;
+ undoHistory.push(before);
+ if(undoHistory.length>historyLimit)undoHistory.shift();
+ redoHistory.length=0;
+ historyState();
+}
+function beginGesture(){if(!gestureBefore)gestureBefore=toneSnapshot()}
+function commitGesture(){
+ const before=gestureBefore;gestureBefore=null;recordUndo(before);
+}
+function restoreTone(snapshot){
+ setToneSettings(snapshot.settings);
+ demoCode.value=snapshot.code;
+ demoGenerated=demoSynthSource(readToneSettings());
+ demoDirty=demoCode.value!==demoGenerated;
+ lastEditorText=demoCode.value;
+ linkedControl=null;
+ updateDemoCode(false);
+}
+undoButton.addEventListener('click',()=>{
+ commitGesture();
+ if(!undoHistory.length)return;
+ const current=toneSnapshot(),previous=undoHistory.pop();
+ redoHistory.push(current);restoreTone(previous);historyState();
+ announce('Undid instrument change.');
+});
+redoButton.addEventListener('click',()=>{
+ commitGesture();
+ if(!redoHistory.length)return;
+ const current=toneSnapshot(),next=redoHistory.pop();
+ undoHistory.push(current);restoreTone(next);historyState();
+ announce('Redid instrument change.');
+});
+function selectCodeControl(key){
+ if(!toneFields[key])return;
+ linkedControl=key;
+ renderCodeOverlay(demoCode.value,'');
+}
+function focusControlFromCode(){
+ const key=linkedControlAtCursor(demoCode.value,demoCode.selectionStart);
+ if(!key)return;
+ selectCodeControl(key);
+ toneVisuals?.selectControl(key,{reveal:true});
+}
+demoCode.addEventListener('click',focusControlFromCode);
+demoCode.addEventListener('keyup',event=>{
+ if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(event.key))
+  focusControlFromCode();
+});
+
 for(const control of toneControls){
  if(toneInputs.has(control.key))continue;
  const field=document.createElement('div');field.className='demo-param';
