@@ -41,11 +41,11 @@ fi
 # Only stage the exact jointly tested release payload. Code's entrypoint must
 # point to the current Sounds Library. The service worker, compiled engine,
 # user storage, and unrelated Code modules remain inherited from pages-build.
-git add -- index.html sounds.html sounds-lab.html sound-surfaces-design.css sound-surfaces-theme.mjs sounds-*.mjs \
+git add -- index.html sounds.html sounds-lab.html sounds-bench-preview.html sounds-workspace.css sounds-reach.css sound-surfaces-design.css sound-surfaces-theme.mjs sounds-*.mjs \
   librivox-explorer.html librivox-explorer.css librivox-*.mjs lab-offline-assets.json
 while IFS= read -r changed; do
   case "$changed" in
-    index.html|sounds.html|sounds-lab.html|sound-surfaces-design.css|sound-surfaces-theme.mjs|sounds-*.mjs|librivox-explorer.html|librivox-explorer.css|librivox-*.mjs|lab-offline-assets.json) ;;
+    index.html|sounds.html|sounds-lab.html|sounds-bench-preview.html|sounds-workspace.css|sounds-reach.css|sound-surfaces-design.css|sound-surfaces-theme.mjs|sounds-*.mjs|librivox-explorer.html|librivox-explorer.css|librivox-*.mjs|lab-offline-assets.json) ;;
     *) echo "Refusing unexpected staged path: $changed" >&2; exit 1 ;;
   esac
 done < <(git diff --cached --name-only)

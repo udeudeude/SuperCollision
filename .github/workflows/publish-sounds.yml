@@ -8,6 +8,10 @@ on:
       - 'sound-surfaces-*'
       - 'sounds.html'
       - 'sounds-lab.html'
+      - 'sounds-bench-preview.html'
+      - 'sounds-*.css'
+      - 'sounds-bench-preview.html'
+      - 'sounds-*.css'
       - 'sounds-*.mjs'
       - 'librivox-explorer.html'
       - 'librivox-explorer.css'
@@ -78,6 +82,7 @@ jobs:
           node source/qa/sounds-discover-test.mjs
           node source/qa/sounds-buffer-test.mjs
           node source/qa/sounds-sampler-test.mjs
+          node source/qa/sounds-bench-links-test.mjs
           node source/qa/sounds-pcm-ingest-test.mjs
           node source/qa/sounds-waveform-test.mjs
           node source/qa/sounds-backup-test.mjs
@@ -105,6 +110,7 @@ jobs:
         run: |
           set -euo pipefail
           node source/qa/sounds-browser-test.mjs
+          node source/qa/sounds-bench-interaction-browser.mjs
           node source/qa/header-navigation-browser-test.mjs
           node source/qa/sound-designer-browser-test.mjs
           .venv/bin/python source/qa/librivox-combine-browser-test.py
@@ -167,11 +173,11 @@ jobs:
             fi
             if (
               cd site
-              git add -- index.html sounds.html sounds-lab.html sound-surfaces-design.css sound-surfaces-theme.mjs sounds-*.mjs \
+              git add -- index.html sounds.html sounds-lab.html sounds-bench-preview.html sounds-workspace.css sounds-reach.css sound-surfaces-design.css sound-surfaces-theme.mjs sounds-*.mjs \
                 librivox-explorer.html librivox-explorer.css librivox-*.mjs lab-offline-assets.json
               while IFS= read -r staged; do
                 case "$staged" in
-                  index.html|sounds.html|sounds-lab.html|sound-surfaces-design.css|sound-surfaces-theme.mjs|sounds-*.mjs|librivox-explorer.html|librivox-explorer.css|librivox-*.mjs|lab-offline-assets.json) ;;
+                  index.html|sounds.html|sounds-lab.html|sounds-bench-preview.html|sounds-workspace.css|sounds-reach.css|sound-surfaces-design.css|sound-surfaces-theme.mjs|sounds-*.mjs|librivox-explorer.html|librivox-explorer.css|librivox-*.mjs|lab-offline-assets.json) ;;
                   *) echo "Unexpected staged path: $staged"; exit 2 ;;
                 esac
               done < <(git diff --cached --name-only)

@@ -25,6 +25,8 @@ def make_base(origin, author):
     files = {'index.html': 'SAFE CODE', 'lab-sw.js': 'SAFE OFFLINE',
              'runtime/sclang/sclang.js': 'SCLANG', 'runtime/scsynth/scsynth.js': 'SCSYNTH',
              'sounds.html': 'OLD SOUNDS', 'sounds-lab.html': 'OLD BENCH',
+             'sounds-bench-preview.html': 'OLD INSTRUMENT', 'sounds-workspace.css': 'OLD WORKSPACE STYLES',
+             'sounds-reach.css': 'OLD TOUCH STYLES',
              'sounds-tools.mjs': 'OLD MODULE', 'librivox-explorer.html': 'OLD LIBRIVOX',
              'librivox-explorer.css': 'OLD CSS', 'librivox-explorer.mjs': 'OLD SCRIPT',
              'lab-offline-assets.json': '{}'}
@@ -48,6 +50,9 @@ def make_base(origin, author):
 def stage(site, value='NEW SOUNDS'):
     (site / 'index.html').write_text('NEW INTEGRATED CODE')
     (site / 'sounds.html').write_text(value)
+    (site / 'sounds-bench-preview.html').write_text('NEW UNIFIED INSTRUMENT')
+    (site / 'sounds-workspace.css').write_text('NEW WORKSPACE STYLES')
+    (site / 'sounds-reach.css').write_text('NEW TOUCH STYLES')
     (site / 'sound-surfaces-design.css').write_text('SHARED THEME STYLES')
     (site / 'sound-surfaces-theme.mjs').write_text('SHARED THEME SETTINGS')
     (site / 'librivox-explorer.html').write_text('NEW LIBRIVOX')
@@ -74,6 +79,8 @@ def main():
         preview = 'refs/heads/pages-preview-sounds-pr-35'
         first = git('rev-parse', preview, cwd=origin)
         assert git('show', f'{first}:sounds.html', cwd=origin) == 'NEW SOUNDS'
+        assert git('show', f'{first}:sounds-bench-preview.html', cwd=origin) == 'NEW UNIFIED INSTRUMENT'
+        assert git('show', f'{first}:sounds-reach.css', cwd=origin) == 'NEW TOUCH STYLES'
         assert git('show', f'{first}:index.html', cwd=origin) == 'NEW INTEGRATED CODE'
         assert git('show', f'{first}:sound-surfaces-design.css', cwd=origin) == 'SHARED THEME STYLES'
         assert git('show', f'{first}:sound-surfaces-theme.mjs', cwd=origin) == 'SHARED THEME SETTINGS'

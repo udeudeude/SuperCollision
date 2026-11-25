@@ -164,6 +164,7 @@ nav button{min-width:0;min-height:52px;font-size:clamp(9px,2.5vw,12px);overflow-
 </section>
 <section id="sounds-create" role="tabpanel" hidden>
 <h2>Create with SuperCollider</h2>
+<a class="library-lab-link" href="./sounds-bench-preview.html"><strong>Open Instrument Bench</strong><span>Shape sounds visually, edit the matching SuperCollider code, and play them.</span></a>
 <p class="muted">Store original SuperCollider source as an editable instrument or sound experiment. This editor saves code without executing it.</p>
 <label for="sounds-source-name">Instrument name</label><input id="sounds-source-name" type="text" maxlength="120" placeholder="Instrument name">
 <label for="sounds-source">SuperCollider source</label><textarea id="sounds-source" spellcheck="false" placeholder="SynthDef(\\mySound, { |freq = 220| Out.ar(0, SinOsc.ar(freq) * 0.1) }).add;"></textarea>
