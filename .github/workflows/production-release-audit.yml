@@ -1,0 +1,67 @@
+name: Verify live production and retire obsolete branches
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/production-release-audit.yml'
+      - 'qa/production-public-check.mjs'
+      - 'scripts/retire-superseded-branches.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: supercollision-production-release-audit
+  cancel-in-progress: false
+jobs:
+  public:
+    name: Independent live-site browser and exact-file acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: source
+      - uses: actions/checkout@v4
+        with:
+          ref: pages-build
+          path: site
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser testing client
+        run: |
+          npm install --no-save --prefix source playwright@1.56.1
+          google-chrome --version
+      - name: Verify production files, real native audio and full page navigation
+        env:
+          SITE_ORIGIN: https://supercollision.pages.dev
+        run: node source/qa/production-public-check.mjs
+  cleanup:
+    name: Retire only proven obsolete refs after the live site passes
+    needs: public
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify ancestry, closed pull requests and lease-protected branch retirement
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/retire-superseded-branches.mjs
+      - name: Retain audit of removed and preserved branches
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-branch-retirement
+          path: branch-retirement-report.json
+          if-no-files-found: ignore
+          retention-days: 30
