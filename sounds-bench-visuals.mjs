@@ -72,7 +72,7 @@ export function installToneVisuals({container,inputs,controls,isLocked,onSelect=
   if(key&&!isLocked())inputs.get(key).dispatchEvent(new Event('change',{bubbles:true}));
  }
  const cards=[],cardForKey=new Map();
- let editingCard=null,linkedCard=null;
+ let editingCard=null,linkedCard=null,volumeArmed=false;
  function card(name,subtitle,wide=false,keys=[]){
   const section=document.createElement('section');section.className='bench-visual '+(wide?'bench-visual-wide':'');
   const heading=document.createElement('div');heading.className='bench-visual-head';
@@ -84,6 +84,7 @@ export function installToneVisuals({container,inputs,controls,isLocked,onSelect=
   adjust.setAttribute('aria-label','Enable editing of '+name.toLowerCase()+'; otherwise swipe to scroll');
   adjust.addEventListener('click',()=>{
    editingCard=editingCard===section?null:section;
+   volumeArmed=false;
    if(keys.length){selectControl(keys[0]);onSelect(keys[0],false)}
    render();
   });
@@ -348,17 +349,40 @@ export function installToneVisuals({container,inputs,controls,isLocked,onSelect=
   },
   keyboard:key=>key==='ArrowLeft'?{frequency:value('frequency')/Math.pow(2,1/12)}:key==='ArrowRight'?{frequency:value('frequency')*Math.pow(2,1/12)}:null
  },'Pitch by octave, left or right arrows to move one semitone',pitch.section,'frequency');
- // Level stays an ordinary fader: it is a good direct amplitude control.
- for(const key of ['amplitude']){
-  const field=inputs.get(key)?.closest('.demo-param');
-  if(field){field.classList.add('bench-compact-control');container.insertBefore(field,hiddenBin)}
+ // The familiar level fader is still a native range control, but inert
+ // during scrolling until expressly armed, just like the graphs.
+ const volumeInput=inputs.get('amplitude');
+ const volumeField=volumeInput?.closest('.demo-param');
+ let volumeButton=null;
+ if(volumeField){
+  volumeField.classList.add('bench-compact-control');
+  volumeButton=document.createElement('button');volumeButton.type='button';
+  volumeButton.className='bench-volume-adjust';
+  volumeButton.setAttribute('aria-label','Enable volume adjustment; otherwise swipe to scroll');
+  volumeButton.setAttribute('aria-pressed','false');
+  volumeInput.before(volumeButton);
+  volumeButton.addEventListener('click',()=>{
+   volumeArmed=!volumeArmed;editingCard=null;
+   selectControl('amplitude');onSelect('amplitude',false);render();
+  });
+  volumeInput.addEventListener('pointerdown',()=>{
+   if(volumeArmed&&!isLocked())onBegin();
+  });
+  volumeInput.addEventListener('pointerup',onCommit);
+  volumeInput.addEventListener('pointercancel',onCommit);
+  volumeInput.addEventListener('keydown',event=>{
+   if(volumeArmed&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))onBegin();
+  });
+  volumeInput.addEventListener('keyup',onCommit);
+  volumeInput.addEventListener('change',onCommit);
+  container.insertBefore(volumeField,hiddenBin);
  }
  function selectControl(key,{reveal=false}={}){
   const section=cardForKey.get(key)||inputs.get(key)?.closest('.bench-compact-control');
   if(!section)return false;
   linkedCard=section;
   for(const card of cards)card.classList.toggle('is-linked',card===linkedCard);
-  if(section.classList.contains('bench-compact-control'))section.classList.add('is-linked');
+  if(volumeField)volumeField.classList.toggle('is-linked',section===volumeField);
   if(reveal){
    const sectionRect=section.getBoundingClientRect(),parentRect=container.getBoundingClientRect();
    const safeTop=parentRect.top+12,safeBottom=parentRect.bottom-12;
@@ -388,6 +412,12 @@ export function installToneVisuals({container,inputs,controls,isLocked,onSelect=
   zoomIn.disabled=zoomIndex>=zoomSteps.length-1;
   zoomOut.disabled=zoomIndex===0;
   const locked=Boolean(isLocked());container.classList.toggle('bench-visuals-locked',locked);
+  if(volumeField){
+   volumeInput.disabled=locked||!volumeArmed;
+   volumeField.classList.toggle('is-adjusting',volumeArmed);
+   volumeButton.textContent=volumeArmed?'Done':'Adjust';
+   volumeButton.setAttribute('aria-pressed',String(volumeArmed));
+  }
   const output={
    OSCILLATOR:waveformNames(),FILTER:Math.round(value('cutoff'))+' Hz · RQ '+value('resonance').toFixed(2),
    ENVELOPE:value('attack').toFixed(2)+'s / '+value('release').toFixed(2)+'s',
