@@ -593,3 +593,33 @@ body.is-recording #bench-record-timer{
  color:var(--sc-ink,#e5ddc6)!important;
 }
 #bench-tone-undo:disabled,#bench-tone-redo:disabled{opacity:.43!important}
+
+/* Volume is read-only while navigating; the deliberate Adjust button lets
+   fingers interact with the slider without scroll/change ambiguity. */
+#lab-demo-controls .bench-compact-control{
+ display:grid!important;grid-template-columns:minmax(0,1fr) 58px;
+ grid-template-rows:auto auto;gap:4px 7px;align-items:center;
+ min-height:75px!important;
+}
+#lab-demo-controls .bench-compact-control label{
+ grid-column:1;grid-row:1;
+}
+#lab-demo-controls .bench-compact-control input[type=range]{
+ grid-column:1/-1;grid-row:2;min-height:28px!important;
+}
+#lab-demo-controls .bench-compact-control .bench-volume-adjust{
+ grid-column:2;grid-row:1;
+ min-width:58px;min-height:42px!important;padding:4px!important;
+ font:800 10px ui-monospace,monospace!important;
+ background:var(--sc-plate,#282d27)!important;
+ color:var(--sc-ink,#e8ddc8)!important;
+ border:1px solid var(--sc-line,#837454)!important;
+ touch-action:manipulation;
+}
+#lab-demo-controls .bench-compact-control.is-adjusting{
+ border-color:var(--sc-accent,#e0b66a)!important;
+}
+#lab-demo-controls .bench-compact-control.is-adjusting .bench-volume-adjust{
+ background:var(--sc-accent,#e0b66a)!important;
+ color:var(--sc-accent-ink,#201b16)!important;
+}
