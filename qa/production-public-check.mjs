@@ -18,7 +18,7 @@ const names=(await readdir(source)).filter(name=>
   name==='index.html'||name==='sounds.html'||name==='sounds-lab.html'||
   name==='sound-surfaces-design.css'||name==='sound-surfaces-theme.mjs'||
   /^sounds-.*\.mjs$/.test(name)||
-  /^librivox-.*\.(html|css|mjs)$/.test(name));
+  /^librivox-.*\.(html|css|mjs)$/.test(name)&&name!=='librivox-test.html');
 names.push('lab-offline-assets.json','runtime/sclang/sclang.wasm','runtime/scsynth/scsynth.wasm');
 for(const file of names){
   const bytes=await readFile(join(site,file));
