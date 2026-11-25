@@ -104,6 +104,39 @@ try{
   assert.equal(await page.locator('#lab-demo-code-bay').getAttribute('data-sync'),'modified');
   await page.locator('#bench-tone-undo').click();
   assert.equal(await page.locator('#lab-demo-code').inputValue(),originalCode,'Undo lost typed code');
+  // Comparison snapshots must preserve exact source and participate in undo.
+  await page.locator('#bench-compare-save-a').click();
+  const comparisonA=await page.locator('#lab-demo-code').inputValue();
+  await page.locator('#lab-demo-code').fill(comparisonA+'\\n// comparison B');
+  await page.locator('#bench-compare-save-b').click();
+  await page.locator('#bench-compare-hear-a').evaluate(el=>{
+   // Test restoration without starting the heavyweight audio engine.
+   document.querySelector('#lab-engine').disabled=true;
+   el.click();
+  });
+  assert.equal(await page.locator('#lab-demo-code').inputValue(),comparisonA,'Comparison A did not restore source');
+  await page.locator('#bench-tone-undo').click();
+  assert.match(await page.locator('#lab-demo-code').inputValue(),/comparison B/,'Comparison switch not undoable');
+  await page.locator('#bench-tone-redo').click();
+  assert.equal(await page.locator('#lab-demo-code').inputValue(),comparisonA,'Comparison redo did not restore A');
+  await page.locator('#bench-compare-hear-b').evaluate(el=>el.click());
+  assert.match(await page.locator('#lab-demo-code').inputValue(),/comparison B/,'Comparison B did not restore source');
+  const comparisonLayout=await page.locator('#bench-compare-bar').evaluate(el=>{
+   const bounds=el.getBoundingClientRect();
+   return {width:bounds.width,scroll:el.scrollWidth,viewport:innerWidth,
+    buttons:[...el.querySelectorAll('button')].map(b=>{
+     const r=b.getBoundingClientRect();return {left:r.left,right:r.right,height:r.height}
+    })};
+  });
+  assert.ok(comparisonLayout.scroll<=comparisonLayout.width+2,'Comparison strip overflow: '+JSON.stringify(comparisonLayout));
+  assert.ok(comparisonLayout.buttons.every(b=>b.left>=-1&&b.right<=width+1&&b.height>=32),
+   'Comparison buttons clipped or too small: '+JSON.stringify(comparisonLayout));
+  // Generated source handoff must not silently discard an existing instrument.
+  await page.evaluate(()=>{document.querySelector('#lab-engine').disabled=true});
+  const generated='({ SinOsc.ar(330,0,0.1) }.play;)';
+  await page.evaluate(code=>window.dispatchEvent(new CustomEvent('bench-open-source',{detail:{name:'Glass bell',code,play:false}})),generated);
+  assert.equal(await page.locator('#lab-demo-code').inputValue(),generated,'Generated source was not loaded');
+  assert.equal(await page.locator('#lab-tone-name').inputValue(),'Glass bell');
   const size=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
   assert.ok(size.scroll<=size.width+1,'Phone horizontal overflow: '+JSON.stringify(size));
   assert.deepEqual(errors,[],'Page exceptions at width '+width);
