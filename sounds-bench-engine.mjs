@@ -7,7 +7,8 @@ import {readPcmWaveForNativeBuffer} from './sounds-pcm-ingest.mjs';
 import {REGION_DEFINITIONS,regionPlayCommand,regionLiveSource,stopRegionCommand,sampleInstrumentSource,validateRegion,DEMO_MARKER} from './sounds-sampler.mjs';
 import {waveformPeaks,waveformDragRegion} from './sounds-waveform.mjs';
 import {demoSynthSource,toneControls,toneDefaults,normalizeToneSettings,tuningOptions,notesForTuning} from './sounds-bench-tone.mjs';
-import {installToneVisuals} from './sounds-bench-visuals.mjs?v=0.5.0';
+import {installToneVisuals} from './sounds-bench-visuals.mjs?v=2.8.1';
+import {linkedControlAtCursor,controlTextRange} from './sounds-bench-links.mjs?v=2.8.1';
 const $=id=>document.getElementById(id);
 const status=$('lab-status'),log=$('lab-log'),sound=$('lab-sound'),engine=$('lab-engine');
 const load=$('lab-load'),play=$('lab-play'),stop=$('lab-stop'),cancel=$('lab-cancel'),progress=$('lab-progress');
@@ -70,7 +71,7 @@ function highlightChangedLine(previous,next){
 }
 // Keep the highlighted edit visible in the editor itself. Measure the rendered
 // highlight, not a guessed line number: fonts, zoom and iPhone layout can vary.
-let codeRevealFrame=0;
+let codeRevealFrame=0,linkedControl=null;
 function revealChangedCode(){
  const mark=highlightText.querySelector('mark');
  if(!mark)return;
@@ -99,18 +100,28 @@ function revealChangedCode(){
 function renderCodeOverlay(previous=demoCode.value,changedLabel=''){
  const lines=demoCode.value.split('\n'),before=previous.split('\n');
  const changed=Boolean(changedLabel&&previous!==demoCode.value);
+ const linked=linkedControl?controlTextRange(demoCode.value,linkedControl):null;
+ let lineOffset=0;
  highlightText.innerHTML=lines.map((line,i)=>{
   const differs=changed&&line!==before[i];
-  return differs?highlightChangedLine(before[i]??'',line):escapeText(line);
+  const start=lineOffset;lineOffset+=line.length+1;
+  if(differs)return highlightChangedLine(before[i]??'',line);
+  if(linked&&linked.start>=start&&linked.end<=start+line.length){
+   const a=linked.start-start,b=linked.end-start;
+   return escapeText(line.slice(0,a))+'<mark class="bench-code-link">'+
+    escapeText(line.slice(a,b))+'</mark>'+escapeText(line.slice(b));
+  }
+  return escapeText(line);
  }).join('\n');
- highlightStatus.textContent=changed?'CHANGED · '+changedLabel:'';
+ highlightStatus.textContent=changed?'CHANGED · '+changedLabel:
+  linkedControl?'LINKED · '+(toneFields?.[linkedControl]?.name||linkedControl):'';
  syncHighlightMetrics();
  syncHighlightScroll();
  // Wait until the textarea has its new scroll dimensions and the rendered
  // highlight has its final geometry. Coalesce rapid touch-drag updates.
  if(codeRevealFrame)cancelAnimationFrame(codeRevealFrame);
  codeRevealFrame=0;
- if(changed&&highlightText.querySelector('mark')){
+ if((changed||linked)&&highlightText.querySelector('mark')){
   codeRevealFrame=requestAnimationFrame(()=>{
    codeRevealFrame=0;
    revealChangedCode();
@@ -138,6 +149,100 @@ function toneDisplay(key,value){
  return Number(value).toFixed(2);
 }
 const toneFields=Object.fromEntries(toneControls.map(t=>[t.key,t]));
+// Each pointer gesture creates one history entry, not a flood of snapshots.
+const undoHistory=[],redoHistory=[],historyLimit=60;
+let gestureBefore=null,lastEditorText=demoCode.value;
+let editingSession=false;
+demoCode.addEventListener('focus',()=>{editingSession=false});
+demoCode.addEventListener('blur',()=>{editingSession=false});
+const controlBar=demoReset.parentElement;
+const undoButton=document.createElement('button');undoButton.type='button';
+undoButton.id='bench-tone-undo';undoButton.textContent='↶ Undo';undoButton.disabled=true;
+undoButton.setAttribute('aria-label','Undo the last instrument change');
+const redoButton=document.createElement('button');redoButton.type='button';
+redoButton.id='bench-tone-redo';redoButton.textContent='↷ Redo';redoButton.disabled=true;
+redoButton.setAttribute('aria-label','Redo the last undone instrument change');
+controlBar.append(undoButton,redoButton);
+function toneSnapshot(){
+ const settings={};
+ for(const [key,input] of toneInputs)settings[key]=Number(input.value);
+ return {settings,code:demoCode.value};
+}
+function historyChanged(a,b){
+ return a.code!==b.code||Object.keys(a.settings).some(key=>a.settings[key]!==b.settings[key]);
+}
+function historyState(){
+ undoButton.disabled=!undoHistory.length;
+ redoButton.disabled=!redoHistory.length;
+}
+function recordUndo(before){
+ if(!before||!historyChanged(before,toneSnapshot()))return false;
+ undoHistory.push(before);
+ if(undoHistory.length>historyLimit)undoHistory.shift();
+ redoHistory.length=0;
+ historyState();
+ return true;
+}
+function beginGesture(){if(!gestureBefore)gestureBefore=toneSnapshot()}
+function commitGesture(){
+ const before=gestureBefore;gestureBefore=null;recordUndo(before);
+}
+function restoreTone(snapshot){
+ setToneSettings(snapshot.settings);
+ demoCode.value=snapshot.code;
+ demoGenerated=demoSynthSource(readToneSettings());
+ demoDirty=demoCode.value!==demoGenerated;
+ lastEditorText=demoCode.value;
+ linkedControl=null;
+ updateDemoCode(false);
+}
+// On iPhone, tapping a button while editing Code can dismiss the keyboard
+// and reflow the entire workbench between pointerdown and click. Process undo
+// on pointerdown before the reflow; keyboard/screen-reader clicks still work.
+function responsiveAction(button,action){
+ let handledPointer=-Infinity;
+ button.addEventListener('pointerdown',event=>{
+  if(event.button!==0||button.disabled)return;
+  event.preventDefault();
+  handledPointer=performance.now();
+  action();
+ });
+ button.addEventListener('click',event=>{
+  if(event.detail>0&&performance.now()-handledPointer<5000)return;
+  action();
+ });
+}
+responsiveAction(undoButton,()=>{
+ commitGesture();
+ if(!undoHistory.length)return;
+ const current=toneSnapshot(),previous=undoHistory.pop();
+ redoHistory.push(current);restoreTone(previous);historyState();
+ announce('Undid instrument change.');
+});
+responsiveAction(redoButton,()=>{
+ commitGesture();
+ if(!redoHistory.length)return;
+ const current=toneSnapshot(),next=redoHistory.pop();
+ undoHistory.push(current);restoreTone(next);historyState();
+ announce('Redid instrument change.');
+});
+function selectCodeControl(key){
+ if(!toneFields[key])return;
+ linkedControl=key;
+ renderCodeOverlay(demoCode.value,'');
+}
+function focusControlFromCode(){
+ const key=linkedControlAtCursor(demoCode.value,demoCode.selectionStart);
+ if(!key)return;
+ selectCodeControl(key);
+ toneVisuals?.selectControl(key,{reveal:true});
+}
+demoCode.addEventListener('click',focusControlFromCode);
+demoCode.addEventListener('keyup',event=>{
+ if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(event.key))
+  focusControlFromCode();
+});
+
 for(const control of toneControls){
  if(toneInputs.has(control.key))continue;
  const field=document.createElement('div');field.className='demo-param';
@@ -170,13 +275,21 @@ function updateDemoCode(force=false,changedKey=''){
  }
  demoBay.dataset.sync=demoControls.dataset.sync=demoDirty?'modified':'matched';
  for(const input of toneInputs.values())input.disabled=demoDirty;
- noteHint.textContent=demoDirty?'Edited code: controls paused':'Choose a frequency in the NOTES drawer';
+ noteHint.textContent=demoDirty?'Edited code: controls paused':'Tap ♫ for named pitches and tunings.';
  demoSyncLabel.textContent=demoDirty?'CUSTOM CODE · CONTROLS OFF':'CONTROLS MATCH CODE';
  demoReset.textContent=demoDirty?'Restore from controls':'Reset code from controls';
  renderCodeOverlay(previous,changedKey&&toneFields[changedKey]?.name||'');
+ lastEditorText=demoCode.value;
  toneVisuals?.render();
 }
 demoCode.addEventListener('input',()=>{
+ if(!editingSession){
+  // Use the last fully rendered source, not beforeinput. Some browsers
+  // assign textarea.value before issuing beforeinput for scripted edits.
+  const before=toneSnapshot();before.code=lastEditorText;
+  editingSession=recordUndo(before);
+ }
+
  demoDirty=demoCode.value!==demoGenerated;
  updateDemoCode(false,'');
  renderCodeOverlay(demoCode.value,'');
@@ -189,7 +302,7 @@ for(const [key,input] of toneInputs){
 }
 demoReset.addEventListener('click',()=>{
  if(demoDirty&&!confirm('Replace your custom SuperCollider code with the instrument controls?'))return;
- updateDemoCode(true);
+ const before=toneSnapshot();updateDemoCode(true);recordUndo(before);
 });
 function buildNoteDrawer(){
  const shell=document.createElement('div');shell.id='bench-notes-shell';shell.className='bench-notes-closed';
@@ -294,7 +407,7 @@ function buildNoteDrawer(){
    if(Math.abs(Number(demoPitch.value)-note.frequency)<0.015)button.classList.add('selected');
    button.addEventListener('click',()=>{
     if(demoDirty){announce('Code has been edited. Use Restore from controls before choosing a note.');return;}
-    demoPitch.value=String(note.frequency);updateDemoCode(false,'frequency');
+    beginGesture();demoPitch.value=String(note.frequency);updateDemoCode(false,'frequency');commitGesture();
     show(false);
     if(serverReady&&definitionsReady)void playVisibleTone(note.label);
     else announce(note.label+' selected at '+note.frequency.toFixed(2)+' Hz. Start SuperCollider to play it.');
@@ -308,13 +421,16 @@ function buildNoteDrawer(){
  window.benchSetTuning=tuning=>{if(tuningOptions.some(t=>t.value===tuning)){select.value=tuning;render()}};
 }
 buildNoteDrawer();
-toneVisuals=installToneVisuals({container:demoControls,inputs:toneInputs,controls:toneControls,isLocked:()=>demoDirty});
+toneVisuals=installToneVisuals({
+ container:demoControls,inputs:toneInputs,controls:toneControls,isLocked:()=>demoDirty,
+ onSelect:key=>selectCodeControl(key),onBegin:beginGesture,onCommit:commitGesture
+});
 updateDemoCode();
 window.addEventListener('bench-open-source',event=>{
  const item=event.detail||{},code=item.code,name=item.name;
  if(typeof code!=='string'||!code.trim()||code.length>150000)return;
  if(demoDirty&&demoCode.value!==code&&!confirm('Replace unsaved edits in Play/Code? The current custom code will not be saved automatically.'))return;
- const previous=demoCode.value;
+ const previous=demoCode.value,before=toneSnapshot();
  try{
   if(item.bench?.kind==='tone'){
    const settings={frequency:item.bench.frequency,amplitude:item.bench.amplitude,...(item.bench.toneSettings||{})};
@@ -326,6 +442,7 @@ window.addEventListener('bench-open-source',event=>{
   updateDemoCode();
   if(typeof name==='string')toneName.value=name.slice(0,120);
   renderCodeOverlay(previous,'OPENED SOURCE');
+  recordUndo(before);
   event.detail.opened=true;
   toneSaveStatus.textContent='Editable source opened from Library. It has not been executed.';
   announce('Loaded '+(name||'instrument')+' for review without playing it.');

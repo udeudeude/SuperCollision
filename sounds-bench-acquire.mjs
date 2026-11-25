@@ -3,7 +3,7 @@
  * No imported SuperCollider code is executed automatically.
  */
 import {allSounds,saveSound,deleteSound} from './sounds-store.mjs';
-import {createRemoteTools} from './sounds-bench-remote.mjs?v=0.6.1';
+import {createRemoteTools} from './sounds-bench-remote.mjs?v=2.8.1';
 import {createOriginalPreview} from './sounds-original-preview.mjs?v=0.6.0';
 const $=id=>document.getElementById(id);
 const create=(tag,cls,text)=>{
@@ -329,7 +329,7 @@ function setup(){
  import('./sounds-backup-ui.mjs?v=1').catch(error=>{
   $('sounds-backup-status').textContent='Backup tools unavailable: '+error.message;
  });
- import('./sounds-library.mjs?v=0.6.1').catch(error=>{
+ import('./sounds-library.mjs?v=2.8.1').catch(error=>{
   $('status').textContent='Audio recorder unavailable: '+error.message;
   $('acquire-import-status').textContent='Import unavailable: '+error.message;
  });
