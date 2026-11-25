@@ -14,6 +14,32 @@ const save=$('sounds-ai-save'),copy=$('sounds-ai-copy'),puterConnect=$('sounds-p
 const proposal=$('sounds-ai-proposal'),proposedCode=$('sounds-ai-proposed-code');
 const applyProposal=$('sounds-ai-apply-proposal'),discardProposal=$('sounds-ai-discard-proposal');
 let current=null,staged=null,busy=false,puterLoading=null;
+const versions=[];
+const versionPicker=document.createElement('select');
+versionPicker.id='sounds-ai-versions';versionPicker.setAttribute('aria-label','Previous generated versions');
+versionPicker.hidden=true;
+const versionLabel=document.createElement('label');
+versionLabel.htmlFor=versionPicker.id;versionLabel.textContent='GENERATED VERSIONS';
+versionLabel.hidden=true;versionLabel.append(versionPicker);
+result.prepend(versionLabel);
+versionPicker.addEventListener('change',()=>{
+ const selected=versions[Number(versionPicker.value)];if(!selected)return;
+ if(current&&versions[Number(versionPicker.dataset.active||0)])versions[Number(versionPicker.dataset.active||0)].code=preview.value;
+ versionPicker.dataset.active=versionPicker.value;
+ current={...selected};preview.value=selected.code;result.hidden=false;
+ save.disabled=false;copy.disabled=false;revise.disabled=false;reviewDraft();
+ say('Restored generated version '+(Number(versionPicker.value)+1)+'.');
+});
+function rememberVersion(next){
+ if(current&&versions[Number(versionPicker.dataset.active||0)])versions[Number(versionPicker.dataset.active||0)].code=preview.value;
+ versions.push({...next});
+ if(versions.length>8)versions.shift();
+ versionPicker.replaceChildren(...versions.map((v,i)=>new Option('Version '+(i+1)+' · '+v.model,i)));
+ versionPicker.value=String(versions.length-1);
+ versionPicker.dataset.active=versionPicker.value;
+ versionLabel.hidden=versions.length<2;
+}
+
 const details=document.createElement('details');details.id='sounds-ai-request-details';details.innerHTML='<summary>FULL MODEL REQUEST · VIEW OR EDIT BEFORE GENERATING</summary><p>These are the exact system and user messages sent to the provider. Editing either message changes the next generation request.</p><label for="sounds-ai-system-message">System instructions</label><textarea id="sounds-ai-system-message" rows="7" style="width:100%;box-sizing:border-box"></textarea><label for="sounds-ai-user-message">User message</label><textarea id="sounds-ai-user-message" rows="5" style="width:100%;box-sizing:border-box"></textarea><pre id="sounds-ai-request-body" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:340px;overflow:auto"></pre><button id="sounds-ai-copy-request" type="button">Copy last request</button>';
 status.after(details);
 let lastRequest='';
@@ -38,7 +64,7 @@ function reviewDraft(){
  warnings.textContent=[...review.blockers.map(x=>'Blocker: '+x),...review.warnings].join('\n');
 }
 function useGenerated(next){
- current=next;preview.value=next.code;result.hidden=false;
+ rememberVersion(next);current=next;preview.value=next.code;result.hidden=false;
  save.disabled=false;copy.disabled=false;revise.disabled=false;reviewDraft();
 }
 function clearProposal(){
