@@ -1037,3 +1037,106 @@ body[data-sc-surface=sounds] :is(#lab-status,#sounds-generate-status):empty{disp
 @media(prefers-reduced-motion:reduce){
  body[data-sc-surface=sounds] .bench-tabs button{transition:none}
 }
+
+/* Instrument Bench repair: content must never share grid tracks or paint
+   across adjacent actions. One independently scrolling workspace. */
+body[data-sc-surface=sounds] #lab-setup{
+ display:flex!important;
+ flex-direction:column!important;
+ gap:9px!important;
+ overflow-y:auto!important;
+ overflow-x:hidden!important;
+ overscroll-behavior-y:contain;
+ align-content:initial!important;
+ justify-content:flex-start!important;
+ padding:10px!important;
+ scroll-padding-bottom:16px;
+}
+body[data-sc-surface=sounds] #lab-setup > *{
+ position:relative!important;
+ inset:auto!important;
+ transform:none!important;
+ flex-shrink:0!important;
+ min-width:0;
+}
+body[data-sc-surface=sounds] #lab-setup > .bench-method-bar{order:0!important}
+body[data-sc-surface=sounds] #lab-setup > #lab-demo-code-bay{
+ order:1!important;
+ height:clamp(130px,23dvh,250px)!important;
+ min-height:130px!important;
+ max-height:none!important;
+ flex:0 0 auto!important;
+ overflow:hidden!important;
+}
+body[data-sc-surface=sounds] #lab-setup > #lab-demo-controls{
+ order:2!important;
+ height:clamp(190px,38dvh,390px)!important;
+ min-height:190px!important;
+ max-height:none!important;
+ overflow-y:auto!important;
+ overflow-x:hidden!important;
+ flex:0 0 auto!important;
+}
+body[data-sc-surface=sounds] #lab-setup > .note-console{order:3!important}
+body[data-sc-surface=sounds] #lab-setup > .actions{
+ order:4!important;
+ display:grid!important;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ width:100%;
+ gap:6px!important;
+ margin:0!important;
+ padding:0!important;
+ height:auto!important;
+ min-height:0!important;
+}
+body[data-sc-surface=sounds] #lab-setup > .actions > button{
+ position:static!important;
+ min-width:0!important;
+ max-width:none!important;
+ width:100%!important;
+ min-height:40px!important;
+ padding:7px 4px!important;
+ margin:0!important;
+ white-space:normal!important;
+}
+body[data-sc-surface=sounds] #lab-setup > #bench-compare-bar{
+ order:5!important;
+ display:grid!important;
+ grid-template-columns:repeat(4,minmax(0,1fr))!important;
+ grid-auto-rows:minmax(40px,auto);
+ gap:5px!important;
+ width:100%;
+ padding:8px 0!important;
+ height:auto!important;
+ margin:0!important;
+ background:transparent!important;
+}
+body[data-sc-surface=sounds] #bench-compare-bar .bench-compare-title{
+ grid-column:1/-1;
+}
+body[data-sc-surface=sounds] #bench-compare-bar button{
+ position:static!important;
+ width:100%!important;
+ height:auto!important;
+ min-height:40px!important;
+ padding:6px 2px!important;
+ font-size:clamp(9px,2.4vw,12px)!important;
+}
+body[data-sc-surface=sounds] #lab-setup > #lab-status{order:6!important}
+body[data-sc-surface=sounds] #lab-setup > .tone-save-row{
+ order:7!important;
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr) auto!important;
+ gap:7px!important;
+ margin:0!important;
+ height:auto!important;
+}
+body[data-sc-surface=sounds] #lab-setup > #lab-tone-save-status{
+ order:8!important;
+ position:static!important;
+ margin:0!important;
+}
+body[data-sc-surface=sounds] #lab-setup > #lab-tone-library-link{order:9!important}
+@media(max-width:355px){
+ body[data-sc-surface=sounds] #lab-setup > .actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
