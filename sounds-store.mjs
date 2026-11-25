@@ -16,8 +16,17 @@ async function transaction(mode,fn){
   const tx=db.transaction(STORE,mode),store=tx.objectStore(STORE);
   let result;
   tx.oncomplete=()=>resolve(result);
-  tx.onerror=()=>reject(tx.error||Error('Sound library transaction failed'));
-  tx.onabort=()=>reject(tx.error||Error('Sound library transaction aborted'));
+  // Request errors bubble to the transaction. Preserve their actual name and
+  // reason, particularly on Safari, rather than obscuring an IndexedDB
+  // storage failure behind a generic "transaction failed" message.
+  const cause=event=>event?.target?.error||tx.error;
+  const failure=(event,kind)=>{
+   const error=cause(event);
+   return error?Error('Sound library '+kind+': '+error.name+
+    (error.message?' · '+error.message:'')):Error('Sound library '+kind);
+  };
+  tx.onerror=event=>reject(failure(event,'transaction failed'));
+  tx.onabort=event=>reject(failure(event,'transaction aborted'));
   try{fn(store,value=>{result=value})}catch(error){tx.abort();reject(error)}
  })}finally{db.close()}
 }

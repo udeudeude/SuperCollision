@@ -52,6 +52,21 @@ try{
   const page=await context.newPage(),errors=[];
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto(origin+'/sounds.html');
+  const storageProbe=await page.evaluate(async()=>{
+   const {saveSound,deleteSound}=await import('/sounds-store.mjs');
+   const output={};
+   for(const [type,extra] of [
+    ['code',{source:'written',code:'SynthDef(\\qa,{}).add;'}],
+    ['blob',{source:'imported',mime:'audio/wav',blob:new Blob(['RIFFdemoWAVE'],{type:'audio/wav'})}]
+   ]){
+    const id='qa-webkit-'+type;
+    try{await saveSound({id,name:'WebKit probe',created:1,favorite:false,...extra});
+     output[type]='ok';await deleteSound(id)}
+    catch(error){output[type]=error.name+': '+error.message}
+   }
+   return output;
+  });
+  console.log('WebKit IndexedDB probe '+width+'x'+height+': '+JSON.stringify(storageProbe));
   const dimensions=await page.evaluate(()=>{
    const dock=document.querySelector('#sounds-tabs').getBoundingClientRect();
    const buttons=[...document.querySelectorAll('#sounds-tabs button')].map(x=>x.getBoundingClientRect());
