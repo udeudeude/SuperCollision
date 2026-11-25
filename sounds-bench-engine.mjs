@@ -152,12 +152,9 @@ const toneFields=Object.fromEntries(toneControls.map(t=>[t.key,t]));
 // Each pointer gesture creates one history entry, not a flood of snapshots.
 const undoHistory=[],redoHistory=[],historyLimit=60;
 let gestureBefore=null,lastEditorText=demoCode.value;
-let editingSession=false,pendingCodeEdit=null;
+let editingSession=false;
 demoCode.addEventListener('focus',()=>{editingSession=false});
-demoCode.addEventListener('blur',()=>{editingSession=false;pendingCodeEdit=null});
-demoCode.addEventListener('beforeinput',()=>{
- if(!editingSession&&!pendingCodeEdit)pendingCodeEdit=toneSnapshot();
-});
+demoCode.addEventListener('blur',()=>{editingSession=false});
 const controlBar=demoReset.parentElement;
 const undoButton=document.createElement('button');undoButton.type='button';
 undoButton.id='bench-tone-undo';undoButton.textContent='↶ Undo';undoButton.disabled=true;
@@ -179,11 +176,12 @@ function historyState(){
  redoButton.disabled=!redoHistory.length;
 }
 function recordUndo(before){
- if(!before||!historyChanged(before,toneSnapshot()))return;
+ if(!before||!historyChanged(before,toneSnapshot()))return false;
  undoHistory.push(before);
  if(undoHistory.length>historyLimit)undoHistory.shift();
  redoHistory.length=0;
  historyState();
+ return true;
 }
 function beginGesture(){if(!gestureBefore)gestureBefore=toneSnapshot()}
 function commitGesture(){
@@ -270,12 +268,12 @@ function updateDemoCode(force=false,changedKey=''){
 }
 demoCode.addEventListener('input',()=>{
  if(!editingSession){
-  const before=pendingCodeEdit||toneSnapshot();
-  if(!pendingCodeEdit)before.code=lastEditorText;
-  recordUndo(before);
-  editingSession=true;
+  // Use the last fully rendered source, not beforeinput. Some browsers
+  // assign textarea.value before issuing beforeinput for scripted edits.
+  const before=toneSnapshot();before.code=lastEditorText;
+  editingSession=recordUndo(before);
  }
- pendingCodeEdit=null;
+
  demoDirty=demoCode.value!==demoGenerated;
  updateDemoCode(false,'');
  renderCodeOverlay(demoCode.value,'');
