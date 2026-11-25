@@ -26,8 +26,8 @@ export function linkedControlAtCursor(source,index){
   .filter(m=>m.key);
  if(!matches.length)return null;
  // For Synth([...]) parameter lines, the named parameter owns its value.
- const primary=matches.find(m=>/^ *\\[A-Za-z]/.test(line)&&m.begin-begin<=line.search(/\\[A-Za-z]/)+begin+2);
- if(primary)return primary.key;
+ const primary=/^\s*\\([A-Za-z][A-Za-z0-9]*)/.exec(line);
+ if(primary&&aliases[primary[1]])return aliases[primary[1]];
  const inToken=matches.find(m=>m.begin<=position&&position<=m.end);
  if(inToken)return inToken.key;
  // If the cursor is on a value, use the preceding parameter in the same line.
@@ -39,13 +39,13 @@ export function controlTextRange(source,key){
  if(typeof source!=='string'||!token)return null;
  // Use the actual value passed to the synth, rather than the parameter
  // defaults in SynthDef. This is the editable live instrument setting.
- const expression=new RegExp('\\\\'+token+'\\\\s*,\\\\s*[^,\\\\n\\\\]]+','g');
+ const expression=new RegExp('\\\\'+token+'\\s*,\\s*[^,\\n\\]]+','g');
  let found=null,match;
  while((match=expression.exec(source))){
   found={start:match.index,end:match.index+match[0].length};
  }
  if(found)return found;
- const fallback=new RegExp('\\\\b'+token+'\\\\b');
+ const fallback=new RegExp('\\b'+token+'\\b');
  const other=fallback.exec(source);
  return other?{start:other.index,end:other.index+other[0].length}:null;
 }
