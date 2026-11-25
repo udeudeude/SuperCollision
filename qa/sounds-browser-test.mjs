@@ -80,7 +80,7 @@ try{
  assert.equal(await page.locator('.sounds-library-nav [data-view="library"]').count(),1,'library must be its own primary destination');
  assert.deepEqual(await page.locator('.sounds-acquire-buttons [data-view]').evaluateAll(nodes=>nodes.map(n=>n.dataset.view)),['create','generate','import','record','discover'],'five acquisitions must be grouped separately from Library');
  assert.equal(await page.locator('#sounds-library').isVisible(),true);
- assert.equal(await page.locator('.library-lab-link').isVisible(),true,'Sample Lab entry is visible');
+ assert.equal(await page.locator('#sounds-library .library-lab-link').isVisible(),true,'Sample Lab entry is visible');
  assert.equal(await page.locator('#sounds-backup').evaluate(el=>el.open),false,'backup tools start collapsed');
  assert.equal(await page.locator('#sounds-backup summary').evaluate(el=>getComputedStyle(el).cursor),'pointer','backup disclosure signals interactivity');
  assert.equal(await page.locator('#sounds-backup summary').evaluate(el=>[...document.styleSheets].some(sheet=>[...sheet.cssRules].some(rule=>rule.selectorText?.includes('summary:focus-visible')&&rule.style.outlineWidth==='3px'))),true,'disclosure controls have a visible keyboard focus rule');

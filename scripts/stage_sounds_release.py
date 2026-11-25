@@ -14,6 +14,7 @@ from pathlib import Path
 from shutil import copy2
 
 PAGES = ("index.html", "sounds.html", "sounds-lab.html",
+         "sounds-bench-preview.html", "sounds-workspace.css", "sounds-reach.css",
          "sound-surfaces-design.css", "sound-surfaces-theme.mjs")
 LIBRIVOX = (
     "librivox-explorer.html",
@@ -45,6 +46,17 @@ def release_files(source: Path) -> tuple[str, ...]:
     for name, body in (("Sounds", sounds), ("LibriVox", explorer)):
         if "sound-surfaces-theme.mjs" not in body or "sound-surfaces-design.css" not in body:
             raise ValueError(name + " does not load the shared design")
+    bench = (source / "sounds-bench-preview.html").read_text(encoding="utf-8")
+    if "sounds-bench-engine.mjs" not in bench or "sounds-bench-acquire.mjs" not in bench:
+        raise ValueError("Instrument Bench does not load its native engine and acquisition")
+    if "sounds-bench-links.mjs" not in (source / "sounds-bench-engine.mjs").read_text(encoding="utf-8"):
+        raise ValueError("Instrument Bench source-to-control linking is absent")
+    if '<small>v2.8</small>' not in bench:
+        raise ValueError("Instrument Bench version disagrees with SuperCollision")
+    if '<small>v2.8</small>' not in (source / "sounds-lab.html").read_text(encoding="utf-8"):
+        raise ValueError("Sample Lab version disagrees with SuperCollision")
+    if 'href="./sounds-bench-preview.html"' not in sounds:
+        raise ValueError("Sounds Create must link to the current Instrument Bench")
     if 'href="./librivox-explorer.html"' not in sounds:
         raise ValueError("Sounds does not link to the bundled LibriVox explorer")
     if "librivox-explorer.css" not in explorer or "librivox-explorer.mjs" not in explorer:

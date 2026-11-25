@@ -120,7 +120,7 @@ nav button{min-width:0;min-height:52px;font-size:clamp(9px,2.5vw,12px);overflow-
 <main>
 <section id="sounds-library" role="tabpanel">
 <div class="library-headline"><div><h2>Your sounds</h2><p class="muted">Listen to saved audio, revisit instruments, and find what you need. Your library stays on this device.</p></div>
-<a class="library-lab-link" href="./sounds-lab.html?build=2026112010"><strong>Open Sample Lab</strong><span>Shape regions and loops in native SuperCollider</span></a></div>
+<a class="library-lab-link" href="./sounds-lab.html"><strong>Open Sample Lab</strong><span>Shape regions and loops in native SuperCollider</span></a></div>
 <div class="library-controls">
 <div><label for="sounds-search">Find a sound</label><input id="sounds-search" type="search" placeholder="Name, creator, license…"></div>
 <div><label for="sounds-filter">Type</label><select id="sounds-filter"><option value="all">Everything</option><option value="favorite">Favorites</option><option value="recorded">Recordings</option><option value="imported">Imports</option><option value="written">Written code</option><option value="generated">Generated</option><option value="preset">Sample presets</option><option value="openverse">Openverse</option><option value="freesound">Freesound</option><option value="librivox">LibriVox</option></select></div>
@@ -164,6 +164,7 @@ nav button{min-width:0;min-height:52px;font-size:clamp(9px,2.5vw,12px);overflow-
 </section>
 <section id="sounds-create" role="tabpanel" hidden>
 <h2>Create with SuperCollider</h2>
+<a class="library-lab-link" href="./sounds-bench-preview.html"><strong>Open Instrument Bench</strong><span>Shape sounds visually, edit the matching SuperCollider code, and play them.</span></a>
 <p class="muted">Store original SuperCollider source as an editable instrument or sound experiment. This editor saves code without executing it.</p>
 <label for="sounds-source-name">Instrument name</label><input id="sounds-source-name" type="text" maxlength="120" placeholder="Instrument name">
 <label for="sounds-source">SuperCollider source</label><textarea id="sounds-source" spellcheck="false" placeholder="SynthDef(\\mySound, { |freq = 220| Out.ar(0, SinOsc.ar(freq) * 0.1) }).add;"></textarea>
