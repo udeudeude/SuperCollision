@@ -53,6 +53,8 @@ def release_files(source: Path) -> tuple[str, ...]:
         raise ValueError("Instrument Bench source-to-control linking is absent")
     if '<small>v2.8</small>' not in bench:
         raise ValueError("Instrument Bench version disagrees with SuperCollision")
+    if '<small>v2.8</small>' not in (source / "sounds-lab.html").read_text(encoding="utf-8"):
+        raise ValueError("Sample Lab version disagrees with SuperCollision")
     if 'href="./sounds-bench-preview.html"' not in sounds:
         raise ValueError("Sounds Create must link to the current Instrument Bench")
     if 'href="./librivox-explorer.html"' not in sounds:
