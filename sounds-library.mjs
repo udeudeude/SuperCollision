@@ -60,7 +60,7 @@ function closeMic(){
  micRequest++;
  if(stream){for(const track of stream.getTracks())track.stop();stream=null}
  stopMeter();
- ready.checked=false;hold.disabled=false;
+ ready.checked=false;hold.disabled=!Boolean(document.getElementById('bench-acquire-overlay'));
 }
 function activateMeter(){
  try{
@@ -94,7 +94,7 @@ ready.addEventListener('change',async()=>{
  if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){
   ready.checked=false;say('Microphone recording is unavailable in this browser.');return
  }
- hold.disabled=false;say('Requesting microphone permission…');
+ hold.disabled=!Boolean(document.getElementById('bench-acquire-overlay'));say('Requesting microphone permission…');
  try{
   const acquired=await navigator.mediaDevices.getUserMedia({audio:{
    echoCancellation:false,noiseSuppression:false,autoGainControl:false
@@ -106,7 +106,7 @@ ready.addEventListener('change',async()=>{
   },{once:true}));
   hold.disabled=false;activateMeter();
   say('Microphone ready. Hold Record to capture; release to save.');
- }catch(error){if(token===micRequest){ready.checked=false;hold.disabled=false;say('Microphone unavailable: '+error.message)}}
+ }catch(error){if(token===micRequest){ready.checked=false;hold.disabled=!Boolean(document.getElementById('bench-acquire-overlay'));say('Microphone unavailable: '+error.message)}}
 });
 function startRecording(){
  if(!stream||hold.disabled||recorder||stopping)return;
@@ -137,7 +137,7 @@ function startRecording(){
     }
    }finally{
     if(recorder===current)recorder=null;
-    stopping=false;recordingStyle(false);hold.disabled=false;
+    stopping=false;recordingStyle(false);hold.disabled=!stream&&!document.getElementById('bench-acquire-overlay');
    }
   };
   auditionAudio?.pause();
@@ -150,7 +150,7 @@ function stopRecording(){
  const current=recorder;
  if(!current||current.state!=='recording'||stopping)return;
  stopping=true;hold.disabled=true;recordingStyle(false);say('Saving recording…');
- try{current.stop()}catch(error){stopping=false;hold.disabled=!stream;say('Could not stop recording: '+error.message)}
+ try{current.stop()}catch(error){stopping=false;hold.disabled=!stream&&!document.getElementById('bench-acquire-overlay');say('Could not stop recording: '+error.message)}
 }
 // One direct Record control: permission is requested on the first press.
 // A second press stops and saves. The recording is never uploaded.
