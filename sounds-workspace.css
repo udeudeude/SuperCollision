@@ -937,3 +937,5 @@ body.is-recording #bench-acquire-overlay #start{background:#bb4b3c;color:#fff}
 #lab-setup .tone-save-row>*{min-width:0}
 #lab-setup .actions{flex-wrap:wrap!important;gap:5px!important}
 #lab-setup .actions button{min-width:0;white-space:normal}
+
+#bench-acquire-footer label[for="mic-ready"][hidden]{display:none!important}
