@@ -113,7 +113,7 @@ try{
   await page.locator('#code').fill('// Actual production navigation preserves this unsaved composition');
   await page.locator('#sounds-open').click();
   try{
-    await page.waitForURL('**/sounds.html#library',{waitUntil:'domcontentloaded',timeout:20000});
+    await page.waitForURL(url=>/^\/sounds(?:\.html)?$/.test(url.pathname)&&url.hash==='#library',{waitUntil:'domcontentloaded',timeout:20000});
   }catch(error){
     const detail=await page.evaluate(()=>({
       href:location.href,title:document.title,ready:document.readyState,
@@ -154,16 +154,16 @@ try{
   await page.locator('#sc-surface-design').selectOption('bauhaus');
   await page.getByRole('tab',{name:'Discover'}).click();
   await page.getByRole('link',{name:'Explore LibriVox recordings'}).click();
-  await page.waitForURL('**/librivox-explorer.html',{timeout:15000});
+  await page.waitForURL(url=>/^\/librivox-explorer(?:\.html)?$/.test(url.pathname),{waitUntil:'domcontentloaded',timeout:15000});
   assert.equal(await page.locator('#sc-surface-design').inputValue(),'bauhaus');
   assert.equal(await page.locator('#chapter-audio').getAttribute('src'),null,'LibriVox began downloading audio without permission');
   assert.ok(await page.locator('#filter-author').isVisible()&&await page.locator('#filter-reader').isVisible());
   assert.deepEqual(requests,[],'LibriVox streamed media without user action');
   await page.getByRole('link',{name:'Back to Sounds'}).click();
-  await page.waitForURL('**/sounds.html#discover',{timeout:15000});
+  await page.waitForURL(url=>/^\/sounds(?:\.html)?$/.test(url.pathname)&&url.hash==='#discover',{waitUntil:'domcontentloaded',timeout:15000});
   assert.equal(await page.locator('#sc-surface-design').inputValue(),'bauhaus');
   await page.getByRole('link',{name:'Return to Code'}).click();
-  await page.waitForURL('**/index.html',{timeout:15000});
+  await page.waitForURL(url=>url.pathname==='/'||url.pathname==='/index.html',{waitUntil:'domcontentloaded',timeout:15000});
   assert.equal(await page.locator('#code').inputValue(),'// Actual production navigation preserves this unsaved composition');
   assert.equal(await page.evaluate(()=>document.body.dataset.theme),'bauhaus');
   assert.deepEqual(errors,[],'Public production JavaScript errors');
