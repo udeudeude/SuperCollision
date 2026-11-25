@@ -312,7 +312,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  const library=document.createElement('section');library.id='bench-library-workspace';
  main.insertBefore(library,document.getElementById('lab-diagnostics'));groups.details.push(library);
  const acquisition=document.createElement('section');acquisition.id='bench-acquire-overlay';acquisition.hidden=true;
- acquisition.setAttribute('aria-label','Sound acquisition tools');acquisition.setAttribute('role','dialog');acquisition.setAttribute('aria-modal','true');
+ acquisition.setAttribute('aria-label','Sound acquisition tools');acquisition.setAttribute('role','region');
  const acquireHead=document.createElement('div');acquireHead.id='bench-acquire-head';
  const acquireBack=document.createElement('button');acquireBack.id='bench-acquire-back';acquireBack.type='button';acquireBack.textContent='← BACK TO INSTRUMENT';
  const acquireTitle=document.createElement('strong');acquireTitle.id='bench-acquire-title';acquireTitle.textContent='ACQUIRE SOUND';
