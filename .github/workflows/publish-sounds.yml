@@ -43,11 +43,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
-# Share the Pages publication lane with publish-ui.yml. A newer UI job
-# must not cancel a Sounds release halfway through staging or publishing.
-concurrency:
-  group: ${{ github.event_name == 'pull_request' && format('supercollision-sounds-check-{0}', github.event.pull_request.number) || 'supercollision-pages-publish' }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+# Test independently. Serialize only the publication job with the UI publisher.
 jobs:
   mobile-webkit:
     name: WebKit phone recording and navigation gate
@@ -72,6 +68,9 @@ jobs:
           BENCH_BROWSER: webkit
         run: node source/qa/sounds-bench-interaction-browser.mjs
   sounds:
+    concurrency:
+      group: supercollision-pages-publish
+      cancel-in-progress: false
     needs: [mobile-webkit]
     name: Verify complete Sounds + LibriVox site before publication
     runs-on: ubuntu-24.04
