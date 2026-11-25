@@ -45,7 +45,7 @@ let micRequest=0,activePointer=null,keyboardDown=false,stopping=false;
 function say(message){status.textContent=message}
 function recordingStyle(on){
  document.body.classList.toggle('is-recording',on);hold.setAttribute('aria-pressed',String(on));
- hold.textContent=on?'■ STOP & SAVE':'● RECORD';
+ hold.textContent=on?(document.getElementById('bench-acquire-overlay')?'■ STOP & SAVE':'● RECORDING · RELEASE TO SAVE'):(document.getElementById('bench-acquire-overlay')?'● RECORD':'● HOLD TO RECORD');
  if(on){recordingStart=performance.now();recordingDuration=0}
  else{if(recordingStart!==null)recordingDuration=(performance.now()-recordingStart)/1000;recordingStart=null}
  updateTime();
@@ -155,7 +155,7 @@ function stopRecording(){
 // One direct Record control: permission is requested on the first press.
 // A second press stops and saves. The recording is never uploaded.
 let pendingRecord=false;
-hold.addEventListener('click',async()=>{
+if(document.getElementById('bench-acquire-overlay'))hold.addEventListener('click',async()=>{
  if(recorder?.state==='recording'){stopRecording();return}
  if(pendingRecord||stopping)return;
  if(!stream){
@@ -178,6 +178,31 @@ hold.addEventListener('click',async()=>{
  }
  startRecording();
 });
+else {
+ hold.addEventListener('pointerdown',event=>{
+  if(!event.isPrimary||event.button!==0||hold.disabled)return;
+  event.preventDefault();activePointer=event.pointerId;
+  try{hold.setPointerCapture(event.pointerId)}catch{}
+  startRecording();
+ });
+ function releasePointer(event){
+  if(activePointer!==event.pointerId)return;
+  activePointer=null;stopRecording();
+ }
+ hold.addEventListener('pointerup',releasePointer);
+ hold.addEventListener('pointercancel',releasePointer);
+ hold.addEventListener('lostpointercapture',releasePointer);
+ hold.addEventListener('keydown',event=>{
+  if(event.code!=='Space'&&event.code!=='Enter')return;
+  if(event.repeat||keyboardDown)return;
+  event.preventDefault();keyboardDown=true;startRecording();
+ });
+ hold.addEventListener('keyup',event=>{
+  if(event.code!=='Space'&&event.code!=='Enter')return;
+  event.preventDefault();keyboardDown=false;stopRecording();
+ });
+ hold.addEventListener('blur',()=>{if(keyboardDown){keyboardDown=false;stopRecording()}});
+}
 importer.addEventListener('change',async event=>{
  const files=[...event.target.files];
  if(!files.length)return;
