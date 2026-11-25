@@ -205,14 +205,30 @@ function restoreTone(snapshot){
  linkedControl=null;
  updateDemoCode(false);
 }
-undoButton.addEventListener('click',()=>{
+// On iPhone, tapping a button while editing Code can dismiss the keyboard
+// and reflow the entire workbench between pointerdown and click. Process undo
+// on pointerdown before the reflow; keyboard/screen-reader clicks still work.
+function responsiveAction(button,action){
+ let handledPointer=-Infinity;
+ button.addEventListener('pointerdown',event=>{
+  if(event.button!==0||button.disabled)return;
+  event.preventDefault();
+  handledPointer=performance.now();
+  action();
+ });
+ button.addEventListener('click',()=>{
+  if(performance.now()-handledPointer<600)return;
+  action();
+ });
+}
+responsiveAction(undoButton,()=>{
  commitGesture();
  if(!undoHistory.length)return;
  const current=toneSnapshot(),previous=undoHistory.pop();
  redoHistory.push(current);restoreTone(previous);historyState();
  announce('Undid instrument change.');
 });
-redoButton.addEventListener('click',()=>{
+responsiveAction(redoButton,()=>{
  commitGesture();
  if(!redoHistory.length)return;
  const current=toneSnapshot(),next=redoHistory.pop();
