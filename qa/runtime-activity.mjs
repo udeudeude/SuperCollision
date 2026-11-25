@@ -49,7 +49,30 @@ try{
  const ready=await page.evaluate(()=>({isolated:crossOriginIsolated,module:!!window.SCActivity,version:document.querySelector('header small')?.textContent,worker:!!navigator.serviceWorker}));
  console.log('READY:',ready);
  if(!ready.isolated||!ready.module)throw Error('App not cross-origin isolated or missing activity module');
+ // The activity display is constructed before the Code POWER callback exists.
+ // Clicking while the main module is still initializing silently does nothing.
+ try{
+  await page.waitForFunction(()=>typeof document.querySelector('#engine')?.onclick==='function',
+   null,{timeout:15000});
+ }catch(error){
+  const state=await page.evaluate(()=>({
+   powerMarkup:document.querySelector('#engine')?.outerHTML,
+   handlerInstalled:typeof document.querySelector('#engine')?.onclick,
+   activityReady:!!window.SCActivity,
+   designerReady:!!window.SCSoundDesigner,
+   console:document.querySelector('#console')?.textContent?.slice(-500),
+   resourceNames:performance.getEntriesByType('resource').map(e=>e.name.split('/').pop()).slice(-30)
+  }));
+  throw Error('Code module never installed POWER handler: '+JSON.stringify(state)+'; '+error.message);
+ }
+ console.log('CODE POWER HANDLER INSTALLED');
  await page.locator('#engine').click();
+ await page.waitForTimeout(350);
+ console.log('POWER AFTER CLICK:',await page.evaluate(()=>({
+  status:document.querySelector('#engine-status')?.textContent,
+  disabled:document.querySelector('#engine')?.disabled,
+  handler:typeof document.querySelector('#engine')?.onclick
+ })));
  try{
  await page.waitForFunction(()=>!document.querySelector('#evaluate').disabled,null,{timeout:115000});
  }catch(e){
