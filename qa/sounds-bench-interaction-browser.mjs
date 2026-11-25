@@ -139,6 +139,17 @@ try{
   await page.evaluate(code=>window.dispatchEvent(new CustomEvent('bench-open-source',{detail:{name:'Glass bell',code,play:false}})),generated);
   assert.equal(await page.locator('#lab-demo-code').inputValue(),generated,'Generated source was not loaded');
   assert.equal(await page.locator('#lab-tone-name').inputValue(),'Glass bell');
+  // All action rows must have separate vertical space, even at 320px.
+  const actionGeometry=await page.evaluate(()=>{
+   const ids=['#lab-demo-code-bay','#lab-demo-controls','#lab-setup > .actions','#bench-compare-bar','#lab-setup > .tone-save-row'];
+   return ids.map(id=>{const el=document.querySelector(id),r=el.getBoundingClientRect();return {id,top:r.top,bottom:r.bottom,left:r.left,right:r.right,height:r.height}});
+  });
+  for(let i=1;i<actionGeometry.length;i++){
+   assert.ok(actionGeometry[i].top>=actionGeometry[i-1].bottom-2,
+    'Instrument panels overlap: '+JSON.stringify(actionGeometry));
+  }
+  assert.ok(actionGeometry.every(r=>r.height>0&&r.left>=-1&&r.right<=width+1),
+   'Instrument controls clipped: '+JSON.stringify(actionGeometry));
   const size=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
   assert.ok(size.scroll<=size.width+1,'Phone horizontal overflow: '+JSON.stringify(size));
   assert.deepEqual(errors,[],'Page exceptions at width '+width);
