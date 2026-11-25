@@ -19,6 +19,10 @@ def main() -> None:
     assert set(LIBRIVOX).issubset(assets)
     assert "librivox-test.html" not in assets, "Do not publish an experimental test page"
     assert "index.html" in assets, "Code must ship with the integrated Sounds navigation"
+    ui_workflow = (ROOT / ".github/workflows/publish-ui.yml").read_text()
+    assert "python3 source/scripts/stage_sounds_release.py source site" in ui_workflow, (
+        "Code's publishing lane must atomically stage Sounds and LibriVox")
+    assert "git add sounds.html sounds-lab.html sound-surfaces-design.css sound-surfaces-theme.mjs" in ui_workflow
 
     with TemporaryDirectory() as temporary:
         site = Path(temporary)
