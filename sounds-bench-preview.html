@@ -86,10 +86,10 @@ document.addEventListener('touchmove',event=>{
  <div class="demo-param"><label for="lab-demo-level">Volume <output id="lab-demo-level-value" for="lab-demo-level">16%</output></label><input id="lab-demo-level" type="range" min="0.05" max="0.25" step="0.01" value="0.16"></div>
 </div>
 <span id="lab-note-hint" hidden></span>
-<div class="actions"><button id="lab-engine" type="button" class="primary">Start SuperCollider</button><button id="lab-demo-reset" type="button">Reset code from controls</button></div>
-<div id="lab-audio-phase" data-phase="idle" role="status" aria-live="polite"><span class="phase-lamp" aria-hidden="true"></span><span id="lab-audio-phase-label">ENGINE NOT STARTED</span></div>
+<div class="actions"><button id="lab-engine" type="button" class="primary">PWR</button><button id="lab-demo-reset" type="button">Reset code from controls</button></div>
+<div id="lab-audio-phase" data-phase="idle" role="status" aria-live="polite"><span class="phase-lamp" aria-hidden="true"></span><span id="lab-audio-phase-label">OFF</span></div>
 <div class="tone-save-row"><label for="lab-tone-name">INSTRUMENT NAME<input id="lab-tone-name" type="text" value="First tone" maxlength="120" autocomplete="off"></label><button id="lab-tone-save" type="button">Save code to Library</button></div><p id="lab-tone-save-status" class="muted" role="status" aria-live="polite"></p><a href="#details" id="lab-tone-library-link" hidden>Open Sounds Library</a>
-<p id="lab-status" role="status" aria-live="polite">Ready. Start SuperCollider, then tap Play tone.</p>
+<p id="lab-status" role="status" aria-live="polite"></p>
 <p id="lab-setup-hint" class="muted">First startup loads the native sound engine. When Play tone appears, tap it to hear the displayed code.</p>
 </section>
 <section id="lab-recording">
@@ -312,7 +312,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  const library=document.createElement('section');library.id='bench-library-workspace';
  main.insertBefore(library,document.getElementById('lab-diagnostics'));groups.details.push(library);
  const acquisition=document.createElement('section');acquisition.id='bench-acquire-overlay';acquisition.hidden=true;
- acquisition.setAttribute('aria-label','Sound acquisition tools');acquisition.setAttribute('role','dialog');acquisition.setAttribute('aria-modal','true');
+ acquisition.setAttribute('aria-label','Sound acquisition tools');acquisition.setAttribute('role','region');
  const acquireHead=document.createElement('div');acquireHead.id='bench-acquire-head';
  const acquireBack=document.createElement('button');acquireBack.id='bench-acquire-back';acquireBack.type='button';acquireBack.textContent='← BACK TO INSTRUMENT';
  const acquireTitle=document.createElement('strong');acquireTitle.id='bench-acquire-title';acquireTitle.textContent='ACQUIRE SOUND';
@@ -350,7 +350,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   contextName.textContent=name==='play'?'INSTRUMENT / LIVE CODE':
    name==='sample'?'RECORDING / SAMPLE':'LIBRARY / SAVED SOUNDS';
   contextDetail.textContent=name==='play'?
-    (document.getElementById('lab-audio-phase-label')?.textContent||'ENGINE NOT STARTED'):
+    (document.getElementById('lab-audio-phase-label')?.textContent||'OFF'):
    name==='sample'?(document.getElementById('lab-sound')?.value?'ORIGINAL AVAILABLE':'NO AUDIO SELECTED'):
    'STORED ON THIS DEVICE';
   playDock.hidden=name!=='play';sampleDock.hidden=name!=='sample';libraryDock.hidden=name!=='details';

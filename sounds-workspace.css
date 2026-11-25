@@ -921,3 +921,19 @@ body.is-recording #bench-acquire-overlay #start{background:#bb4b3c;color:#fff}
  font-size:18px!important;
 }
 #bench-sample-workspace #bench-sample-stage[hidden]{display:none!important}
+
+/* Keep the prompt readable and the persistent navigation accessible. */
+#bench-acquire-overlay #sounds-ai-prompt{height:auto!important;min-height:110px!important;max-height:38dvh!important;overflow-y:auto!important;resize:vertical;touch-action:auto}
+#bench-acquire-overlay #sounds-ai-system-message,#bench-acquire-overlay #sounds-ai-user-message{height:auto!important;min-height:125px;max-height:38dvh;overflow:auto;touch-action:auto}
+#bench-acquire-overlay #bench-acquire-footer{padding-bottom:env(safe-area-inset-bottom,0px)}
+#lab-setup #lab-audio-phase{display:none!important}
+#bench-acquire-overlay #acquire-record .bench-record-hint{display:none!important}
+
+/* Prevent controls, undo and instrument name from sharing grid tracks on phones. */
+#lab-setup{grid-template-rows:auto minmax(100px,.9fr) minmax(145px,1.3fr) auto auto auto auto auto!important;overflow-y:auto!important;overflow-x:hidden!important;align-content:start}
+#lab-setup>.actions,#lab-setup>.tone-save-row,#lab-setup>#lab-status,#lab-setup>#lab-tone-save-status{position:static!important;transform:none!important;min-height:0;z-index:auto}
+#lab-setup #lab-tone-save-status:not(:empty){position:static!important;display:block!important;grid-column:1/-1;margin:3px 0!important}
+#lab-setup .tone-save-row{grid-template-columns:minmax(0,1fr) auto!important}
+#lab-setup .tone-save-row>*{min-width:0}
+#lab-setup .actions{flex-wrap:wrap!important;gap:5px!important}
+#lab-setup .actions button{min-width:0;white-space:normal}
