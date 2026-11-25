@@ -24,19 +24,17 @@ versionLabel.hidden=true;versionLabel.append(versionPicker);
 result.prepend(versionLabel);
 versionPicker.addEventListener('change',()=>{
  const selected=versions[Number(versionPicker.value)];if(!selected)return;
- if(current&&versions[Number(versionPicker.dataset.active||0)])versions[Number(versionPicker.dataset.active||0)].code=preview.value;
- versionPicker.dataset.active=versionPicker.value;
+ if(current)current.code=preview.value;
  current={...selected};preview.value=selected.code;result.hidden=false;
  save.disabled=false;copy.disabled=false;revise.disabled=false;reviewDraft();
  say('Restored generated version '+(Number(versionPicker.value)+1)+'.');
 });
 function rememberVersion(next){
- if(current&&versions[Number(versionPicker.dataset.active||0)])versions[Number(versionPicker.dataset.active||0)].code=preview.value;
+ if(current)current.code=preview.value;
  versions.push({...next});
  if(versions.length>8)versions.shift();
  versionPicker.replaceChildren(...versions.map((v,i)=>new Option('Version '+(i+1)+' · '+v.model,i)));
  versionPicker.value=String(versions.length-1);
- versionPicker.dataset.active=versionPicker.value;
  versionLabel.hidden=versions.length<2;
 }
 
