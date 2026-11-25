@@ -14,9 +14,21 @@ const save=$('sounds-ai-save'),copy=$('sounds-ai-copy'),puterConnect=$('sounds-p
 const proposal=$('sounds-ai-proposal'),proposedCode=$('sounds-ai-proposed-code');
 const applyProposal=$('sounds-ai-apply-proposal'),discardProposal=$('sounds-ai-discard-proposal');
 let current=null,staged=null,busy=false,puterLoading=null;
-const details=document.createElement('details');details.id='sounds-ai-request-details';details.innerHTML='<summary>Request details · exact messages and model</summary><pre id="sounds-ai-request-body" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:340px;overflow:auto"></pre><button id="sounds-ai-copy-request" type="button">Copy request</button>';
+const details=document.createElement('details');details.id='sounds-ai-request-details';details.innerHTML='<summary>FULL MODEL REQUEST · VIEW OR EDIT BEFORE GENERATING</summary><p>These are the exact system and user messages sent to the provider. Editing either message changes the next generation request.</p><label for="sounds-ai-system-message">System instructions</label><textarea id="sounds-ai-system-message" rows="7" style="width:100%;box-sizing:border-box"></textarea><label for="sounds-ai-user-message">User message</label><textarea id="sounds-ai-user-message" rows="5" style="width:100%;box-sizing:border-box"></textarea><pre id="sounds-ai-request-body" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:340px;overflow:auto"></pre><button id="sounds-ai-copy-request" type="button">Copy last request</button>';
 status.after(details);
 let lastRequest='';
+const systemEditor=details.querySelector('#sounds-ai-system-message'),userEditor=details.querySelector('#sounds-ai-user-message');
+let lastDescription='',lastRevision='',lastPriorCode='',customUser=false;
+userEditor.addEventListener('input',()=>{customUser=true});
+function prepareMessages(description,revisionText,priorCode){
+ const defaults=buildSoundMessages({description,revision:revisionText,priorCode});
+ if(!systemEditor.value)systemEditor.value=defaults[0].content;
+ if(!customUser||description!==lastDescription||revisionText!==lastRevision||priorCode!==lastPriorCode){userEditor.value=defaults[1].content;customUser=false}
+ lastDescription=description;lastRevision=revisionText;lastPriorCode=priorCode;
+ return [{role:'system',content:systemEditor.value},{role:'user',content:userEditor.value}];
+}
+prompt.addEventListener('input',()=>{if(!customUser){const value=prompt.value.trim();if(value){try{prepareMessages(value,'','')}catch{}}}});
+
 details.querySelector('button').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(lastRequest);say('Request details copied.')}catch{say('Select the request text to copy it.')}});
 function recordRequest(modelId,messages,settings){lastRequest=(lastRequest&&busy?lastRequest+'\n\n':'')+JSON.stringify({model:modelId,messages,...settings},null,2);details.querySelector('pre').textContent=lastRequest;}
 function say(value){status.textContent=value}
@@ -48,7 +60,8 @@ const refreshModels=document.createElement('button');refreshModels.type='button'
 refreshModels.addEventListener('click',async()=>{refreshModels.disabled=true;say('Checking current OpenRouter free models…');try{const response=await fetch('https://openrouter.ai/api/v1/models?output_modalities=text',{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const entries=listVerifiedFreeModels(await response.json());if(!entries.length)throw Error('No free text models available');const old=model.value;model.replaceChildren(new Option('Automatic free · OpenRouter routing',OPENROUTER_FREE_MODEL),...entries.map(m=>new Option(m.name+' · '+m.id,m.id)));model.value=[...model.options].some(o=>o.value===old)?old:OPENROUTER_FREE_MODEL;say(entries.length+' free models found. Choose one or use Automatic.');}catch(e){say('Model catalog unavailable: '+e.message)}finally{refreshModels.disabled=false}});
 syncProvider();
 for(const [id,text] of [
- [OPENROUTER_FREE_MODEL,'Automatic free · OpenRouter chooses an available model']
+ [OPENROUTER_FREE_MODEL,'Automatic free · OpenRouter chooses an available model'],
+ [PREFERRED_OPENROUTER_CODE_MODEL,'North Mini Code · free (availability varies)']
 ]){const option=document.createElement('option');option.value=id;option.textContent=text;model.append(option)}
 async function loadPuter(){
  if(window.puter?.ai?.chat)return window.puter;
@@ -117,7 +130,7 @@ async function create(isRevision){
  const draftAtRequest=preview.value;
  lastRequest='';busy=true;generate.disabled=true;revise.disabled=true;say('Preparing request…');
  try{
-  const messages=buildSoundMessages({description,revision:isRevision?revision.value:'',priorCode});
+  const messages=prepareMessages(description,isRevision?revision.value:'',priorCode);
   let response;
   const selected=model.value;
   const attempts=provider.value==='openrouter'&&selected===OPENROUTER_FREE_MODEL?2:1;
