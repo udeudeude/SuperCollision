@@ -5,7 +5,6 @@ root=Path(__file__).resolve().parent.parent if Path(__file__).resolve().parent.n
 source=(root/'librivox-explorer.html').read_text()
 bench_remote=(root/'sounds-bench-remote.mjs').read_text()
 bench_acquire=(root/'sounds-bench-acquire.mjs').read_text()
-assert 'data-src="\\\\\"' not in bench_remote or 'librivox-explorer.html' in bench_remote
 assert 'librivox-explorer.html' in bench_remote and 'bench-open-librivox' in bench_remote, 'Instrument Bench LibriVox discovery missing'
 assert 'librivox' in bench_acquire and 'acquire-filter' in bench_acquire, 'Saved LibriVox samples cannot be filtered'
 source=re.sub(r'<link[^>]+librivox-explorer\.css[^>]*>', '<style>'+ (root/'librivox-explorer.css').read_text()+'</style>', source)
