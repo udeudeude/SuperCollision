@@ -194,8 +194,8 @@ document.addEventListener('DOMContentLoaded',()=>{
  stopCodeControl.textContent='■ STOP';stopCodeControl.disabled=true;
  stopCodeControl.setAttribute('aria-label','Stop all native SuperCollider playback in Sounds');
  stopCodeControl.addEventListener('click',()=>window.dispatchEvent(new CustomEvent('bench-stop-all-audio')));
- if(engineControl)playActions.append(engineControl);
- playActions.append(stopCodeControl);
+ if(engineControl){engineControl.textContent='PWR';engineControl.classList.add('sc-transport-power');engineControl.setAttribute('aria-label','Power on SuperCollider or play the current instrument');playActions.append(engineControl)}
+ stopCodeControl.classList.add('sc-transport-stop');playActions.append(stopCodeControl);
  if(saveCodeControl){
   saveCodeControl.textContent='SAVE CODE';
   saveCodeControl.setAttribute('aria-label','Save the current SuperCollider instrument code to Library');
@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  const libraryLabel=recording.querySelector('label[for="lab-sound"]');
  if(libraryLabel){libraryLabel.textContent='RECORDING';sampleSelectorRow.append(libraryLabel)}
  sampleSelectorRow.append(document.getElementById('lab-sound'));
- const engineButton=document.createElement('button');engineButton.type='button';engineButton.id='bench-sample-power';engineButton.textContent='POWER';engineButton.addEventListener('click',()=>document.getElementById('lab-engine')?.click());
+ const engineButton=document.createElement('button');engineButton.type='button';engineButton.id='bench-sample-power';engineButton.textContent='PWR';engineButton.classList.add('sc-transport-power');engineButton.addEventListener('click',()=>document.getElementById('lab-engine')?.click());
  const loadButton=document.getElementById('lab-load');loadButton.textContent='LOAD INTO INSTRUMENT';
  const actionRow=recording.querySelector('.actions');if(actionRow)actionRow.prepend(engineButton);
  const details=document.getElementById('lab-details');if(details)details.hidden=true;
