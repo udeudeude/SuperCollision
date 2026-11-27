@@ -342,3 +342,55 @@ body[data-sc-surface][data-theme=terminal] :is(section,.managed-item,.player,.te
  body[data-sc-surface=sounds] header h1{font-size:15px!important}
  body[data-sc-surface] header .sc-design-choice{flex:0 0 auto}
 }
+
+/* Common page identity, derived from the Code page's wordmark and controls.
+   Theme variables keep all eight visual designs intact. */
+body[data-sc-surface] header.sc-family-header{
+ display:flex!important;
+ flex-direction:row!important;
+ align-items:center!important;
+ gap:clamp(7px,1.8vw,18px)!important;
+ min-width:0;
+ min-height:52px!important;
+ padding:10px 12px!important;
+ border:2px solid var(--sc-line,#8b7658)!important;
+ background:var(--sc-panel,#302820)!important;
+ color:var(--sc-ink,#e9d9bc)!important;
+ box-shadow:none!important;
+}
+body[data-sc-surface] .sc-family-brand{
+ display:flex!important;
+ align-items:center;
+ flex:1 1 auto;
+ min-width:0;
+ text-decoration:none!important;
+ color:var(--sc-ink,#e9d9bc)!important;
+}
+body[data-sc-surface] .sc-family-wordmark{
+ font:800 clamp(14px,3.5vw,27px)/1.1 var(--sc-font-head,ui-monospace,monospace);
+ letter-spacing:.045em;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ white-space:nowrap;
+}
+body[data-sc-surface] .sc-family-version{
+ flex:0 0 auto;
+ color:var(--sc-soft,#c3b7a0);
+ font:700 clamp(10px,2.5vw,14px) var(--sc-font-ui,ui-monospace,monospace);
+ letter-spacing:.06em;
+}
+body[data-sc-surface] .sc-family-section{
+ flex:0 1 auto;
+ min-width:0;
+ max-width:36%;
+ color:var(--sc-ink,#e9d9bc);
+ font:750 clamp(10px,2.6vw,14px)/1.2 var(--sc-font-head,ui-monospace,monospace);
+ letter-spacing:.035em;
+ text-align:right;
+ overflow-wrap:anywhere;
+}
+@media(max-width:380px){
+ body[data-sc-surface] header.sc-family-header{padding:8px!important;gap:6px!important}
+ body[data-sc-surface] .sc-family-wordmark{font-size:clamp(12px,3.2vw,15px)}
+ body[data-sc-surface] .sc-family-section{font-size:10px}
+}
