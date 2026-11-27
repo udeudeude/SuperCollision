@@ -10,10 +10,6 @@ const surfaces = {
     marker: `<small class="app-version" aria-label="Version ${version}">${shown}</small>`,
     badge: /<small class="app-version"[^>]*>([^<]+)<\/small>/g,
   },
-  'sounds.html': {
-    marker: `<span class="sc-family-version">${shown}</span>`,
-    badge: /<span class="sc-family-version">([^<]+)<\/span>/g,
-  },
   'sounds-bench-preview.html': {
     marker: `<span class="sc-family-version">${shown}</span>`,
     badge: /<span class="sc-family-version">([^<]+)<\/span>/g,
@@ -34,4 +30,6 @@ for (const [path, {marker, badge}] of Object.entries(surfaces)) {
   const labels = [...html.matchAll(badge)].map(match => match[1]);
   assert.deepEqual(labels, [shown], `${path}: one public release badge required`);
 }
-console.log(`Release ${shown}: all five product surfaces share the same displayed version.`);
+const legacy=readFileSync(new URL('../sounds.html',import.meta.url),'utf8');
+assert.match(legacy,/location\.replace\(target\.href\)/,'Legacy Sounds URL must redirect');
+console.log(`Release ${shown}: four active product surfaces share the same displayed version; legacy Sounds redirects.`);
