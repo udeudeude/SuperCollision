@@ -95,7 +95,7 @@ try {
         assert.equal(await page.locator('#sc-surface-design').inputValue(), 'moog',
           where + ': Sounds did not inherit Code design');
         await page.locator('#sc-surface-design').selectOption('bauhaus');
-        await page.goto(host+'/librivox-explorer.html');
+        await page.goto(origin+'librivox-explorer.html');
         await page.waitForURL('**/librivox-explorer.html');
         assert.equal(await page.locator('#sc-surface-design').inputValue(), 'bauhaus',
           where + ': LibriVox lost shared design');
