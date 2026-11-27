@@ -79,8 +79,19 @@ try{
   await page.evaluate(()=>window.dispatchEvent(new CustomEvent('bench-acquire-action',{detail:{action:'record'}})));
   await page.locator('#start').waitFor({state:'visible'});
   await page.locator('#start').click();
-  try{await page.waitForFunction(()=>document.body.classList.contains('is-recording'),null,{timeout:5000})}
-  catch(error){throw new Error('Direct recording did not begin: '+JSON.stringify(await page.evaluate(()=>({status:document.querySelector('#status')?.textContent,ready:document.querySelector('#mic-ready')?.checked,disabled:document.querySelector('#start')?.disabled,phase:document.querySelector('#start')?.textContent,mic:window.__micQA,overlay:document.querySelector('#bench-acquire-overlay')?.hidden}))))+'; '+error.message)}
+  try {
+   await page.waitForFunction(()=>document.body.classList.contains('is-recording'),null,{timeout:5000});
+  } catch(error) {
+   const snapshot=await page.evaluate(()=>({
+    status:document.querySelector('#status')?.textContent,
+    ready:document.querySelector('#mic-ready')?.checked,
+    disabled:document.querySelector('#start')?.disabled,
+    phase:document.querySelector('#start')?.textContent,
+    mic:window.__micQA,
+    overlay:document.querySelector('#bench-acquire-overlay')?.hidden
+   }));
+   throw new Error('Direct recording did not begin: '+JSON.stringify(snapshot)+'; '+error.message);
+  }
   await page.locator('#start').click();
   await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('Saved recording locally'),null,{timeout:12000});
   assert.equal(await page.locator('#record-audition').isVisible(),true,'recording audition must be visible');
