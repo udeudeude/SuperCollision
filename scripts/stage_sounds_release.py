@@ -64,7 +64,7 @@ def release_files(source: Path) -> tuple[str, ...]:
         ("Code", code, f'<small class="app-version" aria-label="Version {version}">v{version}</small>'),
         ("Sounds", sounds, f'<span class="sc-family-version">v{version}</span>'),
         ("Instrument Bench", bench, f'<span class="sc-family-version">v{version}</span>'),
-        ("Sample Lab", sample_lab, f"<small>v{version}</small>"),
+        ("Sample Lab", sample_lab, f'<span class="sc-family-version">v{version}</span>'),
         ("LibriVox", explorer, f'<span class="sc-family-version">v{version}</span>'),
     )
     for name, html, marker in version_markers:
