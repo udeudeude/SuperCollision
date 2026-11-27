@@ -87,7 +87,7 @@ try {
           where + ': obsolete recorder must not overlay Code');
         await page.locator('#code').fill('// Navigation must preserve unsaved Code edits');
         await page.locator('#sounds-open').click();
-        await page.waitForURL('**/sounds.html#library');
+        await page.waitForURL('**/sounds-bench-preview.html#play');
         assert.equal(await page.locator('#sounds-tabs').isVisible(), true,
           where + ': integrated Sounds did not open');
         assert.equal(await page.locator('#sounds-record').isVisible(), false,
