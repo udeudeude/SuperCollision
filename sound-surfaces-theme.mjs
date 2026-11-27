@@ -38,8 +38,8 @@ function main(){
   option.value=id;option.textContent=title;select.add(option);
  }
  label.append(caption,select);
- const version=header.querySelector('.preview-note')||header.querySelector(':scope > small');
- if(version){version.classList.add('sc-version');header.insertBefore(label,version)}
+ const version=header.querySelector('.sc-family-version')||header.querySelector('.preview-note')||header.querySelector(':scope > small');
+ if(version){version.classList.add('sc-version');version.after(label)}
  else header.append(label);
  function apply(value,{persist=false}={}){
   if(!allowed.has(value))value='moog';

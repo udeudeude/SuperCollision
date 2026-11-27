@@ -3,6 +3,8 @@
 import {saveSound} from './sounds-store.mjs';
 const $=id=>document.getElementById(id);
 const status=$('status'),hold=$('start'),ready=$('mic-ready'),level=$('level'),importer=$('import');
+// Instrument Bench requests permission directly from Record; legacy recorder remains gated.
+if(document.getElementById('bench-acquire-overlay')){hold.disabled=false;hold.textContent='● RECORD'}
 const importStatus=$('import-status'),importFailures=$('import-failures');
 const wave=$('record-wave'),monitorLevel=$('record-level-text'),recordTime=$('record-timer');
 const auditionArea=$('record-audition'),auditionAudio=$('record-audio'),auditionName=$('record-audition-name');

@@ -1140,3 +1140,39 @@ body[data-sc-surface=sounds] #lab-setup > #lab-tone-library-link{order:9!importa
 @media(max-width:355px){
  body[data-sc-surface=sounds] #lab-setup > .actions{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+/* Transport controls mirror Code: same hierarchy, minimum touch target,
+   unmistakable power and stop states. */
+body[data-sc-surface=sounds] #bench-bottom-play .bench-reach-primary{
+ display:grid!important;
+ grid-template-columns:1.2fr 1fr 1fr!important;
+ gap:6px!important;
+ align-items:stretch;
+}
+body[data-sc-surface=sounds] #bench-bottom-play .bench-reach-primary > button{
+ min-width:0!important;
+ min-height:49px!important;
+ height:auto!important;
+ margin:0!important;
+ border:2px solid var(--sc-line,#8b7658)!important;
+ border-radius:3px!important;
+ background:var(--sc-plate,#37312a)!important;
+ color:var(--sc-ink,#e9d9bc)!important;
+ font:800 clamp(12px,3vw,17px)/1.2 var(--sc-font-ui,ui-monospace,monospace)!important;
+ letter-spacing:.015em;
+}
+body[data-sc-surface=sounds] #bench-bottom-play #lab-engine{
+ border:3px solid var(--sc-selected,#bd9c65)!important;
+ background:var(--sc-plate,#37312a)!important;
+ color:var(--sc-ink,#e9d9bc)!important;
+}
+body[data-sc-surface=sounds] #bench-bottom-play #lab-tone-stop{
+ border-color:var(--sc-line-subtle,#635844)!important;
+}
+body[data-sc-surface=sounds] #bench-bottom-play button:disabled{opacity:.48}
+body[data-sc-surface=sounds] #bench-sample-power{
+ border:3px solid var(--sc-selected,#bd9c65)!important;
+ background:var(--sc-plate,#37312a)!important;
+ color:var(--sc-ink,#e9d9bc)!important;
+ font-weight:800!important;
+}
