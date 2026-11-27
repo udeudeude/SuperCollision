@@ -324,6 +324,13 @@ function setup(){
  });
  // First render is always a working instrument. The Library is prepared but hidden.
  show('collection');
+ // Honor old Sounds bookmarks without exposing the legacy interface.
+ const legacy=new URLSearchParams(location.search).get('legacy-action');
+ if(legacy&&Object.hasOwn(controls,legacy)){
+  controls[legacy]();
+  const clean=new URL(location.href);clean.searchParams.delete('legacy-action');
+  history.replaceState(history.state,'',clean.href);
+ }
  // Bind the existing production microphone and audio-import module to its original
  // element IDs. This keeps native recording/storage behavior unchanged.
  import('./sounds-backup-ui.mjs?v=1').catch(error=>{
