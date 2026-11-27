@@ -11,20 +11,20 @@ const surfaces = {
     badge: /<small class="app-version"[^>]*>([^<]+)<\/small>/g,
   },
   'sounds.html': {
-    marker: `<small class="build" aria-label="Version ${version}">${shown}</small>`,
-    badge: /<small class="build"[^>]*>([^<]+)<\/small>/g,
+    marker: `<span class="sc-family-version">${shown}</span>`,
+    badge: /<span class="sc-family-version">([^<]+)<\/span>/g,
   },
   'sounds-bench-preview.html': {
-    marker: `<header><a href="./index.html">← CODE</a><h1>SOUNDS</h1><small>${shown}</small></header>`,
-    badge: /<header><a href="\.\/index\.html">← CODE<\/a><h1>SOUNDS<\/h1><small>([^<]+)<\/small><\/header>/g,
+    marker: `<span class="sc-family-version">${shown}</span>`,
+    badge: /<span class="sc-family-version">([^<]+)<\/span>/g,
   },
   'sounds-lab.html': {
-    marker: `<h1>Instrument Bench</h1><small>${shown}</small>`,
-    badge: /<h1>Instrument Bench<\/h1><small>([^<]+)<\/small>/g,
+    marker: `<span class="sc-family-version">${shown}</span>`,
+    badge: /<span class="sc-family-version">([^<]+)<\/span>/g,
   },
   'librivox-explorer.html': {
-    marker: `<span class="preview-note" aria-label="Version ${version}">${shown}</span>`,
-    badge: /<span class="preview-note"[^>]*>([^<]+)<\/span>/g,
+    marker: `<span class="sc-family-version">${shown}</span>`,
+    badge: /<span class="sc-family-version">([^<]+)<\/span>/g,
   },
 };
 
