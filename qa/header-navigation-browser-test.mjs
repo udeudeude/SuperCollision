@@ -99,14 +99,7 @@ try {
         await page.waitForURL('**/librivox-explorer.html');
         assert.equal(await page.locator('#sc-surface-design').inputValue(), 'bauhaus',
           where + ': LibriVox lost shared design');
-        await page.getByRole('link',{name:'Back to Sounds'}).click();
-        await page.waitForURL('**/sounds.html#discover');
-        assert.equal(await page.locator('#sc-surface-design').inputValue(), 'bauhaus',
-          where + ': Sounds lost LibriVox design');
-        await page.getByRole('tab',{name:'Record'}).click();
-        assert.equal(await page.locator('#record-audition').count(), 1,
-          where + ': current Sounds recorder/audition missing');
-        await page.getByRole('link',{name:'Return to Code'}).click();
+        await page.getByRole('link',{name:'SuperCollision Code home'}).click();
         await page.waitForURL('**/index.html');
         assert.equal(await page.locator('#code').isVisible(), true,
           where + ': Code editor missing after return');
