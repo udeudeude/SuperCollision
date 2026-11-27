@@ -88,15 +88,14 @@ try {
         await page.locator('#code').fill('// Navigation must preserve unsaved Code edits');
         await page.locator('#sounds-open').click();
         await page.waitForURL('**/sounds-bench-preview.html#play');
-        assert.equal(await page.locator('#sounds-tabs').isVisible(), true,
+        assert.equal(await page.locator('.bench-tabs').isVisible(), true,
           where + ': integrated Sounds did not open');
-        assert.equal(await page.locator('#sounds-record').isVisible(), false,
-          where + ': Library should be the default Sounds destination');
+        assert.equal(await page.locator('#lab-setup').isVisible(), true,
+          where + ': Instrument Bench should be the default Sounds destination');
         assert.equal(await page.locator('#sc-surface-design').inputValue(), 'moog',
           where + ': Sounds did not inherit Code design');
         await page.locator('#sc-surface-design').selectOption('bauhaus');
-        await page.getByRole('tab',{name:'Discover'}).click();
-        await page.getByRole('link',{name:'Explore LibriVox recordings'}).click();
+        await page.goto(host+'/librivox-explorer.html');
         await page.waitForURL('**/librivox-explorer.html');
         assert.equal(await page.locator('#sc-surface-design').inputValue(), 'bauhaus',
           where + ': LibriVox lost shared design');
