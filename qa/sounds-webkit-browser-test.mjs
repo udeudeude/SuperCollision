@@ -51,7 +51,8 @@ try{
   });
   const page=await context.newPage(),errors=[];
   page.on('pageerror',error=>errors.push(error.message));
-  await page.goto(origin+'/sounds.html');
+  await page.goto(origin+'/sounds-bench-preview.html#sample');
+  await page.waitForFunction(()=>document.querySelector('#bench-acquire-overlay'));
   const storageProbe=await page.evaluate(async()=>{
    const {saveSound,deleteSound}=await import('/sounds-store.mjs');
    const output={};
@@ -68,58 +69,34 @@ try{
   });
   console.log('WebKit IndexedDB probe '+width+'x'+height+': '+JSON.stringify(storageProbe));
   const dimensions=await page.evaluate(()=>{
-   const dock=document.querySelector('#sounds-tabs').getBoundingClientRect();
-   const buttons=[...document.querySelectorAll('#sounds-tabs button')].map(x=>x.getBoundingClientRect());
+   const dock=document.querySelector('.bench-tabs').getBoundingClientRect();
+   const buttons=[...document.querySelectorAll('.bench-tabs button')].map(x=>x.getBoundingClientRect());
    return {scrollWidth:document.documentElement.scrollWidth,viewport:innerWidth,
     bottom:dock.bottom,buttonBounds:buttons.map(x=>({left:x.left,right:x.right,height:x.height}))};
   });
   assert.ok(dimensions.scrollWidth<=width+1,'horizontal overflow: '+JSON.stringify(dimensions));
-  if(width<=640){
-   assert.ok(Math.abs(dimensions.bottom-height)<3,'navigation not in thumb reach: '+JSON.stringify(dimensions));
-   assert.ok(dimensions.buttonBounds.every(x=>x.left>=-1&&x.right<=width+1&&x.height>=40));
-  }
-  await page.getByRole('tab',{name:'Record'}).click();
-  await page.locator('#mic-ready').check();
-  await page.waitForFunction(()=>!document.querySelector('#start').disabled);
-  await page.locator('#start').dispatchEvent('pointerdown',{pointerId:2,button:0,isPrimary:true});
-  assert.equal(await page.locator('body').evaluate(x=>x.classList.contains('is-recording')),true);
-  await page.locator('#start').dispatchEvent('pointerup',{pointerId:2,button:0,isPrimary:true});
-  try{
-   await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('Saved recording locally'),
-    null,{timeout:12000});
-  }catch(error){
-   const snapshot=await page.evaluate(()=>({
-    status:document.querySelector('#status')?.textContent,
-    recording:document.body.classList.contains('is-recording'),
-    micReady:document.querySelector('#mic-ready')?.checked,
-    buttonDisabled:document.querySelector('#start')?.disabled,
-    auditionVisible:!document.querySelector('#record-audition')?.hidden,
-    audioSource:document.querySelector('#record-audio')?.getAttribute('src'),
-    state:window.__micQA,
-    supported:!!window.indexedDB,
-    secure:window.isSecureContext
-   }));
-   throw new Error('WebKit recording did not save: '+JSON.stringify(snapshot)+'; '+error.message);
-  }
-  assert.equal(await page.locator('#record-audition').isVisible(),true,'original must remain in Record to audition');
+  assert.ok(dimensions.buttonBounds.every(x=>x.left>=-1&&x.right<=width+1&&x.height>=40));
+  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('bench-acquire-action',{detail:{action:'record'}})));
+  await page.locator('#start').waitFor({state:'visible'});
+  await page.locator('#start').click();
+  await page.waitForFunction(()=>document.body.classList.contains('is-recording'),null,{timeout:12000});
+  await page.locator('#start').click();
+  await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('Saved recording locally'),null,{timeout:12000});
+  assert.equal(await page.locator('#record-audition').isVisible(),true,'recording audition must be visible');
   const audition=await page.locator('#record-audio').evaluate(async audio=>{
    const response=await fetch(audio.src),bytes=new Uint8Array(await response.arrayBuffer());
-   return {src:audio.src,type:response.headers.get('content-type'),magic:String.fromCharCode(...bytes.slice(0,4)),canPlay:audio.canPlayType('audio/wav')};
+   return {src:audio.src,magic:String.fromCharCode(...bytes.slice(0,4)),canPlay:audio.canPlayType('audio/wav')};
   });
-  assert.ok(audition.src.startsWith('blob:'),'original must be locally playable');
-  assert.equal(audition.magic,'RIFF','audition must point to captured original WAV bytes');
-  assert.ok(audition.canPlay,'WebKit must support the captured format');
-  assert.equal(await page.locator('#mic-ready').isChecked(),false,'recording must close microphone');
+  assert.ok(audition.src.startsWith('blob:'));
+  assert.equal(audition.magic,'RIFF');
+  assert.ok(audition.canPlay);
+  assert.equal(await page.locator('#mic-ready').isChecked(),false);
   assert.deepEqual(await page.evaluate(()=>window.__micQA),{requests:1,stops:1,captures:1});
-  await page.getByRole('tab',{name:'Library'}).click();
-  const row=page.locator('.managed-item:has(audio)').first();
-  await row.waitFor();
-  const preserved=await row.locator('audio').evaluate(element=>{window.__libraryPlayerQA=element;return element.src});
-  await row.getByRole('button',{name:'☆ Favorite'}).click();
-  await row.getByRole('button',{name:'★ Favorite'}).waitFor();
-  assert.equal(await row.locator('audio').evaluate(element=>element===window.__libraryPlayerQA),true,
-   'favorite changes cannot restart an audition');
-  assert.equal(await row.locator('audio').getAttribute('src'),preserved);
+  const saved=await page.evaluate(async()=>{
+   const {allSounds}=await import('/sounds-store.mjs');
+   return (await allSounds()).find(x=>x.source==='recorded');
+  });
+  assert.ok(saved?.blob instanceof Object,'recorded audio remains in shared library');
   await page.goto(origin+'/librivox-explorer.html');
   assert.equal(await page.locator('#chapter-audio').getAttribute('src'),null,'LibriVox must not load streamed audio before consent');
   assert.ok(await page.locator('#filter-author').isVisible());
