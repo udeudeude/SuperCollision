@@ -93,7 +93,8 @@ try{
    throw new Error('Direct recording did not begin: '+JSON.stringify(snapshot)+'; '+error.message);
   }
   await page.locator('#start').click();
-  await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('Saved recording locally'),null,{timeout:12000});
+  try{await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('Saved recording locally'),null,{timeout:5000})}
+  catch(error){const snapshot=await page.evaluate(()=>({status:document.querySelector('#status')?.textContent,recording:document.body.classList.contains('is-recording'),button:document.querySelector('#start')?.textContent,disabled:document.querySelector('#start')?.disabled,ready:document.querySelector('#mic-ready')?.checked,mic:window.__micQA,audition:document.querySelector('#record-audition')?.hidden}));throw new Error('Recording did not save: '+JSON.stringify(snapshot)+'; '+error.message)}
   assert.equal(await page.locator('#record-audition').isVisible(),true,'recording audition must be visible');
   const audition=await page.locator('#record-audio').evaluate(async audio=>{
    const response=await fetch(audio.src),bytes=new Uint8Array(await response.arrayBuffer());
