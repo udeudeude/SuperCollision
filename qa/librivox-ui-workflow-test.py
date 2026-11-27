@@ -3,8 +3,11 @@ from playwright.sync_api import sync_playwright
 import re
 root=Path(__file__).resolve().parent.parent if Path(__file__).resolve().parent.name=='qa' else Path(__file__).resolve().parent
 source=(root/'librivox-explorer.html').read_text()
-assert 'href="./librivox-explorer.html"' in (root/'sounds.html').read_text(), 'Sounds Discover link missing'
-assert '<option value="librivox">' in (root/'sounds.html').read_text(), 'Saved LibriVox samples cannot be filtered'
+bench_remote=(root/'sounds-bench-remote.mjs').read_text()
+bench_acquire=(root/'sounds-bench-acquire.mjs').read_text()
+assert 'data-src="\\\\\"' not in bench_remote or 'librivox-explorer.html' in bench_remote
+assert 'librivox-explorer.html' in bench_remote and 'bench-open-librivox' in bench_remote, 'Instrument Bench LibriVox discovery missing'
+assert 'librivox' in bench_acquire and 'acquire-filter' in bench_acquire, 'Saved LibriVox samples cannot be filtered'
 source=re.sub(r'<link[^>]+librivox-explorer\.css[^>]*>', '<style>'+ (root/'librivox-explorer.css').read_text()+'</style>', source)
 source=re.sub(r'<script[^>]+librivox-explorer\.mjs[^>]*></script>','',source)
 def inline_source(path):
