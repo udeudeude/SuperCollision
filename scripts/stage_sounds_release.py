@@ -41,12 +41,13 @@ def release_files(source: Path) -> tuple[str, ...]:
     code = (source / "index.html").read_text(encoding="utf-8")
     if "location.assign('./sounds-bench-preview.html#play')" not in code or "sounds-overlay" in code:
         raise ValueError("Code does not open the integrated Sounds workspace")
-    # A tested Sounds link must never point at an old/absent LibriVox app.
+    # Legacy address is a same-origin redirect, not a second application.
     sounds = (source / "sounds.html").read_text(encoding="utf-8")
+    if "location.replace(target.href)" not in sounds or "sounds-bench-preview.html" not in sounds:
+        raise ValueError("Legacy Sounds URL must redirect to Instrument Bench")
     explorer = (source / "librivox-explorer.html").read_text(encoding="utf-8")
-    for name, body in (("Sounds", sounds), ("LibriVox", explorer)):
-        if "sound-surfaces-theme.mjs" not in body or "sound-surfaces-design.css" not in body:
-            raise ValueError(name + " does not load the shared design")
+    if "sound-surfaces-theme.mjs" not in explorer or "sound-surfaces-design.css" not in explorer:
+        raise ValueError("LibriVox does not load the shared design")
     bench = (source / "sounds-bench-preview.html").read_text(encoding="utf-8")
     if "sounds-bench-engine.mjs" not in bench or "sounds-bench-acquire.mjs" not in bench:
         raise ValueError("Instrument Bench does not load its native engine and acquisition")
@@ -62,7 +63,6 @@ def release_files(source: Path) -> tuple[str, ...]:
     sample_lab = (source / "sounds-lab.html").read_text(encoding="utf-8")
     version_markers = (
         ("Code", code, f'<small class="app-version" aria-label="Version {version}">v{version}</small>'),
-        ("Sounds", sounds, f'<span class="sc-family-version">v{version}</span>'),
         ("Instrument Bench", bench, f'<span class="sc-family-version">v{version}</span>'),
         ("Sample Lab", sample_lab, f'<span class="sc-family-version">v{version}</span>'),
         ("LibriVox", explorer, f'<span class="sc-family-version">v{version}</span>'),
@@ -70,10 +70,6 @@ def release_files(source: Path) -> tuple[str, ...]:
     for name, html, marker in version_markers:
         if marker not in html:
             raise ValueError(f"{name} version disagrees with SuperCollision v{version}")
-    if 'href="./sounds-bench-preview.html"' not in sounds:
-        raise ValueError("Sounds Create must link to the current Instrument Bench")
-    if 'href="./librivox-explorer.html"' not in sounds:
-        raise ValueError("Sounds does not link to the bundled LibriVox explorer")
     if "librivox-explorer.css" not in explorer or "librivox-explorer.mjs" not in explorer:
         raise ValueError("LibriVox page does not load its bundled stylesheet and module")
     return files
