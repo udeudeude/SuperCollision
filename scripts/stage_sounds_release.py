@@ -39,7 +39,7 @@ def release_files(source: Path) -> tuple[str, ...]:
     # A tested Code entrypoint must open the SAME Sounds workspace. It must
     # never launch an old inline recorder with incompatible local audio data.
     code = (source / "index.html").read_text(encoding="utf-8")
-    if "location.assign('./sounds.html#library')" not in code or "sounds-overlay" in code:
+    if "location.assign('./sounds-bench-preview.html#play')" not in code or "sounds-overlay" in code:
         raise ValueError("Code does not open the integrated Sounds workspace")
     # A tested Sounds link must never point at an old/absent LibriVox app.
     sounds = (source / "sounds.html").read_text(encoding="utf-8")
@@ -62,10 +62,10 @@ def release_files(source: Path) -> tuple[str, ...]:
     sample_lab = (source / "sounds-lab.html").read_text(encoding="utf-8")
     version_markers = (
         ("Code", code, f'<small class="app-version" aria-label="Version {version}">v{version}</small>'),
-        ("Sounds", sounds, f'<small class="build" aria-label="Version {version}">v{version}</small>'),
-        ("Instrument Bench", bench, f"<small>v{version}</small>"),
+        ("Sounds", sounds, f'<span class="sc-family-version">v{version}</span>'),
+        ("Instrument Bench", bench, f'<span class="sc-family-version">v{version}</span>'),
         ("Sample Lab", sample_lab, f"<small>v{version}</small>"),
-        ("LibriVox", explorer, f'<span class="preview-note" aria-label="Version {version}">v{version}</span>'),
+        ("LibriVox", explorer, f'<span class="sc-family-version">v{version}</span>'),
     )
     for name, html, marker in version_markers:
         if marker not in html:
