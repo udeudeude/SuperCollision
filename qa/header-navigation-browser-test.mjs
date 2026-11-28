@@ -99,7 +99,9 @@ try {
         await page.waitForURL('**/librivox-explorer.html');
         assert.equal(await page.locator('#theme-choice').inputValue(), 'bauhaus',
           where + ': LibriVox lost shared design');
-        await page.goto(origin + 'index.html');
+        await page.goBack();
+        await page.waitForURL('**/sounds-bench-preview.html#play');
+        await page.goBack();
         await page.waitForURL('**/index.html');
         assert.equal(await page.locator('#code').isVisible(), true,
           where + ': Code editor missing after return');
