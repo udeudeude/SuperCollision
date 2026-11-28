@@ -936,7 +936,8 @@ if(!themeChoice.value||themeChoice.selectedIndex<0)themeChoice.value='moog';
 document.body.dataset.theme=themeChoice.value;
 // Browser back/forward may restore a cached Code page after Sounds changed design.
 window.addEventListener('pageshow',event=>{
- if(!event.persisted)return;
+ const navigation=performance.getEntriesByType('navigation')[0];
+ if(!event.persisted && navigation?.type!=='back_forward')return;
  try{
   const saved=localStorage.getItem('supercollision-theme');
   if(saved&&[...themeChoice.options].some(option=>option.value===saved)){
