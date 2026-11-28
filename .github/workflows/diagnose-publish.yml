@@ -2,7 +2,7 @@ name: Diagnose blocked publication
 on:
   push:
     branches: [main]
-    paths: ['.github/workflows/diagnose-publish.yml', 'supercollision-header.css', 'qa/header-navigation-browser-test.mjs']
+    paths: ['.github/workflows/diagnose-publish.yml', 'supercollision-header.css', 'qa/header-navigation-browser-test.mjs', 'qa/librivox-ui-workflow-test.py']
 permissions:
   actions: read
   contents: read
