@@ -102,7 +102,7 @@ try {
         await page.goBack();
         await page.waitForURL('**/sounds-bench-preview.html#play');
         await page.goBack();
-        await page.waitForURL('**/index.html');
+        await page.waitForURL(url => url.pathname === '/' || url.pathname.endsWith('/index.html'));
         assert.equal(await page.locator('#code').isVisible(), true,
           where + ': Code editor missing after return');
         assert.equal(await page.evaluate(()=>document.body.dataset.theme),'bauhaus',
