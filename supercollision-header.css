@@ -2,8 +2,8 @@
    All pages use identical HTML and this identical stylesheet. */
 body > header.sc-code-header{
  display:flex!important;align-items:center!important;justify-content:space-between!important;
- gap:6px!important;position:relative!important;transform:none!important;
- min-height:0!important;margin:5px 0 0!important;padding:10px 9px!important;
+ gap:5px!important;position:relative!important;transform:none!important;
+ min-height:0!important;margin:5px 0 0!important;padding:10px 7px!important;
  background:var(--sc-panel,#32281f)!important;
  border:2px solid var(--sc-line,#9a815f)!important;
  box-shadow:none!important;
@@ -41,7 +41,7 @@ body > header.sc-code-header .theme-strip{
 }
 body > header.sc-code-header .theme-strip label{display:none!important}
 body > header.sc-code-header #theme-choice{
- width:84px!important;max-width:84px!important;min-width:0!important;
+ width:74px!important;max-width:74px!important;min-width:0!important;
  min-height:28px!important;padding:3px 2px!important;
  font:700 12px ui-monospace,monospace!important;
  color:inherit!important;background:transparent!important;border:0!important;
