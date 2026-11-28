@@ -103,7 +103,7 @@ self.addEventListener('fetch', event => {
       );
       if (saved && self.navigator?.onLine === false) return cleanNavigationResponse(saved);
       try {
-        const fresh = await fetch(request);
+        const fresh = await fetch(request, {cache: 'reload'});
         if (fresh.ok) return cleanNavigationResponse(fresh);
       } catch {}
       if (saved) return cleanNavigationResponse(saved);
