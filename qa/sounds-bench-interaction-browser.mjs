@@ -39,7 +39,7 @@ try{
   assert.equal(await page.locator('header.sc-code-header .identity-art').evaluate(el=>el.getBoundingClientRect().width<=50),true,'Header artwork rendered oversized');
 
   await page.waitForFunction(()=>document.querySelectorAll('.bench-visual').length===7,{timeout:12000});
-  assert.equal(await page.locator('header .app-version').textContent(),'v2.9');
+  assert.equal(await page.locator('header .app-version').textContent(),'v2.9.1');
   assert.equal(await page.locator('#lab-demo-code-bay').getAttribute('data-sync'),'matched');
   assert.equal(await page.locator('#bench-tone-undo').isDisabled(),true);
   assert.equal(await page.locator('#bench-tone-redo').isDisabled(),true);
