@@ -7,7 +7,10 @@ bench_remote=(root/'sounds-bench-remote.mjs').read_text()
 bench_acquire=(root/'sounds-bench-acquire.mjs').read_text()
 assert 'librivox-explorer.html' in bench_remote and 'bench-open-librivox' in bench_remote, 'Instrument Bench LibriVox discovery missing'
 assert 'librivox' in bench_acquire and 'acquire-filter' in bench_acquire, 'Saved LibriVox samples cannot be filtered'
-source=re.sub(r'<link[^>]+librivox-explorer\.css[^>]*>', '<style>'+ (root/'librivox-explorer.css').read_text()+'</style>', source)
+# set_content has no document URL: include all three local stylesheets.
+for stylesheet in ('librivox-explorer.css','sound-surfaces-design.css','supercollision-header.css'):
+    source=re.sub(r'<link[^>]+href=["\\\']\\./'+re.escape(stylesheet)+r'[^"\\\']*["\\\'][^>]*>',
+                  '<style>'+ (root/stylesheet).read_text()+'</style>', source)
 source=re.sub(r'<script[^>]+librivox-explorer\.mjs[^>]*></script>','',source)
 def inline_source(path):
     text=(root/path).read_text()
