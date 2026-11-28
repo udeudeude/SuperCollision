@@ -2,7 +2,7 @@ name: Diagnose blocked publication
 on:
   push:
     branches: [main]
-    paths: ['.github/workflows/diagnose-publish.yml']
+    paths: ['.github/workflows/diagnose-publish.yml', 'supercollision-header.css', 'qa/header-navigation-browser-test.mjs']
 permissions:
   actions: read
   contents: read
@@ -37,6 +37,6 @@ jobs:
                                   if step['conclusion']=='failure':
                                       lines.append(f"    - Failed step: {step['name']}")
           body='\n'.join(lines)
-          subprocess.run(['gh','issue','create','--repo',repo,'--title','Publication diagnostic: v2.9.6','--body',body],check=True)
+          subprocess.run(['gh','issue','comment','42','--repo',repo,'--body',body],check=True)
           print(body)
           PY
