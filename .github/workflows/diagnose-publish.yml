@@ -1,0 +1,42 @@
+name: Diagnose blocked publication
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/diagnose-publish.yml']
+permissions:
+  actions: read
+  contents: read
+  issues: write
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report recent publisher failures as one issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          repo=os.environ['GH_REPO']
+          def api(path):
+              result=subprocess.run(['gh','api',path],capture_output=True,text=True,check=True)
+              return json.loads(result.stdout)
+          lines=['Automated diagnostic of the blocked v2.9.6 publication.']
+          for filename in ('publish-ui.yml','publish-sounds.yml'):
+              runs=api(f'repos/{repo}/actions/workflows/{filename}/runs?branch=main&per_page=5')['workflow_runs']
+              lines.append(f'\n### {filename}')
+              for run in runs[:5]:
+                  lines.append(f"- Run {run['id']}: {run['status']} / {run['conclusion']} / {run['head_sha'][:10]} / {run['html_url']}")
+                  if run['conclusion'] in ('failure','cancelled','timed_out'):
+                      jobs=api(f"repos/{repo}/actions/runs/{run['id']}/jobs?per_page=100")['jobs']
+                      for job in jobs:
+                          if job['conclusion'] not in ('success','skipped'):
+                              lines.append(f"  - Job {job['name']}: {job['conclusion']}")
+                              for step in job.get('steps',[]):
+                                  if step['conclusion']=='failure':
+                                      lines.append(f"    - Failed step: {step['name']}")
+          body='\n'.join(lines)
+          subprocess.run(['gh','issue','create','--repo',repo,'--title','Publication diagnostic: v2.9.6','--body',body],check=True)
+          print(body)
+          PY
