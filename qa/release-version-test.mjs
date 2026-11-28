@@ -11,16 +11,16 @@ const surfaces = {
     badge: /<small class="app-version"[^>]*>([^<]+)<\/small>/g,
   },
   'sounds-bench-preview.html': {
-    marker: `<span class="sc-family-version">${shown}</span>`,
-    badge: /<span class="sc-family-version">([^<]+)<\/span>/g,
+    marker: `<small class="app-version" aria-label="Version 2.9">${shown}</small>`,
+    badge: /<small class="app-version"[^>]*>([^<]+)<\/small>/g,
   },
   'sounds-lab.html': {
-    marker: `<span class="sc-family-version">${shown}</span>`,
-    badge: /<span class="sc-family-version">([^<]+)<\/span>/g,
+    marker: `<small class="app-version" aria-label="Version 2.9">${shown}</small>`,
+    badge: /<small class="app-version"[^>]*>([^<]+)<\/small>/g,
   },
   'librivox-explorer.html': {
-    marker: `<span class="sc-family-version">${shown}</span>`,
-    badge: /<span class="sc-family-version">([^<]+)<\/span>/g,
+    marker: `<small class="app-version" aria-label="Version 2.9">${shown}</small>`,
+    badge: /<small class="app-version"[^>]*>([^<]+)<\/small>/g,
   },
 };
 
