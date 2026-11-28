@@ -87,7 +87,7 @@ try {
           where + ': obsolete recorder must not overlay Code');
         await page.locator('#code').fill('// Navigation must preserve unsaved Code edits');
         await page.locator('#sounds-open').click();
-        await page.waitForURL('**/sounds-bench-preview.html#play');
+        await page.waitForURL('**/sounds-bench-preview.html?release=2.9.1#play');
         assert.equal(await page.locator('.bench-tabs').isVisible(), true,
           where + ': integrated Sounds did not open');
         assert.equal(await page.locator('#lab-setup').isVisible(), true,
@@ -100,7 +100,7 @@ try {
         assert.equal(await page.locator('#theme-choice').inputValue(), 'bauhaus',
           where + ': LibriVox lost shared design');
         await page.goBack();
-        await page.waitForURL('**/sounds-bench-preview.html#play');
+        await page.waitForURL('**/sounds-bench-preview.html?release=2.9.1#play');
         // Sounds may add a hash-history entry during initialization. Traverse
         // real browser history until Code, rather than assuming one entry.
         for (let back = 0; back < 4 && !new URL(page.url()).pathname.match(/\/(?:index\.html)?$/); back++) {
