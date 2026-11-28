@@ -23,8 +23,8 @@ body > header.sc-code-header h1{
  flex:1 1 auto!important;min-width:0!important;margin:0!important;
  text-align:left!important;white-space:nowrap!important;overflow:hidden!important;
  text-overflow:ellipsis!important;font-family:system-ui,-apple-system,sans-serif!important;
- color:inherit!important;font-weight:800!important;letter-spacing:.11em!important;
- font-size:clamp(12px,3.4vw,18px)!important;
+ color:inherit!important;font-weight:800!important;letter-spacing:.02em!important;
+ font-size:clamp(11px,2.8vw,16px)!important;
  line-height:1.12!important;text-transform:uppercase!important;
 }
 body > header.sc-code-header .app-version{
