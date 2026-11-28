@@ -16,7 +16,8 @@ from shutil import copy2
 
 PAGES = ("index.html", "sounds.html", "sounds-lab.html",
          "sounds-bench-preview.html", "sounds-workspace.css", "sounds-reach.css",
-         "sound-surfaces-design.css", "sound-surfaces-theme.mjs")
+         "sound-surfaces-design.css", "sound-surfaces-theme.mjs",
+         "supercollision-header.css")
 LIBRIVOX = (
     "librivox-explorer.html",
     "librivox-explorer.css",
