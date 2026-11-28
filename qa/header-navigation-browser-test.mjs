@@ -101,8 +101,13 @@ try {
           where + ': LibriVox lost shared design');
         await page.goBack();
         await page.waitForURL('**/sounds-bench-preview.html#play');
-        await page.goBack();
-        await page.waitForURL(url => url.pathname === '/' || url.pathname.endsWith('/index.html'));
+        // Sounds may add a hash-history entry during initialization. Traverse
+        // real browser history until Code, rather than assuming one entry.
+        for (let back = 0; back < 4 && !new URL(page.url()).pathname.match(/\/(?:index\.html)?$/); back++) {
+          await page.goBack({waitUntil:'domcontentloaded'});
+        }
+        assert.ok(new URL(page.url()).pathname.match(/\/(?:index\.html)?$/),
+          where + ': browser history did not return to Code');
         assert.equal(await page.locator('#code').isVisible(), true,
           where + ': Code editor missing after return');
         assert.equal(await page.evaluate(()=>document.body.dataset.theme),'bauhaus',
