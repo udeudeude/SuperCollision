@@ -16,6 +16,7 @@ on:
       - 'librivox-explorer.html'
       - 'librivox-explorer.css'
       - 'librivox-*.mjs'
+      - 'qa/header-navigation-browser-test.mjs'
       - 'qa/sounds-*'
       - 'qa/release-version-test.mjs'
       - 'qa/librivox-*'
