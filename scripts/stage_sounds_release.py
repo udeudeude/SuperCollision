@@ -63,9 +63,9 @@ def release_files(source: Path) -> tuple[str, ...]:
     sample_lab = (source / "sounds-lab.html").read_text(encoding="utf-8")
     version_markers = (
         ("Code", code, f'<small class="app-version" aria-label="Version {version}">v{version}</small>'),
-        ("Instrument Bench", bench, f'<small class="app-version" aria-label="Version {version}">v{version}</span>'),
-        ("Sample Lab", sample_lab, f'<small class="app-version" aria-label="Version {version}">v{version}</span>'),
-        ("LibriVox", explorer, f'<small class="app-version" aria-label="Version {version}">v{version}</span>'),
+        ("Instrument Bench", bench, f'<small class="app-version" aria-label="Version {version}">v{version}</small>'),
+        ("Sample Lab", sample_lab, f'<small class="app-version" aria-label="Version {version}">v{version}</small>'),
+        ("LibriVox", explorer, f'<small class="app-version" aria-label="Version {version}">v{version}</small>'),
     )
     for name, html, marker in version_markers:
         if marker not in html:
