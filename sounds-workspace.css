@@ -1176,3 +1176,7 @@ body[data-sc-surface=sounds] #bench-sample-power{
  color:var(--sc-ink,#e9d9bc)!important;
  font-weight:800!important;
 }
+
+/* Keep the three workspace tabs inside the phone viewport in WebKit. */
+.bench-tabs{width:100%;max-width:100%;min-width:0;box-sizing:border-box;grid-template-columns:repeat(3,minmax(0,1fr))}
+.bench-tabs button{min-width:0;box-sizing:border-box;overflow-wrap:anywhere}
