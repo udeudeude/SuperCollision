@@ -9,7 +9,7 @@ body > header.sc-code-header{
  box-shadow:none!important;
 }
 body > header.sc-code-header::before,body > header.sc-code-header::after{content:none!important}
-body > header.sc-code-header .identity-art{width:35px!important;height:35px!important;flex:none!important;display:block!important;overflow:visible!important}
+body > header.sc-code-header .identity-art{width:29px!important;height:29px!important;flex:none!important;display:block!important;overflow:visible!important}
 body > header.sc-code-header .identity-art .art{display:none}
 body[data-theme=moog] > header.sc-code-header .art-moog,
 body[data-theme=bauhaus] > header.sc-code-header .art-bauhaus,
