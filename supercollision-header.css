@@ -22,7 +22,7 @@ body[data-theme=terminal] > header.sc-code-header .art-terminal{display:initial}
 body > header.sc-code-header h1{
  flex:1 1 auto!important;min-width:0!important;margin:0!important;
  text-align:left!important;white-space:nowrap!important;overflow:hidden!important;
- text-overflow:ellipsis!important;font-size:clamp(14px,4.1vw,20px)!important;
+ text-overflow:ellipsis!important;font-size:clamp(12px,3.4vw,18px)!important;
  line-height:1.12!important;text-transform:uppercase!important;
 }
 body > header.sc-code-header .app-version{
@@ -39,7 +39,7 @@ body > header.sc-code-header .theme-strip{
 }
 body > header.sc-code-header .theme-strip label{display:none!important}
 body > header.sc-code-header #theme-choice{
- width:90px!important;max-width:90px!important;min-width:0!important;
+ width:112px!important;max-width:112px!important;min-width:0!important;
  min-height:28px!important;padding:3px 5px!important;
  font:700 12px ui-monospace,monospace!important;
  color:inherit!important;background:transparent!important;border:0!important;
@@ -48,6 +48,6 @@ body > header.sc-code-header #theme-choice{
 @media(max-width:390px){
  body > header.sc-code-header{padding:9px 10px!important;gap:6px!important}
  body > header.sc-code-header .identity-art{width:27px!important;height:27px!important}
- body > header.sc-code-header h1{font-size:14px!important;letter-spacing:0!important}
- body > header.sc-code-header #theme-choice{width:70px!important;max-width:70px!important;font-size:11px!important}
+ body > header.sc-code-header h1{font-size:11px!important;letter-spacing:0!important}
+ body > header.sc-code-header #theme-choice{width:96px!important;max-width:96px!important;font-size:10px!important}
 }
