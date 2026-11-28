@@ -2,3 +2,8 @@
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: require-corp
   Cross-Origin-Resource-Policy: same-origin
+
+/*.html
+  Cache-Control: no-cache, max-age=0, must-revalidate
+/
+  Cache-Control: no-cache, max-age=0, must-revalidate
