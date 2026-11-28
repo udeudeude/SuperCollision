@@ -17,6 +17,8 @@ on:
       - 'scripts/stage_sounds_release.py'
       - 'scripts/build_offline_manifest.py'
       - 'scripts/render_icons.py'
+      - 'qa/code-selection-browser-test.mjs'
+      - 'qa/header-navigation-browser-test.mjs'
       - 'qa/lab-offline-browser-test.mjs'
       - 'qa/offline-policy-test.mjs'
       - 'qa/release-version-test.mjs'
