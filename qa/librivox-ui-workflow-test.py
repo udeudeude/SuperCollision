@@ -9,7 +9,7 @@ assert 'librivox-explorer.html' in bench_remote and 'bench-open-librivox' in ben
 assert 'librivox' in bench_acquire and 'acquire-filter' in bench_acquire, 'Saved LibriVox samples cannot be filtered'
 # set_content has no document URL: include all three local stylesheets.
 for stylesheet in ('librivox-explorer.css','sound-surfaces-design.css','supercollision-header.css'):
-    source=re.sub(r'<link[^>]+href=["\\\']\\./'+re.escape(stylesheet)+r'[^"\\\']*["\\\'][^>]*>',
+    source=re.sub(r'<link[^>]*'+re.escape(stylesheet)+r'[^>]*>',
                   '<style>'+ (root/stylesheet).read_text()+'</style>', source)
 source=re.sub(r'<script[^>]+librivox-explorer\.mjs[^>]*></script>','',source)
 def inline_source(path):
