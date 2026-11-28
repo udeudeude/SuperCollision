@@ -92,12 +92,12 @@ try {
           where + ': integrated Sounds did not open');
         assert.equal(await page.locator('#lab-setup').isVisible(), true,
           where + ': Instrument Bench should be the default Sounds destination');
-        assert.equal(await page.locator('#sc-surface-design').inputValue(), 'moog',
+        assert.equal(await page.locator('#theme-choice').inputValue(), 'moog',
           where + ': Sounds did not inherit Code design');
-        await page.locator('#sc-surface-design').selectOption('bauhaus');
+        await page.locator('#theme-choice').selectOption('bauhaus');
         await page.goto(origin+'librivox-explorer.html');
         await page.waitForURL('**/librivox-explorer.html');
-        assert.equal(await page.locator('#sc-surface-design').inputValue(), 'bauhaus',
+        assert.equal(await page.locator('#theme-choice').inputValue(), 'bauhaus',
           where + ': LibriVox lost shared design');
         await page.getByRole('link',{name:'SuperCollision Code home'}).click();
         await page.waitForURL('**/index.html');
