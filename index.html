@@ -934,6 +934,17 @@ const requestedDesign=new URLSearchParams(location.search).get('design');
 try{themeChoice.value=requestedDesign&&[...themeChoice.options].some(x=>x.value===requestedDesign)?requestedDesign:(localStorage.getItem('supercollision-theme')||'moog')}catch{themeChoice.value='moog'}
 if(!themeChoice.value||themeChoice.selectedIndex<0)themeChoice.value='moog';
 document.body.dataset.theme=themeChoice.value;
+// Browser back/forward may restore a cached Code page after Sounds changed design.
+window.addEventListener('pageshow',event=>{
+ if(!event.persisted)return;
+ try{
+  const saved=localStorage.getItem('supercollision-theme');
+  if(saved&&[...themeChoice.options].some(option=>option.value===saved)){
+   themeChoice.value=saved;
+   document.body.dataset.theme=saved;
+  }
+ }catch{}
+});
 themeChoice.onchange=()=>{
  document.body.dataset.theme=themeChoice.value;
  try{localStorage.setItem('supercollision-theme',themeChoice.value)}catch{}
