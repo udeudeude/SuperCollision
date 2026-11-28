@@ -55,7 +55,8 @@ body > header.sc-code-header #theme-choice{
  body > header.sc-code-header #theme-choice{width:76px!important;max-width:76px!important;font-size:11px!important}
 }
 @media(max-width:340px){
- body > header.sc-code-header .identity-art{width:25px!important;height:25px!important}
+ body > header.sc-code-header{padding-left:5px!important;padding-right:5px!important;gap:4px!important}
+ body > header.sc-code-header .identity-art{width:19px!important;height:19px!important}
  body > header.sc-code-header h1{font-size:11px!important}
  body > header.sc-code-header #theme-choice{width:68px!important;max-width:68px!important}
 }
