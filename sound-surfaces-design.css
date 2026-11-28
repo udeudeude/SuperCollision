@@ -309,21 +309,21 @@ body[data-sc-surface=librivox] :is(.query-row input,.combined-inputs input,selec
 body[data-sc-surface=librivox] :is(button.primary,#find-combined,#load-chapter-audio,#extract-wav){
  background:var(--sc-accent)!important;color:var(--sc-accent-ink)!important
 }
-body[data-sc-surface] :is(h1,h2){font-family:var(--sc-font-head)!important}
-body[data-sc-surface][data-theme=makenoise] :is(header h1,main h2){
+body[data-sc-surface] main h2{font-family:var(--sc-font-head)!important}
+body[data-sc-surface][data-theme=makenoise] main h2{
  font-family:"SC Megrim",sans-serif!important;font-weight:400!important;letter-spacing:.015em!important
 }
 body[data-sc-surface][data-theme=makenoise] :is(button,summary,.sc-design-choice){
  font-family:"SC Outpost","SC Oxanium",monospace!important
 }
-body[data-sc-surface][data-theme=bauhaus] :is(header h1,main h2){
+body[data-sc-surface][data-theme=bauhaus] main h2{
  font-family:"SC Plaster","SC Josefin",sans-serif!important;font-weight:400!important
 }
 body[data-sc-surface][data-theme=bauhaus] button{font-family:"SC Josefin",sans-serif!important}
-body[data-sc-surface][data-theme=blackmountain] :is(header h1,main h2){
+body[data-sc-surface][data-theme=blackmountain] main h2{
  font-family:"SC Franklin",sans-serif!important;font-weight:450!important
 }
-body[data-sc-surface][data-theme=moog] :is(header h1,main h2){
+body[data-sc-surface][data-theme=moog] main h2{
  font-family:"SC Oxanium",sans-serif!important;font-weight:700!important;letter-spacing:.055em!important
 }
 body[data-sc-surface][data-theme=makenoise] :is(section,.managed-item,.player,.text-bay){border-style:dashed!important}
@@ -339,7 +339,6 @@ body[data-sc-surface][data-theme=terminal] :is(section,.managed-item,.player,.te
 @media(max-width:390px){
  body[data-sc-surface=librivox] .topbar h1{font-size:12px}
  body[data-sc-surface=librivox] .topbar h1 small{display:none}
- body[data-sc-surface=sounds] header h1{font-size:15px!important}
  body[data-sc-surface] header .sc-design-choice{flex:0 0 auto}
 }
 
