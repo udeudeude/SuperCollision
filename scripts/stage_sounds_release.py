@@ -40,7 +40,7 @@ def release_files(source: Path) -> tuple[str, ...]:
     # A tested Code entrypoint must open the SAME Sounds workspace. It must
     # never launch an old inline recorder with incompatible local audio data.
     code = (source / "index.html").read_text(encoding="utf-8")
-    if "location.assign('./sounds-bench-preview.html?release=2.9.1#play')" not in code or "sounds-overlay" in code:
+    if "location.assign('./sounds-bench-preview.html?release=2.9.2#play')" not in code or "sounds-overlay" in code:
         raise ValueError("Code does not open the integrated Sounds workspace")
     # Legacy address is a same-origin redirect, not a second application.
     sounds = (source / "sounds.html").read_text(encoding="utf-8")
