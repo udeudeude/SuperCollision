@@ -26,21 +26,10 @@ function main(){
  if(!header)return;
  const surface=header.classList.contains('topbar')?'librivox':'sounds';
  document.body.dataset.scSurface=surface;
- const label=document.createElement('label');
- label.className='sc-design-choice';
- const caption=document.createElement('span');
- caption.textContent='DESIGN';
- const select=document.createElement('select');
- select.id='sc-surface-design';
- select.setAttribute('aria-label','Visual design, shared with main Code page');
- for(const [id,title] of designs){
-  const option=document.createElement('option');
-  option.value=id;option.textContent=title;select.add(option);
- }
- label.append(caption,select);
- const version=header.querySelector('.sc-family-version')||header.querySelector('.preview-note')||header.querySelector(':scope > small');
- if(version){version.classList.add('sc-version');version.after(label)}
- else header.append(label);
+ // Reuse the exact selector shipped in Code's header. Do not build a
+ // competing theme selector or rearrange the header after first paint.
+ const select=header.querySelector('#theme-choice');
+ if(!select)return;
  function apply(value,{persist=false}={}){
   if(!allowed.has(value))value='moog';
   document.body.dataset.theme=value;select.value=value;
