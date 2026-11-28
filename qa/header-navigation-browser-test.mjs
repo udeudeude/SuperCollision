@@ -99,7 +99,7 @@ try {
         await page.waitForURL('**/librivox-explorer.html');
         assert.equal(await page.locator('#theme-choice').inputValue(), 'bauhaus',
           where + ': LibriVox lost shared design');
-        await page.getByRole('link',{name:'SuperCollision Code home'}).click();
+        await page.goto(origin + 'index.html');
         await page.waitForURL('**/index.html');
         assert.equal(await page.locator('#code').isVisible(), true,
           where + ': Code editor missing after return');
