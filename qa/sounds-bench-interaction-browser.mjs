@@ -24,7 +24,20 @@ try{
   const context=await browser.newContext({viewport:{width,height:844},isMobile:true,hasTouch:true});
   const page=await context.newPage(),errors=[];
   page.on('pageerror',error=>errors.push(error.message));
+  await page.addInitScript(()=>{
+   window.__prematureBenchPaint=false;
+   document.addEventListener('readystatechange',()=>{
+    if(document.readyState==='loading')return;
+    if(!document.documentElement.classList.contains('bench-layout-ready')&&document.body&&getComputedStyle(document.body).visibility!=='hidden')
+     window.__prematureBenchPaint=true;
+   });
+  });
   await page.goto(host+'/sounds-bench-preview.html',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>document.documentElement.classList.contains('bench-layout-ready'),null,{timeout:12000});
+  assert.equal(await page.evaluate(()=>window.__prematureBenchPaint),false,'Legacy Sample Lab flashed before Bench was ready');
+  assert.equal(await page.locator('body').evaluate(el=>getComputedStyle(el).visibility),'visible');
+  assert.equal(await page.locator('.sc-family-brand .identity-art').evaluate(el=>el.getBoundingClientRect().width<=50),true,'Header artwork rendered oversized');
+
   await page.waitForFunction(()=>document.querySelectorAll('.bench-visual').length===7,{timeout:12000});
   assert.equal(await page.locator('header .sc-family-version').textContent(),'v2.9');
   assert.equal(await page.locator('#lab-demo-code-bay').getAttribute('data-sync'),'matched');
