@@ -7,7 +7,8 @@ const moduleSource = await readFile(new URL('../code-selection.mjs', import.meta
 const mainPage = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 assert.match(mainPage, /<script type="module" src="\.\/code-selection\.mjs\?v=1"><\/script>/,
   'Code page must actually load the semantic selection module');
-assert.match(mainPage, /<small class="app-version" aria-label="Version 2\.9">v2\.9<\/small>/,
+const {version} = JSON.parse(await readFile(new URL('../app-version.json', import.meta.url), 'utf8'));
+assert.ok(mainPage.includes(`<small class="app-version" aria-label="Version ${version}">v${version}</small>`),
   'Code version must appear beside the SuperCollision title');
 assert.doesNotMatch(mainPage, /BUILD 2026\.11\.19\.6|id=['"]development-version['"]/,
   'Stale Sounds BUILD badge must not appear on the Code page');
