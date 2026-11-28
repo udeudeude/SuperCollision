@@ -131,7 +131,7 @@ jobs:
           assert (site / 'code-selection.mjs').is_file()
           assert 'id="workspace-divider"' in page
           assert 'id="live-panel-resizer"' in page
-          assert "destination.searchParams.set('release','2.9.5')" in page
+          assert "destination.searchParams.set('release','2.9.6')" in page
           assert 'sounds-overlay' not in page
           assert (site / "sounds.html").is_file()
           assert (site / "librivox-explorer.html").is_file()
