@@ -26,7 +26,7 @@ const surfaces = {
 
 // One literal header, not four visual approximations. Any drift is a regression.
 const canonicalCode = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const extractHeader = html => html.match(/<header class="sc-code-header">[\\s\\S]*?<\\/header>/)?.[0];
+const extractHeader = html => html.match(/<header class="sc-code-header">[\s\S]*?<\/header>/)?.[0];
 const canonicalHeader = extractHeader(canonicalCode);
 assert.ok(canonicalHeader, 'Code masthead is missing');
 for(const path of ['sounds-bench-preview.html','sounds-lab.html','librivox-explorer.html']){
