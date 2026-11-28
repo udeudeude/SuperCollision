@@ -6,6 +6,8 @@ on:
       - 'index.html'
       - 'osc-priority-bridge.mjs'
       - 'instrument-layout.css'
+      - 'supercollision-header.css'
+      - 'sound-surfaces-design.css'
       - 'instrument-layout.js'
       - 'live-activity.mjs'
       - 'routine-trace.mjs'
