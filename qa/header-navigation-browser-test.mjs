@@ -66,7 +66,7 @@ try {
       });
       const where = theme + ' at ' + width + 'px';
       assert.equal(state.title, 'SuperCollision', where + ': page name changed');
-      assert.equal(state.versionText, 'v2.9.2', where + ': correct version is beside title');
+      assert.equal(state.versionText, 'v2.9.3', where + ': correct version is beside title');
       assert.ok(state.versionVisible, where + ': version hidden on small screen');
       assert.ok(state.titleScroll <= state.titleWidth + 1, where +
         ': title clipped (' + state.titleScroll + 'px text vs ' + state.titleWidth + 'px available)');
@@ -87,7 +87,7 @@ try {
           where + ': obsolete recorder must not overlay Code');
         await page.locator('#code').fill('// Navigation must preserve unsaved Code edits');
         await page.locator('#sounds-open').click();
-        await page.waitForURL('**/sounds-bench-preview.html?release=2.9.2#play');
+        await page.waitForURL('**/sounds-bench-preview.html?release=2.9.3#play');
         assert.equal(await page.locator('.bench-tabs').isVisible(), true,
           where + ': integrated Sounds did not open');
         assert.equal(await page.locator('#lab-setup').isVisible(), true,
@@ -100,7 +100,7 @@ try {
         assert.equal(await page.locator('#theme-choice').inputValue(), 'bauhaus',
           where + ': LibriVox lost shared design');
         await page.goBack();
-        await page.waitForURL('**/sounds-bench-preview.html?release=2.9.2#play');
+        await page.waitForURL('**/sounds-bench-preview.html?release=2.9.3#play');
         // Sounds may add a hash-history entry during initialization. Traverse
         // real browser history until Code, rather than assuming one entry.
         for (let back = 0; back < 4 && !new URL(page.url()).pathname.match(/\/(?:index\.html)?$/); back++) {
@@ -118,7 +118,7 @@ try {
     }
     await context.close();
   }
-  console.log('Header/navigation checks passed: v2.9.2 beside full title, unified Sounds link, saved Code preserved, eight themes at three phone widths.');
+  console.log('Header/navigation checks passed: v2.9.3 beside full title, unified Sounds link, saved Code preserved, eight themes at three phone widths.');
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));
