@@ -13,6 +13,8 @@ on:
       - '_headers'
       - 'assets/fonts/**'
       - 'scripts/build_language_catalog.py'
+      - 'supercollision-header.css'
+      - 'scripts/stage_sounds_release.py'
       - 'scripts/build_offline_manifest.py'
       - 'scripts/render_icons.py'
       - 'qa/lab-offline-browser-test.mjs'
@@ -151,7 +153,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add assets/fonts/ index.html _headers instrument-layout.css instrument-layout.js code-selection.mjs live-activity.mjs routine-trace.mjs performance-engine.mjs performance-ui.mjs mix-explain.mjs performance.css learning.mjs learning.css catalog-core.mjs editor-assist.mjs error-guide.mjs repair-ui.mjs repair-ui.css catalog-assist.css osc-priority-bridge.mjs sound-designer.mjs sound-designer-core.mjs sound-designer.css lab-offline.mjs lab-sw.js lab-composition-vault.mjs offline-cache-policy.mjs language-catalog.json manifest.webmanifest app-icon.svg apple-touch-icon.png app-icon-192.png app-icon-512.png lab-offline-assets.json
-          git add sounds.html sounds-lab.html sounds-bench-preview.html sounds-workspace.css sounds-reach.css sound-surfaces-design.css sound-surfaces-theme.mjs sounds-*.mjs librivox-explorer.html librivox-explorer.css librivox-*.mjs
+          git add sounds.html sounds-lab.html sounds-bench-preview.html sounds-workspace.css sounds-reach.css sound-surfaces-design.css sound-surfaces-theme.mjs supercollision-header.css sounds-*.mjs librivox-explorer.html librivox-explorer.css librivox-*.mjs
           if git diff --cached --quiet; then
             echo "Production site is already current"
           else
